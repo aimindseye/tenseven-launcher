@@ -24,6 +24,7 @@ object ExtraApps {
         listOf(
             ExtraApp("calculator", "Calc Plus", "Exact arithmetic, scientific functions and unit conversion", ROOT + "calculator.MainActivity", AppGlyph.CALCULATOR, ExtraGroup.Tools),
             ExtraApp("notes", "Notes", "Notes and checklists kept on the phone; share text into a new note", ROOT + "notes.MainActivity", AppGlyph.NOTES, ExtraGroup.Tools),
+            ExtraApp("profiles", "Sound Profiles", "BlackBerry sound profiles: Normal, Loud, Vibrate only, Phone calls only, All alerts off", ROOT + "profiles.MainActivity", AppGlyph.MEDIA, ExtraGroup.Tools),
             ExtraApp("sudoku", "Sudoku", "Number puzzle", ROOT + "games.SudokuActivity", AppGlyph.SUDOKU, ExtraGroup.Games),
             ExtraApp("minesweeper", "Minesweeper", "Clear the board without hitting a mine", ROOT + "games.MinesweeperActivity", AppGlyph.MINESWEEPER, ExtraGroup.Games),
             ExtraApp("game2048", "2048", "Slide and merge the tiles", ROOT + "games.Game2048Activity", AppGlyph.GAME_2048, ExtraGroup.Games),

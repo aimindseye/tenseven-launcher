@@ -1248,7 +1248,11 @@ private fun ActiveFramesPage(
             StatusDialsRow(onOpenSettings = onOpenSettings)
         }
         if (shown(HomeLayout.WEATHER)) {
-            DateHeader(refreshGeneration = refreshGeneration)
+            DateHeader(
+                refreshGeneration = refreshGeneration,
+                unread = snapshot.hubApps.sumOf { it.count },
+                onShowHub = onShowHub,
+            )
         }
         if (shown(HomeLayout.SEARCH_ROW)) {
             Box(Modifier.padding(horizontal = FRAME_PADDING)) { SearchLaunchButton(onClick = onSearch) }
@@ -1313,7 +1317,11 @@ private fun StatusDialsRow(onOpenSettings: () -> Unit) {
  * locale and turns over at midnight; there is no clock here.
  */
 @Composable
-private fun DateHeader(refreshGeneration: Int) {
+private fun DateHeader(
+    refreshGeneration: Int,
+    unread: Int,
+    onShowHub: () -> Unit,
+) {
     val locale = Locale.getDefault()
     val today by
         produceState(initialValue = LocalDate.now(), refreshGeneration) {
@@ -1328,13 +1336,10 @@ private fun DateHeader(refreshGeneration: Int) {
             val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, HomeHeader.DATE_SKELETON)
             today.format(DateTimeFormatter.ofPattern(pattern, locale))
         }
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = FRAME_PADDING)
-                .semantics { contentDescription = dateText }
-                .padding(vertical = 2.dp),
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = FRAME_PADDING).padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
             text = dateText,
@@ -1342,7 +1347,23 @@ private fun DateHeader(refreshGeneration: Int) {
             color = Bb10Text,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).semantics { contentDescription = dateText },
         )
+        // Notifications: the unread count opens the Hub. Beside it, the sound profile.
+        Text(
+            text = if (unread > 0) "\uD83D\uDD14 $unread" else "\uD83D\uDD14",
+            style = MaterialTheme.typography.titleMedium,
+            color = Bb10Text,
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (unread > 0) Bb10Blue else Bb10Card)
+                    .sableFocusRing()
+                    .clickable(onClick = onShowHub)
+                    .semantics { contentDescription = "Notifications $unread" }
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+        SoundProfileButton()
     }
 }
 
