@@ -5413,8 +5413,6 @@ private fun findLiveApp(
 ): AppEntry? =
     apps.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
         ?: when (packageName) {
-            WEATHER_PACKAGE ->
-                apps.firstOrNull { it.label.equals(WEATHER_LABEL, ignoreCase = true) }
             MAIL_PACKAGE ->
                 apps.firstOrNull { it.label.equals(MAIL_LABEL, ignoreCase = true) }
             else -> null
@@ -5589,7 +5587,6 @@ private fun liveDatumForApp(
         CALENDAR_PACKAGE -> snapshot.calendar
         HUB_PACKAGE, MESSAGES_PACKAGE -> snapshot.messages
         MAIL_PACKAGE -> snapshot.mail
-        WEATHER_PACKAGE -> snapshot.weather
         MEDIA_PACKAGE -> snapshot.music
         CoreAppIdentity.PHOTOS -> snapshot.photos
         else -> null
@@ -5641,12 +5638,10 @@ private val HUB_BAR_ITEM_HEIGHT = 32.dp
 private const val HUB_JUMP_BLOCKING_META = 0x02 or 0x04 or 0x08 or 0x1000 or 0x10000
 private const val MAIL_PACKAGE = "org.sableos.mail"
 private const val CALENDAR_PACKAGE = "org.sableos.calendar"
-private const val WEATHER_PACKAGE = "org.sableos.weather"
 private const val MEDIA_PACKAGE = "org.sableos.media"
 private const val DIALER_PACKAGE = "com.android.dialer"
 private const val GALLERY_PACKAGE = "com.android.gallery3d"
 private const val HUB_LABEL = "Hub"
-private const val WEATHER_LABEL = "Sable Weather"
 private const val MAIL_LABEL = "Sable Mail"
 private const val MESSAGES_LABEL = "Sable Messages"
 private const val CONTACTS_PACKAGE = "com.android.contacts"

@@ -77,7 +77,6 @@
         </intent>
         <!-- Optional Sable companions: when installed, their live tiles and Hub data appear on Home. -->
         <provider android:authorities="org.sableos.appearance" />
-        <provider android:authorities="org.sableos.weather.snapshot" />
         <provider android:authorities="org.sableos.calendar.snapshot" />
         <provider android:authorities="org.sableos.hub.snapshot" />
         <provider android:authorities="org.sableos.hub.connected_apps" />

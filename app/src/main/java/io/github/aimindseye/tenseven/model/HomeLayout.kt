@@ -156,7 +156,7 @@ object GlanceWidgets {
 
 /**
  * The weather and date block at the top of Active Frames, in place of a
- * clock. Sable Weather's snapshot line is "Place · 72° · Condition".
+ * clock. A weather snapshot line is "Place · 72° · Condition".
  */
 object HomeHeader {
     /** Skeleton for the date line under the weather ("Wednesday, October 21" in English). */

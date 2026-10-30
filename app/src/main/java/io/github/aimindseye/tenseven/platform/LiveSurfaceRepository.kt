@@ -393,8 +393,6 @@ class LiveSurfaceRepository(
     }
 
     companion object {
-        val WEATHER_URI: Uri =
-            Uri.parse("content://org.sableos.weather.snapshot/current")
         val CALENDAR_URI: Uri =
             Uri.parse("content://org.sableos.calendar.snapshot/current")
         val MESSAGES_URI: Uri =
@@ -414,7 +412,6 @@ class LiveSurfaceRepository(
 
         val OBSERVED_URIS: List<Uri> =
             listOf(
-                WEATHER_URI,
                 CALENDAR_URI,
                 MESSAGES_URI,
                 MAIL_URI,
