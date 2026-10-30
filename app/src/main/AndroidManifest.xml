@@ -130,6 +130,149 @@
                 android:resource="@xml/lock_accessibility_service" />
         </service>
 
+        <!-- Extra apps ported from SableOS: Calculator (with a unit converter), Notes and ten games. Every one
+             ships switched off; Setup turns on the ones the user picks (platform/ExtraAppsControl). No permissions. -->
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.calculator.MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Calculator"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.notes.MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Notes"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Text shared from another app becomes a new note. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.SudokuActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Sudoku"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.MinesweeperActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Minesweeper"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.Game2048Activity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="2048"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.BricksActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Bricks"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.SnakeActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Snake"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.BlocksActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Blocks"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.ReversiActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Reversi"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.SolitaireActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Solitaire"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.MahjongActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Mahjong"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.games.WordsActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Words"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Backup and restore of launcher settings through the system file picker. -->
         <activity
             android:name=".BackupActivity"
