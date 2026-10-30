@@ -1,0 +1,330 @@
+package com.katoaapps.openminilaunch.features.backup
+
+import com.katoaapps.openminilaunch.model.IconAppearance
+import com.katoaapps.openminilaunch.model.IconSource
+import com.katoaapps.openminilaunch.model.FontAppearance
+import com.katoaapps.openminilaunch.model.FontSource
+import com.katoaapps.openminilaunch.model.normalizeFontSizeScale
+import com.katoaapps.openminilaunch.model.MAX_SOCIAL_GOAL_HOURS
+import com.katoaapps.openminilaunch.model.MIN_SOCIAL_GOAL_HOURS
+import com.katoaapps.openminilaunch.model.MinkAppPauseMode
+import com.katoaapps.openminilaunch.model.normalizeHomePanelTransparency
+import com.katoaapps.openminilaunch.model.PinShortcutRequestPresentation
+import com.katoaapps.openminilaunch.model.PalettePreference
+import com.katoaapps.openminilaunch.model.Shortcut
+import com.katoaapps.openminilaunch.model.configurableShortcuts
+import com.katoaapps.openminilaunch.model.shortcutFromStoredName
+import com.katoaapps.openminilaunch.model.ThemePreference
+import com.katoaapps.openminilaunch.features.minkspace.todo.TodoItem
+import com.katoaapps.openminilaunch.features.minkspace.MinkSpaceMiniApp
+import org.json.JSONArray
+import org.json.JSONObject
+
+internal object LauncherBackupCodec {
+    private const val MAX_TARGETS = 1_000
+    private const val MAX_TODOS = 5_000
+    private const val MAX_TARGET_LENGTH = 2_048
+    private const val MAX_TODO_TEXT_LENGTH = 20_000
+
+    fun encode(backup: LauncherBackup): String = JSONObject().apply {
+        put("format", LAUNCHER_BACKUP_FORMAT)
+        put("schemaVersion", LAUNCHER_BACKUP_SCHEMA_VERSION)
+        put("sourceAppVersion", backup.sourceAppVersion)
+        put("exportedAtMillis", backup.exportedAtMillis)
+        put("launcher", encodeLauncher(backup.launcher))
+        put("settings", encodeSettings(backup.settings))
+        put("todos", JSONArray().apply {
+            backup.todos.forEach { todo ->
+                put(JSONObject().apply {
+                    put("id", todo.id)
+                    put("text", todo.text)
+                    put("completed", todo.completed)
+                })
+            }
+        })
+        backup.profile?.let { put("profile", ProfileBackupCodec.encode(it, backup.profileLinks)) }
+        put("notIncluded", PORTABILITY_EXCLUSIONS.stringsJsonArray())
+    }.toString(2)
+
+    fun decode(json: String): LauncherBackup {
+        val root = JSONObject(json)
+        require(root.optString("format") == LAUNCHER_BACKUP_FORMAT) { "Not an OpenMink backup" }
+        require(root.optInt("schemaVersion", -1) in 1..LAUNCHER_BACKUP_MAX_READABLE_SCHEMA_VERSION) {
+            "Unsupported OpenMink backup version"
+        }
+        val profile = root.optJSONObject("profile")?.let(ProfileBackupCodec::decode)
+
+        return LauncherBackup(
+            sourceAppVersion = root.optString("sourceAppVersion").safeText(80),
+            exportedAtMillis = root.optLong("exportedAtMillis", 0L),
+            launcher = decodeLauncher(root.getJSONObject("launcher")),
+            settings = decodeSettings(root.getJSONObject("settings")),
+            todos = decodeTodos(root.optJSONArray("todos") ?: JSONArray()),
+            profile = profile?.first,
+            profileLinks = profile?.second.orEmpty(),
+        )
+    }
+
+    private fun encodeLauncher(layout: LauncherBackupLayout) = JSONObject().apply {
+        put("shortcutTargets", JSONObject().apply {
+            layout.shortcutTargets.forEach { (shortcut, target) -> put(shortcut.name, target) }
+        })
+        put("shortcutOrder", layout.shortcutOrder.namesJsonArray())
+        put("confirmedShortcutChoices", layout.confirmedShortcutChoices.namesJsonArray())
+        put("drawerTargets", layout.drawerTargets.stringsJsonArray())
+        put("libraryShortcutTargets", layout.libraryShortcutTargets.stringsJsonArray())
+    }
+
+    private fun decodeLauncher(json: JSONObject): LauncherBackupLayout {
+        val targetJson = json.optJSONObject("shortcutTargets") ?: JSONObject()
+        val shortcutTargets = buildMap {
+            Shortcut.entries.forEach { shortcut ->
+                targetJson.optString(shortcut.name).safeTarget()?.let { put(shortcut, it) }
+            }
+        }
+        val savedOrder = json.optJSONArray("shortcutOrder").shortcutValues()
+        val shortcutOrder = (savedOrder + Shortcut.entries).distinct()
+
+        return LauncherBackupLayout(
+            shortcutTargets = shortcutTargets,
+            shortcutOrder = shortcutOrder,
+            confirmedShortcutChoices = json.optJSONArray("confirmedShortcutChoices")
+                .shortcutValues()
+                .filter { it in configurableShortcuts }
+                .distinct(),
+            drawerTargets = json.optJSONArray("drawerTargets").safeTargets(),
+            libraryShortcutTargets = json.optJSONArray("libraryShortcutTargets").safeTargets(),
+        )
+    }
+
+    private fun encodeSettings(settings: LauncherBackupSettings) = JSONObject().apply {
+        put("appearance", JSONObject().apply {
+            put("theme", settings.themePreference.name)
+            put("palette", settings.palettePreference.name)
+            put("hideStatusBar", settings.hideStatusBar)
+            put("alignHomePanelBottom", settings.alignHomePanelBottom)
+            settings.twoPanelModeForLargeDisplays?.let { put("twoPanelModeForLargeDisplays", it) }
+            put("showClock", settings.showClock)
+            put("showDate", settings.showDate)
+            put("showBatteryPercentage", settings.showBatteryPercentage)
+            put("use24HourClock", settings.use24HourClock)
+            put("homePanelColorArgb", settings.homePanelColorArgb)
+            put("watermelonModeEnabled", settings.watermelonModeEnabled)
+            put("homePanelTransparency", settings.homePanelTransparency)
+            putNullable("appBackgroundColorArgb", settings.appBackgroundColorArgb)
+            putNullable("appBackgroundPresetId", settings.appBackgroundPresetId)
+            put("iconSource", settings.iconAppearance.source.name)
+            putNullable("iconPackPackage", settings.iconAppearance.iconPackPackage)
+            putNullable("minkIconColorArgb", settings.iconAppearance.minkIconColorArgb)
+            put("fontSource", settings.fontAppearance.source.name)
+            put("fontSizeScale", settings.fontAppearance.sizeScale.toDouble())
+            putNullable("fontColorArgb", settings.fontAppearance.colorArgb)
+            putNullable("customFontName", settings.fontAppearance.customFontName)
+        })
+        put("magicBox", JSONObject().apply {
+            put("openSoftwareKeyboardOnHome", settings.openSoftwareKeyboardOnHome)
+            put("includeAppShortcutsInDiscovery", settings.includeAppShortcutsInDiscovery)
+            put("automaticAppBubbleTargets", settings.automaticAppBubbleTargets.stringsJsonArray())
+            putNullable("preferredAiPackage", settings.preferredAiPackage)
+            putNullable("preferredWebPackage", settings.preferredWebPackage)
+        })
+        settings.minkSpaceMiniAppOrder?.let { order ->
+            put("minkSpace", JSONObject().apply {
+                put("order", order.map(MinkSpaceMiniApp::stableId).stringsJsonArray())
+                put(
+                    "enabled",
+                    settings.enabledMinkSpaceMiniApps
+                        .orEmpty()
+                        .map(MinkSpaceMiniApp::stableId)
+                        .stringsJsonArray(),
+                )
+            })
+        }
+        put("messaging", JSONObject().apply {
+            put("sendMessagesAutomatically", settings.sendMessagesAutomatically)
+            putNullable("preferredMessagingPackage", settings.preferredMessagingPackage)
+        })
+        put("minkDay", JSONObject().apply {
+            put("usesAutomaticSocialApps", settings.usesAutomaticSocialApps)
+            put("socialPackages", settings.socialPackages.stringsJsonArray())
+            put("socialGoalHours", settings.socialGoalHours)
+            put("pauseMode", settings.minkAppPauseMode.name)
+        })
+        put("githubUpdateChecksEnabled", settings.githubUpdateChecksEnabled)
+        put("pinShortcutRequestPresentation", settings.pinShortcutRequestPresentation.name)
+        settings.minkPadPreferences?.let { put("minkPad", MinkPadBackupCodec.encode(it)) }
+    }
+
+    private fun decodeSettings(json: JSONObject): LauncherBackupSettings {
+        val appearance = json.getJSONObject("appearance")
+        val magicBox = json.getJSONObject("magicBox")
+        val messaging = json.getJSONObject("messaging")
+        val minkDay = json.getJSONObject("minkDay")
+        val minkSpace = json.optJSONObject("minkSpace")
+        val minkSpaceOrder = minkSpace?.optJSONArray("order")?.minkSpaceMiniApps()
+        val enabledMinkSpaceMiniApps = minkSpace?.optJSONArray("enabled")
+            ?.minkSpaceMiniApps()
+            ?.toSet()
+            ?.let { enabled ->
+                if (minkSpaceOrder != null && MinkSpaceMiniApp.VCARD !in minkSpaceOrder) {
+                    enabled + MinkSpaceMiniApp.VCARD
+                } else {
+                    enabled
+                }
+            }
+
+        return LauncherBackupSettings(
+            themePreference = appearance.enumValue("theme", ThemePreference.SYSTEM),
+            palettePreference = appearance.enumValue("palette", PalettePreference.MINK),
+            hideStatusBar = appearance.optBoolean("hideStatusBar", true),
+            alignHomePanelBottom = appearance.optBoolean("alignHomePanelBottom", false),
+            twoPanelModeForLargeDisplays = if (appearance.has("twoPanelModeForLargeDisplays")) {
+                appearance.getBoolean("twoPanelModeForLargeDisplays")
+            } else null,
+            showClock = appearance.optBoolean("showClock", false),
+            showDate = appearance.optBoolean("showDate", true),
+            showBatteryPercentage = appearance.optBoolean("showBatteryPercentage", false),
+            use24HourClock = appearance.optBoolean("use24HourClock", false),
+            homePanelColorArgb = appearance.optInt("homePanelColorArgb"),
+            watermelonModeEnabled = appearance.optBoolean("watermelonModeEnabled", false),
+            homePanelTransparency = normalizeHomePanelTransparency(
+                appearance.optDouble("homePanelTransparency", 0.0).toFloat(),
+            ),
+            appBackgroundColorArgb = appearance.optNullableInt("appBackgroundColorArgb"),
+            appBackgroundPresetId = appearance.optNullableString("appBackgroundPresetId")
+                ?.safeText(80),
+            iconAppearance = IconAppearance(
+                source = appearance.enumValue("iconSource", IconSource.MINK),
+                iconPackPackage = appearance.optNullableString("iconPackPackage")?.safePackage(),
+                minkIconColorArgb = appearance.optNullableInt("minkIconColorArgb"),
+            ),
+            fontAppearance = FontAppearance(
+                source = appearance.enumValue("fontSource", FontSource.DEFAULT),
+                sizeScale = normalizeFontSizeScale(
+                    appearance.optDouble("fontSizeScale", 1.0).toFloat(),
+                ),
+                colorArgb = appearance.optNullableInt("fontColorArgb"),
+                customFontName = appearance.optNullableString("customFontName")?.safeText(120),
+            ),
+            openSoftwareKeyboardOnHome = magicBox.optBoolean("openSoftwareKeyboardOnHome", true),
+            includeAppShortcutsInDiscovery = magicBox.optBoolean("includeAppShortcutsInDiscovery", false),
+            automaticAppBubbleTargets = magicBox.optJSONArray("automaticAppBubbleTargets").safeTargets(),
+            minkSpaceMiniAppOrder = minkSpaceOrder,
+            enabledMinkSpaceMiniApps = enabledMinkSpaceMiniApps,
+            sendMessagesAutomatically = messaging.optBoolean("sendMessagesAutomatically", false),
+            preferredMessagingPackage = messaging.optNullableString("preferredMessagingPackage")?.safePackage(),
+            preferredAiPackage = magicBox.optNullableString("preferredAiPackage")?.safePackage(),
+            preferredWebPackage = magicBox.optNullableString("preferredWebPackage")?.safePackage(),
+            usesAutomaticSocialApps = minkDay.optBoolean("usesAutomaticSocialApps", true),
+            socialPackages = minkDay.optJSONArray("socialPackages").safePackages(),
+            socialGoalHours = minkDay.optInt("socialGoalHours", 1)
+                .coerceIn(MIN_SOCIAL_GOAL_HOURS, MAX_SOCIAL_GOAL_HOURS),
+            minkAppPauseMode = minkDay.enumValue("pauseMode", MinkAppPauseMode.NEVER),
+            githubUpdateChecksEnabled = json.optBoolean("githubUpdateChecksEnabled", true),
+            pinShortcutRequestPresentation = json.enumValue(
+                "pinShortcutRequestPresentation",
+                PinShortcutRequestPresentation.FULL_PAGE,
+            ),
+            minkPadPreferences = json.optJSONObject("minkPad")?.let(MinkPadBackupCodec::decode),
+        )
+    }
+
+    private fun decodeTodos(array: JSONArray): List<TodoItem> = buildList {
+        repeat(minOf(array.length(), MAX_TODOS)) { index ->
+            val item = array.optJSONObject(index) ?: return@repeat
+            val text = item.optString("text").safeText(MAX_TODO_TEXT_LENGTH)
+            if (text.isNotBlank()) {
+                add(
+                    TodoItem(
+                        id = item.optString("id").safeText(128),
+                        text = text,
+                        completed = item.optBoolean("completed", false),
+                    ),
+                )
+            }
+        }
+    }
+
+    private inline fun <reified T : Enum<T>> JSONArray?.enumValues(): List<T> = buildList {
+        val source = this@enumValues ?: return@buildList
+        repeat(minOf(source.length(), MAX_ENUM_VALUES)) { index ->
+            runCatching { enumValueOf<T>(source.optString(index)) }.getOrNull()?.let(::add)
+        }
+    }
+
+    private fun JSONArray?.shortcutValues(): List<Shortcut> = buildList {
+        val source = this@shortcutValues ?: return@buildList
+        repeat(minOf(source.length(), MAX_ENUM_VALUES)) { index ->
+            val value = shortcutFromStoredName(source.optString(index))
+            value?.let { if (it !in this) add(it) }
+        }
+    }
+
+    private inline fun <reified T : Enum<T>> JSONObject.enumValue(key: String, fallback: T): T =
+        runCatching { enumValueOf<T>(optString(key)) }.getOrDefault(fallback)
+
+    private fun JSONArray?.safeTargets(): List<String> = safeStrings(MAX_TARGET_LENGTH)
+
+    private fun JSONArray?.minkSpaceMiniApps(): List<MinkSpaceMiniApp> = buildList {
+        val source = this@minkSpaceMiniApps ?: return@buildList
+        repeat(minOf(source.length(), MAX_ENUM_VALUES)) { index ->
+            MinkSpaceMiniApp.fromStableId(source.optString(index))?.let { miniApp ->
+                if (miniApp.readyForHome && miniApp !in this) add(miniApp)
+            }
+        }
+    }
+
+    private fun JSONArray?.safePackages(): List<String> = safeStrings(255)
+
+    private fun JSONArray?.safeStrings(maxLength: Int): List<String> = buildList {
+        val source = this@safeStrings ?: return@buildList
+        repeat(minOf(source.length(), MAX_TARGETS)) { index ->
+            source.optString(index).safeText(maxLength).takeIf(String::isNotBlank)?.let(::add)
+        }
+    }.distinct()
+
+    private fun String.safeTarget(): String? = safeText(MAX_TARGET_LENGTH).takeIf(String::isNotBlank)
+
+    private fun String.safePackage(): String? = safeText(255).takeIf(String::isNotBlank)
+
+    private fun String.safeText(maxLength: Int): String = trim().take(maxLength)
+
+    private fun JSONObject.putNullable(key: String, value: Any?) {
+        put(key, value ?: JSONObject.NULL)
+    }
+
+    private fun JSONObject.optNullableString(key: String): String? =
+        if (isNull(key)) null else optString(key).takeIf(String::isNotBlank)
+
+    private fun JSONObject.optNullableInt(key: String): Int? =
+        if (isNull(key)) null else optInt(key)
+
+    private fun <T : Enum<T>> List<T>.namesJsonArray() = JSONArray().apply {
+        this@namesJsonArray.forEach { put(it.name) }
+    }
+
+    private fun List<String>.stringsJsonArray() = JSONArray().apply {
+        this@stringsJsonArray.forEach(::put)
+    }
+
+    private val PORTABILITY_EXCLUSIONS = listOf(
+        "androidPermissionsAndSystemRoles",
+        "accessibilityAndNotificationAccess",
+        "widgets",
+        "documentFolderAccess",
+        "wallpaperImage",
+        "recentQueryHistory",
+        "demoData",
+        "profilePhoto",
+        "minkSpaceCalculatorHistory",
+        "minkSpaceMediaSelectionsAndUriGrants",
+        "activeMediaSessions",
+        "workAndPrivateProfileState",
+        "devicePrivateAreaGateway",
+        "activeBubbleNotifications",
+        "updateCacheAndReminders",
+        "minkPadHostsAndSession",
+    )
+
+    private const val MAX_ENUM_VALUES = 100
+}

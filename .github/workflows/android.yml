@@ -1,0 +1,104 @@
+name: Android
+
+# Builds the Tenseven launcher and runs the quality gates SableOS runs for its own apps: unit tests,
+# Android Lint, detekt, ktlint and Kover. detekt, ktlint and Lint only report until the repository
+# variable TENSEVEN_STRICT_QUALITY is set to true (Settings > Secrets and variables > Actions >
+# Variables); compile errors and failing unit tests always fail the job.
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'design/**'
+      - 'config/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.editorconfig'
+      - '.github/workflows/android.yml'
+      - '!**/*.md'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'design/**'
+      - 'config/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.editorconfig'
+      - '.github/workflows/android.yml'
+      - '!**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build, test and check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK 36
+        run: |
+          set -euo pipefail
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          test -n "$sdkmanager"
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+      - name: Build, test and check
+        env:
+          STRICT: ${{ vars.TENSEVEN_STRICT_QUALITY || 'false' }}
+        # --continue reports every failing gate in one run.
+        run: >-
+          ./gradlew --no-daemon --console=plain --continue "-Ptenseven.strictQuality=$STRICT"
+          :design:testDebugUnitTest :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
+          :design:lintDebug :app:lintDebug
+          detekt ktlintCheck
+          :design:koverXmlReportDebug :app:koverXmlReportDebug
+      - name: Kover line coverage (baseline, no threshold)
+        run: |
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          lines = []
+          for module in ("design", "app"):
+              r = ET.parse(f"{module}/build/reports/kover/reportDebug.xml").getroot()
+              c = next(x for x in r.findall("counter") if x.attrib.get("type") == "LINE")
+              cov, mis = int(c.attrib["covered"]), int(c.attrib["missed"])
+              pct = cov * 100.0 / (cov + mis) if cov + mis else 0.0
+              print(f"KOVER_LINE_PERCENT_{module.upper()}={pct:.2f}")
+              lines.append(f"Kover line coverage ({module}): **{pct:.2f}%** ({cov}/{cov + mis}), baseline only")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("\n".join(lines) + "\n")
+          PY
+      - name: Upload APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tenseven-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14

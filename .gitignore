@@ -1,0 +1,21 @@
+# Gradle and Android
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.cxx/
+.externalNativeBuild/
+
+# Signing material and device files must never be committed
+*.jks
+*.keystore
+*.pk8
+*.apk
+*.aab
+*.img
+
+# OS and editors
+.DS_Store
+*.swp

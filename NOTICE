@@ -1,0 +1,25 @@
+Tenseven Launcher
+Copyright 2026 The Tenseven Launcher contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE), except for the
+third-party components listed in THIRD_PARTY_NOTICES.md, which keep their own licences.
+
+This product includes software developed as part of SableOS for the Zinwa Q25
+(https://github.com/aimindseye/zinwaq25-sableos, Apache License 2.0, Copyright 2026 The SableOS
+for Zinwa Q25 contributors): the Sable Start launcher sources under app/ and the Sable design library
+under design/. Files changed for Tenseven are marked in their history; the origin commit is recorded
+in docs/SOURCES.md.
+
+This product includes a reference snapshot of MinkLauncher OpenSource
+(https://github.com/katoaapps/openminilaunch, Apache License 2.0, Copyright 2026 Katoa Apps) under
+third_party/minklauncher/, with that project's own LICENSE and NOTICE. Code ported from it carries an
+attribution header. The MinkLauncher name and branding are not granted for unrestricted trademark use
+and are not used by Tenseven.
+
+BlackBerry is a trademark of its owner. Tenseven is not affiliated with, endorsed by, or sponsored by
+BlackBerry Limited or any of its successors. "BlackBerry 10 style" and "BlackBerry 7 style" are used only
+to describe the layout of two home screens.
+
+Third-party messaging and AI provider names and icons, where bundled (brand-assets/CATALOG.tsv), are
+used only to identify compatible apps and do not imply endorsement, sponsorship, or partnership. The
+marks remain the property of their respective owners. Sources are recorded in docs/BRAND_ASSETS.md.
