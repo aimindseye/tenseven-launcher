@@ -173,8 +173,7 @@ fun Bb7HomeScreen(
         }
     }
     // The Menu key: the highlighted icon's items first, then Start's own (added by the activity).
-    val menuItems = {
-        val app = shown.getOrNull(selected)
+    val menuFor = { app: AppEntry? ->
         buildList<Pair<String, () -> Unit>> {
             if (app != null) {
                 val key = app.stableKey()
@@ -192,6 +191,10 @@ fun Bb7HomeScreen(
             }
             if (!open && !searching && homeRows > Bb7Home.MIN_HOME_ROWS) {
                 add(t("show_fewer_rows") to { onHomeRowsChanged(homeRows - 1) })
+            }
+            if (!open && !searching && panel == Bb7Panel.Favorites) {
+                // Add icons to the home screen: pick them in All (Menu or long-press an icon, Add to Favorites).
+                add(context.getString(R.string.bb7_add_apps) to openApps)
             }
             if (!searching) {
                 // Panels: show or hide each one (the last one stays); the banner and tray can be more see-through.
@@ -263,6 +266,8 @@ fun Bb7HomeScreen(
                                     } else {
                                         selected = Bb7Home.move(selected, visible, columns, 0, 1)
                                     }
+                                native.keyCode == KeyEvent.KEYCODE_ENTER && native.isAltPressed ->
+                                    onOpenMenu(menuFor(shown.getOrNull(selected)))
                                 native.keyCode == KeyEvent.KEYCODE_ENTER ||
                                     native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ->
                                     shown.getOrNull(selected)?.let { onLaunchApp(it) }
@@ -283,7 +288,7 @@ fun Bb7HomeScreen(
                                     } else {
                                         return@onPreviewKeyEvent false
                                     }
-                                native.keyCode == KeyEvent.KEYCODE_MENU -> onOpenMenu(menuItems())
+                                native.keyCode == KeyEvent.KEYCODE_MENU -> onOpenMenu(menuFor(shown.getOrNull(selected)))
                                 else -> {
                                     val ch = native.unicodeChar.takeIf { it > 0 }?.toChar()
                                     if (ch == null || !(ch.isLetterOrDigit() || (ch == ' ' && searching))) {
@@ -362,7 +367,15 @@ fun Bb7HomeScreen(
                             selected = 0
                         },
                         onLaunch = { onLaunchApp(it) },
-                        onInfo = onOpenAppInfo,
+                        onMenu = {
+                            // The ⋮ button: the menu for the highlighted icon.
+                            onOpenMenu(menuFor(shown.getOrNull(selected)))
+                        },
+                        onLongPress = { app ->
+                            // Long-press an icon: its menu (Add to Favorites, Move, App info...).
+                            selected = shown.indexOf(app).coerceAtLeast(0)
+                            onOpenMenu(menuFor(app))
+                        },
                     )
                 }
             }
@@ -454,9 +467,10 @@ private fun Bb7Tray(
     modifier: Modifier,
     onResize: (Float) -> Unit,
     onToggle: () -> Unit,
+    onMenu: () -> Unit,
     onStep: (Int) -> Unit,
     onLaunch: (AppEntry) -> Unit,
-    onInfo: (AppEntry) -> Unit,
+    onLongPress: (AppEntry) -> Unit,
 ) {
     val grid = rememberLazyGridState()
     LaunchedEffect(selected, open) {
@@ -496,6 +510,8 @@ private fun Bb7Tray(
                 modifier = Modifier.weight(1f).clickable(onClick = onToggle),
             )
             TrayArrow("›") { onStep(1) }
+            // Android's Titan 2 has no Menu key: this button (or Alt+Enter) opens the same menu.
+            TrayArrow("⋮") { onMenu() }
         }
         if (apps.isEmpty()) {
             Text(
@@ -528,7 +544,7 @@ private fun Bb7Tray(
                                 if (isSelected) outline else Color.Transparent,
                                 RoundedCornerShape(8.dp),
                             )
-                            .combinedClickable(onClick = { onLaunch(app) }, onLongClick = { onInfo(app) })
+                            .combinedClickable(onClick = { onLaunch(app) }, onLongClick = { onLongPress(app) })
                             .padding(vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
