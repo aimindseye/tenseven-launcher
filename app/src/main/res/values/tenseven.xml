@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tenseven's own strings. The imported Sable Start strings stay in strings.xml (StartTextTest keeps those
+     equal to StartText.EN), so this file is where the launcher's name and new Tenseven-only text live. -->
+<resources>
+    <string name="tenseven_app_name" translatable="false">Tenseven</string>
+</resources>
