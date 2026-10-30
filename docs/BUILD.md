@@ -17,6 +17,7 @@ SableOS builds the same sources with.
 
 ```bash
 ./gradlew :app:assembleDebug                         # app/build/outputs/apk/debug/app-debug.apk
+./gradlew :app:assembleRelease                       # R8-minified, unsigned: app/build/outputs/apk/release/
 ./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
 ./gradlew :design:lintDebug :app:lintDebug           # reports in build/reports/lint-results-debug.*
 ./gradlew detekt ktlintCheck                         # reports in build/reports/detekt, build/reports/ktlint

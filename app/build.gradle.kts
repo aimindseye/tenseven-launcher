@@ -25,8 +25,10 @@ android {
             versionNameSuffix = "-debug"
         }
         release {
-            // Shrinking is switched on with the first release build (ROADMAP.md, phase 3).
-            isMinifyEnabled = false
+            // R8: shrinks, optimises and obfuscates (renames) the app's code, and removes unused resources.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 

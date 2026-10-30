@@ -66,7 +66,7 @@ jobs:
         # --continue reports every failing gate in one run.
         run: >-
           ./gradlew --no-daemon --console=plain --continue "-Ptenseven.strictQuality=$STRICT"
-          :design:testDebugUnitTest :app:testDebugUnitTest :app:assembleDebug
+          :design:testDebugUnitTest :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
           :design:lintDebug :app:lintDebug
           detekt ktlintCheck
           :design:koverXmlReportDebug :app:koverXmlReportDebug
