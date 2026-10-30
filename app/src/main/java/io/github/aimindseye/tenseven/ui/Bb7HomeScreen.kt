@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -99,6 +100,7 @@ fun Bb7HomeScreen(
     onFavoritesChanged: (List<String>) -> Unit,
     onHomeRowsChanged: (Int) -> Unit,
     onOpenMenu: (List<Pair<String, () -> Unit>>) -> Unit,
+    onDoubleTapEmpty: (() -> Unit)? = null,
 ) {
     var panel by remember { mutableStateOf(Bb7Panel.Favorites) }
     var open by remember { mutableStateOf(false) }
@@ -283,6 +285,11 @@ fun Bb7HomeScreen(
                                     }
                                 },
                             ) { _, amount -> dragged += amount }
+                        }.pointerInput(onDoubleTapEmpty, open) {
+                            // Only empty space: taps on icons and rows are consumed by them first.
+                            if (onDoubleTapEmpty != null && !open) {
+                                detectTapGestures(onDoubleTap = { onDoubleTapEmpty() })
+                            }
                         },
                 ) {
                     Bb7Banner(

@@ -45,6 +45,7 @@ import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.RecentTasksRepository
 import io.github.aimindseye.tenseven.platform.SpeedDialRepository
+import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.ui.Bb7HomeScreen
 import io.github.aimindseye.tenseven.ui.SableStartScreen
@@ -77,6 +78,8 @@ class SableStartActivity : ComponentActivity() {
 
     /** null: no private space; true: locked; false: unlocked. */
     private val privateSpaceLockedState = mutableStateOf<Boolean?>(null)
+    private val workPausedState = mutableStateOf<Boolean?>(null)
+    private val doubleTapLockState = mutableStateOf(false)
     private val liveRefreshGeneration = mutableStateOf(0)
     private val homeGeneration = mutableStateOf(0)
     private val backGeneration = mutableStateOf(0)
@@ -295,6 +298,7 @@ class SableStartActivity : ComponentActivity() {
                         startStateRepository.saveBb7HomeRows(rows)
                     },
                     onOpenMenu = ::showBb7Menu,
+                    onDoubleTapEmpty = doubleTapLockCallback(),
                 )
                 return@setContent
             }
@@ -307,6 +311,9 @@ class SableStartActivity : ComponentActivity() {
                     letterShortcuts = letterShortcutRepository,
                     privateSpaceLocked = privateSpaceLockedState.value,
                     onTogglePrivateSpace = ::togglePrivateSpace,
+                    workProfilePaused = workPausedState.value,
+                    onDoubleTapEmpty = doubleTapLockCallback(),
+                    onToggleWorkProfile = ::toggleWorkProfile,
                     liveSurfaceRepository = liveSurfaceRepository,
                     appearance = appearance,
                     refreshGeneration = liveRefreshGeneration.value,
@@ -391,6 +398,7 @@ class SableStartActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        doubleTapLockState.value = startStateRepository.loadDoubleTapLock()
         val style = startStateRepository.loadHomeStyle()
         if (style != homeStyle.value) {
             homeStyle.value = style
@@ -481,6 +489,7 @@ class SableStartActivity : ComponentActivity() {
                 val apps = launcherAppsRepository.loadApps()
                 val privateSpaceLocked =
                     launcherAppsRepository.privateSpace()?.let(launcherAppsRepository::isLocked)
+                val workPaused = launcherAppsRepository.workProfilesPaused()
                 runOnUiThread {
                     if (
                         !isDestroyed &&
@@ -488,6 +497,7 @@ class SableStartActivity : ComponentActivity() {
                     ) {
                         appsState.value = apps
                         privateSpaceLockedState.value = privateSpaceLocked
+                        workPausedState.value = workPaused
                     }
                 }
             }
@@ -586,6 +596,23 @@ class SableStartActivity : ComponentActivity() {
         }
     }
 
+    /** The lock action for a double tap on empty Home space; null while the setting or the service is off. */
+    private fun doubleTapLockCallback(): (() -> Unit)? =
+        if (doubleTapLockState.value) {
+            { LockScreenAccessibilityService.lockScreen() }
+        } else {
+            null
+        }
+
+    /** Pause or resume work apps; the profile broadcasts refresh All Apps. */
+    private fun toggleWorkProfile() {
+        val paused = workPausedState.value ?: return
+        inventoryExecutor.execute {
+            launcherAppsRepository.setWorkProfilesPaused(!paused)
+            runOnUiThread { scheduleInventoryRefresh() }
+        }
+    }
+
     /** The BlackBerry 7 home draws on the wallpaper; the BlackBerry 10 screen paints its own. */
     private fun showWallpaper(show: Boolean) {
         if (show) {
@@ -614,6 +641,9 @@ class SableStartActivity : ComponentActivity() {
                 },
                 getString(R.string.setup_menu) to {
                     runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
+                },
+                getString(R.string.backup_menu) to {
+                    runCatching { startActivity(Intent(this, BackupActivity::class.java)) }
                 },
                 t("settings") to ::openSystemSettings,
                 t("close") to {},

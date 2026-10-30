@@ -71,6 +71,7 @@ Launcher state is in app-private storage. Recent activity is kept in memory only
 | `REQUEST_DELETE_PACKAGES` | Hand uninstall to the system uninstaller, which confirms | yes |
 | Usage access (a special access you grant in Settings) | Active Frames shows a row of recently used apps (names and times only; not stored or sent) | yes; off until you turn it on |
 | Notification access (a special access you grant in Settings, not a manifest permission) | Counts unread messages and email per app for the Hub bar, grouped per person; read on the phone, held in memory only, never stored or sent | yes; off until you turn it on |
+| Accessibility service "Tenseven double-tap to lock" (a special access you grant in Settings) | Double-tap empty Home space to lock the screen. It can only perform the lock action: it reads no screen content and receives no events | yes; off until you turn it on in Accessibility settings and in Appearance |
 | `ACCESS_HIDDEN_PROFILES` | Show the Private Space; Android grants it to the default Home app only | yes |
 
 No signature permissions: an ordinary install cannot hold them, and CI fails if the manifest asks for one

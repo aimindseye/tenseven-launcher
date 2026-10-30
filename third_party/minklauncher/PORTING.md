@@ -30,3 +30,17 @@ widen the permission list a great deal. The messaging and AI provider *icons* fo
 
 1 (Hub), 4 (onboarding), 2 (Active Frames fallback) first: they close the biggest gaps between the
 SableOS build and an ordinary install. Then 8, 6, 7, 3, 5.
+
+## Status
+
+| # | Status | Where it landed |
+|---|---|---|
+| 1 | Ported | `conversations/` |
+| 2 | Ported (usage-events fallback only) | `platform/UsageRecentsRepository`, `model/RecentApps` |
+| 3 | Partly ported | Work-profile pause and resume (`LauncherAppsRepository.workProfiles`, a Command row). Tenseven's own `LauncherAppsRepository` already handles Private Space lock and unlock, so Mink's change monitor and OEM "private area" gateway were not taken |
+| 4 | Done as Tenseven code | `onboarding/`, `OnboardingActivity` |
+| 5 | Ported | `platform/LockScreenAccessibilityService`, `res/xml/lock_accessibility_service.xml`, switch in Appearance (off by default) |
+| 6 | Ported | `iconpacks/`, picker in Appearance, applied in the launcher icon loader |
+| 7 | Done as Tenseven code following Mink's idea | `model/LauncherBackup` (versioned JSON, allow-listed keys, own small JSON reader so it is unit tested), `BackupActivity` (system file picker, no storage permission) |
+| 8 | Partly ported | `model/QuickActions`: `-` to-do, `/` note, `+` event and web-address routing. Tenseven's `CommandQuery` keeps its own `?`, `@`, `#`, `!` and scope words; Mink's `*` AI prefix and hardware-key helpers were not taken |
+

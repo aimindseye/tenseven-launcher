@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Derived from MinkLauncher OpenSource (katoaapps/openminilaunch, b9b26f7), Copyright 2026 Katoa Apps, Apache License 2.0.
+     No events, no window content, no gestures: the service can only perform the lock-screen action. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:canPerformGestures="false"
+    android:description="@string/lock_accessibility_description"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="0" />

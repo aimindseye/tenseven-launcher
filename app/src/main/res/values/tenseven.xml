@@ -56,4 +56,51 @@
     <!-- Recent apps strip -->
     <string name="recents_label">Recent apps</string>
     <string name="recents_allow">Allow usage access to show recent apps</string>
+
+    <!-- Command quick actions -->
+    <string name="quick_group">quick actions</string>
+    <string name="quick_source">Command</string>
+    <string name="quick_todo">To-do: %1$s</string>
+    <string name="quick_note">Note: %1$s</string>
+    <string name="quick_event">Event: %1$s</string>
+    <string name="quick_send_to_app">Send to</string>
+    <string name="quick_hint">Hands the text to the app you choose; Tenseven keeps nothing</string>
+    <string name="quick_open_url">Open %1$s</string>
+    <string name="quick_hint_url">Opens in your browser</string>
+
+    <!-- Icon packs -->
+    <string name="icon_pack_label">icon pack</string>
+    <string name="icon_pack_default">App icons (default)</string>
+    <string name="icon_pack_none">No Nova or ADW icon packs are installed. Install one and it will be listed here.</string>
+
+    <!-- Backup and restore -->
+    <string name="backup_menu">Backup and restore</string>
+    <string name="backup_command_hint">Save or restore your launcher settings as a file</string>
+    <string name="backup_title">Backup and restore</string>
+    <string name="backup_body">Saves your home layout, quick bar, favorites, icon pack and home style to a file you choose. It holds no messages, contacts or call history, and Tenseven sends it nowhere.</string>
+    <string name="backup_file_name">tenseven-backup.json</string>
+    <string name="backup_export">Save a backup file</string>
+    <string name="backup_import">Restore from a backup file</string>
+    <string name="backup_confirm">This backup holds %1$d settings. Restoring replaces your current layout and settings, then restarts the launcher.</string>
+    <string name="backup_restore_now">Restore and restart</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_done">Done</string>
+    <string name="backup_exported">Backup saved.</string>
+    <string name="backup_export_failed">Could not save the backup.</string>
+    <string name="backup_invalid">That is not a Tenseven backup, or it is from a newer version. Nothing was changed.</string>
+    <string name="backup_restored">Restored. Restarting\u2026</string>
+
+    <!-- Work profile -->
+    <string name="work_pause">Pause work apps</string>
+    <string name="work_resume">Resume work apps</string>
+    <string name="work_hint">Turns your work profile off or on; resuming may ask for your lock</string>
+    <string name="work_source">Work profile</string>
+
+    <!-- Double-tap to lock -->
+    <string name="lock_label">double-tap to lock</string>
+    <string name="lock_on">On: double-tap empty Home space to lock</string>
+    <string name="lock_off">Off</string>
+    <string name="lock_explain">Uses an Android accessibility service that can do one thing, lock the screen. It reads nothing on screen. Turn it on for Tenseven in Accessibility settings.</string>
+    <string name="lock_service_label">Tenseven double-tap to lock</string>
+    <string name="lock_accessibility_description">Lets Tenseven lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
 </resources>

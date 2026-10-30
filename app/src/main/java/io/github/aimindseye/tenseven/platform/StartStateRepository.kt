@@ -2,7 +2,9 @@ package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
 import io.github.aimindseye.tenseven.model.Bb7Home
+import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.model.LauncherBackup
 
 /**
  * Stores launcher-only presentation state.
@@ -169,6 +171,41 @@ class StartStateRepository(
         preferences.edit().putBoolean(KEY_ONBOARDING_DONE, true).apply()
     }
 
+    /** Double-tap on empty Home space locks the screen (needs the accessibility service); off until chosen. */
+    fun loadDoubleTapLock(): Boolean = preferences.getBoolean(KEY_DOUBLE_TAP_LOCK, false)
+
+    fun saveDoubleTapLock(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_DOUBLE_TAP_LOCK, enabled).apply()
+    }
+
+    /** Package name of the chosen icon pack, or null for each app's own icon. */
+    fun loadIconPack(): String? = preferences.getString(KEY_ICON_PACK, null)?.takeIf { it.isNotBlank() }
+
+    fun saveIconPack(packageName: String?) {
+        preferences.edit().apply {
+            if (packageName.isNullOrBlank()) remove(KEY_ICON_PACK) else putString(KEY_ICON_PACK, packageName)
+        }.apply()
+    }
+
+    /** The settings a backup carries (see LauncherBackup); nothing else in preferences is read. */
+    fun exportSettings(): Map<String, BackupValue> = LauncherBackup.select(preferences.all)
+
+    /** Replaces every backed-up setting with [settings]: keys the file lacks go back to their defaults. */
+    fun restoreSettings(settings: Map<String, BackupValue>) {
+        preferences.edit().apply {
+            LauncherBackup.keys.forEach { remove(it) }
+            settings.forEach { (key, value) ->
+                if (key in LauncherBackup.keys) {
+                    when (value) {
+                        is BackupValue.Text -> putString(key, value.value)
+                        is BackupValue.Number -> putInt(key, value.value)
+                        is BackupValue.Items -> putStringSet(key, value.values)
+                    }
+                }
+            }
+        }.apply()
+    }
+
     private fun loadOrdered(key: String): List<String>? =
         preferences
             .getString(key, null)
@@ -206,6 +243,8 @@ class StartStateRepository(
         const val KEY_HOME_MODE = "home_mode"
         const val KEY_HOME_STYLE = "home_style"
         const val KEY_ONBOARDING_DONE = "onboarding_done"
+        const val KEY_ICON_PACK = "icon_pack"
+        const val KEY_DOUBLE_TAP_LOCK = "double_tap_lock"
         const val KEY_GRID_ORDER = "grid_order"
     }
 }
