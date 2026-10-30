@@ -50,7 +50,7 @@ Not committed yet: they need network access to write. On a machine with internet
 
 ```bash
 bash tools/refresh-locks.sh
-git add -A '*gradle.lockfile' gradle/verification-metadata.xml
+git add -A '*gradle.lockfile'
 ```
 
 `build.gradle.kts` turns locking on for each module that has a `gradle.lockfile`, so nothing changes until you
