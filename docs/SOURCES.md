@@ -25,7 +25,22 @@ Everything else under `app/src/main/java/io/github/aimindseye/tenseven` is as it
 | `SableStartActivity.kt` | Uses `PermissionChangeSignal` instead of the system listener |
 | `AndroidManifest.xml` (new, in `app/src/main`) | Derived from SableStart's; drops the signature permissions and adds Tenseven's name and icon |
 | `app/src/test/.../StartTextTest.kt` | Reads strings from `src/main/res` of this repository |
-| `res/values/tenseven.xml`, `res/drawable/ic_tenseven_*`, `res/mipmap-anydpi-v26/ic_tenseven*` | New: Tenseven's name and launcher icon |
+| `res/values/tenseven.xml`, `res/drawable/ic_tenseven_*`, `res/mipmap-anydpi-v26/ic_tenseven*` | New: Tenseven's name and launcher icon, and Tenseven's own strings (Launcher Settings, BlackBerry 7 menu) |
+| `ui/SableStartScreen.kt` | Default-app starting icons, bell and speaker row, type-to-search switch, Launcher Settings entry, return-to-Home callback; weather code removed |
+| `SableStartActivity.kt` | Also: BlackBerry 7 layout hosting and the BlackBerry 10 detour, icon size, widget list, `onPause` detour end |
+| `model/HomeLayout.kt` | Glance widgets: weather removed, alarm added |
+
+### Tenseven's own code (not from an upstream)
+
+`ui/Bb7HomeScreen.kt`, `model/Bb7Home.kt`, `model/LauncherSettings.kt`, `LauncherSettingsActivity.kt`, `platform/DefaultApps.kt`,
+`platform/NextAlarm.kt`, `platform/SoundProfileControl.kt`, `model/RingerProfile.kt`, `ui/SoundProfileButton.kt`, `ui/LineIcon.kt`
+and their tests. The line-icon paths in `LineIcon.kt` are Tabler outlines (MIT).
+
+### Extra apps ported from SableOS (`app/.../extras/`)
+
+Calc Plus, Notes and the ten games come from the SableOS patch set at the pin above. Sound Profiles comes from SableOS patches
+0076, 0077 and 0085 (profile model, applier, screen), rewritten to use Tenseven's package names and a private palette. Provenance
+and licences for these and the Mink ports are also listed in `THIRD_PARTY_NOTICES.md`.
 
 ## Package rename
 
