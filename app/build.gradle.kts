@@ -5,6 +5,11 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+// The APK files are named Tenseven-Launcher-debug.apk and Tenseven-Launcher-release-unsigned.apk.
+base {
+    archivesName.set("Tenseven-Launcher")
+}
+
 android {
     // The R class and BuildConfig package; the Kotlin sources use the same package.
     namespace = "io.github.aimindseye.tenseven"

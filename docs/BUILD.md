@@ -16,8 +16,8 @@ SableOS builds the same sources with.
 ## 2. Build and test
 
 ```bash
-./gradlew :app:assembleDebug                         # app/build/outputs/apk/debug/app-debug.apk
-./gradlew :app:assembleRelease                       # R8-minified, unsigned: app/build/outputs/apk/release/
+./gradlew :app:assembleDebug                         # app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk
+./gradlew :app:assembleRelease                       # R8-minified, unsigned: app/build/outputs/apk/release/Tenseven-Launcher-release-unsigned.apk
 ./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
 ./gradlew :design:lintDebug :app:lintDebug           # reports in build/reports/lint-results-debug.*
 ./gradlew detekt ktlintCheck                         # reports in build/reports/detekt, build/reports/ktlint
@@ -93,5 +93,5 @@ not get `SONAR_TOKEN`, so the SonarCloud job skips them.
 ### What CI cannot do
 
 Run on a phone, test the keyboard, or build a signed release. Those are manual and are tracked in
-`ROADMAP.md`. A debug build goes onto a phone with `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+`ROADMAP.md`. A debug build goes onto a phone with `adb install -r app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk`
 (the Titan 2 shows as one adb device; the app id is `io.github.aimindseye.tenseven.debug`).
