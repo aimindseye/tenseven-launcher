@@ -4,7 +4,7 @@
 
 ```text
 :app      application, io.github.aimindseye.tenseven (Compose UI, activities, repositories, generated Tabler glyphs)
-:design   library, org.sableos.design (theme, tokens, shared components, string tables), used by :app
+:design   library, io.github.aimindseye.tenseven.design (theme, tokens, shared components, string tables), used by :app
 ```
 
 `:app` contains the whole Sable Start source tree, the activities included. SableOS builds the same files as
@@ -14,16 +14,16 @@ anything that needs a system API is isolated behind a small helper (below).
 ### Source layout inside `:app`
 
 Imported from SableOS, directories and packages unchanged until the rename in `ROADMAP.md` phase 1
-(the directory is `com/sable/start` but the packages are `org.sableos.start.*`, as upstream):
+(directory `app/src/main/java/io/github/aimindseye/tenseven`; renamed from upstream `org.sableos.start`):
 
 | Directory | Package | What |
 |---|---|---|
-| `model/` | `org.sableos.start.model` | Pure Kotlin policy, unit tested: home styles and layouts, app glyphs, quick bar, letter shortcuts, speed dial, command queries, Hub bar, text tables |
-| `privacy/` | `org.sableos.start.privacy` | The All Apps privacy row: the evaluator, summary policy and snapshot cache (pure Kotlin) |
-| `platform/` | `org.sableos.start.platform` | Android access: `LauncherAppsRepository`, `RecentTasksRepository`, `StartStateRepository`, `LiveSurfaceRepository`, `PeopleRepository`, `PrivacyFactsReader`, `DeviceStatsSampler`, and Tenseven's `PermissionChangeSignal` and `UserContexts` |
-| `ui/` | `org.sableos.start.ui` | Compose: `SableStartScreen`, `Bb7HomeScreen`, glyphs and status rings |
-| `live/` | `org.sableos.start.live` | Models for the live tiles (weather, calendar, mail, media) |
-| (root) | `org.sableos.start` | `SableStartActivity` (HOME) and `HomeStyleActivity` |
+| `model/` | `io.github.aimindseye.tenseven.model` | Pure Kotlin policy, unit tested: home styles and layouts, app glyphs, quick bar, letter shortcuts, speed dial, command queries, Hub bar, text tables |
+| `privacy/` | `io.github.aimindseye.tenseven.privacy` | The All Apps privacy row: the evaluator, summary policy and snapshot cache (pure Kotlin) |
+| `platform/` | `io.github.aimindseye.tenseven.platform` | Android access: `LauncherAppsRepository`, `RecentTasksRepository`, `StartStateRepository`, `LiveSurfaceRepository`, `PeopleRepository`, `PrivacyFactsReader`, `DeviceStatsSampler`, and Tenseven's `PermissionChangeSignal` and `UserContexts` |
+| `ui/` | `io.github.aimindseye.tenseven.ui` | Compose: `SableStartScreen`, `Bb7HomeScreen`, glyphs and status rings |
+| `live/` | `io.github.aimindseye.tenseven.live` | Models for the live tiles (weather, calendar, mail, media) |
+| (root) | `io.github.aimindseye.tenseven` | `SableStartActivity` (HOME) and `HomeStyleActivity` |
 
 Rule that makes this testable: decisions live in `model/` and `privacy/` with unit tests; `platform/` and
 `ui/` only gather facts and draw. Keep it that way for anything added.

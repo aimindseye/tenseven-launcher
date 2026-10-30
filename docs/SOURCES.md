@@ -12,7 +12,7 @@ the same commit that changes the imported files.
 
 ## Changes made to the imported Sable Start sources
 
-Everything else under `app/src/main/java/com/sable/start` is as it is in SableOS at the pin above.
+Everything else under `app/src/main/java/io/github/aimindseye/tenseven` is as it is in SableOS at the pin above.
 
 | File | Change |
 |---|---|
@@ -26,3 +26,12 @@ Everything else under `app/src/main/java/com/sable/start` is as it is in SableOS
 | `AndroidManifest.xml` (new, in `app/src/main`) | Derived from SableStart's; drops the signature permissions and adds Tenseven's name and icon |
 | `app/src/test/.../StartTextTest.kt` | Reads strings from `src/main/res` of this repository |
 | `res/values/tenseven.xml`, `res/drawable/ic_tenseven_*`, `res/mipmap-anydpi-v26/ic_tenseven*` | New: Tenseven's name and launcher icon |
+
+## Package rename
+
+The sources were renamed from `org.sableos.start`, `com.sable.start` and `org.sableos.design` to
+`io.github.aimindseye.tenseven` and `io.github.aimindseye.tenseven.design` (directories moved with
+`git mv`, so history follows). Strings that name SableOS components are unchanged on purpose: the intent
+actions (`org.sableos.start.action.*`), content provider authorities (`org.sableos.*.snapshot`,
+`org.sableos.appearance`) and package names of the SableOS apps (`org.sableos.messages`, ...), because they
+identify those apps and providers when Tenseven runs on SableOS.

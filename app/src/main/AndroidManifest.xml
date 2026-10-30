@@ -53,7 +53,7 @@
         android:usesCleartextTraffic="false">
 
         <activity
-            android:name="org.sableos.start.SableStartActivity"
+            android:name="io.github.aimindseye.tenseven.SableStartActivity"
             android:clearTaskOnLaunch="true"
             android:excludeFromRecents="true"
             android:exported="true"
@@ -92,7 +92,7 @@
 
         <!-- Home screen style (BlackBerry 10 or BlackBerry 7 layout), opened from setup and Start's menu. -->
         <activity
-            android:name="org.sableos.start.HomeStyleActivity"
+            android:name="io.github.aimindseye.tenseven.HomeStyleActivity"
             android:excludeFromRecents="true"
             android:exported="true"
             android:label="@string/home_screen_style">

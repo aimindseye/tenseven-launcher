@@ -7,7 +7,7 @@ own licences. Licence texts that ship with a component are kept next to it.
 |---|---|---|---|
 | Tabler Icons outline glyphs (38 verbatim SVGs listed with sha256 in `ICON_MANIFEST.tsv`), and the Kotlin table and launcher-icon vectors generated from them (`TablerGlyphPaths.kt`, `ic_tenseven_*.xml`) | `third_party/tabler-icons/` | MIT (`LICENSE` in that folder) | https://github.com/tabler/tabler-icons, npm `@tabler/icons` 3.50.0 |
 | MinkLauncher OpenSource, reference snapshot (not compiled) | `third_party/minklauncher/` | Apache-2.0 (`LICENSE` and `NOTICE` in that folder) | https://github.com/katoaapps/openminilaunch @ `b9b26f73` |
-| Titan AI status rings: ring drawing and device stats sampler, ported and trimmed (via SableOS) | `app/src/main/java/com/sable/start/ui/SableStatusRings.kt`, `.../platform/DeviceStatsSampler.kt` | MIT (`third_party/titan-ai/LICENSE`; notice kept in each file header) | https://github.com/andrehafner/aiassistant @ `2f4b5d76` |
+| Titan AI status rings: ring drawing and device stats sampler, ported and trimmed (via SableOS) | `app/src/main/java/io/github/aimindseye/tenseven/ui/SableStatusRings.kt`, `.../platform/DeviceStatsSampler.kt` | MIT (`third_party/titan-ai/LICENSE`; notice kept in each file header) | https://github.com/andrehafner/aiassistant @ `2f4b5d76` |
 | Sable Start and Sable design sources, imported from SableOS | `app/`, `design/` | Apache-2.0 (same licence as this repository) | https://github.com/aimindseye/zinwaq25-sableos @ `31420f59` |
 | detekt rule set, byte-exact copy from SableOS | `config/detekt.yml` | Apache-2.0 | https://github.com/aimindseye/zinwaq25-sableos |
 | Gradle wrapper | `gradle/wrapper/`, `gradlew`, `gradlew.bat` | Apache-2.0 | https://gradle.org, version 8.13 |

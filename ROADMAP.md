@@ -18,7 +18,7 @@ needs that SableOS gets from the system. Nothing below is done unless it says so
 - [ ] Fix whatever the first CI run finds (compile errors, failing tests, Lint errors)
 - [ ] Run `tools/refresh-locks.sh`; commit `gradle.lockfile` per module (checksum metadata later, generated for all OS variants)
 - [ ] Turn `TENSEVEN_STRICT_QUALITY` on once detekt, ktlint and Lint are clean (write a baseline for anything kept on purpose, with a reason)
-- [ ] Rename the packages `org.sableos.start`, `org.sableos.design`, `com.sable.start` to `io.github.aimindseye.tenseven.*` in one mechanical commit, and keep the SableOS intent actions and provider authorities as named constants for interop
+- [x] Rename the packages `org.sableos.start`, `org.sableos.design`, `com.sable.start` to `io.github.aimindseye.tenseven.*` in one mechanical commit, and keep the SableOS intent actions and provider authorities as named constants for interop
 - [ ] Split `SableStartScreen.kt` (5,400 lines, 76 composables) by surface: Hub, Active Frames, App Grid, All Apps, Edit Home, Privacy
 - [ ] Replace the Sable accent and "Sable Start" wording with Tenseven's; restyle the glyph lighting so Tenseven does not look like SableOS with different icons
 - [ ] Import SonarCloud: create the project `aimindseye_tenseven-launcher`, turn Automatic Analysis off, confirm the quality gate (secret `SONAR_TOKEN` exists); then import Kover XML so coverage is measured
