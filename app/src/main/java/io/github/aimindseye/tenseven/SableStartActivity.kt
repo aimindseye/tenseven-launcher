@@ -699,7 +699,7 @@ class SableStartActivity : ComponentActivity() {
         val serial: Int,
     )
 
-    private companion object {
+    companion object {
         const val LIVE_PERMISSION_REQUEST_CODE = 0x534D
         const val CONTACTS_PERMISSION_REQUEST_CODE = 0x534E
 

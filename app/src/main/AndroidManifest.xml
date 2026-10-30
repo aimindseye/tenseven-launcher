@@ -9,6 +9,7 @@
     <!-- Hub page Contacts tab: names, favourites and one number per person, read on the device and never
          stored. Revocable in Settings; the tab then asks again. -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <!-- All Apps: hand uninstall to the system uninstaller (which confirms again). -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />

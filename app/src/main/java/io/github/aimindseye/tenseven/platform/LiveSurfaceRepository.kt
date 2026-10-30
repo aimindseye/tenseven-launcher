@@ -1,16 +1,23 @@
 package io.github.aimindseye.tenseven.platform
 
 import android.Manifest
+import android.content.ComponentName
+import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
 import android.os.Build
+import android.provider.CalendarContract
 import android.provider.MediaStore
+import android.text.format.DateUtils
 import android.text.format.DateFormat
 import io.github.aimindseye.tenseven.model.StartText.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.aimindseye.tenseven.conversations.ConversationHub
+import io.github.aimindseye.tenseven.conversations.ConversationListenerService
 import io.github.aimindseye.tenseven.live.AppUnreadCount
 import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveDatum
@@ -62,31 +69,26 @@ class LiveSurfaceRepository(
                 timeText =
                     DateFormat.getTimeFormat(appContext)
                         .format(Date(nowEpochMs)),
+                // Android has no weather source of its own: the tile opens the default weather app.
                 weather =
-                    providerSnapshot(
-                        uri = WEATHER_URI,
-                        fallbackTitle = t("weather"),
+                    LiveDatum(
+                        title = t("weather"),
+                        detail = "unavailable",
+                        availability = LiveAvailability.UNAVAILABLE,
                     ),
-                calendar =
-                    providerSnapshot(
-                        uri = CALENDAR_URI,
-                        fallbackTitle = t("calendar"),
-                    ),
+                calendar = nextCalendarEvent(nowEpochMs),
                 messages =
                     providerSnapshot(
                         uri = MESSAGES_URI,
                         fallbackTitle = t("hub"),
                     ),
                 mail =
-                    providerSnapshot(
-                        uri = MAIL_URI,
-                        fallbackTitle = t("mail"),
+                    LiveDatum(
+                        title = t("mail"),
+                        detail = "unavailable",
+                        availability = LiveAvailability.UNAVAILABLE,
                     ),
-                music =
-                    providerSnapshot(
-                        uri = MEDIA_URI,
-                        fallbackTitle = t("media"),
-                    ),
+                music = nowPlaying(),
                 photos =
                     mediaCount(
                         permission =
@@ -103,6 +105,92 @@ class LiveSurfaceRepository(
                 hubApps = hubAppCounts(),
             )
         }
+
+    /** The next calendar event in the coming week, from the phone's calendar (needs the Calendar permission). */
+    private fun nextCalendarEvent(nowEpochMs: Long): LiveDatum {
+        val title = t("calendar")
+        if (appContext.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
+            return LiveDatum(title, t("permission_required"), LiveAvailability.PERMISSION_REQUIRED)
+        }
+        return try {
+            val window = CalendarContract.Instances.CONTENT_URI.buildUpon()
+            ContentUris.appendId(window, nowEpochMs)
+            ContentUris.appendId(window, nowEpochMs + CALENDAR_WINDOW_MS)
+            val event =
+                resolver.query(
+                    window.build(),
+                    arrayOf(
+                        CalendarContract.Instances.TITLE,
+                        CalendarContract.Instances.BEGIN,
+                        CalendarContract.Instances.END,
+                        CalendarContract.Instances.ALL_DAY,
+                    ),
+                    null,
+                    null,
+                    CalendarContract.Instances.BEGIN + " ASC",
+                )?.use { cursor ->
+                    var found: Triple<String, Long, Boolean>? = null
+                    while (found == null && cursor.moveToNext()) {
+                        if (cursor.getLong(2) > nowEpochMs) {
+                            found = Triple(cursor.getString(0).orEmpty().ifBlank { t("calendar") }, cursor.getLong(1), cursor.getInt(3) != 0)
+                        }
+                    }
+                    found
+                }
+            if (event == null) {
+                LiveDatum(title, NO_EVENTS, LiveAvailability.EMPTY, nowEpochMs)
+            } else {
+                val (name, begin, allDay) = event
+                val flags =
+                    if (allDay) {
+                        DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_ABBREV_ALL
+                    } else {
+                        DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_ABBREV_ALL
+                    }
+                // An all-day event's times are midnight UTC, so format it in UTC to keep its date.
+                val whenText =
+                    if (allDay) {
+                        DateUtils.formatDateRange(appContext, java.util.Formatter(StringBuilder(), java.util.Locale.getDefault()), begin, begin, flags, "UTC").toString()
+                    } else {
+                        DateUtils.formatDateTime(appContext, begin, flags)
+                    }
+                LiveDatum(title, "$name · $whenText", LiveAvailability.LIVE, nowEpochMs)
+            }
+        } catch (_: SecurityException) {
+            LiveDatum(title, t("permission_required"), LiveAvailability.PERMISSION_REQUIRED)
+        } catch (_: RuntimeException) {
+            LiveDatum(title, t("provider_error"), LiveAvailability.ERROR)
+        }
+    }
+
+    /**
+     * What is playing, from the active media sessions. Android only lists them to an app that holds notification
+     * access, which Tenseven's own listener provides once the user turns it on.
+     */
+    private fun nowPlaying(): LiveDatum {
+        val title = t("media")
+        return try {
+            val manager = appContext.getSystemService(MediaSessionManager::class.java)
+            val listener = ComponentName(appContext, ConversationListenerService::class.java)
+            val controllers = manager?.getActiveSessions(listener).orEmpty()
+            val active =
+                controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: controllers.firstOrNull()
+            val metadata = active?.metadata
+            val track = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE).orEmpty()
+            val artist = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_ARTIST).orEmpty()
+            if (active == null || track.isBlank()) {
+                LiveDatum(title, NOTHING_PLAYING, LiveAvailability.EMPTY, System.currentTimeMillis())
+            } else {
+                val line = if (artist.isBlank()) track else "$track · $artist"
+                val playing = active.playbackState?.state == PlaybackState.STATE_PLAYING
+                LiveDatum(title, if (playing) line else "Paused: $line", LiveAvailability.LIVE, System.currentTimeMillis())
+            }
+        } catch (_: SecurityException) {
+            LiveDatum(title, t("permission_required"), LiveAvailability.PERMISSION_REQUIRED)
+        } catch (_: RuntimeException) {
+            LiveDatum(title, t("provider_error"), LiveAvailability.ERROR)
+        }
+    }
 
     /**
      * Per-app unread counts (package and count only). Sable Hub's when it is there; otherwise Tenseven's own
@@ -265,6 +353,9 @@ class LiveSurfaceRepository(
         val HUB_APPS_URI: Uri =
             Uri.parse("content://org.sableos.hub.snapshot/apps")
         private const val MAX_HUB_APPS = 32
+        private const val CALENDAR_WINDOW_MS = 7L * 24 * 60 * 60 * 1000
+        private const val NO_EVENTS = "no events this week"
+        private const val NOTHING_PLAYING = "nothing playing"
         val MAIL_URI: Uri =
             Uri.parse("content://org.sableos.mail.snapshot/current")
         val MEDIA_URI: Uri =
