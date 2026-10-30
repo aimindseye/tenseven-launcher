@@ -12,7 +12,7 @@ object StartText {
         mapOf(
             "home_screen_style" to "Home screen style",
             "sable_start_can_look_like" to
-                "Sable Start can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites " +
+                "Tenseven can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites " +
                 "and Hub stay the same.",
             "current" to " · current",
             "another_launcher" to "Another launcher…",
@@ -53,11 +53,11 @@ object StartText {
             "private_label" to "Private",
             "dual" to "Dual",
             "work" to "Work",
-            "weather_and_date" to "Weather and date",
+            "weather_and_date" to "Date",
             "search_or_command_row" to "Search or command row",
             "status_dials" to "Status dials",
             "temperature_condition_and_place_with" to
-                "Temperature, condition and place, with the date under it",
+                "Today's date under the status dials",
             "a_command_row_under_the" to "A Command row under the weather; typing works without it",
             "wi_fi_mobile_cpu_ram" to
                 "Wi-Fi, Mobile, CPU, RAM, battery time left, Cell and Settings",
@@ -68,7 +68,7 @@ object StartText {
             "photos" to "Photos",
             "weather_updating" to "Weather · updating",
             "weather_update_failed_retrying" to "Weather · update failed, retrying",
-            "weather_open_sable_weather_to" to "Weather · open Sable Weather to set it up",
+            "weather_open_sable_weather_to" to "Weather · open your weather app",
             "messages" to "Messages",
             "calls" to "Calls",
             "contacts" to "Contacts",
@@ -140,7 +140,7 @@ object StartText {
             "new_label" to "%1\$s, %2\$s new",
             "missed_calls" to "Missed calls",
             "recent_calls_in_phone" to "recent calls in Phone",
-            "sable_hub_not_installed" to "Sable Hub not installed",
+            "sable_hub_not_installed" to "Hub not set up",
             "hub_settings" to "Hub settings",
             "allow_contacts" to "Allow contacts",
             "start_shows_names_here_nothing" to "Start shows names here; nothing leaves the phone",
@@ -192,7 +192,7 @@ object StartText {
             "hub_not_installed" to "Hub (not installed)",
             "camera_not_installed" to "Camera (not installed)",
             "search_command" to "search + command",
-            "apps_settings_sable_actions" to "apps · settings · Sable actions",
+            "apps_settings_sable_actions" to "apps · settings · actions",
             "all_apps_2" to "all apps",
             "no_apps_match" to "No apps match “%1\$s”.",
             "no_launchable_apps_are_available" to "No launchable apps are available.",
@@ -212,7 +212,7 @@ object StartText {
                 "Messages, mail, calls, contacts and notifications",
             "order_the_app_grid_the" to "Order the app grid, the bar and the empty frames",
             "appearance" to "Appearance",
-            "theme_and_sable_accent" to "Theme and Sable accent",
+            "theme_and_sable_accent" to "Theme and accent",
             "system_settings" to "System Settings",
             "open_android_settings" to "Open Android settings",
             "open_personal_app" to "open personal app",
@@ -245,7 +245,7 @@ object StartText {
             "hub_2" to "Hub · %1\$s",
             "messages_calls_contacts_and_notifications" to
                 "Messages, calls, contacts and notifications",
-            "search_apps_sable_actions" to "search apps + Sable actions",
+            "search_apps_sable_actions" to "search apps + actions",
             "actions_for" to "Actions for %1\$s",
             "profile" to "%1\$s profile",
             "special_access_2" to "special access · %1\$s",
@@ -254,7 +254,7 @@ object StartText {
                 "Shortcuts and notification content stay hidden until Android capability and " +
                 "privacy gates are wired.",
             "follow_system" to "follow system",
-            "reset_follow_system_sable_blue" to "reset · follow system + Sable Blue",
+            "reset_follow_system_sable_blue" to "reset · follow system + default accent",
             "mobile" to "Mobile",
             "bat" to "⚡ BAT",
             "cell" to "Cell",

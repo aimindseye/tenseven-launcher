@@ -19,6 +19,8 @@ object DefaultApps {
     /** Intent.CATEGORY_APP_WEATHER, written out because it needs API 31 and the minimum here is 30. */
     const val WEATHER: String = "android.intent.category.APP_WEATHER"
 
+    const val BROWSER: String = Intent.CATEGORY_APP_BROWSER
+
     const val CONTACTS: String = Intent.CATEGORY_APP_CONTACTS
     const val MESSAGING: String = Intent.CATEGORY_APP_MESSAGING
 
@@ -44,6 +46,30 @@ object DefaultApps {
     /** The phone's default dialer (Phone) app package, or null. */
     fun dialerPackage(context: Context): String? =
         runCatching { context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage }.getOrNull()
+
+    /** The phone's default camera app package, or null. */
+    fun cameraPackage(context: Context): String? =
+        runCatching {
+            context.packageManager
+                .resolveActivity(Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE), PackageManager.MATCH_DEFAULT_ONLY)
+                ?.activityInfo?.packageName?.takeIf { it != "android" }
+        }.getOrNull()
+
+    /**
+     * The apps a new BlackBerry 7 home starts with, all the phone's own defaults: Phone, Messages, Mail, Camera,
+     * Calendar, Browser, Gallery, Music (those the phone has, in that order). Settings is added by the caller.
+     */
+    fun homePackages(context: Context): List<String> =
+        listOfNotNull(
+            dialerPackage(context),
+            packageFor(context, MESSAGING),
+            packageFor(context, EMAIL),
+            cameraPackage(context),
+            packageFor(context, CALENDAR),
+            packageFor(context, BROWSER),
+            packageFor(context, GALLERY),
+            packageFor(context, MUSIC),
+        ).distinct()
 
     /** Opens the default app for [category]; false when the phone has none. */
     fun launch(

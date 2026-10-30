@@ -463,7 +463,8 @@ fun SableStartScreen(
     val appByKey = apps.associateBy { it.stableKey() }
     // The grid holds every app except Private Space ones, which stay in All Apps behind its lock.
     val gridCandidates = apps.filterNot { it.profileLabel == PROFILE_PRIVATE_LABEL }
-    val defaultHomeKeys = defaultHomeApps(apps).map { it.stableKey() }
+    val homeContext = LocalContext.current
+    val defaultHomeKeys = remember(apps) { defaultHomeApps(apps, homeContext).map { it.stableKey() } }
     val gridKeys =
         AppGrid.resolve(
             saved = savedGridOrder,
@@ -1242,15 +1243,7 @@ private fun ActiveFramesPage(
             StatusDialsRow(onOpenSettings = onOpenSettings)
         }
         if (shown(HomeLayout.WEATHER)) {
-            WeatherDateHeader(
-                datum = snapshot.weather,
-                refreshGeneration = refreshGeneration,
-                onOpen = {
-                    if (!DefaultApps.launch(context, DefaultApps.WEATHER)) {
-                        Toast.makeText(context, context.getString(R.string.default_app_missing), Toast.LENGTH_SHORT).show()
-                    }
-                },
-            )
+            DateHeader(refreshGeneration = refreshGeneration)
         }
         if (shown(HomeLayout.SEARCH_ROW)) {
             Box(Modifier.padding(horizontal = FRAME_PADDING)) { SearchLaunchButton(onClick = onSearch) }
@@ -1311,15 +1304,11 @@ private fun StatusDialsRow(onOpenSettings: () -> Unit) {
 }
 
 /**
- * "72° Partly cloudy · Seattle" with the date under it. The date follows the
+ * Today's date under the status dials. The date follows the
  * locale and turns over at midnight; there is no clock here.
  */
 @Composable
-private fun WeatherDateHeader(
-    datum: LiveDatum,
-    refreshGeneration: Int,
-    onOpen: () -> Unit,
-) {
+private fun DateHeader(refreshGeneration: Int) {
     val locale = Locale.getDefault()
     val today by
         produceState(initialValue = LocalDate.now(), refreshGeneration) {
@@ -1334,36 +1323,20 @@ private fun WeatherDateHeader(
             val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, HomeHeader.DATE_SKELETON)
             today.format(DateTimeFormatter.ofPattern(pattern, locale))
         }
-    val weather =
-        datum.takeIf { it.availability == LiveAvailability.LIVE }?.let { HomeHeader.weather(it.detail) }
-    val line =
-        when {
-            weather == null -> HomeHeader.weatherFallback(datum.availability)
-            weather.second.isBlank() -> HomeHeader.weatherIcon(weather.first) + " " + weather.first
-            else -> HomeHeader.weatherIcon(weather.first) + " " + weather.first + " · " + weather.second
-        }
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = FRAME_PADDING)
-                .sableFocusRing()
-                .clickable(onClick = onOpen)
-                .semantics { contentDescription = "$line. $dateText" }
+                .semantics { contentDescription = dateText }
                 .padding(vertical = 2.dp),
     ) {
         Text(
-            text = line,
+            text = dateText,
             style = MaterialTheme.typography.titleMedium,
             color = Bb10Text,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = dateText,
-            style = MaterialTheme.typography.bodySmall,
-            color = Bb10Muted,
-            maxLines = 1,
         )
     }
 }
@@ -1619,16 +1592,6 @@ private fun GlanceFrames(
                             .height(cardHeight)
                             .then(if (widget == widgets.first()) Modifier.focusRequester(firstFocus) else Modifier)
                     when (widget) {
-                        GlanceWidgets.WEATHER -> {
-                            GlanceFrameCard(
-                                t("weather"),
-                                t("weather"),
-                                context.getString(R.string.weather_tile_hint),
-                                SableSun,
-                                { openDefault(DefaultApps.WEATHER) },
-                                modifier,
-                            )
-                        }
                         GlanceWidgets.BATTERY -> BatteryGlanceFrame(battery, onStartIntent, modifier)
                         GlanceWidgets.PHOTOS -> {
                             val datum = snapshot.photos
@@ -1798,15 +1761,6 @@ private fun GlanceFrameCard(
             maxLines = 1,
         )
     }
-}
-
-/** "72° Partly cloudy" and "Seattle" from the Weather snapshot ([HomeHeader.weather]). */
-private fun weatherLines(datum: LiveDatum): Pair<String, String> {
-    if (datum.availability != LiveAvailability.LIVE && datum.availability != LiveAvailability.EMPTY) {
-        return t("weather") to datum.detail.ifBlank { "unavailable" }
-    }
-    return HomeHeader.weather(datum.detail)?.let { (headline, place) -> headline to place.ifBlank { t("weather") } }
-        ?: (t("weather") to datum.detail)
 }
 
 /**
@@ -5412,8 +5366,6 @@ private fun findLiveApp(
 ): AppEntry? =
     apps.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
         ?: when (packageName) {
-            WEATHER_PACKAGE ->
-                apps.firstOrNull { it.label.equals(WEATHER_LABEL, ignoreCase = true) }
             MAIL_PACKAGE ->
                 apps.firstOrNull { it.label.equals(MAIL_LABEL, ignoreCase = true) }
             else -> null
@@ -5536,12 +5488,28 @@ private fun buildRailRows(apps: List<AppEntry>): List<AppRailRow> {
  * Mail, Calendar, Contacts, Phone, Camera), each the first installed app of
  * its group in the launcher's own profile.
  */
-private fun defaultHomeApps(apps: List<AppEntry>): List<AppEntry> {
+private fun defaultHomeApps(
+    apps: List<AppEntry>,
+    context: Context,
+): List<AppEntry> {
     val personal = apps.filter { it.inLauncherUser }
-    return HOME_APP_DEFAULT_GROUPS.mapNotNull { group ->
-        group.packageNames.firstNotNullOfOrNull { packageName ->
-            personal.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
-        } ?: personal.firstOrNull { app -> group.labels.any { app.label.equals(it, ignoreCase = true) } }
+    // The phone's own default for each group first (Messages, Mail, Calendar, Contacts, Phone, Camera), then the rest.
+    val defaults =
+        listOf(
+            DefaultApps.packageFor(context, DefaultApps.MESSAGING),
+            DefaultApps.packageFor(context, DefaultApps.EMAIL),
+            DefaultApps.packageFor(context, DefaultApps.CALENDAR),
+            DefaultApps.packageFor(context, DefaultApps.CONTACTS),
+            DefaultApps.dialerPackage(context),
+            DefaultApps.cameraPackage(context),
+        )
+    return HOME_APP_DEFAULT_GROUPS.mapIndexedNotNull { index, group ->
+        val phoneDefault = defaults.getOrNull(index)?.let { pkg -> personal.firstOrNull { it.component.packageName == pkg } }
+        phoneDefault
+            ?: group.packageNames.firstNotNullOfOrNull { packageName ->
+                personal.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
+            }
+            ?: personal.firstOrNull { app -> group.labels.any { app.label.equals(it, ignoreCase = true) } }
     }.distinctBy { it.stableKey() }
 }
 
@@ -5572,7 +5540,6 @@ private fun liveDatumForApp(
         CALENDAR_PACKAGE -> snapshot.calendar
         HUB_PACKAGE, MESSAGES_PACKAGE -> snapshot.messages
         MAIL_PACKAGE -> snapshot.mail
-        WEATHER_PACKAGE -> snapshot.weather
         MEDIA_PACKAGE -> snapshot.music
         CoreAppIdentity.PHOTOS -> snapshot.photos
         else -> null
@@ -5624,12 +5591,10 @@ private val HUB_BAR_ITEM_HEIGHT = 32.dp
 private const val HUB_JUMP_BLOCKING_META = 0x02 or 0x04 or 0x08 or 0x1000 or 0x10000
 private const val MAIL_PACKAGE = "org.sableos.mail"
 private const val CALENDAR_PACKAGE = "org.sableos.calendar"
-private const val WEATHER_PACKAGE = "org.sableos.weather"
 private const val MEDIA_PACKAGE = "org.sableos.media"
 private const val DIALER_PACKAGE = "com.android.dialer"
 private const val GALLERY_PACKAGE = "com.android.gallery3d"
 private const val HUB_LABEL = "Hub"
-private const val WEATHER_LABEL = "Sable Weather"
 private const val MAIL_LABEL = "Sable Mail"
 private const val MESSAGES_LABEL = "Sable Messages"
 private const val CONTACTS_PACKAGE = "com.android.contacts"
