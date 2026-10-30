@@ -192,7 +192,7 @@ fun Bb7HomeScreen(
             if (!open && !searching && homeRows > Bb7Home.MIN_HOME_ROWS) {
                 add(t("show_fewer_rows") to { onHomeRowsChanged(homeRows - 1) })
             }
-            if (!open && !searching && panel == Bb7Panel.Favorites) {
+            if (!searching && panel != Bb7Panel.All) {
                 // Add icons to the home screen: pick them in All (Menu or long-press an icon, Add to Favorites).
                 add(context.getString(R.string.bb7_add_apps) to openApps)
             }
