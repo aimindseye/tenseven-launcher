@@ -19,16 +19,36 @@ import argparse
 import csv
 import hashlib
 import os
-import re
 import sys
 import urllib.request
+from html.parser import HTMLParser
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOG = os.path.join(ROOT, "brand-assets", "CATALOG.tsv")
 RES = os.path.join(ROOT, "app", "src", "main", "res", "drawable-nodpi")
 COLUMNS = ["kind", "name", "packages", "source", "source_url", "install_url", "file", "status", "sha256"]
 EXTENSIONS = {"image/png": ".png", "image/webp": ".webp", "image/jpeg": ".jpg"}
-OG_IMAGE = re.compile(r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"', re.I)
+
+
+class OgImageParser(HTMLParser):
+    """Finds <meta property="og:image" content="..."> without a backtracking regular expression."""
+
+    def __init__(self):
+        super().__init__()
+        self.url = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag != "meta" or self.url:
+            return
+        values = dict(attrs)
+        if (values.get("property") or "").lower() == "og:image" and values.get("content"):
+            self.url = values["content"]
+
+
+def og_image(html):
+    parser = OgImageParser()
+    parser.feed(html)
+    return parser.url
 
 
 def load():
@@ -57,59 +77,66 @@ def sha256(path):
         return hashlib.sha256(f.read()).hexdigest()
 
 
+def row_problems(row):
+    """Everything wrong with one catalog row, as printable messages."""
+    name = row["name"]
+    problems = []
+    if row["kind"] not in ("messaging", "ai"):
+        problems.append("unknown kind: %s %s" % (row["kind"], name))
+    if row["source"] not in ("play", "appstore", "vendor"):
+        problems.append("unknown source: %s %s" % (name, row["source"]))
+    if not row["source_url"].startswith("https://"):
+        problems.append("source_url must be https: " + name)
+    if row["status"] not in ("pending", "bundled"):
+        problems.append("status must be pending or bundled: " + name)
+    found = files_for(row)
+    if row["status"] == "bundled":
+        if len(found) != 1:
+            problems.append("bundled but file missing or ambiguous: %s %s" % (name, row["file"]))
+        elif sha256(os.path.join(RES, found[0])) != row["sha256"]:
+            problems.append("sha256 differs from the catalog: " + name)
+    elif found:
+        problems.append("file present but row is pending (run: tools/brand_assets.py record): " + name)
+    return problems
+
+
+def untracked_artwork(rows):
+    known = {r["file"] for r in rows}
+    if not os.path.isdir(RES):
+        return []
+    return [
+        "artwork not in the catalog (add its source first): " + n
+        for n in os.listdir(RES)
+        if n.startswith("brand_") and os.path.splitext(n)[0] not in known
+    ]
+
+
 def cmd_check(_args):
     rows = load()
-    bad = 0
+    problems = []
     seen = set()
     for row in rows:
         key = (row["kind"], row["name"])
         if key in seen:
-            print("FAIL duplicate row:", key)
-            bad += 1
+            problems.append("duplicate row: %s" % (key,))
         seen.add(key)
-        if row["kind"] not in ("messaging", "ai"):
-            print("FAIL unknown kind:", row["kind"], row["name"])
-            bad += 1
-        if row["source"] not in ("play", "appstore", "vendor"):
-            print("FAIL unknown source:", row["name"], row["source"])
-            bad += 1
-        if not row["source_url"].startswith("https://"):
-            print("FAIL source_url must be https:", row["name"])
-            bad += 1
-        if row["status"] not in ("pending", "bundled"):
-            print("FAIL status must be pending or bundled:", row["name"])
-            bad += 1
-        found = files_for(row)
-        if row["status"] == "bundled":
-            if len(found) != 1:
-                print("FAIL bundled but file missing or ambiguous:", row["name"], row["file"])
-                bad += 1
-            elif sha256(os.path.join(RES, found[0])) != row["sha256"]:
-                print("FAIL sha256 differs from the catalog:", row["name"])
-                bad += 1
-        elif found:
-            print("FAIL file present but row is pending (run: tools/brand_assets.py record):", row["name"])
-            bad += 1
-    known = {r["file"] for r in rows}
-    if os.path.isdir(RES):
-        for n in os.listdir(RES):
-            if n.startswith("brand_") and os.path.splitext(n)[0] not in known:
-                print("FAIL artwork not in the catalog (add its source first):", n)
-                bad += 1
-    if not bad:
+        problems += row_problems(row)
+    problems += untracked_artwork(rows)
+    for message in problems:
+        print("FAIL", message)
+    if not problems:
         done = sum(1 for r in rows if r["status"] == "bundled")
         print("PASS brand assets: %d catalog rows, %d bundled, %d pending" % (len(rows), done, len(rows) - done))
-    return 1 if bad else 0
+    return 1 if problems else 0
 
 
 def fetch_play_icon(row):
     package = row["packages"].split(",")[0]
     request = urllib.request.Request(row["source_url"], headers={"User-Agent": "Mozilla/5.0 tenseven-brand-assets"})
     with urllib.request.urlopen(request, timeout=30) as page:  # noqa: S310 (https URL from the catalog)
-        match = OG_IMAGE.search(page.read().decode("utf-8", "replace"))
-    if not match:
+        image_url = og_image(page.read().decode("utf-8", "replace"))
+    if not image_url:
         raise RuntimeError("no og:image on the listing for " + package)
-    image_url = match.group(1).replace("&amp;", "&")
     with urllib.request.urlopen(urllib.request.Request(image_url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30) as img:  # noqa: S310
         data = img.read()
         extension = EXTENSIONS.get(img.headers.get_content_type())
