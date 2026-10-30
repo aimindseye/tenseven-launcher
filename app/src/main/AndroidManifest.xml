@@ -145,6 +145,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Launcher Settings: style cards, Home, Widgets, Device and Privacy, from the menus of both homes. -->
+        <activity
+            android:name=".LauncherSettingsActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/launcher_settings" />
+
         <!-- First-run setup and "Setup and permissions": the home role, then each optional permission. -->
         <activity
             android:name=".OnboardingActivity"

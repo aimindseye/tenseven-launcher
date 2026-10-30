@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
+import android.content.Intent
+import android.provider.AlarmClock
 import android.view.KeyEvent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -57,22 +59,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.aimindseye.tenseven.model.StartText.t
-import kotlinx.coroutines.delay
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.SableTheme
+import io.github.aimindseye.tenseven.live.LiveAvailability
+import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Home
+import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
+import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.HomeApps
+import io.github.aimindseye.tenseven.model.SettingsWidgets
+import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
+import io.github.aimindseye.tenseven.platform.NextAlarm
+import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
 
@@ -113,6 +121,9 @@ fun Bb7HomeScreen(
     onPanelsChanged: (List<Bb7Panel>) -> Unit = {},
     onScrimChanged: (Int) -> Unit = {},
     onOpenWallpaper: () -> Unit = {},
+    /** Icon size and the widgets shown under the banner (Launcher Settings). */
+    iconSize: Bb7IconSize = Bb7IconSize.DEFAULT,
+    widgets: List<String> = emptyList(),
 ) {
     val context = LocalContext.current
     val usage = remember(apps, refreshGeneration, homeGeneration) { AppUsageRepository(context).load() }
@@ -301,7 +312,7 @@ fun Bb7HomeScreen(
                             true
                         },
             ) {
-                val columns = Bb7Home.columns(maxWidth.value.toInt())
+                val columns = Bb7Home.columns(maxWidth.value.toInt(), iconSize.cellDp)
                 SideEffect { keyColumns = columns }
                 val swipe = with(LocalDensity.current) { SWIPE_DP.dp.toPx() }
                 val rowPx = with(LocalDensity.current) { ROW_DP.dp.toPx() }
@@ -337,12 +348,21 @@ fun Bb7HomeScreen(
                         scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
                         onOpenHub = onOpenHub,
                     )
-                    if (!open && !searching) Spacer(Modifier.weight(1f))
+                    if (!open && !searching) {
+                        Bb7WidgetStrip(
+                            widgets = SettingsWidgets.strip(widgets),
+                            calendar = live.calendar,
+                            media = live.music,
+                            refreshGeneration = refreshGeneration,
+                        )
+                        Spacer(Modifier.weight(1f))
+                    }
                     Bb7Tray(
                         title = trayTitle,
                         apps = if (open || searching) shown else shown.take(columns * homeRows),
                         columns = columns,
                         open = open || searching,
+                        iconDp = iconSize.iconDp,
                         moving = moving,
                         scrim = Color.Black.copy(alpha = Bb7Scrim.trayAlpha(scrimLevel)),
                         onResize = { dragged ->
@@ -381,6 +401,66 @@ fun Bb7HomeScreen(
         }
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+}
+
+/** One widget of the strip: its name small, its line below, a tap opens the phone's app for it. */
+private data class Bb7Widget(
+    val title: String,
+    val line: String,
+    val open: () -> Unit,
+)
+
+/** The widgets Launcher Settings turned on (Calendar, Alarm, Now Playing), side by side under the banner. */
+@Composable
+private fun Bb7WidgetStrip(
+    widgets: List<String>,
+    calendar: LiveDatum,
+    media: LiveDatum,
+    refreshGeneration: Int,
+) {
+    if (widgets.isEmpty()) return
+    val context = LocalContext.current
+    val alarm = remember(refreshGeneration) { NextAlarm.text(context) }
+    val cards =
+        widgets.map { widget ->
+            when (widget) {
+                GlanceWidgets.CALENDAR ->
+                    Bb7Widget(
+                        "Calendar",
+                        calendar.detail.takeIf { calendar.availability == LiveAvailability.LIVE }.orEmpty().ifBlank { "No events" },
+                    ) { DefaultApps.launch(context, DefaultApps.CALENDAR) }
+                GlanceWidgets.ALARM ->
+                    Bb7Widget("Alarm", alarm ?: "No alarm") {
+                        runCatching {
+                            context.startActivity(Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    }
+                else ->
+                    Bb7Widget(
+                        "Now Playing",
+                        media.detail.takeIf { media.availability == LiveAvailability.LIVE }.orEmpty().ifBlank { "Nothing playing" },
+                    ) { DefaultApps.launch(context, DefaultApps.MUSIC) }
+            }
+        }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        cards.forEach { card ->
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable(onClick = card.open)
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+            ) {
+                Text(card.title, color = BANNER_MUTED, fontSize = 10.sp, maxLines = 1)
+                Text(card.line, color = Color.White, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
 }
 
 /**
@@ -450,6 +530,7 @@ private fun Bb7Tray(
     apps: List<AppEntry>,
     columns: Int,
     open: Boolean,
+    iconDp: Int,
     moving: Boolean,
     selected: Int,
     scrim: Color,
@@ -537,7 +618,7 @@ private fun Bb7Tray(
                             .padding(vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    AppMark(app = app, size = ICON_DP)
+                    AppMark(app = app, size = iconDp)
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = app.label,
@@ -573,5 +654,4 @@ private const val SWIPE_DP = 72
 
 /** A tray row's height, the drag that shows one more or one fewer row. */
 private const val ROW_DP = 64
-private const val ICON_DP = 40
 private val BANNER_MUTED = Color(0xFFC9D1DA)

@@ -35,8 +35,10 @@ import io.github.aimindseye.tenseven.design.writeGlobalSableAppearance
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Detour
+import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
+import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -108,6 +110,9 @@ class SableStartActivity : ComponentActivity() {
     private val bb7HomeRows = mutableStateOf(1)
     private val bb7Panels = mutableStateOf(Bb7Panels.DEFAULT)
     private val bb7Scrim = mutableStateOf(Bb7Scrim.DEFAULT)
+    private val bb7IconSize = mutableStateOf(Bb7IconSize.DEFAULT)
+    private val typeToSearch = mutableStateOf(true)
+    private val homeWidgets = mutableStateOf(GlanceWidgets.DEFAULT)
     private var opaqueWindowBackground: Drawable? = null
 
     private var callbackRegistered = false
@@ -217,6 +222,9 @@ class SableStartActivity : ComponentActivity() {
         bb7HomeRows.value = startStateRepository.loadBb7HomeRows()
         bb7Panels.value = startStateRepository.loadBb7Panels()
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
+        bb7IconSize.value = startStateRepository.loadBb7IconSize()
+        typeToSearch.value = startStateRepository.loadTypeToSearch()
+        homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         recentTasksRepository = RecentTasksRepository(this)
         usageRecentsRepository = UsageRecentsRepository(this)
         homeStyle.value = startStateRepository.loadHomeStyle()
@@ -309,6 +317,8 @@ class SableStartActivity : ComponentActivity() {
                     },
                     onOpenMenu = ::showBb7Menu,
                     onOpenCommand = ::openCommandFromBb7,
+                    iconSize = bb7IconSize.value,
+                    widgets = homeWidgets.value,
                     onDoubleTapEmpty = doubleTapLockCallback(),
                     panels = bb7Panels.value,
                     scrimLevel = bb7Scrim.value,
@@ -360,6 +370,7 @@ class SableStartActivity : ComponentActivity() {
                     initialQuickBar = startStateRepository.loadQuickBar(),
                     onQuickBarChanged = startStateRepository::saveQuickBar,
                     initialGlanceWidgets = startStateRepository.loadGlanceWidgets(),
+                    typeToSearch = typeToSearch.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
                     onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
@@ -436,6 +447,9 @@ class SableStartActivity : ComponentActivity() {
         bb7Favorites.value = startStateRepository.loadHomeApps()
         bb7Panels.value = startStateRepository.loadBb7Panels()
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
+        bb7IconSize.value = startStateRepository.loadBb7IconSize()
+        typeToSearch.value = startStateRepository.loadTypeToSearch()
+        homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         scheduleInventoryRefresh()
         refreshFrames()
         liveRefreshGeneration.value += 1
@@ -674,6 +688,9 @@ class SableStartActivity : ComponentActivity() {
                     startBb10Detour(returnOnHome = true)
                 },
                 getString(R.string.bb7_command) to ::openCommandFromBb7,
+                getString(R.string.launcher_settings) to {
+                    runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
+                },
                 t("home_screen_style_2") to {
                     runCatching { startActivity(Intent(this, HomeStyleActivity::class.java)) }
                 },
