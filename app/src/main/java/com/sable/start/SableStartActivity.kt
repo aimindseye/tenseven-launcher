@@ -36,6 +36,8 @@ import org.sableos.start.model.AppEntry
 import org.sableos.start.model.Bb7Detour
 import org.sableos.start.model.HomeStyle
 import org.sableos.start.platform.LauncherAppsRepository
+import org.sableos.start.platform.PermissionChangeSignal
+import org.sableos.start.platform.identifier
 import org.sableos.start.platform.LetterShortcutRepository
 import org.sableos.start.platform.LiveSurfaceRepository
 import org.sableos.start.platform.RecentTasksRepository

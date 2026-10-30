@@ -158,7 +158,7 @@ class LauncherAppsRepository(
                 else -> PROFILE_OTHER
             }
         }
-        return if (runCatching { userManager.isManagedProfile(user.identifier) }.getOrDefault(false)) {
+        return if (runCatching { userManager.isManagedProfile(user) }.getOrDefault(false)) {
             PROFILE_WORK
         } else {
             PROFILE_OTHER
