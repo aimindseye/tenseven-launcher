@@ -22,4 +22,16 @@ object MailSummary {
         val head = "$count new · $sender"
         return if (clipped.isEmpty()) head else "$head: $clipped"
     }
+
+    /** The same for messages: "No new messages", "3 new messages" while locked, or "3 new · Ann: Running late". */
+    fun messagesHeadline(
+        count: Int,
+        sender: String?,
+        preview: String?,
+        locked: Boolean,
+    ): String {
+        if (count <= 0) return "No new messages"
+        if (locked || sender.isNullOrBlank()) return if (count == 1) "1 new message" else "$count new messages"
+        return headline(count, sender, preview, locked = false)
+    }
 }

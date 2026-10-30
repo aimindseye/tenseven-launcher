@@ -98,12 +98,21 @@ object HubBar {
         return Layout(shown, items.size - shown.size)
     }
 
-    fun target(packageName: String): Target =
-        when (packageName) {
-            REDACTED -> Target.Private
-            MESSAGES_PACKAGE -> Target.Tab(HubFilter.Messages)
-            DIALER_PACKAGE -> Target.Tab(HubFilter.Calls)
-            CONTACTS_PACKAGE -> Target.Tab(HubFilter.Contacts)
+    /**
+     * What Enter on an item does. The phone's own default Messages, Phone and Contacts apps ([messages], [dialer],
+     * [contacts]) open the matching tab, whichever apps they are; the Sable package names still work.
+     */
+    fun target(
+        packageName: String,
+        messages: String? = null,
+        dialer: String? = null,
+        contacts: String? = null,
+    ): Target =
+        when {
+            packageName == REDACTED -> Target.Private
+            packageName == MESSAGES_PACKAGE || packageName == messages -> Target.Tab(HubFilter.Messages)
+            packageName == DIALER_PACKAGE || packageName == dialer -> Target.Tab(HubFilter.Calls)
+            packageName == CONTACTS_PACKAGE || packageName == contacts -> Target.Tab(HubFilter.Contacts)
             else -> Target.OpenApp
         }
 

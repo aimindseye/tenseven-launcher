@@ -27,4 +27,12 @@ class MailSummaryTest {
         val line = MailSummary.headline(1, "Ann", "x".repeat(200), locked = false)
         assertEquals(true, line.length < 90 && line.endsWith("…"))
     }
+
+    @Test
+    fun messagesFollowTheSameRules() {
+        assertEquals("No new messages", MailSummary.messagesHeadline(0, null, null, locked = false))
+        assertEquals("2 new · Bo: running late", MailSummary.messagesHeadline(2, "Bo", "running late", locked = false))
+        assertEquals("1 new message", MailSummary.messagesHeadline(1, "Bo", "secret", locked = true))
+        assertEquals("3 new messages", MailSummary.messagesHeadline(3, null, null, locked = false))
+    }
 }
