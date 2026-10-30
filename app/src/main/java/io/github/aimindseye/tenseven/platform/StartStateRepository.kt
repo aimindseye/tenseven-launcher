@@ -2,6 +2,7 @@ package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
 import io.github.aimindseye.tenseven.model.Bb7Home
+import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
@@ -204,6 +205,20 @@ class StartStateRepository(
         }.apply()
     }
 
+    /** Whether typing on a home screen starts a search (default on). */
+    fun loadTypeToSearch(): Boolean = preferences.getInt(KEY_TYPE_TO_SEARCH, 1) != 0
+
+    fun saveTypeToSearch(enabled: Boolean) {
+        preferences.edit().putInt(KEY_TYPE_TO_SEARCH, if (enabled) 1 else 0).apply()
+    }
+
+    fun loadBb7IconSize(): Bb7IconSize =
+        Bb7IconSize.fromStable(preferences.getInt(KEY_BB7_ICON_SIZE, Bb7IconSize.DEFAULT.stable))
+
+    fun saveBb7IconSize(size: Bb7IconSize) {
+        preferences.edit().putInt(KEY_BB7_ICON_SIZE, size.stable).apply()
+    }
+
     /** The settings a backup carries (see LauncherBackup); nothing else in preferences is read. */
     fun exportSettings(): Map<String, BackupValue> = LauncherBackup.select(preferences.all)
 
@@ -255,6 +270,8 @@ class StartStateRepository(
         const val KEY_BB7_HOME_ROWS = "bb7_home_rows"
         const val KEY_BB7_PANELS = "bb7_panels"
         const val KEY_BB7_SCRIM = "bb7_scrim"
+        const val KEY_TYPE_TO_SEARCH = "type_to_search"
+        const val KEY_BB7_ICON_SIZE = "bb7_icon_size"
         const val KEY_GLANCE_WIDGETS = "glance_widgets"
         // v2: the BB10 Home shows the status dials by default; sets saved by the
         // three-page Home hid them without the user choosing, so they are not read.

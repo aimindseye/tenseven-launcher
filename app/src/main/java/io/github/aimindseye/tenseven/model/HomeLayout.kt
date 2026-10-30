@@ -116,13 +116,14 @@ object HomeApps {
  */
 object GlanceWidgets {
     const val CALENDAR = "calendar"
+    const val ALARM = "alarm"
     const val BATTERY = "battery"
     const val MEDIA = "media"
     const val HUB = "hub"
     const val MAIL = "mail"
     const val PHOTOS = "photos"
 
-    val ALL: List<String> = listOf(CALENDAR, BATTERY, MEDIA, HUB, MAIL, PHOTOS)
+    val ALL: List<String> = listOf(CALENDAR, ALARM, BATTERY, MEDIA, HUB, MAIL, PHOTOS)
 
     /** "Curated widgets: Calendar, Battery, Media." */
     val DEFAULT: List<String> = listOf(CALENDAR, BATTERY, MEDIA)
@@ -143,6 +144,7 @@ object GlanceWidgets {
     fun label(widget: String): String =
         when (widget) {
             CALENDAR -> t("calendar")
+            ALARM -> "Alarm"
             BATTERY -> t("battery")
             MEDIA -> t("media")
             HUB -> t("hub")

@@ -114,7 +114,10 @@ object Bb7Home {
     /** The system Settings app, always part of the starting home next to the phone's default apps. */
     const val SETTINGS_PACKAGE = "com.android.settings"
 
-    fun columns(widthDp: Int): Int = (widthDp / CELL_DP).coerceIn(MIN_COLUMNS, MAX_COLUMNS)
+    fun columns(
+        widthDp: Int,
+        cellDp: Int = CELL_DP,
+    ): Int = (widthDp / cellDp).coerceIn(MIN_COLUMNS, MAX_COLUMNS)
 
     /**
      * The apps of one panel, in order. Favorites: the user's Home apps ([favoriteKeys], stable

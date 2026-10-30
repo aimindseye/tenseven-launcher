@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.SystemClock
 import android.widget.Toast
 import android.provider.CalendarContract
+import android.provider.AlarmClock
 import android.provider.Settings
 import android.provider.CallLog
 import android.util.LruCache
@@ -141,10 +142,12 @@ import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
 import io.github.aimindseye.tenseven.BackupActivity
 import io.github.aimindseye.tenseven.HomeStyleActivity
+import io.github.aimindseye.tenseven.LauncherSettingsActivity
 import io.github.aimindseye.tenseven.OnboardingActivity
 import io.github.aimindseye.tenseven.SableStartActivity
 import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.DefaultApps
+import io.github.aimindseye.tenseven.platform.NextAlarm
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
@@ -376,6 +379,8 @@ fun SableStartScreen(
     initialQuickBar: List<String>? = null,
     onQuickBarChanged: (List<String>?) -> Unit = {},
     initialGlanceWidgets: List<String>? = null,
+    /** Launcher Settings: whether typing on Home starts a search. */
+    typeToSearch: Boolean = true,
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
     initialHiddenHomeSections: Set<String>? = null,
     onHiddenHomeSectionsChanged: (Set<String>?) -> Unit = {},
@@ -650,7 +655,7 @@ fun SableStartScreen(
                                 },
                                 onHubPeek = { pagerScope.launch { startPager.animateScrollToPage(StartPages.HUB) } },
                                 onDial = { char -> dial(char.toString()) },
-                                onTypeToSearch = { seed -> openSearch(SableStartDestination.Start, seed) },
+                                onTypeToSearch = { seed -> if (typeToSearch) openSearch(SableStartDestination.Start, seed) },
                                 speedDialLetters = speedDialLetters,
                                 onSpeedDial = { letter -> speedDial?.call(letter) },
                                 onCommand = { openSearch(SableStartDestination.Start) },
@@ -1592,6 +1597,21 @@ private fun GlanceFrames(
                             .height(cardHeight)
                             .then(if (widget == widgets.first()) Modifier.focusRequester(firstFocus) else Modifier)
                     when (widget) {
+                        GlanceWidgets.ALARM -> {
+                            val alarm = remember { NextAlarm.text(context) }
+                            GlanceFrameCard(
+                                title = GlanceWidgets.label(GlanceWidgets.ALARM),
+                                headline = alarm ?: "No alarm",
+                                detail = "",
+                                accent = SableSun,
+                                onClick = {
+                                    runCatching {
+                                        context.startActivity(Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                    }
+                                },
+                                modifier = modifier,
+                            )
+                        }
                         GlanceWidgets.BATTERY -> BatteryGlanceFrame(battery, onStartIntent, modifier)
                         GlanceWidgets.PHOTOS -> {
                             val datum = snapshot.photos
@@ -3980,6 +4000,13 @@ private fun SearchScreen(
             } else {
                 null
             },
+            SearchCommand(
+                searchContext.getString(R.string.launcher_settings),
+                searchContext.getString(R.string.launcher_settings_hint),
+                "⚙",
+                t("start"),
+                { onStartIntent(Intent(searchContext, LauncherSettingsActivity::class.java)) },
+            ),
             SearchCommand(
                 t("home_screen_style_2"),
                 searchContext.getString(R.string.style_command_hint),
