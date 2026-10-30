@@ -103,4 +103,7 @@
     <string name="lock_explain">Uses an Android accessibility service that can do one thing, lock the screen. It reads nothing on screen. Turn it on for Tenseven in Accessibility settings.</string>
     <string name="lock_service_label">Tenseven double-tap to lock</string>
     <string name="lock_accessibility_description">Lets Tenseven lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
+
+    <string name="style_command_hint">Switch between the BlackBerry 10 and BlackBerry 7 home layouts</string>
+    <string name="setup_command_hint">Home role, usage access and notification access</string>
 </resources>

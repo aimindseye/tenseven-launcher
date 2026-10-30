@@ -136,6 +136,8 @@ import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
 import io.github.aimindseye.tenseven.BackupActivity
+import io.github.aimindseye.tenseven.HomeStyleActivity
+import io.github.aimindseye.tenseven.OnboardingActivity
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
@@ -3921,6 +3923,20 @@ private fun SearchScreen(
             } else {
                 null
             },
+            SearchCommand(
+                t("home_screen_style_2"),
+                searchContext.getString(R.string.style_command_hint),
+                "▭",
+                t("start"),
+                { onStartIntent(Intent(searchContext, HomeStyleActivity::class.java)) },
+            ),
+            SearchCommand(
+                searchContext.getString(R.string.setup_menu),
+                searchContext.getString(R.string.setup_command_hint),
+                "✓",
+                t("start"),
+                { onStartIntent(Intent(searchContext, OnboardingActivity::class.java)) },
+            ),
             SearchCommand(
                 searchContext.getString(R.string.backup_menu),
                 searchContext.getString(R.string.backup_command_hint),
