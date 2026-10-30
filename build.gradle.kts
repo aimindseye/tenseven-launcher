@@ -16,6 +16,9 @@ plugins {
 val strictQuality = providers.gradleProperty("tenseven.strictQuality").map(String::toBoolean).orElse(false)
 extra["strictQuality"] = strictQuality.get()
 
+// Read here: the version catalog accessor is not available inside the subprojects block.
+val ktlintEngineVersion = libs.versions.ktlint.engine.get()
+
 subprojects {
     // Dependency locking is switched on per module as soon as it has a gradle.lockfile
     // (tools/refresh-locks.sh writes them).
@@ -34,7 +37,7 @@ subprojects {
     }
 
     extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        version.set(libs.versions.ktlint.engine.get())
+        version.set(ktlintEngineVersion)
         android.set(true)
         ignoreFailures.set(!strictQuality.get())
         outputToConsole.set(true)
