@@ -34,6 +34,8 @@ import io.github.aimindseye.tenseven.design.writeGlobalSableAppearance
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Detour
+import io.github.aimindseye.tenseven.model.Bb7Panels
+import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -103,6 +105,8 @@ class SableStartActivity : ComponentActivity() {
     /** The BlackBerry 7 home's favourites (the Home apps) and its rows of icons, read in onCreate. */
     private val bb7Favorites = mutableStateOf<List<String>?>(null)
     private val bb7HomeRows = mutableStateOf(1)
+    private val bb7Panels = mutableStateOf(Bb7Panels.DEFAULT)
+    private val bb7Scrim = mutableStateOf(Bb7Scrim.DEFAULT)
     private var opaqueWindowBackground: Drawable? = null
 
     private var callbackRegistered = false
@@ -207,6 +211,8 @@ class SableStartActivity : ComponentActivity() {
         startStateRepository = StartStateRepository(this)
         bb7Favorites.value = startStateRepository.loadHomeApps()
         bb7HomeRows.value = startStateRepository.loadBb7HomeRows()
+        bb7Panels.value = startStateRepository.loadBb7Panels()
+        bb7Scrim.value = startStateRepository.loadBb7Scrim()
         recentTasksRepository = RecentTasksRepository(this)
         usageRecentsRepository = UsageRecentsRepository(this)
         homeStyle.value = startStateRepository.loadHomeStyle()
@@ -299,6 +305,23 @@ class SableStartActivity : ComponentActivity() {
                     },
                     onOpenMenu = ::showBb7Menu,
                     onDoubleTapEmpty = doubleTapLockCallback(),
+                    panels = bb7Panels.value,
+                    scrimLevel = bb7Scrim.value,
+                    onPanelsChanged = { panels ->
+                        bb7Panels.value = panels
+                        startStateRepository.saveBb7Panels(panels)
+                    },
+                    onScrimChanged = { level ->
+                        bb7Scrim.value = level
+                        startStateRepository.saveBb7Scrim(level)
+                    },
+                    onOpenWallpaper = {
+                        runCatching {
+                            startActivity(
+                                Intent.createChooser(Intent(Intent.ACTION_SET_WALLPAPER), getString(R.string.bb7_wallpaper)),
+                            )
+                        }
+                    },
                 )
                 return@setContent
             }
@@ -406,6 +429,8 @@ class SableStartActivity : ComponentActivity() {
         }
         // Edit Home on the BlackBerry 10 screen edits the same list.
         bb7Favorites.value = startStateRepository.loadHomeApps()
+        bb7Panels.value = startStateRepository.loadBb7Panels()
+        bb7Scrim.value = startStateRepository.loadBb7Scrim()
         scheduleInventoryRefresh()
         refreshFrames()
         liveRefreshGeneration.value += 1

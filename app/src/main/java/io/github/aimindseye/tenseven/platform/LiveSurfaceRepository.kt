@@ -16,7 +16,9 @@ import android.text.format.DateFormat
 import io.github.aimindseye.tenseven.model.StartText.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationHub
+import io.github.aimindseye.tenseven.conversations.MailSummary
 import io.github.aimindseye.tenseven.conversations.ConversationListenerService
 import io.github.aimindseye.tenseven.live.AppUnreadCount
 import io.github.aimindseye.tenseven.live.LiveAvailability
@@ -82,12 +84,7 @@ class LiveSurfaceRepository(
                         uri = MESSAGES_URI,
                         fallbackTitle = t("hub"),
                     ),
-                mail =
-                    LiveDatum(
-                        title = t("mail"),
-                        detail = "unavailable",
-                        availability = LiveAvailability.UNAVAILABLE,
-                    ),
+                mail = latestMail(nowEpochMs),
                 music = nowPlaying(),
                 photos =
                     mediaCount(
@@ -196,8 +193,33 @@ class LiveSurfaceRepository(
      * Per-app unread counts (package and count only). Sable Hub's when it is there; otherwise Tenseven's own
      * notification listener's, which is empty until the user grants notification access.
      */
-    private fun hubAppCounts(): List<AppUnreadCount> =
-        providerHubAppCounts().ifEmpty { ConversationHub.unreadCounts(MAX_HUB_APPS) }
+    private fun hubAppCounts(): List<AppUnreadCount> {
+        ConversationHub.ensureStateLoaded(appContext)
+        return providerHubAppCounts().ifEmpty { ConversationHub.unreadCounts(MAX_HUB_APPS) }
+    }
+
+    /**
+     * The Mail tile: the newest unread email, from the email notifications Tenseven's listener reads (Android has
+     * no public mail data API). Without notification access the tile just opens the default email app. The text is
+     * hidden while the phone is locked.
+     */
+    private fun latestMail(nowEpochMs: Long): LiveDatum {
+        val title = t("mail")
+        if (!ConversationAccess.isGranted(appContext)) return LiveDatum(title, "unavailable", LiveAvailability.UNAVAILABLE)
+        ConversationHub.ensureStateLoaded(appContext)
+        val state = ConversationHub.state()
+        val mail = ConversationHub.conversations().filter { it.isEmail && !state.isSnoozed(it.id, nowEpochMs) }
+        val unread = mail.filter { state.unreadCount(it) > 0 }
+        val count = unread.sumOf { state.unreadCount(it) }
+        val newest = unread.maxByOrNull { it.latestMessage?.timestamp ?: it.latestNotification.postedAt }
+        val locked = appContext.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
+        return LiveDatum(
+            title = title,
+            detail = MailSummary.headline(count, newest?.name, newest?.latestMessage?.text, locked),
+            availability = if (count > 0) LiveAvailability.LIVE else LiveAvailability.EMPTY,
+            observedAtEpochMs = nowEpochMs,
+        )
+    }
 
     private fun providerHubAppCounts(): List<AppUnreadCount> =
         runCatching {

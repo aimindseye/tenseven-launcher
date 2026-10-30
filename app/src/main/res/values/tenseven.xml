@@ -38,6 +38,19 @@
     <string name="setup_usage_reason">Only a home screen built into the phone can see other apps\' recent tasks. Usage access lets Tenseven read which apps you used lately, so Active Frames can show a recent-apps row. App names and times only; nothing is stored or sent.</string>
     <string name="setup_usage_action">Open usage access</string>
 
+    <string name="bb7_panel_show">Show %1$s panel</string>
+    <string name="bb7_panel_hide">Hide %1$s panel</string>
+    <string name="bb7_clearer">Tray: more see-through</string>
+    <string name="bb7_darker">Tray: darker</string>
+    <string name="bb7_wallpaper">Change wallpaper</string>
+    <string name="assign_source">Hold a letter</string>
+    <string name="assign_row">Hold %1$s to open %2$s</string>
+    <string name="assign_hint">Hold %1$s on Home to open it</string>
+    <string name="assign_replaces">Replaces %1$s</string>
+    <string name="assign_done">%1$s now opens %2$s</string>
+    <string name="assign_clear">Clear %1$s (opens %2$s)</string>
+    <string name="assign_cleared">%1$s is free</string>
+    <string name="assign_nothing">Nothing is held on %1$s</string>
     <string name="setup_extras_title">Extra apps (optional)</string>
     <string name="setup_extras_reason">Tenseven can include a calculator with unit conversion, notes, and some classic games. Nothing is installed or downloaded and none is on by default: tick what you want and it appears in All Apps. You can change this any time from Extra apps in Command.</string>
     <string name="setup_extras_action">Save choices</string>
@@ -119,5 +132,17 @@
     <string name="weather_tile_hint">Opens your weather app</string>
     <string name="calendar_allow">Allow calendar to show your next event</string>
     <string name="media_allow">Allow notification access to show what is playing</string>
+    <string name="hub_filter_all">All</string>
+    <string name="hub_filter_unread">Unread</string>
+    <string name="hub_filter_messages">Messages</string>
+    <string name="hub_filter_email">Email</string>
+    <string name="hub_filter_snoozed">Snoozed (%1$d)</string>
+    <string name="hub_filter_person_hint">Filter by person</string>
+    <string name="hub_no_match">No conversations match.</string>
+    <string name="hub_unread_count">%1$d new</string>
+    <string name="hub_mark_read">Mark read</string>
+    <string name="hub_snooze_hour">Snooze 1 hour</string>
+    <string name="hub_snooze_tomorrow">Until tomorrow</string>
+    <string name="hub_wake">Show again</string>
     <string name="hub_open">Open the Hub</string>
 </resources>

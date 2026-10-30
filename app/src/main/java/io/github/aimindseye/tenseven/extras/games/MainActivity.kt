@@ -3,6 +3,7 @@
 package io.github.aimindseye.tenseven.extras.games
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -11,6 +12,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.SableGlobalTheme
+import io.github.aimindseye.tenseven.extras.ExtraKeyAction
+import io.github.aimindseye.tenseven.extras.ExtraKeys
 
 /** The key host of the running game; screens install their handler in it. */
 internal val LocalGameKeyHost = staticCompositionLocalOf { GameKeyHost() }
@@ -70,6 +73,29 @@ abstract class GameActivity(
                     false
                 }
             }
+        if (!taken && event.action == KeyEvent.ACTION_DOWN) {
+            when (ExtraKeys.action(event.keyCode, event.repeatCount, event.isAltPressed, event.isCtrlPressed)) {
+                ExtraKeyAction.Leave -> {
+                    finish()
+                    return true
+                }
+                ExtraKeyAction.Help -> {
+                    showKeys()
+                    return true
+                }
+                null -> Unit
+            }
+        }
         return taken || super.dispatchKeyEvent(event)
+    }
+
+    private fun showKeys() {
+        val kind = GameKeyHelp.kindOf(game) ?: return
+        AlertDialog
+            .Builder(this)
+            .setTitle("Keys")
+            .setMessage(GameKeyHelp.lines(kind).joinToString("\n"))
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 }

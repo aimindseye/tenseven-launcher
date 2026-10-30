@@ -2,6 +2,9 @@ package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
 import io.github.aimindseye.tenseven.model.Bb7Home
+import io.github.aimindseye.tenseven.model.Bb7Panel
+import io.github.aimindseye.tenseven.model.Bb7Panels
+import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.LauncherBackup
@@ -120,6 +123,20 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_BB7_HOME_ROWS, rows).apply()
     }
 
+    /** The BlackBerry 7 tray's panels, in order (see Bb7Panels). */
+    fun loadBb7Panels(): List<Bb7Panel> = Bb7Panels.decode(preferences.getString(KEY_BB7_PANELS, null))
+
+    fun saveBb7Panels(panels: List<Bb7Panel>) {
+        preferences.edit().putString(KEY_BB7_PANELS, Bb7Panels.encode(panels)).apply()
+    }
+
+    /** How dark the BlackBerry 7 banner and tray are over the wallpaper (see Bb7Scrim). */
+    fun loadBb7Scrim(): Int = Bb7Scrim.clamp(preferences.getInt(KEY_BB7_SCRIM, Bb7Scrim.DEFAULT))
+
+    fun saveBb7Scrim(level: Int) {
+        preferences.edit().putInt(KEY_BB7_SCRIM, Bb7Scrim.clamp(level)).apply()
+    }
+
     /** The app grid order (AppGrid, the BB10 layout); null means never customised. */
     fun loadGridOrder(): List<String>? = loadOrdered(KEY_GRID_ORDER)
 
@@ -236,6 +253,8 @@ class StartStateRepository(
         const val QUICK_BAR_SEPARATOR = "\n"
         const val KEY_HOME_APPS = "home_apps"
         const val KEY_BB7_HOME_ROWS = "bb7_home_rows"
+        const val KEY_BB7_PANELS = "bb7_panels"
+        const val KEY_BB7_SCRIM = "bb7_scrim"
         const val KEY_GLANCE_WIDGETS = "glance_widgets"
         // v2: the BB10 Home shows the status dials by default; sets saved by the
         // three-page Home hid them without the user choosing, so they are not read.

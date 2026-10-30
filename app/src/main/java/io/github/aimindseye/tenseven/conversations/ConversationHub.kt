@@ -25,12 +25,68 @@ object ConversationHub {
     private var sentReplies: List<ConversationMessage> = emptyList()
     private val listeners = CopyOnWriteArrayList<() -> Unit>()
 
+    @Volatile
+    private var state: ConversationState = ConversationState.EMPTY
+
+    @Volatile
+    private var stateLoaded = false
+
+    /** Reads what was marked read or snoozed, once per process. */
+    fun ensureStateLoaded(context: Context) {
+        if (stateLoaded) return
+        synchronized(lock) {
+            if (!stateLoaded) {
+                state = ConversationStateStore(context).load().prune(System.currentTimeMillis())
+                stateLoaded = true
+            }
+        }
+    }
+
+    fun state(): ConversationState = state
+
+    private fun changeState(
+        context: Context,
+        change: (ConversationState) -> ConversationState,
+    ) {
+        ensureStateLoaded(context)
+        val next = synchronized(lock) { change(state).also { state = it } }
+        ConversationStateStore(context).save(next)
+        listeners.forEach { it() }
+    }
+
+    /**
+     * Marks the conversation read: sends the "mark as read" action the app put on its notification (when it has
+     * one), and stops counting what is already here. Newer messages count again.
+     */
+    fun markRead(
+        context: Context,
+        conversation: HubConversation,
+    ) {
+        conversation.notifications.forEach { n ->
+            runCatching { n.markReadAction?.actionIntent?.send() }
+        }
+        val now = maxOf(System.currentTimeMillis(), conversation.messages.maxOfOrNull(ConversationMessage::timestamp) ?: 0L)
+        changeState(context) { it.markRead(conversation.id, now) }
+    }
+
+    fun snooze(
+        context: Context,
+        conversation: HubConversation,
+        until: Long,
+    ) = changeState(context) { it.snooze(conversation.id, until) }
+
+    fun wake(
+        context: Context,
+        conversation: HubConversation,
+    ) = changeState(context) { it.wake(conversation.id) }
+
     fun notifications(): List<HubNotification> = synchronized(lock) { items }
 
     fun conversations(): List<HubConversation> = synchronized(lock) { buildConversations(items, sentReplies) }
 
     /** Package and count per app, most unread first. No message text. */
-    fun unreadCounts(maxApps: Int = DEFAULT_MAX_APPS): List<AppUnreadCount> = countUnread(notifications(), maxApps)
+    fun unreadCounts(maxApps: Int = DEFAULT_MAX_APPS): List<AppUnreadCount> =
+        countUnread(notifications(), maxApps, state, System.currentTimeMillis())
 
     fun addChangeListener(listener: () -> Unit) {
         listeners += listener
@@ -154,15 +210,18 @@ private fun isEchoed(
 
 private const val ECHO_WINDOW_MS = 120_000L
 
-/** New incoming messages per app: ongoing notifications, outgoing messages and history do not count. */
+/** New incoming messages per app: ongoing notifications, outgoing messages, history, snoozed and read ones do not count. */
 internal fun countUnread(
     source: List<HubNotification>,
     maxApps: Int,
+    state: ConversationState = ConversationState.EMPTY,
+    now: Long = 0L,
 ): List<AppUnreadCount> =
     source
         .filterNot(HubNotification::isOngoing)
+        .filterNot { state.isSnoozed(it.conversationId, now) }
         .groupBy(HubNotification::packageName)
-        .mapValues { (_, items) -> items.sumOf { n -> n.messages.count { !it.isOutgoing && !it.isHistoric } } }
+        .mapValues { (_, items) -> items.sumOf { n -> state.unreadCount(n) } }
         .filterValues { it > 0 }
         .entries
         .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })

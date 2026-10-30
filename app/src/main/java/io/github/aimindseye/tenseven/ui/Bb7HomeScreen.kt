@@ -50,6 +50,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,16 +59,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.aimindseye.tenseven.model.StartText.t
 import kotlinx.coroutines.delay
+import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.SableTheme
 import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7Panel
+import io.github.aimindseye.tenseven.model.Bb7Panels
+import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeHeader
 import io.github.aimindseye.tenseven.model.stableKey
+import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import java.text.DateFormat
 import java.util.Date
@@ -101,8 +106,18 @@ fun Bb7HomeScreen(
     onHomeRowsChanged: (Int) -> Unit,
     onOpenMenu: (List<Pair<String, () -> Unit>>) -> Unit,
     onDoubleTapEmpty: (() -> Unit)? = null,
+    /** The panels the tray cycles through, and how dark the banner and tray are; both are set from the Menu key. */
+    panels: List<Bb7Panel> = Bb7Panels.DEFAULT,
+    scrimLevel: Int = Bb7Scrim.DEFAULT,
+    onPanelsChanged: (List<Bb7Panel>) -> Unit = {},
+    onScrimChanged: (Int) -> Unit = {},
+    onOpenWallpaper: () -> Unit = {},
 ) {
+    val context = LocalContext.current
+    val usage = remember(apps, refreshGeneration, homeGeneration) { AppUsageRepository(context).load() }
     var panel by remember { mutableStateOf(Bb7Panel.Favorites) }
+    // A panel the user hid can no longer be the one shown.
+    LaunchedEffect(panels) { if (panel !in panels) panel = panels.first() }
     var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableIntStateOf(0) }
@@ -132,14 +147,14 @@ fun Bb7HomeScreen(
         }
     val openApps = {
         query = ""
-        panel = Bb7Panel.All
+        panel = if (Bb7Panel.All in panels) Bb7Panel.All else panels.first()
         open = true
         selected = 0
     }
 
     val searching = query.isNotEmpty()
     val shown =
-        if (searching) Bb7Home.search(apps, query) else Bb7Home.panelApps(panel, apps, favoriteKeys)
+        if (searching) Bb7Home.search(apps, query) else Bb7Home.panelApps(panel, apps, favoriteKeys, usage)
     val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, favoriteKeys).map { it.stableKey() }
     val trayTitle =
         when {
@@ -176,6 +191,17 @@ fun Bb7HomeScreen(
             if (!open && !searching && homeRows > Bb7Home.MIN_HOME_ROWS) {
                 add(t("show_fewer_rows") to { onHomeRowsChanged(homeRows - 1) })
             }
+            if (!searching) {
+                // Panels: show or hide each one (the last one stays); the banner and tray can be more see-through.
+                Bb7Panel.entries.forEach { p ->
+                    if (p in panels && panels.size == 1) return@forEach
+                    val text = context.getString(if (p in panels) R.string.bb7_panel_hide else R.string.bb7_panel_show, p.title)
+                    add(text to { onPanelsChanged(Bb7Panels.toggle(panels, p)) })
+                }
+                if (scrimLevel > Bb7Scrim.MIN) add(context.getString(R.string.bb7_clearer) to { onScrimChanged(Bb7Scrim.step(scrimLevel, -1)) })
+                if (scrimLevel < Bb7Scrim.MAX) add(context.getString(R.string.bb7_darker) to { onScrimChanged(Bb7Scrim.step(scrimLevel, 1)) })
+                add(context.getString(R.string.bb7_wallpaper) to onOpenWallpaper)
+            }
         }
     }
 
@@ -206,14 +232,14 @@ fun Bb7HomeScreen(
                             when {
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && native.isAltPressed ->
                                     if (open || searching) {
-                                        panel = Bb7Home.step(panel, -1)
+                                        panel = Bb7Home.step(panel, -1, panels)
                                         selected = 0
                                     } else {
                                         onOpenHub()
                                     }
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && native.isAltPressed ->
                                     if (open || searching) {
-                                        panel = Bb7Home.step(panel, 1)
+                                        panel = Bb7Home.step(panel, 1, panels)
                                         selected = 0
                                     } else {
                                         openApps()
@@ -239,7 +265,7 @@ fun Bb7HomeScreen(
                                     native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ->
                                     shown.getOrNull(selected)?.let { onLaunchApp(it) }
                                 native.keyCode == KeyEvent.KEYCODE_SPACE && !searching -> {
-                                    panel = Bb7Home.step(panel, 1)
+                                    panel = Bb7Home.step(panel, 1, panels)
                                     selected = 0
                                 }
                                 native.keyCode == KeyEvent.KEYCODE_DEL && searching -> {
@@ -301,6 +327,7 @@ fun Bb7HomeScreen(
                                 ?: HomeHeader.weatherFallback(live.weather.availability),
                         unread = live.hubApps.sumOf { it.count },
                         compact = open || searching,
+                        scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
                         onOpenHub = onOpenHub,
                     )
                     if (!open && !searching) Spacer(Modifier.weight(1f))
@@ -310,6 +337,7 @@ fun Bb7HomeScreen(
                         columns = columns,
                         open = open || searching,
                         moving = moving,
+                        scrim = Color.Black.copy(alpha = Bb7Scrim.trayAlpha(scrimLevel)),
                         onResize = { dragged ->
                             val rows = Bb7Home.resizeRows(homeRows, dragged, rowPx)
                             if (rows > Bb7Home.MAX_HOME_ROWS) {
@@ -327,7 +355,7 @@ fun Bb7HomeScreen(
                         },
                         onStep = { step ->
                             query = ""
-                            panel = Bb7Home.step(panel, step)
+                            panel = Bb7Home.step(panel, step, panels)
                             selected = 0
                         },
                         onLaunch = { onLaunchApp(it) },
@@ -350,13 +378,14 @@ private fun Bb7Banner(
     weatherLine: String,
     unread: Int,
     compact: Boolean,
+    scrim: Color,
     onOpenHub: () -> Unit,
 ) {
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(BANNER_SCRIM)
+                .background(scrim)
                 .padding(horizontal = 12.dp, vertical = if (compact) 4.dp else 8.dp),
     ) {
         if (!compact) SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp)
@@ -418,6 +447,7 @@ private fun Bb7Tray(
     open: Boolean,
     moving: Boolean,
     selected: Int,
+    scrim: Color,
     modifier: Modifier,
     onResize: (Float) -> Unit,
     onToggle: () -> Unit,
@@ -433,7 +463,7 @@ private fun Bb7Tray(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(TRAY_SCRIM)
+                .background(scrim)
                 .then(
                     if (open) {
                         Modifier
@@ -536,6 +566,4 @@ private const val SWIPE_DP = 72
 /** A tray row's height, the drag that shows one more or one fewer row. */
 private const val ROW_DP = 64
 private const val ICON_DP = 40
-private val BANNER_SCRIM = Color(0x99000000)
-private val TRAY_SCRIM = Color(0xE6000000)
 private val BANNER_MUTED = Color(0xFFC9D1DA)

@@ -54,7 +54,13 @@ RELEASES=NONE
 | **Hub** | Unread bar, then your message and email conversations grouped per person with inline reply (Tenseven's own notification listener, in memory only, text hidden while locked), calls and contacts. Sable Hub, if installed, still supplies its own counts |
 | **Edit Home** | Reorder the grid, the bottom bar and the frames with the keyboard (Enter picks up and drops, arrows move) |
 | **Status dials** | Wi-Fi, mobile, CPU, RAM, battery time left |
-| **Extra apps** | Optional Calculator (with unit converter), Notes and ten games (Sudoku, Minesweeper, 2048, Bricks, Snake, Blocks, Reversi, Solitaire, Mahjong, Words). None is on by default: tick the ones you want in the setup's Extras step, or later from Command, Extra apps. Nothing is downloaded; they ship inside Tenseven |
+| **Assign a letter** | In Command type `assign k camera` and pick the app: holding K on Home now opens it. `unassign k` frees the letter |
+| **Most-used first** | Command ranks the apps you open most ahead of other matches, so two letters are usually enough. Counts stay on the phone and fade over time |
+| **Hub filters** | Filter conversations by person, unread, messages or email. Mark read (button or `M`) and snooze for an hour or until tomorrow (button or `S`); snoozed conversations leave the list and the unread counts and come back by themselves |
+| **Mail tile** | The BB10 Mail tile shows the newest unread email from your notifications (text hidden while locked) and opens your default email app. Weather stays a shortcut: Android has no weather data API, and Tenseven asks for no internet access |
+| **BB7 tray** | Menu key: show or hide the Favorites, All, Downloads and Frequent panels, make the banner and tray more see-through or darker, or change the wallpaper |
+| **Gestures** | Swipe down on the BB10 Home to open Command |
+| **Extra apps** | Optional Calculator (with unit converter), Notes and ten games (Sudoku, Minesweeper, 2048, Bricks, Snake, Blocks, Reversi, Solitaire, Mahjong, Words). None is on by default: tick the ones you want in the setup's Extras step, or later from Command, Extra apps. Nothing is downloaded; they ship inside Tenseven. In every extra, Esc leaves and Menu lists its keys |
 | **Default apps** | BlackBerry 10 tiles open your phone's own Calendar, Weather, Music, Email and Gallery apps; next event and now-playing come from Android |
 
 Keyboard shortcuts in the SableOS build are written, but not yet confirmed on every device; the repo

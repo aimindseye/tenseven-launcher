@@ -136,18 +136,21 @@ object CommandRanking {
 
     /**
      * Apps for a term: with no term, recents then the rest; with a term,
-     * label-prefix matches before contains matches, recents first within
-     * each, then everything else A to Z.
+     * label-prefix matches before contains matches, the most used first within
+     * each (then recents), then everything else A to Z.
      */
     fun <T> apps(
         items: List<T>,
         label: (T) -> String,
         recentRank: (T) -> Int?,
         term: String,
+        frequency: (T) -> Int = { 0 },
     ): List<T> {
         val t = term.trim()
         if (t.isEmpty()) {
-            return items.sortedWith(compareBy({ recentRank(it) ?: Int.MAX_VALUE }, { label(it).lowercase() }))
+            return items.sortedWith(
+                compareBy({ recentRank(it) ?: Int.MAX_VALUE }, { -frequency(it) }, { label(it).lowercase() }),
+            )
         }
         return items.mapNotNull { item ->
             val l = label(item)
@@ -159,7 +162,7 @@ object CommandRanking {
                     else -> null
                 }
             tier?.let { Triple(item, it, recentRank(item) ?: Int.MAX_VALUE) }
-        }.sortedWith(compareBy({ it.second }, { it.third }, { label(it.first).lowercase() }))
+        }.sortedWith(compareBy({ it.second }, { -frequency(it.first) }, { it.third }, { label(it.first).lowercase() }))
             .map { it.first }
     }
 }
