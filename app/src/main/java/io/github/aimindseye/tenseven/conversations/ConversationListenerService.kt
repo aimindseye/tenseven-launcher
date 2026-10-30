@@ -1,11 +1,12 @@
 // Derived from MinkLauncher OpenSource (github.com/katoaapps/openminilaunch, commit b9b26f7,
 // features/conversations/MinkNotificationListenerService.kt), Copyright 2026 Katoa Apps, Apache License 2.0.
-// Changed: package; split into small functions; the pre-Android-9 message path and the reply hook are not
-// ported yet; messages carry a historic flag so only new ones are counted.
+// Changed: package; split into small functions; the pre-Android-9 message path is not ported (minSdk is 30);
+// messages carry a historic flag so only new ones are counted.
 package io.github.aimindseye.tenseven.conversations
 
 import android.Manifest
 import android.app.Notification
+import android.app.RemoteInput
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -74,9 +75,13 @@ class ConversationListenerService : NotificationListenerService() {
             isOngoing = notification.flags and Notification.FLAG_ONGOING_EVENT != 0,
             messages = messages,
             contentIntent = notification.contentIntent,
-            replyAction = null,
+            replyAction = replyActionOf(notification),
         )
     }
+
+    /** The action behind the notification's own Reply button: the first one that takes free-form text. */
+    private fun replyActionOf(notification: Notification): Notification.Action? =
+        notification.actions?.firstOrNull { action -> action.remoteInputs?.any(RemoteInput::getAllowFreeFormInput) == true }
 
     private fun messagingStyleOf(notification: Notification): Notification.MessagingStyle? =
         runCatching {

@@ -28,9 +28,9 @@ needs that SableOS gets from the system. Nothing below is done unless it says so
 Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklauncher/PORTING.md).
 
 - [ ] A `PlatformCapabilities` interface in front of every system-only feature, with an ordinary-install and a SableOS implementation (table in `docs/ARCHITECTURE.md`)
-- [ ] Hub from notifications (Mink conversations): grouped per person, inline reply, in memory only. **Done:** listener, in-memory hub, unread counts on the Hub bar. **Next:** conversation list page and inline reply
-- [ ] Onboarding: home role, then each optional permission with its reason, including **Allow restricted settings**
-- [ ] Active Frames fallback: recent apps from usage stats, icons only
+- [ ] Hub from notifications (Mink conversations): grouped per person, inline reply, in memory only. **Done:** listener, in-memory hub, unread counts on the Hub bar, conversation list and inline reply on the Hub page (hidden while the device is locked)
+- [x] Onboarding: home role, then each optional permission with its reason, including **Allow restricted settings** (`OnboardingActivity`; first run and menu)
+- [x] Active Frames fallback: recent apps from usage stats, icons only (`UsageRecentsRepository`, shown when no recent tasks are readable)
 - [ ] Command prefixes, icon packs, backup and restore, Private Space and work-profile extras, double-tap to lock
 - [ ] Key profiles per device (see `docs/ARCHITECTURE.md`), captured on real phones
 - [ ] Non-square and tall screens: BlackBerry 10 and 7 layouts on a Key2-shaped display and on a plain phone

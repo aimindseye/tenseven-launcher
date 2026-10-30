@@ -124,3 +124,67 @@ class ConversationHubTest {
         }
     }
 }
+
+class ConversationPreviewAndReplyTest {
+    private fun msg(
+        id: String,
+        text: String,
+        at: Long,
+        sender: String? = "Ann",
+        outgoing: Boolean = false,
+        conversation: String = "c",
+    ) = ConversationMessage(id, conversation, "k", "p", "p", text, at, sender, outgoing)
+
+    private fun conversation(vararg messages: ConversationMessage, name: String = "Ann") =
+        HubConversation(
+            id = "c",
+            name = name,
+            notifications =
+                listOf(HubNotification("k", "c", name, "p", "p", 1, false, messages.toList(), contentIntent = null, replyAction = null)),
+            messages = messages.toList(),
+        )
+
+    @Test
+    fun previewHidesTextWhileLocked() {
+        assertEquals(null, conversationPreview(conversation(msg("1", "hi", 1)), locked = true, you = "You"))
+    }
+
+    @Test
+    fun previewShowsWhoSpokeOnlyWhenItIsNotTheConversationName() {
+        assertEquals("hi", conversationPreview(conversation(msg("1", "hi", 1)), false, "You"))
+        assertEquals("Bo: hi", conversationPreview(conversation(msg("1", "hi", 1, sender = "Bo"), name = "Book club"), false, "You"))
+        assertEquals("You: ok", conversationPreview(conversation(msg("1", "hi", 1), msg("2", "ok", 2, sender = null, outgoing = true)), false, "You"))
+    }
+
+    @Test
+    fun previewCollapsesWhitespaceAndClipsLongText() {
+        val long = "a ".repeat(200)
+        val preview = conversationPreview(conversation(msg("1", "x\n\n  y", 1)), false, "You")
+        assertEquals("x y", preview)
+        val clipped = conversationPreview(conversation(msg("1", long, 1)), false, "You", maxChars = 20)!!
+        assertEquals(20, clipped.length)
+        assertTrue(clipped.endsWith("…"))
+    }
+
+    @Test
+    fun ourReplyShowsUntilTheAppEchoesIt() {
+        val incoming = msg("1", "hello", 1_000)
+        val notification = HubNotification("k", "c", "Ann", "p", "p", 1_000, false, listOf(incoming), contentIntent = null, replyAction = null)
+        val reply = msg("local", "on my way", 5_000, sender = null, outgoing = true)
+        val before = buildConversations(listOf(notification), listOf(reply)).single()
+        assertEquals(listOf("hello", "on my way"), before.messages.map { it.text })
+
+        val echo = msg("echo", "on my way", 6_000, sender = null, outgoing = true)
+        val withEcho = notification.copy(messages = listOf(incoming, echo))
+        val after = buildConversations(listOf(withEcho), listOf(reply)).single()
+        assertEquals(listOf("hello", "on my way"), after.messages.map { it.text })
+        assertEquals(2, after.messages.size)
+    }
+
+    @Test
+    fun repliesOfOtherConversationsAreIgnored() {
+        val notification = HubNotification("k", "c", "Ann", "p", "p", 1, false, listOf(msg("1", "hi", 1)), contentIntent = null, replyAction = null)
+        val stray = msg("local", "nope", 2, sender = null, outgoing = true, conversation = "other")
+        assertEquals(1, buildConversations(listOf(notification), listOf(stray)).single().messages.size)
+    }
+}

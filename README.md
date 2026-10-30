@@ -51,7 +51,7 @@ RELEASES=NONE
 | **Type to find** | Press a letter on Home to search apps and Sable actions; prefixes such as `?app`, `@person`, `/settings`, `!action`, `/private`, `/work` narrow it |
 | **Hold a letter** | Hold a key on Home to open the app you assigned to it, or call a speed-dial contact where Sable Phone is installed |
 | **All Apps** | A to Z with a privacy row per app (permissions and special access), Private Space and work profile support, uninstall through the system |
-| **Hub** | Messages, calls, contacts and notifications on one page (needs the companion Sable apps today; the Mink-based replacement is planned) |
+| **Hub** | Unread bar, then your message and email conversations grouped per person with inline reply (Tenseven's own notification listener, in memory only, text hidden while locked), calls and contacts. Sable Hub, if installed, still supplies its own counts |
 | **Edit Home** | Reorder the grid, the bottom bar and the frames with the keyboard (Enter picks up and drops, arrows move) |
 | **Status dials** | Wi-Fi, mobile, CPU, RAM, battery time left |
 
@@ -69,16 +69,16 @@ Launcher state is in app-private storage. Recent activity is kept in memory only
 | `READ_CONTACTS` | Hub Contacts tab: names and one number per person, read on the phone, never stored | yes; the tab asks again |
 | `READ_MEDIA_IMAGES` | Local photo counts on Home | yes |
 | `REQUEST_DELETE_PACKAGES` | Hand uninstall to the system uninstaller, which confirms | yes |
+| Usage access (a special access you grant in Settings) | Active Frames shows a row of recently used apps (names and times only; not stored or sent) | yes; off until you turn it on |
 | Notification access (a special access you grant in Settings, not a manifest permission) | Counts unread messages and email per app for the Hub bar, grouped per person; read on the phone, held in memory only, never stored or sent | yes; off until you turn it on |
 | `ACCESS_HIDDEN_PROFILES` | Show the Private Space; Android grants it to the default Home app only | yes |
 
 No signature permissions: an ordinary install cannot hold them, and CI fails if the manifest asks for one
 (`tests/run.sh`). Features that need them on SableOS (live thumbnails in Active Frames, closing tasks,
 work-profile privacy rows) have an ordinary-install fallback; see the table in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Notification access is used by the Mink-based Hub (unread bar today; conversation list and replies next)
-and usage access arrives with the Active Frames fallback. Neither is asked for silently: the in-app
-explanation arrives with onboarding, and until then you turn notification access on yourself in
-Settings > Notifications > Device & app notifications.
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Notification access is used by the Mink-based Hub (unread bar, conversations per person, inline reply) and
+usage access by the recent-apps row on Active Frames. Neither is asked for silently: the setup screen
+(first run, and Setup and permissions in the menu) explains each one, and every optional step can be skipped.
 
 ## Install
 
@@ -86,10 +86,11 @@ There is no release yet. When there is one:
 
 1. Download the APK from the GitHub release and open it; approve installing from that source if Android asks.
 2. Press Home and choose **Tenseven** as the home app (or Settings > Apps > Default apps > Home app).
-3. Open the style chooser (menu on Home > Home screen style) and pick BlackBerry 10 or BlackBerry 7.
-4. **Notification access on Android 13 or newer** (for the Mink-based Hub): Android blocks it for
-   apps installed outside a store until you open Settings > Apps > Tenseven, tap the top-right menu and
-   choose **Allow restricted settings**. Only do this for an APK you trust.
+3. Follow the setup screen that opens on first run: the home role first, then each optional permission with its reason.
+4. Open the style chooser (menu on Home > Home screen style) and pick BlackBerry 10 or BlackBerry 7.
+5. **Notification or usage access on Android 13 or newer:** Android greys these switches out for apps
+   installed outside a store until you open Settings > Apps > Tenseven, tap the top-right menu and choose
+   **Allow restricted settings**. The setup screen shows this step when it applies. Only do this for an APK you trust.
 
 To try the current debug build, download `tenseven-debug-apk` from a green run of the
 [Android workflow](https://github.com/aimindseye/tenseven-launcher/actions/workflows/android.yml) (it
