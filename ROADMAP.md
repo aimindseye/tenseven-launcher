@@ -31,7 +31,7 @@ Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklau
 - [ ] Hub from notifications (Mink conversations): grouped per person, inline reply, in memory only. **Done:** listener, in-memory hub, unread counts on the Hub bar, conversation list and inline reply on the Hub page (hidden while the device is locked)
 - [x] Onboarding: home role, then each optional permission with its reason, including **Allow restricted settings** (`OnboardingActivity`; first run and menu)
 - [x] Active Frames fallback: recent apps from usage stats, icons only (`UsageRecentsRepository`, shown when no recent tasks are readable)
-- [ ] Command prefixes, icon packs, backup and restore, Private Space and work-profile extras, double-tap to lock
+- [x] Command prefixes, icon packs, backup and restore, work-profile pause, double-tap to lock (all ported; **none of it has been run on a device yet**)
 - [ ] Key profiles per device (see `docs/ARCHITECTURE.md`), captured on real phones
 - [ ] Non-square and tall screens: BlackBerry 10 and 7 layouts on a Key2-shaped display and on a plain phone
 

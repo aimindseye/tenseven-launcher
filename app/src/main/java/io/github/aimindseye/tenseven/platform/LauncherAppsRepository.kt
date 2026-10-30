@@ -146,6 +146,18 @@ class LauncherAppsRepository(
         locked: Boolean,
     ): Boolean = runCatching { userManager.requestQuietModeEnabled(locked, user) }.getOrDefault(false)
 
+    /** Managed (work) profiles on the device; empty when there is none. */
+    fun workProfiles(): List<UserHandle> =
+        runCatching { userManager.userProfiles.filter { profileLabelFor(it) == PROFILE_WORK } }.getOrDefault(emptyList())
+
+    /** True when every work profile is paused, false when any runs, null when the device has no work profile. */
+    fun workProfilesPaused(): Boolean? =
+        workProfiles().takeIf { it.isNotEmpty() }?.let { profiles -> profiles.all(::isLocked) }
+
+    /** Pauses or resumes all work profiles. Resuming may show the system's own credential screen. */
+    fun setWorkProfilesPaused(paused: Boolean): Boolean =
+        workProfiles().let { profiles -> profiles.isNotEmpty() && profiles.map { setLocked(it, paused) }.all { it } }
+
     private fun profileLabelFor(user: UserHandle): String? {
         if (user == launcherUser) return null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {

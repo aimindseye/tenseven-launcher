@@ -22,6 +22,7 @@ Imported from SableOS, directories and packages unchanged until the rename in `R
 | `privacy/` | `io.github.aimindseye.tenseven.privacy` | The All Apps privacy row: the evaluator, summary policy and snapshot cache (pure Kotlin) |
 | `platform/` | `io.github.aimindseye.tenseven.platform` | Android access: `LauncherAppsRepository`, `RecentTasksRepository`, `StartStateRepository`, `LiveSurfaceRepository`, `PeopleRepository`, `UsageRecentsRepository` (recent apps from usage events), `PrivacyFactsReader`, `DeviceStatsSampler`, and Tenseven's `PermissionChangeSignal` and `UserContexts` |
 | `onboarding/` | `io.github.aimindseye.tenseven.onboarding` | Setup: `OnboardingPlan` (step order and when to explain Allow restricted settings, pure and tested) and `SetupStatus` (what is granted); the screen is `OnboardingActivity` |
+| `iconpacks/` | `io.github.aimindseye.tenseven.iconpacks` | Nova and ADW icon packs: discovery, `appfilter` parsing, drawable loading; `IconPacks` holds the chosen pack (Appearance) and `loadLauncherIcon` uses it; mapping rules are pure and tested; ported from Mink |
 | `conversations/` | `io.github.aimindseye.tenseven.conversations` | Notification access: `ConversationListenerService` reads message and email notifications into `ConversationHub` (in memory only); feeds the Hub bar counts; ported from Mink, see `third_party/minklauncher/PORTING.md` |
 | `ui/` | `io.github.aimindseye.tenseven.ui` | Compose: `SableStartScreen`, `Bb7HomeScreen`, glyphs and status rings |
 | `live/` | `io.github.aimindseye.tenseven.live` | Models for the live tiles (weather, calendar, mail, media) |
@@ -95,3 +96,10 @@ To make it standalone: lower `minSdk` from 36 to 30 and find the calls that need
 keyboard it reports (`InputDevice`, model) instead of the `ro.sable.profile.id` property, with a manual choice
 in settings; read the accent from its own preference when the SableOS appearance provider is absent; and give
 it its own package and signature. Its layouts for Titan 2 and Q25 are marked unverified upstream.
+
+## Backup, quick actions and the lock service
+
+- `model/LauncherBackup` is the backup format: JSON with `format`, `version` and an allow-list of preference keys. A file with an unknown key, a wrong type or another version is refused whole, before anything changes. `BackupActivity` uses the system file picker, so no storage permission is requested. Restoring replaces the listed settings and restarts the launcher. Not included: setup state, letter shortcuts and speed dial (they hold contact names), permissions.
+- `model/QuickActions` parses `-` (to-do), `/` (note) and `+` (event) in Command and recognises web addresses. To-dos and notes go to an app the user picks through the share sheet; events open the calendar's own new-event screen. Tenseven keeps nothing.
+- `LockScreenAccessibilityService` is declared with no event types, no window content and no gestures. Double-tap detection sits on empty Home space only (tiles and rows consume their own taps). **Google Play:** an accessibility service that is not an accessibility tool must be declared and justified in Play Console; review that policy before any Play release. GitHub and F-Droid builds are not affected.
+

@@ -12,6 +12,8 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.SystemClock
+import android.provider.CalendarContract
+import android.provider.Settings
 import android.provider.CallLog
 import android.util.LruCache
 import androidx.compose.foundation.Image
@@ -101,6 +103,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -132,6 +135,12 @@ import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
+import io.github.aimindseye.tenseven.BackupActivity
+import io.github.aimindseye.tenseven.R
+import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
+import io.github.aimindseye.tenseven.iconpacks.IconPackLoader
+import io.github.aimindseye.tenseven.iconpacks.IconPacks
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.ActiveFrames
 import io.github.aimindseye.tenseven.model.AppEntry
@@ -144,6 +153,8 @@ import io.github.aimindseye.tenseven.model.CommandQuery
 import io.github.aimindseye.tenseven.model.CommandRanking
 import io.github.aimindseye.tenseven.model.CommandScope
 import io.github.aimindseye.tenseven.model.CoreAppIdentity
+import io.github.aimindseye.tenseven.model.QuickActionKind
+import io.github.aimindseye.tenseven.model.QuickActions
 import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeHeader
@@ -380,6 +391,9 @@ fun SableStartScreen(
     /** null: no private space on this device; true: locked; false: unlocked. */
     privateSpaceLocked: Boolean? = null,
     onTogglePrivateSpace: () -> Unit = {},
+    workProfilePaused: Boolean? = null,
+    onToggleWorkProfile: () -> Unit = {},
+    onDoubleTapEmpty: (() -> Unit)? = null,
     /** Counts up for each "show the Hub page" request (org.sableos.start.action.SHOW_HUB). */
     hubGeneration: Int = 0,
     /** The tab that request asked for ([HubFilter] by name), or null for All. */
@@ -591,7 +605,13 @@ fun SableStartScreen(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.safeDrawing),
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .pointerInput(onDoubleTapEmpty, destination) {
+                            // Home only, and only empty space: taps on tiles and rows are consumed by them first.
+                            if (onDoubleTapEmpty != null && destination == SableStartDestination.Start) {
+                                detectTapGestures(onDoubleTap = { onDoubleTapEmpty() })
+                            }
+                        },
             ) {
                 when (destination) {
                     SableStartDestination.Start ->
@@ -795,6 +815,8 @@ fun SableStartScreen(
                             initialQuery = searchSeed,
                             privateSpaceLocked = privateSpaceLocked,
                             onTogglePrivateSpace = onTogglePrivateSpace,
+                            workProfilePaused = workProfilePaused,
+                            onToggleWorkProfile = onToggleWorkProfile,
                             onBack = ::navigateBack,
                             onLaunchApp = ::launchApp,
                             secondInstanceOf = ::secondInstance,
@@ -3805,6 +3827,8 @@ private fun SearchScreen(
     initialQuery: String,
     privateSpaceLocked: Boolean?,
     onTogglePrivateSpace: () -> Unit,
+    workProfilePaused: Boolean?,
+    onToggleWorkProfile: () -> Unit,
     onBack: () -> Unit,
     onLaunchApp: (AppEntry) -> Unit,
     secondInstanceOf: (AppEntry) -> AppEntry?,
@@ -3871,6 +3895,7 @@ private fun SearchScreen(
             }
         }
 
+    val searchContext = LocalContext.current
     val commands =
         listOf(
             SearchCommand(t("all_apps"), t("a_to_z_with_privacy"), "A", t("start"), onAllApps),
@@ -3879,8 +3904,26 @@ private fun SearchScreen(
             SearchCommand(t("hub_page"), t("messages_mail_calls_contacts_and"), "◇", t("start"), { onHub(HubFilter.All) }),
             SearchCommand(t("edit_home"), t("order_the_app_grid_the"), "▭", t("start"), onEditHome),
             SearchCommand(t("appearance"), t("theme_and_sable_accent"), "◐", t("start"), onAppearance),
+            if (workProfilePaused != null) {
+                SearchCommand(
+                    searchContext.getString(if (workProfilePaused) R.string.work_resume else R.string.work_pause),
+                    searchContext.getString(R.string.work_hint),
+                    "▣",
+                    searchContext.getString(R.string.work_source),
+                    onToggleWorkProfile,
+                )
+            } else {
+                null
+            },
+            SearchCommand(
+                searchContext.getString(R.string.backup_menu),
+                searchContext.getString(R.string.backup_command_hint),
+                "⇅",
+                t("start"),
+                { onStartIntent(Intent(searchContext, BackupActivity::class.java)) },
+            ),
             SearchCommand(t("system_settings"), t("open_android_settings"), "⚙", t("settings"), onOpenSettings),
-        )
+        ).filterNotNull()
     val filteredCommands =
         if (!parsed.includes(CommandScope.Actions) || parsed.profileScope) {
             emptyList()
@@ -3894,8 +3937,9 @@ private fun SearchScreen(
     val settingsResults = if (parsed.profileScope) emptyList() else settingsResults(parsed, onStartIntent, onOpenSettings)
     val peopleResults = if (parsed.profileScope) emptyList() else peopleResults(parsed, onStartIntent, onHub)
     val hubResults = if (parsed.profileScope) emptyList() else hubResults(parsed, onHub)
+    val quickRows = quickActionRows(searchContext, query.text, onStartIntent)
     val firstOther =
-        (filteredCommands.takeIf { term.isNotEmpty() }.orEmpty() + settingsResults + peopleResults + hubResults)
+        (quickRows + filteredCommands.takeIf { term.isNotEmpty() }.orEmpty() + settingsResults + peopleResults + hubResults)
             .firstOrNull()
     val bestIsApp = CommandBestMatch.appWins(filteredApps.firstOrNull()?.label, firstOther?.title, term)
     val bestApp = filteredApps.firstOrNull()?.takeIf { bestIsApp == true }
@@ -4029,6 +4073,7 @@ private fun SearchScreen(
                 item { Spacer(Modifier.height(12.dp)) }
             }
             listOf(
+                searchContext.getString(R.string.quick_group) to quickRows,
                 "people" to peopleResults,
                 "settings" to settingsResults,
                 "hub" to hubResults,
@@ -4041,7 +4086,7 @@ private fun SearchScreen(
                     item { Spacer(Modifier.height(12.dp)) }
                 }
             }
-            if (filteredApps.isEmpty() && privacyMatches.isEmpty() && filteredCommands.isEmpty() && settingsResults.isEmpty() &&
+            if (filteredApps.isEmpty() && privacyMatches.isEmpty() && filteredCommands.isEmpty() && settingsResults.isEmpty() && quickRows.isEmpty() &&
                 peopleResults.isEmpty() && hubResults.isEmpty() && !lockedPrivate
             ) {
                 item {
@@ -4620,7 +4665,9 @@ internal fun AppMark(
 
     val context = LocalContext.current
     val densityDpi = context.resources.displayMetrics.densityDpi
-    val iconKey = "${app.stableKey()}@$size@$densityDpi"
+    IconPacks.init(context)
+    val iconPack = IconPacks.selected
+    val iconKey = "${app.stableKey()}@$size@$densityDpi@${iconPack.orEmpty()}"
     // Loaded off the main thread and cached for the process: binding a row never
     // waits on LauncherApps (ROW_BIND_BLOCKING_QUERY=NO).
     val icon by
@@ -4692,6 +4739,7 @@ private fun loadLauncherIcon(
 
         val densityDpi = context.resources.displayMetrics.densityDpi
         val density = context.resources.displayMetrics.density
+        val packDrawable = IconPacks.drawableFor(context, app.component)
         val iconSizePx =
             (sizeDp * density)
                 .toInt()
@@ -4703,9 +4751,9 @@ private fun loadLauncherIcon(
                 Bitmap.Config.ARGB_8888,
             )
         val canvas = Canvas(bitmap)
-        val drawable = activityInfo.getIcon(densityDpi)
+        val drawable = packDrawable ?: activityInfo.getIcon(densityDpi)
         val monochrome =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
+            if (packDrawable == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
                 drawable.monochrome
             } else {
                 null
@@ -5028,6 +5076,69 @@ private fun AppearanceScreen(
                         appearance.copy(accent = accent),
                     )
                 },
+            )
+        }
+
+        item {
+            Spacer(Modifier.height(14.dp))
+            SectionLabel(stringResource(R.string.icon_pack_label))
+            Spacer(Modifier.height(4.dp))
+        }
+
+        item {
+            val context = LocalContext.current
+            val packs = remember { IconPackLoader.installed(context) }
+            IconPacks.init(context)
+            AppearanceChoiceRow(
+                title = stringResource(R.string.icon_pack_default),
+                selected = IconPacks.selected == null,
+                accent = appearance.accent.color,
+                onClick = { IconPacks.select(context, null) },
+            )
+            packs.forEach { pack ->
+                AppearanceChoiceRow(
+                    title = pack.label,
+                    selected = IconPacks.selected == pack.packageName,
+                    accent = appearance.accent.color,
+                    onClick = { IconPacks.select(context, pack.packageName) },
+                )
+            }
+            if (packs.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.icon_pack_none),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        item {
+            val context = LocalContext.current
+            Spacer(Modifier.height(14.dp))
+            SectionLabel(stringResource(R.string.lock_label))
+            Spacer(Modifier.height(4.dp))
+            var enabled by remember { mutableStateOf(StartStateRepository(context).loadDoubleTapLock()) }
+            AppearanceChoiceRow(
+                title = stringResource(if (enabled) R.string.lock_on else R.string.lock_off),
+                selected = enabled,
+                accent = appearance.accent.color,
+                onClick = {
+                    enabled = !enabled
+                    StartStateRepository(context).saveDoubleTapLock(enabled)
+                    if (enabled && !LockScreenAccessibilityService.isEnabled(context)) {
+                        // The service is off until the user turns it on in Accessibility settings.
+                        runCatching {
+                            context.startActivity(
+                                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                    }
+                },
+            )
+            Text(
+                text = stringResource(R.string.lock_explain),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -5440,3 +5551,50 @@ private const val STATUS_BAR_FALLBACK_DP = 24
 /** Page indicator, bar and the grid's own padding: what the grid rows do not get. */
 private const val START_CHROME_DP = INDICATOR_HEIGHT_DP + BAR_HEIGHT_DP + 2 * 4
 private const val NANOS_PER_MILLI = 1_000_000L
+
+
+/** Typed `-todo`, `/note`, `+event` and web addresses become rows that hand the text to the app that handles it. */
+private fun quickActionRows(
+    context: Context,
+    raw: String,
+    onStartIntent: (Intent) -> Unit,
+): List<SearchCommand> {
+    val source = context.getString(R.string.quick_source)
+    QuickActions.parse(raw)?.let { action ->
+        val (title, intent) =
+            when (action.kind) {
+                QuickActionKind.TODO ->
+                    context.getString(R.string.quick_todo, action.text) to
+                        Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, action.text),
+                            context.getString(R.string.quick_send_to_app),
+                        )
+                QuickActionKind.NOTE ->
+                    context.getString(R.string.quick_note, action.text) to
+                        Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, action.text),
+                            context.getString(R.string.quick_send_to_app),
+                        )
+                QuickActionKind.EVENT ->
+                    context.getString(R.string.quick_event, action.text) to
+                        Intent(Intent.ACTION_INSERT)
+                            .setData(CalendarContract.Events.CONTENT_URI)
+                            .putExtra(CalendarContract.Events.TITLE, action.text)
+            }
+        return listOf(
+            SearchCommand(title, context.getString(R.string.quick_hint), "+", source, { onStartIntent(intent) }),
+        )
+    }
+    QuickActions.normalizedWebUrl(raw)?.let { url ->
+        return listOf(
+            SearchCommand(
+                context.getString(R.string.quick_open_url, url),
+                context.getString(R.string.quick_hint_url),
+                "↗",
+                source,
+                { onStartIntent(Intent(Intent.ACTION_VIEW, Uri.parse(url))) },
+            ),
+        )
+    }
+    return emptyList()
+}

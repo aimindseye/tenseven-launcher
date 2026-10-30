@@ -31,6 +31,13 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Icon packs advertise these actions (Nova and ADW contracts); only used to list packs in Appearance. -->
+        <intent>
+            <action android:name="com.novalauncher.THEME" />
+        </intent>
+        <intent>
+            <action android:name="org.adw.ActivityStarter.THEMES" />
+        </intent>
         <!-- Optional Sable companions: when installed, their live tiles and Hub data appear on Home. -->
         <provider android:authorities="org.sableos.appearance" />
         <provider android:authorities="org.sableos.weather.snapshot" />
@@ -107,6 +114,26 @@
             android:name=".OnboardingActivity"
             android:exported="false"
             android:label="@string/setup_menu" />
+
+        <!-- Double-tap to lock. Off until the user enables it in Accessibility settings; it can only lock the screen. -->
+        <service
+            android:name=".platform.LockScreenAccessibilityService"
+            android:exported="true"
+            android:label="@string/lock_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/lock_accessibility_service" />
+        </service>
+
+        <!-- Backup and restore of launcher settings through the system file picker. -->
+        <activity
+            android:name=".BackupActivity"
+            android:exported="false"
+            android:label="@string/backup_menu" />
 
         <!-- Notification access, optional and off until the user grants it: groups message and email
              notifications into conversations for the Hub bar. In memory only, nothing is stored or sent. -->
