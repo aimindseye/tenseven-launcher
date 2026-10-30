@@ -6,8 +6,7 @@ plugins {
 }
 
 android {
-    // The R class and BuildConfig package. The Kotlin sources imported from SableStart keep their
-    // original org.sableos.start packages until the rename (ROADMAP.md, phase 1).
+    // The R class and BuildConfig package; the Kotlin sources use the same package.
     namespace = "io.github.aimindseye.tenseven"
     compileSdk = 36
 

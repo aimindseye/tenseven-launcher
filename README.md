@@ -141,7 +141,7 @@ Details, the quality switch and the lock files: [`docs/BUILD.md`](docs/BUILD.md)
 
 ```text
 app/                      the launcher (Gradle application module, io.github.aimindseye.tenseven)
-  src/main/java/com/sable/start/   Sable Start sources, imported; packages are still org.sableos.start.*
+  src/main/java/io/github/aimindseye/tenseven/   Sable Start sources, imported (renamed from org.sableos.start)
   src/main/res/                    strings (18 draft translations), theme, Tenseven launcher icon
   src/test/                        17 unit-test files from Sable Start
 design/                   Sable design library (theme, tokens, shared components, 18 draft translations)
