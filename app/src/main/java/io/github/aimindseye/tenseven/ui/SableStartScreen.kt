@@ -987,6 +987,7 @@ private fun StartStrip(
 ) {
     var phoneSlotFocused by remember { mutableStateOf(false) }
     val speedDialKeys = remember { SpeedDialKeys() }
+    val homeFocus = remember { FocusRequester() }
     Column(
         modifier =
             Modifier
@@ -1056,8 +1057,13 @@ private fun StartStrip(
                         else -> return@onKeyEvent false
                     }
                     true
-                },
+                }
+                // After the key handlers, so they sit above this focus target: with nothing else focused (a
+                // touch launch) Home still receives type-to-search, Alt+Space and Menu.
+                .focusRequester(homeFocus)
+                .focusable(),
     ) {
+        LaunchedEffect(Unit) { runCatching { homeFocus.requestFocus() } }
         HorizontalPager(
             state = state,
             beyondViewportPageCount = 0,
