@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,7 +18,7 @@ base {
 // TENSEVEN_KEYSTORE, TENSEVEN_KEYSTORE_PASSWORD, TENSEVEN_KEY_ALIAS and TENSEVEN_KEY_PASSWORD. With neither, the
 // release build is left unsigned, as in CI. See docs/BUILD.md.
 val keystoreProperties =
-    java.util.Properties().apply {
+    Properties().apply {
         val file = rootProject.file("keystore.properties")
         if (file.isFile) file.inputStream().use { load(it) }
     }
