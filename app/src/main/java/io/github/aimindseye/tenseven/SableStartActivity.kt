@@ -109,6 +109,7 @@ class SableStartActivity : ComponentActivity() {
     /** The BlackBerry 7 home's favourites (the Home apps) and its rows of icons, read in onCreate. */
     private val bb7Favorites = mutableStateOf<List<String>?>(null)
     private val bb7HomeRows = mutableStateOf(1)
+    private val bb7Desktop = mutableStateOf<List<String>>(emptyList())
     private val bb7Panels = mutableStateOf(Bb7Panels.DEFAULT)
     private val bb7Scrim = mutableStateOf(Bb7Scrim.DEFAULT)
     private val bb7IconSize = mutableStateOf(Bb7IconSize.DEFAULT)
@@ -226,6 +227,7 @@ class SableStartActivity : ComponentActivity() {
         bb7Favorites.value = startStateRepository.loadHomeApps()
         bb7HomeRows.value = startStateRepository.loadBb7HomeRows()
         bb7Panels.value = startStateRepository.loadBb7Panels()
+        bb7Desktop.value = startStateRepository.loadBb7Desktop()
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()
@@ -321,6 +323,11 @@ class SableStartActivity : ComponentActivity() {
                     onHomeRowsChanged = { rows ->
                         bb7HomeRows.value = rows
                         startStateRepository.saveBb7HomeRows(rows)
+                    },
+                    desktopKeys = bb7Desktop.value,
+                    onDesktopChanged = { keys ->
+                        bb7Desktop.value = keys
+                        startStateRepository.saveBb7Desktop(keys)
                     },
                     onOpenMenu = ::showBb7Menu,
                     onOpenCommand = ::openCommandFromBb7,
@@ -462,6 +469,7 @@ class SableStartActivity : ComponentActivity() {
         // Edit Home on the BlackBerry 10 screen edits the same list.
         bb7Favorites.value = startStateRepository.loadHomeApps()
         bb7Panels.value = startStateRepository.loadBb7Panels()
+        bb7Desktop.value = startStateRepository.loadBb7Desktop()
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()

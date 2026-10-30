@@ -20,7 +20,8 @@ You can change your mind any time. Settings are saved as you tap.
 ## BlackBerry 7 home
 
 - **Tray panels**: Favorites, All, Downloads, and Frequent (the apps you open most). Add Frequent from the menu.
-- **Add an icon to the home screen**: long-press empty space, or menu, then **Add apps to the home screen**. Long-press an icon for **Remove from home screen**.
+- **Icons on the home screen**: the empty space between the banner and the tray holds the icons you put there. Long-press empty space (or menu, then **Add apps to the home screen**) to open All, then long-press an app and choose **Add to home screen**. Long-press a placed icon for **Move** or **Remove from home screen**. Arrow Up from the tray's first row moves into them; Down returns.
+- **Favorites** are separate: the tray's first panel. Use **Add to Favorites** / **Remove from Favorites** in an app's menu.
 - **Menu**: there is no Menu key on the Titan 2, so use **Alt+Enter**, the ⋮ button, or a long-press.
 - **Widget strip** under the banner: Calendar and Now Playing by default; Alarm can be added. Switch them in Launcher Settings.
 - **Icon size**: Small, Medium or Large in Launcher Settings.
