@@ -78,17 +78,22 @@ class OnboardingActivity : ComponentActivity() {
         setup.value = state
         val only = intent?.getStringExtra(EXTRA_STEP)?.let { name -> SetupStep.entries.firstOrNull { it.name == name } }
         steps = if (only != null) listOf(only) else OnboardingPlan.pending(state)
+        // Opened again after the first run (Launcher Settings, the BlackBerry 7 menu): show every choice to change, not a wizard.
+        val overview = only == null && startState.loadOnboardingDone()
         val installer = SetupStatus.installer(this)
         setContent {
             SableGlobalTheme(window = window) {
                 SetupScreen(
                     steps = steps,
+                    startOnOverview = overview,
                     state = setup.value ?: state,
                     showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
                     onAction = ::perform,
                     enabledExtras = ExtraAppsControl.enabledIds(this),
                     onApplyExtras = ::applyExtras,
                     onOpenAppInfo = ::openAppInfo,
+                    onManage = ::manage,
+                    onOpenLauncherSettings = { openSettings(Intent(this, LauncherSettingsActivity::class.java)) },
                     onFinish = { finish() },
                 )
             }
@@ -124,6 +129,15 @@ class OnboardingActivity : ComponentActivity() {
         }
     }
 
+    /** Changing a choice already made: where Android lets it be switched off or changed. */
+    private fun manage(step: SetupStep) {
+        when (step) {
+            SetupStep.HOME -> openSettings(Intent(Settings.ACTION_HOME_SETTINGS))
+            SetupStep.CONTACTS, SetupStep.PHOTOS -> openAppInfo()
+            else -> perform(step)
+        }
+    }
+
     private fun applyExtras(ids: Set<String>) {
         ExtraAppsControl.apply(this, ids)
         refresh()
@@ -155,15 +169,19 @@ class OnboardingActivity : ComponentActivity() {
 @Composable
 private fun SetupScreen(
     steps: List<SetupStep>,
+    startOnOverview: Boolean,
     state: SetupState,
     showRestrictedHelp: (SetupStep) -> Boolean,
     onAction: (SetupStep) -> Unit,
     enabledExtras: Set<String>,
     onApplyExtras: (Set<String>) -> Unit,
     onOpenAppInfo: () -> Unit,
+    onManage: (SetupStep) -> Unit,
+    onOpenLauncherSettings: () -> Unit,
     onFinish: () -> Unit,
 ) {
     var index by rememberSaveable { mutableIntStateOf(0) }
+    var overview by rememberSaveable { mutableStateOf(startOnOverview) }
     val firstButton = remember { FocusRequester() }
     var picked by remember { mutableStateOf(enabledExtras) }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -178,16 +196,18 @@ private fun SetupScreen(
         ) {
             Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.titleLarge)
             val step = steps.getOrNull(index)
-            if (step == null) {
-                Text(stringResource(R.string.setup_all_done), style = MaterialTheme.typography.titleMedium)
-                Text(
-                    stringResource(R.string.setup_all_done_detail),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            if (overview || step == null) {
+                SetupOverview(
+                    state = state,
+                    picked = picked,
+                    onPickedChange = { picked = it },
+                    firstButton = firstButton,
+                    onAction = onAction,
+                    onManage = onManage,
+                    onApplyExtras = { onApplyExtras(picked) },
+                    onOpenLauncherSettings = onOpenLauncherSettings,
+                    onFinish = onFinish,
                 )
-                Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing()) {
-                    Text(stringResource(R.string.setup_done))
-                }
             } else {
                 val done = state.isDone(step)
                 val last = index + 1 >= steps.size
@@ -234,6 +254,86 @@ private fun SetupScreen(
     }
     LaunchedEffect(index) { runCatching { firstButton.requestFocus() } }
 }
+
+/**
+ * Every setup choice on one screen, for changing any of them later: each shows whether it is on, with a button to
+ * turn it on, or to change it where Android keeps the switch. Extra apps are ticked or unticked here and saved.
+ */
+@Composable
+private fun SetupOverview(
+    state: SetupState,
+    picked: Set<String>,
+    onPickedChange: (Set<String>) -> Unit,
+    firstButton: FocusRequester,
+    onAction: (SetupStep) -> Unit,
+    onManage: (SetupStep) -> Unit,
+    onApplyExtras: () -> Unit,
+    onOpenLauncherSettings: () -> Unit,
+    onFinish: () -> Unit,
+) {
+    Text(
+        stringResource(R.string.setup_all_done_detail),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    SetupStep.entries.forEachIndexed { position, step ->
+        val done = state.isDone(step)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stepLabel(step), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    when {
+                        step == SetupStep.EXTRAS -> stringResource(R.string.setup_extras_status, picked.size)
+                        done -> stringResource(R.string.setup_allowed)
+                        else -> stringResource(R.string.setup_not_set)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (step == SetupStep.EXTRAS) {
+                    ExtrasPicker(picked = picked, onChange = onPickedChange)
+                    Button(
+                        onClick = onApplyExtras,
+                        modifier = Modifier.fillMaxWidth().sableFocusRing().then(if (position == 0) Modifier.focusRequester(firstButton) else Modifier),
+                    ) {
+                        Text(stringResource(R.string.setup_extras_action))
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { if (done) onManage(step) else onAction(step) },
+                        modifier = Modifier.fillMaxWidth().sableFocusRing().then(if (position == 0) Modifier.focusRequester(firstButton) else Modifier),
+                    ) {
+                        Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
+                    }
+                }
+            }
+        }
+    }
+    OutlinedButton(onClick = onOpenLauncherSettings, modifier = Modifier.fillMaxWidth().sableFocusRing()) {
+        Text(stringResource(R.string.launcher_settings))
+    }
+    Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().sableFocusRing()) {
+        Text(stringResource(R.string.setup_done))
+    }
+}
+
+@Composable
+private fun stepLabel(step: SetupStep): String =
+    stringResource(
+        when (step) {
+            SetupStep.HOME -> R.string.setup_label_home
+            SetupStep.CONTACTS -> R.string.setup_label_contacts
+            SetupStep.PHOTOS -> R.string.setup_label_photos
+            SetupStep.NOTIFICATIONS -> R.string.setup_label_notifications
+            SetupStep.USAGE -> R.string.setup_label_usage
+            SetupStep.EXTRAS -> R.string.setup_label_extras
+        },
+    )
 
 @Composable
 private fun StepCard(step: SetupStep) {

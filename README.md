@@ -161,7 +161,7 @@ export ANDROID_HOME=/path/to/android-sdk
 ./gradlew :app:assembleDebug                 # app/build/outputs/apk/debug/
 ./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
 bash tests/run.sh                            # static checks, no SDK needed
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk
 ```
 
 Details, the quality switch and the lock files: [`docs/BUILD.md`](docs/BUILD.md).

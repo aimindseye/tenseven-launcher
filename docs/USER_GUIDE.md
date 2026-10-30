@@ -8,6 +8,10 @@ Tenseven is a launcher for phones with a physical keyboard. This guide covers wh
 2. The setup screens ask for each optional permission and say why. Every one can be skipped; the launcher works without them.
 3. If Android greys out a permission after a sideload, open Android's app info for Tenseven, tap the three dots, and choose **Allow restricted settings**. Setup explains this when it matters.
 
+## Changing setup later
+
+Launcher Settings, then **Setup**, lists every choice with its state: home app, contacts, photo counts, notification access, usage access and the extra apps. **Change** opens the place where Android lets you switch it off or change it; extra apps are ticked or unticked on the same screen and saved. A button there opens Launcher Settings.
+
 ## Choosing a home screen
 
 Open **Launcher Settings** (BlackBerry 10: the gear icon; BlackBerry 7: menu, then Launcher Settings; or type "launcher settings" in Command). Pick:
