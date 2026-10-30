@@ -144,7 +144,7 @@
             android:taskAffinity="io.github.aimindseye.tenseven.extras.calculator_MainActivity"
             android:enabled="false"
             android:exported="true"
-            android:label="Calculator"
+            android:label="Calc Plus"
             android:theme="@android:style/Theme.Material.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

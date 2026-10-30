@@ -56,7 +56,7 @@
     <string name="setup_extras_action">Save choices</string>
     <string name="setup_extras_tools">Tools</string>
     <string name="setup_extras_games">Games</string>
-    <string name="extras_command_hint">Choose the bundled Calculator, Notes and games</string>
+    <string name="extras_command_hint">Choose the bundled Calc Plus, Notes and games</string>
     <string name="setup_restricted_title">If the switch is greyed out</string>
     <string name="setup_restricted_reason">Android 13 and newer restricts this setting for apps installed from a downloaded file. To allow it: open App info below, tap the menu at the top right, choose Allow restricted settings and confirm, then come back and open the setting again. Only do this for an APK you trust.</string>
     <string name="setup_restricted_action">Open App info</string>
