@@ -1243,15 +1243,7 @@ private fun ActiveFramesPage(
             StatusDialsRow(onOpenSettings = onOpenSettings)
         }
         if (shown(HomeLayout.WEATHER)) {
-            WeatherDateHeader(
-                datum = snapshot.weather,
-                refreshGeneration = refreshGeneration,
-                onOpen = {
-                    if (!DefaultApps.launch(context, DefaultApps.WEATHER)) {
-                        Toast.makeText(context, context.getString(R.string.default_app_missing), Toast.LENGTH_SHORT).show()
-                    }
-                },
-            )
+            DateHeader(refreshGeneration = refreshGeneration)
         }
         if (shown(HomeLayout.SEARCH_ROW)) {
             Box(Modifier.padding(horizontal = FRAME_PADDING)) { SearchLaunchButton(onClick = onSearch) }
@@ -1312,15 +1304,11 @@ private fun StatusDialsRow(onOpenSettings: () -> Unit) {
 }
 
 /**
- * "72° Partly cloudy · Seattle" with the date under it. The date follows the
+ * Today's date under the status dials. The date follows the
  * locale and turns over at midnight; there is no clock here.
  */
 @Composable
-private fun WeatherDateHeader(
-    datum: LiveDatum,
-    refreshGeneration: Int,
-    onOpen: () -> Unit,
-) {
+private fun DateHeader(refreshGeneration: Int) {
     val locale = Locale.getDefault()
     val today by
         produceState(initialValue = LocalDate.now(), refreshGeneration) {
@@ -1335,36 +1323,20 @@ private fun WeatherDateHeader(
             val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, HomeHeader.DATE_SKELETON)
             today.format(DateTimeFormatter.ofPattern(pattern, locale))
         }
-    val weather =
-        datum.takeIf { it.availability == LiveAvailability.LIVE }?.let { HomeHeader.weather(it.detail) }
-    val line =
-        when {
-            weather == null -> HomeHeader.weatherFallback(datum.availability)
-            weather.second.isBlank() -> HomeHeader.weatherIcon(weather.first) + " " + weather.first
-            else -> HomeHeader.weatherIcon(weather.first) + " " + weather.first + " · " + weather.second
-        }
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = FRAME_PADDING)
-                .sableFocusRing()
-                .clickable(onClick = onOpen)
-                .semantics { contentDescription = "$line. $dateText" }
+                .semantics { contentDescription = dateText }
                 .padding(vertical = 2.dp),
     ) {
         Text(
-            text = line,
+            text = dateText,
             style = MaterialTheme.typography.titleMedium,
             color = Bb10Text,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = dateText,
-            style = MaterialTheme.typography.bodySmall,
-            color = Bb10Muted,
-            maxLines = 1,
         )
     }
 }
@@ -1620,16 +1592,6 @@ private fun GlanceFrames(
                             .height(cardHeight)
                             .then(if (widget == widgets.first()) Modifier.focusRequester(firstFocus) else Modifier)
                     when (widget) {
-                        GlanceWidgets.WEATHER -> {
-                            GlanceFrameCard(
-                                t("weather"),
-                                t("weather"),
-                                context.getString(R.string.weather_tile_hint),
-                                SableSun,
-                                { openDefault(DefaultApps.WEATHER) },
-                                modifier,
-                            )
-                        }
                         GlanceWidgets.BATTERY -> BatteryGlanceFrame(battery, onStartIntent, modifier)
                         GlanceWidgets.PHOTOS -> {
                             val datum = snapshot.photos
@@ -1799,15 +1761,6 @@ private fun GlanceFrameCard(
             maxLines = 1,
         )
     }
-}
-
-/** "72° Partly cloudy" and "Seattle" from the Weather snapshot ([HomeHeader.weather]). */
-private fun weatherLines(datum: LiveDatum): Pair<String, String> {
-    if (datum.availability != LiveAvailability.LIVE && datum.availability != LiveAvailability.EMPTY) {
-        return t("weather") to datum.detail.ifBlank { "unavailable" }
-    }
-    return HomeHeader.weather(datum.detail)?.let { (headline, place) -> headline to place.ifBlank { t("weather") } }
-        ?: (t("weather") to datum.detail)
 }
 
 /**

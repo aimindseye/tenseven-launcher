@@ -115,7 +115,6 @@ object HomeApps {
  * shown widgets in order; the rest can be added back in Edit Home.
  */
 object GlanceWidgets {
-    const val WEATHER = "weather"
     const val CALENDAR = "calendar"
     const val BATTERY = "battery"
     const val MEDIA = "media"
@@ -123,10 +122,10 @@ object GlanceWidgets {
     const val MAIL = "mail"
     const val PHOTOS = "photos"
 
-    val ALL: List<String> = listOf(WEATHER, CALENDAR, BATTERY, MEDIA, HUB, MAIL, PHOTOS)
+    val ALL: List<String> = listOf(CALENDAR, BATTERY, MEDIA, HUB, MAIL, PHOTOS)
 
-    /** "Curated widgets: Weather, Calendar, Battery, Media." */
-    val DEFAULT: List<String> = listOf(WEATHER, CALENDAR, BATTERY, MEDIA)
+    /** "Curated widgets: Calendar, Battery, Media." */
+    val DEFAULT: List<String> = listOf(CALENDAR, BATTERY, MEDIA)
 
     /** Drops unknown and duplicate names; null (never customised) gives [DEFAULT]. */
     fun normalize(saved: List<String>?): List<String> = saved?.filter { it in ALL }?.distinct() ?: DEFAULT
@@ -143,7 +142,6 @@ object GlanceWidgets {
 
     fun label(widget: String): String =
         when (widget) {
-            WEATHER -> t("weather")
             CALENDAR -> t("calendar")
             BATTERY -> t("battery")
             MEDIA -> t("media")

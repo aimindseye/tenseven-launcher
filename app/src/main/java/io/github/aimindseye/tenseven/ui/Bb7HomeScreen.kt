@@ -62,7 +62,6 @@ import kotlinx.coroutines.delay
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.SableTheme
-import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7Panel
@@ -70,7 +69,6 @@ import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.HomeApps
-import io.github.aimindseye.tenseven.model.HomeHeader
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
@@ -334,11 +332,6 @@ fun Bb7HomeScreen(
                 ) {
                     Bb7Banner(
                         dateText = DateFormat.getDateInstance(DateFormat.FULL).format(Date(today)),
-                        weatherLine =
-                            live.weather.takeIf { it.availability == LiveAvailability.LIVE }
-                                ?.let { HomeHeader.weather(it.detail) }
-                                ?.let { HomeHeader.weatherIcon(it.first) + " " + it.first }
-                                ?: HomeHeader.weatherFallback(live.weather.availability),
                         unread = live.hubApps.sumOf { it.count },
                         compact = open || searching,
                         scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
@@ -397,7 +390,6 @@ fun Bb7HomeScreen(
 @Composable
 private fun Bb7Banner(
     dateText: String,
-    weatherLine: String,
     unread: Int,
     compact: Boolean,
     scrim: Color,
@@ -420,15 +412,6 @@ private fun Bb7Banner(
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                 )
-                if (!compact) {
-                    Text(
-                        text = weatherLine,
-                        color = BANNER_MUTED,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
             UnreadBadge(unread, onOpenHub)
         }

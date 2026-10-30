@@ -43,10 +43,10 @@
     <string name="private_label">Private</string>
     <string name="dual">Dual</string>
     <string name="work">Work</string>
-    <string name="weather_and_date">Weather and date</string>
+    <string name="weather_and_date">Date</string>
     <string name="search_or_command_row">Search or command row</string>
     <string name="status_dials">Status dials</string>
-    <string name="temperature_condition_and_place_with">Temperature, condition and place, with the date under it</string>
+    <string name="temperature_condition_and_place_with">Today's date under the status dials</string>
     <string name="a_command_row_under_the">A Command row under the weather; typing works without it</string>
     <string name="wi_fi_mobile_cpu_ram">Wi-Fi, Mobile, CPU, RAM, battery time left, Cell and Settings</string>
     <string name="weather">Weather</string>

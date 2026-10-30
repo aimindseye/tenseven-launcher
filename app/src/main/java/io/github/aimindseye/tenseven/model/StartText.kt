@@ -53,11 +53,11 @@ object StartText {
             "private_label" to "Private",
             "dual" to "Dual",
             "work" to "Work",
-            "weather_and_date" to "Weather and date",
+            "weather_and_date" to "Date",
             "search_or_command_row" to "Search or command row",
             "status_dials" to "Status dials",
             "temperature_condition_and_place_with" to
-                "Temperature, condition and place, with the date under it",
+                "Today's date under the status dials",
             "a_command_row_under_the" to "A Command row under the weather; typing works without it",
             "wi_fi_mobile_cpu_ram" to
                 "Wi-Fi, Mobile, CPU, RAM, battery time left, Cell and Settings",
