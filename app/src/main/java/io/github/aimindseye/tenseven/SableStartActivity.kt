@@ -447,6 +447,7 @@ class SableStartActivity : ComponentActivity() {
             launcherAppsRepository.registerCallback(launcherCallback)
             callbackRegistered = true
         }
+        widgetController.startListening()
         scheduleInventoryRefresh()
     }
 
@@ -470,16 +471,6 @@ class SableStartActivity : ComponentActivity() {
         scheduleInventoryRefresh()
         refreshFrames()
         liveRefreshGeneration.value += 1
-    }
-
-    override fun onStart() {
-        super.onStart()
-        widgetController.startListening()
-    }
-
-    override fun onStop() {
-        widgetController.stopListening()
-        super.onStop()
     }
 
     // Widget binding and setup report back through the framework's request codes.
@@ -534,6 +525,7 @@ class SableStartActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        widgetController.stopListening()
         if (callbackRegistered) {
             launcherAppsRepository.unregisterCallback(launcherCallback)
             callbackRegistered = false

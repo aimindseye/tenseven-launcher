@@ -182,7 +182,12 @@ private fun WidgetPicker(
                         items(rows, key = { it.info.provider.flattenToString() + it.info.profile }) { row ->
                             val icon =
                                 remember(row.info) {
-                                    runCatching { row.info.loadIcon(context, 0).toBitmap(96, 96).asImageBitmap() }.getOrNull()
+                                    runCatching {
+                                        row.info
+                                            .loadIcon(context, 0)
+                                            .toBitmap(96, 96)
+                                            .asImageBitmap()
+                                    }.getOrNull()
                                 }
                             Surface(
                                 onClick = { onPick(row.info) },
