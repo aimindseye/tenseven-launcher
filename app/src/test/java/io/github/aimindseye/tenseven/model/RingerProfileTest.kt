@@ -22,4 +22,9 @@ class RingerProfileTest {
         RingerProfile.entries.forEach { assertEquals(it, RingerProfile.fromRingerMode(it.ringerMode)) }
         assertEquals(RingerProfile.Sound, RingerProfile.fromRingerMode(42))
     }
+
+    @Test
+    fun eachProfileHasItsOwnIcon() {
+        assertEquals(RingerProfile.entries.size, RingerProfile.entries.map { it.icon }.toSet().size)
+    }
 }

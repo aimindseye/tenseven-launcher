@@ -178,5 +178,7 @@
     <string name="ls_backup_detail">Save or load your launcher settings</string>
     <string name="ls_setup">Setup</string>
     <string name="ls_setup_detail">Permissions, default apps and extras</string>
+    <string name="ls_android_settings">Android settings</string>
+    <string name="ls_android_settings_detail">Wi-Fi, display, apps and the rest of the system</string>
     <string name="ls_privacy_detail">Tenseven has no internet permission and collects nothing. Everything stays on this phone.</string>
 </resources>
