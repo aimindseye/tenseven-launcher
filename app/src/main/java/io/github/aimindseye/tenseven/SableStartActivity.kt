@@ -35,6 +35,7 @@ import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Detour
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.platform.LauncherAppsRepository
 import io.github.aimindseye.tenseven.platform.PermissionChangeSignal
 import io.github.aimindseye.tenseven.platform.identifier
@@ -176,6 +177,11 @@ class SableStartActivity : ComponentActivity() {
             }
         }
 
+    /** Tenseven's own notification listener changed what the Hub bar shows. */
+    private val conversationsListener: () -> Unit = {
+        runOnUiThread { liveRefreshGeneration.value += 1 }
+    }
+
     private val appInventoryObserver =
         object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {
@@ -226,6 +232,7 @@ class SableStartActivity : ComponentActivity() {
             )
         }
 
+        ConversationHub.addChangeListener(conversationsListener)
         registerPrivacySignals()
         scheduleInventoryRefresh()
         // A recreated activity keeps its own place instead of reopening the requested screen.
@@ -428,6 +435,7 @@ class SableStartActivity : ComponentActivity() {
         runCatching {
             contentResolver.unregisterContentObserver(appInventoryObserver)
         }
+        ConversationHub.removeChangeListener(conversationsListener)
         unregisterPrivacySignals()
         inventoryGeneration.incrementAndGet()
         inventoryExecutor.shutdownNow()

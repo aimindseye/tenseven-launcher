@@ -69,13 +69,16 @@ Launcher state is in app-private storage. Recent activity is kept in memory only
 | `READ_CONTACTS` | Hub Contacts tab: names and one number per person, read on the phone, never stored | yes; the tab asks again |
 | `READ_MEDIA_IMAGES` | Local photo counts on Home | yes |
 | `REQUEST_DELETE_PACKAGES` | Hand uninstall to the system uninstaller, which confirms | yes |
+| Notification access (a special access you grant in Settings, not a manifest permission) | Counts unread messages and email per app for the Hub bar, grouped per person; read on the phone, held in memory only, never stored or sent | yes; off until you turn it on |
 | `ACCESS_HIDDEN_PROFILES` | Show the Private Space; Android grants it to the default Home app only | yes |
 
 No signature permissions: an ordinary install cannot hold them, and CI fails if the manifest asks for one
 (`tests/run.sh`). Features that need them on SableOS (live thumbnails in Active Frames, closing tasks,
 work-profile privacy rows) have an ordinary-install fallback; see the table in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Notification access and usage access arrive with the
-Mink-based Hub and Active Frames fallback, and will be asked for with an explanation, never silently.
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Notification access is used by the Mink-based Hub (unread bar today; conversation list and replies next)
+and usage access arrives with the Active Frames fallback. Neither is asked for silently: the in-app
+explanation arrives with onboarding, and until then you turn notification access on yourself in
+Settings > Notifications > Device & app notifications.
 
 ## Install
 
@@ -84,7 +87,7 @@ There is no release yet. When there is one:
 1. Download the APK from the GitHub release and open it; approve installing from that source if Android asks.
 2. Press Home and choose **Tenseven** as the home app (or Settings > Apps > Default apps > Home app).
 3. Open the style chooser (menu on Home > Home screen style) and pick BlackBerry 10 or BlackBerry 7.
-4. **Notification access on Android 13 or newer** (for the Mink-based Hub, later): Android blocks it for
+4. **Notification access on Android 13 or newer** (for the Mink-based Hub): Android blocks it for
    apps installed outside a store until you open Settings > Apps > Tenseven, tap the top-right menu and
    choose **Allow restricted settings**. Only do this for an APK you trust.
 

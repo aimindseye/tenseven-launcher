@@ -10,6 +10,7 @@ import android.text.format.DateFormat
 import io.github.aimindseye.tenseven.model.StartText.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.live.AppUnreadCount
 import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveDatum
@@ -103,8 +104,14 @@ class LiveSurfaceRepository(
             )
         }
 
-    /** Sable Hub's per-app unread counts (package and count only); empty when Hub cannot say. */
+    /**
+     * Per-app unread counts (package and count only). Sable Hub's when it is there; otherwise Tenseven's own
+     * notification listener's, which is empty until the user grants notification access.
+     */
     private fun hubAppCounts(): List<AppUnreadCount> =
+        providerHubAppCounts().ifEmpty { ConversationHub.unreadCounts(MAX_HUB_APPS) }
+
+    private fun providerHubAppCounts(): List<AppUnreadCount> =
         runCatching {
             resolver.query(HUB_APPS_URI, arrayOf("package", "count"), null, null, null)?.use { cursor ->
                 val pkg = cursor.getColumnIndexOrThrow("package")

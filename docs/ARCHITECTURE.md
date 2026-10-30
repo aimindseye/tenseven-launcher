@@ -21,6 +21,7 @@ Imported from SableOS, directories and packages unchanged until the rename in `R
 | `model/` | `io.github.aimindseye.tenseven.model` | Pure Kotlin policy, unit tested: home styles and layouts, app glyphs, quick bar, letter shortcuts, speed dial, command queries, Hub bar, text tables |
 | `privacy/` | `io.github.aimindseye.tenseven.privacy` | The All Apps privacy row: the evaluator, summary policy and snapshot cache (pure Kotlin) |
 | `platform/` | `io.github.aimindseye.tenseven.platform` | Android access: `LauncherAppsRepository`, `RecentTasksRepository`, `StartStateRepository`, `LiveSurfaceRepository`, `PeopleRepository`, `PrivacyFactsReader`, `DeviceStatsSampler`, and Tenseven's `PermissionChangeSignal` and `UserContexts` |
+| `conversations/` | `io.github.aimindseye.tenseven.conversations` | Notification access: `ConversationListenerService` reads message and email notifications into `ConversationHub` (in memory only); feeds the Hub bar counts; ported from Mink, see `third_party/minklauncher/PORTING.md` |
 | `ui/` | `io.github.aimindseye.tenseven.ui` | Compose: `SableStartScreen`, `Bb7HomeScreen`, glyphs and status rings |
 | `live/` | `io.github.aimindseye.tenseven.live` | Models for the live tiles (weather, calendar, mail, media) |
 | (root) | `io.github.aimindseye.tenseven` | `SableStartActivity` (HOME) and `HomeStyleActivity` |
