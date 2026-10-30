@@ -253,7 +253,7 @@ class MainActivity : Activity() {
         val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
         } else {
-            data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
         }
         if (resultCode != RESULT_OK || uri == null) return
         val s = store.settings(editing)

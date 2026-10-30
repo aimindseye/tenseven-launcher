@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import io.github.aimindseye.tenseven.platform.SoundProfileControl
 
 /**
@@ -47,7 +48,14 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
                 }
             }
         profile = SoundProfileControl.current(context)
-        runCatching { context.registerReceiver(receiver, IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION)) }
+        runCatching {
+            ContextCompat.registerReceiver(
+                context,
+                receiver,
+                IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+        }
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
     Text(
