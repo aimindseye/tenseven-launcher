@@ -358,6 +358,10 @@ class SableStartActivity : ComponentActivity() {
                     homeGeneration = homeGeneration.value,
                     backGeneration = backGeneration.value,
                     initialScreen = request.screen,
+                    onBackToHomePage = {
+                        // Back from the Hub to a BlackBerry 7 home: show it now instead of after the slide.
+                        if (bb10Detour.value && bb7Detour.returnOnHome && bb7Detour.leftHome) endBb10Detour()
+                    },
                     onCanNavigateBackChanged = { value ->
                         canNavigateBack = value
                         bb7Detour = bb7Detour.onCanNavigateBack(value)

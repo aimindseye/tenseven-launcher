@@ -9,8 +9,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +24,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import io.github.aimindseye.tenseven.model.RingerIcon
 import io.github.aimindseye.tenseven.platform.SoundProfileControl
 
 /**
@@ -58,10 +58,13 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
         }
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
-    Text(
-        text = profile.symbol,
-        color = Color.White,
-        style = MaterialTheme.typography.titleMedium,
+    LineIcon(
+        paths =
+            when (profile.icon) {
+                RingerIcon.Sound -> LineIconPaths.SOUND
+                RingerIcon.Vibrate -> LineIconPaths.VIBRATE
+                RingerIcon.Silent -> LineIconPaths.SILENT
+            },
         modifier =
             modifier
                 .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
@@ -80,6 +83,7 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
                         }
                     },
                 )
-                .padding(horizontal = 10.dp, vertical = 4.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .size(22.dp),
     )
 }

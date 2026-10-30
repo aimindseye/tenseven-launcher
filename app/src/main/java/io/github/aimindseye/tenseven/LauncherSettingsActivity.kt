@@ -90,6 +90,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                     },
                     onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },
                     onSetup = { runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) } },
+                    onAndroidSettings = { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } },
                 )
             }
         }
@@ -109,6 +110,7 @@ private fun LauncherSettings(
     onLanguage: () -> Unit,
     onBackup: () -> Unit,
     onSetup: () -> Unit,
+    onAndroidSettings: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -173,6 +175,12 @@ private fun LauncherSettings(
             Card(stringResource(R.string.ls_language), stringResource(R.string.ls_language_detail), false, onClick = onLanguage)
             Card(stringResource(R.string.ls_backup), stringResource(R.string.ls_backup_detail), false, onClick = onBackup)
             Card(stringResource(R.string.ls_setup), stringResource(R.string.ls_setup_detail), false, onClick = onSetup)
+            Card(
+                stringResource(R.string.ls_android_settings),
+                stringResource(R.string.ls_android_settings_detail),
+                false,
+                onClick = onAndroidSettings,
+            )
 
             Section(stringResource(R.string.ls_section_privacy))
             Text(

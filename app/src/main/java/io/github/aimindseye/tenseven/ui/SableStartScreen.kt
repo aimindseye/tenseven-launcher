@@ -370,6 +370,8 @@ fun SableStartScreen(
     backGeneration: Int = 0,
     initialScreen: String = "start",
     onCanNavigateBackChanged: (Boolean) -> Unit = {},
+    /** Back from the Hub or an app page is about to slide to the home page. */
+    onBackToHomePage: () -> Unit = {},
     /** Start tiles chosen before Home became an ordered list; seeds the grid order with [initialHomeApps]. */
     initialStartTileKeys: Set<String>? = null,
     /** The three-page Home apps; they lead the app grid until the user orders it. */
@@ -607,7 +609,10 @@ fun SableStartScreen(
                 destination == SableStartDestination.EditHome -> editBackGeneration += 1
                 destination != SableStartDestination.Start -> navigateBack()
                 // Back on Hub or an app grid page returns to Active Frames.
-                startPager.currentPage != StartPages.HOME -> startPager.animateScrollToPage(StartPages.HOME)
+                startPager.currentPage != StartPages.HOME -> {
+                    onBackToHomePage()
+                    startPager.animateScrollToPage(StartPages.HOME)
+                }
             }
         }
     }
@@ -685,7 +690,9 @@ fun SableStartScreen(
                                             frames = frames,
                                             apps = apps,
                                             hiddenSections = hiddenSections,
-                                            onOpenSettings = onOpenSystemSettings,
+                                            onOpenSettings = {
+                                                onStartIntent(Intent(homeContext, LauncherSettingsActivity::class.java))
+                                            },
                                             onSearch = { openSearch(SableStartDestination.Start) },
                                             snapshot = liveSnapshot,
                                             widgets = glanceWidgets,
@@ -1349,20 +1356,24 @@ private fun DateHeader(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { contentDescription = dateText },
         )
-        // Notifications: the unread count opens the Hub. Beside it, the sound profile.
-        Text(
-            text = if (unread > 0) "\uD83D\uDD14 $unread" else "\uD83D\uDD14",
-            style = MaterialTheme.typography.titleMedium,
-            color = Bb10Text,
+        // Notifications: a bell with the unread count; it opens the Hub. Beside it, the sound profile.
+        Row(
             modifier =
                 Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(if (unread > 0) Bb10Blue else Bb10Card)
+                    .background(if (unread > 0) Bb10Blue else Color.Black.copy(alpha = 0.35f))
                     .sableFocusRing()
                     .clickable(onClick = onShowHub)
                     .semantics { contentDescription = "Notifications $unread" }
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-        )
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            LineIcon(paths = LineIconPaths.BELL, modifier = Modifier.size(22.dp), tint = Color.White)
+            if (unread > 0) {
+                Text(text = unread.toString(), style = MaterialTheme.typography.titleMedium, color = Color.White)
+            }
+        }
         SoundProfileButton()
     }
 }
