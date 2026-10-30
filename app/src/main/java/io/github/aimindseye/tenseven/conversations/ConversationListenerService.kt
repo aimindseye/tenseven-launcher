@@ -76,12 +76,17 @@ class ConversationListenerService : NotificationListenerService() {
             messages = messages,
             contentIntent = notification.contentIntent,
             replyAction = replyActionOf(notification),
+            isEmail = notification.category == Notification.CATEGORY_EMAIL,
+            markReadAction = markReadActionOf(notification),
         )
     }
 
     /** The action behind the notification's own Reply button: the first one that takes free-form text. */
     private fun replyActionOf(notification: Notification): Notification.Action? =
         notification.actions?.firstOrNull { action -> action.remoteInputs?.any(RemoteInput::getAllowFreeFormInput) == true }
+
+    private fun markReadActionOf(notification: Notification): Notification.Action? =
+        notification.actions?.firstOrNull { it.semanticAction == Notification.Action.SEMANTIC_ACTION_MARK_AS_READ }
 
     private fun messagingStyleOf(notification: Notification): Notification.MessagingStyle? =
         runCatching {

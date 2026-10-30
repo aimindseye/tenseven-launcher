@@ -38,13 +38,64 @@ enum class HomeStyle(
 /** The BlackBerry 7 tray's panels, switched with Alt+Left/Right or Space, as on BlackBerry 7. */
 enum class Bb7Panel(
     private val titleKey: String,
+    private val fixedTitle: String? = null,
 ) {
     Favorites("favorites"),
     All("all"),
     Downloads("downloads"),
+
+    /** The apps opened most from Tenseven (English title: it is Tenseven's own, not an imported Sable panel). */
+    Frequent("frequent", fixedTitle = "Frequent"),
     ;
 
-    val title: String get() = t(titleKey)
+    val title: String get() = fixedTitle ?: t(titleKey)
+}
+
+/** Which panels the tray cycles through, in order; kept as their names. Frequent is off until the user adds it. */
+object Bb7Panels {
+    val DEFAULT: List<Bb7Panel> = listOf(Bb7Panel.Favorites, Bb7Panel.All, Bb7Panel.Downloads)
+
+    /** Reads the saved names; unknown names drop, the order is the panels' own, and none left means the default. */
+    fun normalize(names: Collection<String>?): List<Bb7Panel> {
+        if (names == null) return DEFAULT
+        val chosen = Bb7Panel.entries.filter { panel -> names.any { it == panel.name } }
+        return chosen.ifEmpty { DEFAULT }
+    }
+
+    /** [panel] shown or hidden; the last panel cannot be hidden. */
+    fun toggle(
+        current: List<Bb7Panel>,
+        panel: Bb7Panel,
+    ): List<Bb7Panel> {
+        val next = if (panel in current) current - panel else (current + panel)
+        return if (next.isEmpty()) current else Bb7Panel.entries.filter { it in next }
+    }
+
+    fun encode(panels: List<Bb7Panel>): String = panels.joinToString(",") { it.name }
+
+    fun decode(text: String?): List<Bb7Panel> = normalize(text?.split(',')?.map(String::trim))
+}
+
+/** How see-through the BlackBerry 7 banner and tray are over the wallpaper: 0 (clear) to 3 (dark). */
+object Bb7Scrim {
+    const val MIN = 0
+    const val MAX = 3
+    const val DEFAULT = 2
+
+    private val BANNER = floatArrayOf(0f, 0.35f, 0.6f, 0.8f)
+    private val TRAY = floatArrayOf(0.25f, 0.6f, 0.9f, 0.97f)
+
+    fun clamp(level: Int): Int = level.coerceIn(MIN, MAX)
+
+    fun bannerAlpha(level: Int): Float = BANNER[clamp(level)]
+
+    fun trayAlpha(level: Int): Float = TRAY[clamp(level)]
+
+    /** One step darker ([delta] +1) or clearer (-1), stopping at the ends. */
+    fun step(
+        level: Int,
+        delta: Int,
+    ): Int = clamp(level + delta)
 }
 
 /** Where a horizontal swipe on the BlackBerry 7 home goes: Hub is to the left, the apps to the right. */
@@ -84,10 +135,16 @@ object Bb7Home {
         panel: Bb7Panel,
         apps: List<AppEntry>,
         favoriteKeys: List<String>?,
+        usage: AppUsage = AppUsage.EMPTY,
     ): List<AppEntry> {
         val byName = apps.sortedBy { it.label.lowercase() }
         return when (panel) {
             Bb7Panel.All -> byName
+            Bb7Panel.Frequent ->
+                byName
+                    .filter { usage.score(it.stableKey()) > 0 }
+                    .sortedByDescending { usage.score(it.stableKey()) }
+                    .take(FREQUENT_APPS)
             Bb7Panel.Downloads -> byName.filter { it.canUninstall }
             Bb7Panel.Favorites -> {
                 val byKey = apps.associateBy { it.stableKey() }
@@ -99,13 +156,17 @@ object Bb7Home {
         }
     }
 
-    /** The next panel left ([step] -1) or right (+1), wrapping. */
+    /** Most-used apps the Frequent panel lists. */
+    const val FREQUENT_APPS = 24
+
+    /** The next panel left ([step] -1) or right (+1) among [panels], wrapping. */
     fun step(
         panel: Bb7Panel,
         step: Int,
+        panels: List<Bb7Panel> = Bb7Panels.DEFAULT,
     ): Bb7Panel {
-        val all = Bb7Panel.entries
-        return all[(panel.ordinal + step).mod(all.size)]
+        val index = panels.indexOf(panel).takeIf { it >= 0 } ?: return panels.first()
+        return panels[(index + step).mod(panels.size)]
     }
 
     /**

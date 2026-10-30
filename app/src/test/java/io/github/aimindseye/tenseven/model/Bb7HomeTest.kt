@@ -74,4 +74,45 @@ class Bb7HomeTest {
         val recents = Bb7Detour(returnOnHome = false).onCanNavigateBack(true).onCanNavigateBack(false)
         assertEquals(false, recents.endsAt(false))
     }
+
+    @Test
+    fun panelsFollowTheUsersChoiceAndKeepTheirOrder() {
+        assertEquals(Bb7Panels.DEFAULT, Bb7Panels.normalize(null))
+        assertEquals(Bb7Panels.DEFAULT, Bb7Panels.normalize(emptyList()))
+        assertEquals(listOf(Bb7Panel.All, Bb7Panel.Frequent), Bb7Panels.normalize(listOf("Frequent", "bogus", "All")))
+        val withFrequent = Bb7Panels.toggle(Bb7Panels.DEFAULT, Bb7Panel.Frequent)
+        assertEquals(listOf(Bb7Panel.Favorites, Bb7Panel.All, Bb7Panel.Downloads, Bb7Panel.Frequent), withFrequent)
+        assertEquals(Bb7Panels.DEFAULT, Bb7Panels.toggle(withFrequent, Bb7Panel.Frequent))
+        // The last panel cannot be hidden.
+        assertEquals(listOf(Bb7Panel.All), Bb7Panels.toggle(listOf(Bb7Panel.All), Bb7Panel.All))
+        assertEquals(withFrequent, Bb7Panels.decode(Bb7Panels.encode(withFrequent)))
+    }
+
+    @Test
+    fun steppingSkipsHiddenPanels() {
+        val panels = listOf(Bb7Panel.Favorites, Bb7Panel.Frequent)
+        assertEquals(Bb7Panel.Frequent, Bb7Home.step(Bb7Panel.Favorites, 1, panels))
+        assertEquals(Bb7Panel.Favorites, Bb7Home.step(Bb7Panel.Frequent, 1, panels))
+        // A hidden panel that was showing falls back to the first.
+        assertEquals(Bb7Panel.Favorites, Bb7Home.step(Bb7Panel.Downloads, 1, panels))
+    }
+
+    @Test
+    fun scrimLevelsStayInRangeAndGetDarker() {
+        assertEquals(Bb7Scrim.MIN, Bb7Scrim.step(Bb7Scrim.MIN, -1))
+        assertEquals(Bb7Scrim.MAX, Bb7Scrim.step(Bb7Scrim.MAX, 1))
+        assertEquals(Bb7Scrim.MAX, Bb7Scrim.clamp(99))
+        (Bb7Scrim.MIN until Bb7Scrim.MAX).forEach {
+            assertEquals(true, Bb7Scrim.trayAlpha(it) < Bb7Scrim.trayAlpha(it + 1))
+            assertEquals(true, Bb7Scrim.bannerAlpha(it) < Bb7Scrim.bannerAlpha(it + 1))
+        }
+    }
+
+    @Test
+    fun aDragDownOnBb10HomeOpensCommand() {
+        assertEquals(Bb10Swipe.Command, Bb10Gestures.vertical(300f, 120f))
+        assertEquals(null, Bb10Gestures.vertical(100f, 120f))
+        assertEquals(null, Bb10Gestures.vertical(-300f, 120f))
+        assertEquals(null, Bb10Gestures.vertical(300f, 0f))
+    }
 }

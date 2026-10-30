@@ -34,6 +34,10 @@ data class HubNotification(
     val messages: List<ConversationMessage>,
     internal val contentIntent: PendingIntent?,
     internal val replyAction: Notification.Action?,
+    /** An email notification (category email); everything else is a message. */
+    val isEmail: Boolean = false,
+    /** The notification's own "mark as read" action, when the app offers one. */
+    internal val markReadAction: Notification.Action? = null,
 ) {
     val canReply: Boolean get() = replyAction != null
 }
@@ -47,6 +51,7 @@ data class HubConversation(
 ) {
     val latestNotification: HubNotification get() = notifications.maxBy(HubNotification::postedAt)
     val openTarget: HubNotification get() = notifications.firstOrNull { it.contentIntent != null } ?: latestNotification
+    val isEmail: Boolean get() = notifications.any(HubNotification::isEmail)
     val latestMessage: ConversationMessage? get() = messages.maxByOrNull(ConversationMessage::timestamp)
     val replyTarget: HubNotification?
         get() = notifications.filter(HubNotification::canReply).maxByOrNull(HubNotification::postedAt)

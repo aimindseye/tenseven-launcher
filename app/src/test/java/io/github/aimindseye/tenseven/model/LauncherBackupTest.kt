@@ -78,6 +78,8 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_HOME_STYLE,
                 StartStateRepository.KEY_ICON_PACK,
                 StartStateRepository.KEY_BB7_HOME_ROWS,
+                StartStateRepository.KEY_BB7_PANELS,
+                StartStateRepository.KEY_BB7_SCRIM,
             )
         assertEquals(owned, LauncherBackup.keys)
         assertFalse(LauncherBackup.keys.contains(StartStateRepository.KEY_ONBOARDING_DONE))

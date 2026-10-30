@@ -40,6 +40,8 @@ object LauncherBackup {
             "home_style" to Type.TEXT,
             "icon_pack" to Type.TEXT,
             "bb7_home_rows" to Type.NUMBER,
+            "bb7_panels" to Type.TEXT,
+            "bb7_scrim" to Type.NUMBER,
         )
 
     val keys: Set<String> get() = ALLOWED.keys

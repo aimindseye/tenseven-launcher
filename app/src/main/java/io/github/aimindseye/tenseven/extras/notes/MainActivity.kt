@@ -2,6 +2,7 @@
 // Apache License 2.0. Changed: package and imports renamed for Tenseven; native Rust calls replaced by Kotlin where noted.
 package io.github.aimindseye.tenseven.extras.notes
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
@@ -9,6 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import io.github.aimindseye.tenseven.design.SableGlobalTheme
+import io.github.aimindseye.tenseven.extras.ExtraKeyAction
+import io.github.aimindseye.tenseven.extras.ExtraKeys
+import io.github.aimindseye.tenseven.extras.notes.core.NotesKeys
 import io.github.aimindseye.tenseven.extras.notes.ui.NotesApp
 
 /**
@@ -42,7 +46,27 @@ class MainActivity : ComponentActivity() {
     override fun onKeyDown(
         keyCode: Int,
         event: KeyEvent,
-    ): Boolean = (event.repeatCount == 0 && controller.onKey(keyCode, event)) || super.onKeyDown(keyCode, event)
+    ): Boolean {
+        if (event.repeatCount == 0 && controller.onKey(keyCode, event)) return true
+        // Keys nothing else used: Escape leaves from the first screen, Menu lists the keys, as on Home.
+        when (ExtraKeys.action(keyCode, event.repeatCount, event.isAltPressed, event.isCtrlPressed)) {
+            ExtraKeyAction.Leave -> {
+                finish()
+                return true
+            }
+            ExtraKeyAction.Help -> {
+                AlertDialog
+                    .Builder(this)
+                    .setTitle("Keys")
+                    .setMessage(listOf(NotesKeys.LIST_HINT, NotesKeys.TASKS_HINT, "Esc or Back: leave").joinToString("\n"))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                return true
+            }
+            null -> Unit
+        }
+        return super.onKeyDown(keyCode, event)
+    }
 
     override fun onPause() {
         controller.flushAll()

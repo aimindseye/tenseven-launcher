@@ -25,6 +25,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -151,6 +152,10 @@ import io.github.aimindseye.tenseven.iconpacks.IconPacks
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.ActiveFrames
 import io.github.aimindseye.tenseven.model.AppEntry
+import io.github.aimindseye.tenseven.model.AppUsage
+import io.github.aimindseye.tenseven.model.Bb10Gestures
+import io.github.aimindseye.tenseven.model.AssignCommand
+import io.github.aimindseye.tenseven.model.AssignRequest
 import io.github.aimindseye.tenseven.model.AppGlyphs
 import io.github.aimindseye.tenseven.model.AppGrid
 import io.github.aimindseye.tenseven.model.AppProfiles
@@ -176,6 +181,7 @@ import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.StartTypeToSearch
 import io.github.aimindseye.tenseven.model.inLauncherUser
 import io.github.aimindseye.tenseven.model.stableKey
+import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.PeopleRepository
@@ -819,6 +825,7 @@ fun SableStartScreen(
                         SearchScreen(
                             apps = apps,
                             recentKeys = recentKeys,
+                            letterShortcuts = letterShortcuts,
                             initialQuery = searchSeed,
                             privateSpaceLocked = privateSpaceLocked,
                             onTogglePrivateSpace = onTogglePrivateSpace,
@@ -995,6 +1002,7 @@ private fun StartStrip(
     var phoneSlotFocused by remember { mutableStateOf(false) }
     val speedDialKeys = remember { SpeedDialKeys() }
     val homeFocus = remember { FocusRequester() }
+    val swipePx = with(LocalDensity.current) { HOME_SWIPE_DP.dp.toPx() }
     Column(
         modifier =
             Modifier
@@ -1068,7 +1076,15 @@ private fun StartStrip(
                 // After the key handlers, so they sit above this focus target: with nothing else focused (a
                 // touch launch) Home still receives type-to-search, Alt+Space and Menu.
                 .focusRequester(homeFocus)
-                .focusable(),
+                .focusable()
+                // A swipe down on Home that no page used (they scroll vertically themselves) opens Command.
+                .pointerInput(onCommand, swipePx) {
+                    var dragged = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { dragged = 0f },
+                        onDragEnd = { if (Bb10Gestures.vertical(dragged, swipePx) != null) onCommand() },
+                    ) { _, amount -> dragged += amount }
+                },
     ) {
         LaunchedEffect(Unit) { runCatching { homeFocus.requestFocus() } }
         HorizontalPager(
@@ -3894,6 +3910,7 @@ private fun PrivateSpaceSection(
 private fun SearchScreen(
     apps: List<AppEntry>,
     recentKeys: List<String>,
+    letterShortcuts: LetterShortcutRepository?,
     initialQuery: String,
     privateSpaceLocked: Boolean?,
     onTogglePrivateSpace: () -> Unit,
@@ -3937,8 +3954,10 @@ private fun SearchScreen(
             CommandScope.Work -> apps.filter { it.profileLabel == AppProfiles.WORK }
             else -> null
         }
+    val usageContext = LocalContext.current
+    val appUsage = remember(apps, recentKeys) { AppUsageRepository(usageContext).load() }
     val (filteredApps, privacyMatches) =
-        remember(apps, recentKeys, parsed) {
+        remember(apps, recentKeys, parsed, appUsage) {
             if (profileApps != null) {
                 CommandRanking.apps(profileApps, { it.label }, { null }, term) to emptyList()
             } else if (!parsed.includes(CommandScope.Apps)) {
@@ -3952,6 +3971,7 @@ private fun SearchScreen(
                         label = { it.label },
                         recentRank = { app -> recentKeys.indexOf(app.stableKey()).takeIf { it >= 0 } },
                         term = term,
+                        frequency = { app -> appUsage.score(app.stableKey()) },
                     ).take(if (term.isEmpty()) 6 else 12)
                 val byPrivacy =
                     if (term.isEmpty()) {
@@ -4033,7 +4053,9 @@ private fun SearchScreen(
     val settingsResults = if (parsed.profileScope) emptyList() else settingsResults(parsed, onStartIntent, onOpenSettings)
     val peopleResults = if (parsed.profileScope) emptyList() else peopleResults(parsed, onStartIntent, onHub)
     val hubResults = if (parsed.profileScope) emptyList() else hubResults(parsed, onHub)
-    val quickRows = quickActionRows(searchContext, query.text, onStartIntent)
+    val quickRows =
+        quickActionRows(searchContext, query.text, onStartIntent) +
+            assignRows(searchContext, query.text, apps, appUsage, letterShortcuts)
     val firstOther =
         (quickRows + filteredCommands.takeIf { term.isNotEmpty() }.orEmpty() + settingsResults + peopleResults + hubResults)
             .firstOrNull()
@@ -5694,3 +5716,71 @@ private fun quickActionRows(
     }
     return emptyList()
 }
+
+
+/** `assign k camera` lists the apps that K could open; choosing one holds it on K. `unassign k` frees the letter. */
+private fun assignRows(
+    context: Context,
+    raw: String,
+    apps: List<AppEntry>,
+    usage: AppUsage,
+    letterShortcuts: LetterShortcutRepository?,
+): List<SearchCommand> {
+    val request = AssignCommand.parse(raw) ?: return emptyList()
+    val shortcuts = letterShortcuts ?: return emptyList()
+    val source = context.getString(R.string.assign_source)
+    val letter = request.letter.uppercaseChar()
+    val current = shortcuts.load()
+    return when (request) {
+        is AssignRequest.Clear -> {
+            val held = current.componentFor(request.letter)?.let(android.content.ComponentName::unflattenFromString)
+            val label = held?.let { c -> apps.firstOrNull { it.component == c }?.label ?: c.packageName }
+            if (held == null || label == null) {
+                listOf(SearchCommand(context.getString(R.string.assign_nothing, letter), "", "$letter", source, {}))
+            } else {
+                listOf(
+                    SearchCommand(
+                        context.getString(R.string.assign_clear, letter, label),
+                        context.getString(R.string.assign_hint, letter),
+                        "$letter",
+                        source,
+                        {
+                            shortcuts.remove(held)
+                            Toast.makeText(context, context.getString(R.string.assign_cleared, letter), Toast.LENGTH_SHORT).show()
+                        },
+                    ),
+                )
+            }
+        }
+        is AssignRequest.Assign ->
+            CommandRanking
+                .apps(
+                    items = apps.filter { it.inLauncherUser },
+                    label = { it.label },
+                    recentRank = { null },
+                    term = request.appTerm,
+                    frequency = { usage.score(it.stableKey()) },
+                ).take(ASSIGN_ROWS)
+                .map { app ->
+                    val holder = current.componentFor(request.letter)
+                    val replaces =
+                        holder?.takeIf { it != app.component.flattenToString() }?.let(android.content.ComponentName::unflattenFromString)
+                            ?.let { c -> apps.firstOrNull { it.component == c }?.label ?: c.packageName }
+                    SearchCommand(
+                        context.getString(R.string.assign_row, letter, app.label),
+                        if (replaces != null) context.getString(R.string.assign_replaces, replaces) else context.getString(R.string.assign_hint, letter),
+                        "$letter",
+                        source,
+                        {
+                            shortcuts.assign(request.letter, app.component)
+                            Toast.makeText(context, context.getString(R.string.assign_done, letter, app.label), Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                }
+    }
+}
+
+private const val ASSIGN_ROWS = 6
+
+/** How far a swipe down on the BlackBerry 10 home must travel to open Command. */
+private const val HOME_SWIPE_DP = 120

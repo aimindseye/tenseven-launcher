@@ -25,6 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,6 +35,11 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.OnboardingActivity
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.conversations.ConversationFilter
+import io.github.aimindseye.tenseven.conversations.ConversationKind
+import io.github.aimindseye.tenseven.conversations.ConversationState
+import io.github.aimindseye.tenseven.conversations.ConversationView
+import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.conversations.conversationPreview
@@ -43,9 +51,16 @@ internal class HubConversationsUi(
     val accessGranted: Boolean,
     val deviceLocked: Boolean,
     val conversations: List<HubConversation>,
+    val filter: ConversationFilter,
+    val state: ConversationState,
+    val now: Long,
     val onOpen: (HubConversation) -> Unit,
     val onReply: (HubConversation, String) -> Boolean,
     val onAllowAccess: () -> Unit,
+    val onFilterChange: (ConversationFilter) -> Unit,
+    val onMarkRead: (HubConversation) -> Unit,
+    val onSnooze: (HubConversation, Long) -> Unit,
+    val onWake: (HubConversation) -> Unit,
 )
 
 private const val MAX_CONVERSATIONS = 30
@@ -76,12 +91,36 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
         }
         return
     }
-    conversationItems(ui.conversations.take(MAX_CONVERSATIONS), key = { "conversation:" + it.id }) { conversation ->
+    val visible = ConversationView.apply(ui.conversations, ui.filter, ui.state, ui.now)
+    item(key = "conversations-filter") {
+        FilterBar(
+            filter = ui.filter,
+            snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now),
+            onChange = ui.onFilterChange,
+        )
+    }
+    if (visible.isEmpty()) {
+        item(key = "conversations-nomatch") {
+            Text(
+                text = stringResource(R.string.hub_no_match),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+        }
+        return
+    }
+    conversationItems(visible.take(MAX_CONVERSATIONS), key = { "conversation:" + it.id }) { conversation ->
         ConversationRow(
             conversation = conversation,
             locked = ui.deviceLocked,
+            unread = ui.state.unreadCount(conversation),
+            snoozed = ui.filter.snoozed,
             onOpen = { ui.onOpen(conversation) },
             onReply = { text -> ui.onReply(conversation, text) },
+            onMarkRead = { ui.onMarkRead(conversation) },
+            onSnooze = { until -> ui.onSnooze(conversation, until) },
+            onWake = { ui.onWake(conversation) },
         )
     }
 }
@@ -119,11 +158,65 @@ private fun ConversationCard(
 }
 
 @Composable
+private fun FilterBar(
+    filter: ConversationFilter,
+    snoozedCount: Int,
+    onChange: (ConversationFilter) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            FilterButton(stringResource(R.string.hub_filter_all), !filter.unreadOnly && filter.kind == ConversationKind.All && !filter.snoozed) {
+                onChange(filter.copy(unreadOnly = false, kind = ConversationKind.All, snoozed = false))
+            }
+            FilterButton(stringResource(R.string.hub_filter_unread), filter.unreadOnly) {
+                onChange(filter.copy(unreadOnly = !filter.unreadOnly, snoozed = false))
+            }
+            FilterButton(stringResource(R.string.hub_filter_messages), filter.kind == ConversationKind.Messages) {
+                onChange(filter.copy(kind = if (filter.kind == ConversationKind.Messages) ConversationKind.All else ConversationKind.Messages))
+            }
+            FilterButton(stringResource(R.string.hub_filter_email), filter.kind == ConversationKind.Email) {
+                onChange(filter.copy(kind = if (filter.kind == ConversationKind.Email) ConversationKind.All else ConversationKind.Email))
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = filter.person,
+                onValueChange = { onChange(filter.copy(person = it)) },
+                modifier = Modifier.weight(1f).sableFocusRing(),
+                placeholder = { Text(stringResource(R.string.hub_filter_person_hint)) },
+                singleLine = true,
+            )
+            if (snoozedCount > 0 || filter.snoozed) {
+                FilterButton(stringResource(R.string.hub_filter_snoozed, snoozedCount), filter.snoozed) {
+                    onChange(filter.copy(snoozed = !filter.snoozed))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(onClick = onClick, modifier = Modifier.sableFocusRing()) {
+        Text(if (selected) "✓ $label" else label, maxLines = 1)
+    }
+}
+
+@Composable
 private fun ConversationRow(
     conversation: HubConversation,
     locked: Boolean,
+    unread: Int,
+    snoozed: Boolean,
     onOpen: () -> Unit,
     onReply: (String) -> Boolean,
+    onMarkRead: () -> Unit,
+    onSnooze: (Long) -> Unit,
+    onWake: () -> Unit,
 ) {
     val shape = RoundedCornerShape(8.dp)
     var replying by remember { mutableStateOf(false) }
@@ -153,10 +246,36 @@ private fun ConversationRow(
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().sableFocusRing().clickable(onClick = onOpen).padding(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    // M marks read, S snoozes for an hour, on the focused conversation.
+                    .onKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                        val plain = !event.nativeKeyEvent.isAltPressed && !event.nativeKeyEvent.isCtrlPressed
+                        when {
+                            !plain -> false
+                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_M && unread > 0 -> {
+                                onMarkRead()
+                                true
+                            }
+                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_S -> {
+                                if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+                                true
+                            }
+                            else -> false
+                        }
+                    }.sableFocusRing()
+                    .clickable(onClick = onOpen)
+                    .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Text(conversation.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                if (unread > 0) conversation.name + "  ·  " + stringResource(R.string.hub_unread_count, unread) else conversation.name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             Text(
                 text = preview ?: stringResource(R.string.hub_locked_preview),
                 style = MaterialTheme.typography.bodyMedium,
@@ -166,13 +285,42 @@ private fun ConversationRow(
             )
             Text("$apps · $whenText", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (canReply) {
-            Row(modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (!replying) {
+        Row(
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (!replying) {
+                if (canReply) {
                     OutlinedButton(onClick = { replying = true }, modifier = Modifier.sableFocusRing()) {
                         Text(stringResource(R.string.hub_reply))
                     }
+                }
+                if (unread > 0) {
+                    OutlinedButton(onClick = onMarkRead, modifier = Modifier.sableFocusRing()) {
+                        Text(stringResource(R.string.hub_mark_read))
+                    }
+                }
+                if (snoozed) {
+                    OutlinedButton(onClick = onWake, modifier = Modifier.sableFocusRing()) {
+                        Text(stringResource(R.string.hub_wake))
+                    }
                 } else {
+                    OutlinedButton(
+                        onClick = { onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS) },
+                        modifier = Modifier.sableFocusRing(),
+                    ) {
+                        Text(stringResource(R.string.hub_snooze_hour))
+                    }
+                    OutlinedButton(
+                        onClick = { onSnooze(Snooze.nextMorning(System.currentTimeMillis())) },
+                        modifier = Modifier.sableFocusRing(),
+                    ) {
+                        Text(stringResource(R.string.hub_snooze_tomorrow))
+                    }
+                }
+            } else {
+                if (canReply) {
                     OutlinedTextField(
                         value = draft,
                         onValueChange = {
@@ -215,15 +363,26 @@ internal fun rememberHubConversationsUi(
         remember(refreshGeneration) {
             context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
         }
+    remember(context) { ConversationHub.ensureStateLoaded(context) }
     val conversations =
         remember(refreshGeneration, accessGranted) {
             if (accessGranted) ConversationHub.conversations() else emptyList()
         }
-    return remember(accessGranted, locked, conversations) {
+    var filter by remember { mutableStateOf(ConversationFilter()) }
+    val state = remember(refreshGeneration, accessGranted) { ConversationHub.state() }
+    val now = remember(refreshGeneration, filter) { System.currentTimeMillis() }
+    return remember(accessGranted, locked, conversations, filter, state, now) {
         HubConversationsUi(
             accessGranted = accessGranted,
             deviceLocked = locked,
             conversations = conversations,
+            filter = filter,
+            state = state,
+            now = now,
+            onFilterChange = { filter = it },
+            onMarkRead = { ConversationHub.markRead(context, it) },
+            onSnooze = { conversation, until -> ConversationHub.snooze(context, conversation, until) },
+            onWake = { ConversationHub.wake(context, it) },
             onOpen = { conversation ->
                 if (!ConversationHub.open(context, conversation.openTarget)) onOpenFallback()
             },
