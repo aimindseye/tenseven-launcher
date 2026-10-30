@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Process
 import androidx.core.content.ContextCompat
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 
 /** Reads what has been granted, from Android. Cheap; call it again when the user comes back from Settings. */
 object SetupStatus {
@@ -19,6 +20,7 @@ object SetupStatus {
             photosGranted = granted(context, photosPermission()),
             notificationAccess = ConversationAccess.isGranted(context),
             usageAccess = hasUsageAccess(context),
+            extrasChosen = ExtraAppsControl.enabledIds(context).isNotEmpty(),
         )
 
     /** READ_MEDIA_IMAGES from Android 13; READ_EXTERNAL_STORAGE before. */

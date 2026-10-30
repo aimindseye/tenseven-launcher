@@ -38,6 +38,12 @@
     <string name="setup_usage_reason">Only a home screen built into the phone can see other apps\' recent tasks. Usage access lets Tenseven read which apps you used lately, so Active Frames can show a recent-apps row. App names and times only; nothing is stored or sent.</string>
     <string name="setup_usage_action">Open usage access</string>
 
+    <string name="setup_extras_title">Extra apps (optional)</string>
+    <string name="setup_extras_reason">Tenseven can include a calculator with unit conversion, notes, and some classic games. Nothing is installed or downloaded and none is on by default: tick what you want and it appears in All Apps. You can change this any time from Extra apps in Command.</string>
+    <string name="setup_extras_action">Save choices</string>
+    <string name="setup_extras_tools">Tools</string>
+    <string name="setup_extras_games">Games</string>
+    <string name="extras_command_hint">Choose the bundled Calculator, Notes and games</string>
     <string name="setup_restricted_title">If the switch is greyed out</string>
     <string name="setup_restricted_reason">Android 13 and newer restricts this setting for apps installed from a downloaded file. To allow it: open App info below, tap the menu at the top right, choose Allow restricted settings and confirm, then come back and open the setting again. Only do this for an APK you trust.</string>
     <string name="setup_restricted_action">Open App info</string>

@@ -13,6 +13,7 @@ own licences. Licence texts that ship with a component are kept next to it.
 | Web-address check, derived from MinkLauncher OpenSource (Katoa Apps); prefix commands and backup format follow Mink's ideas in Tenseven's own code | `app/src/main/java/io/github/aimindseye/tenseven/model/QuickActions.kt`, `model/LauncherBackup.kt` | Apache-2.0 (as above) | https://github.com/katoaapps/openminilaunch @ `b9b26f73` |
 | Titan AI status rings: ring drawing and device stats sampler, ported and trimmed (via SableOS) | `app/src/main/java/io/github/aimindseye/tenseven/ui/SableStatusRings.kt`, `.../platform/DeviceStatsSampler.kt` | MIT (`third_party/titan-ai/LICENSE`; notice kept in each file header) | https://github.com/andrehafner/aiassistant @ `2f4b5d76` |
 | Sable Start and Sable design sources, imported from SableOS | `app/`, `design/` | Apache-2.0 (same licence as this repository) | https://github.com/aimindseye/zinwaq25-sableos @ `31420f59` |
+| Extra apps (Calculator with unit converter, Notes, ten games), imported from SableOS; the Rust cores were rewritten in Kotlin | `app/src/main/java/io/github/aimindseye/tenseven/extras/` | Apache-2.0 (same licence as this repository; each file header names its source) | https://github.com/aimindseye/zinwaq25-sableos @ `31420f59` |
 | detekt rule set, byte-exact copy from SableOS | `config/detekt.yml` | Apache-2.0 | https://github.com/aimindseye/zinwaq25-sableos |
 | Gradle wrapper | `gradle/wrapper/`, `gradlew`, `gradlew.bat` | Apache-2.0 | https://gradle.org, version 8.13 |
 

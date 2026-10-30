@@ -112,6 +112,15 @@ object AppGlyphs {
             "com.aurora.store" to AppGlyph.STORE,
         )
 
+    /**
+     * The glyph for an activity: Tenseven's own extra apps by class (they share the launcher's package), else by
+     * [packageName].
+     */
+    fun forComponent(
+        packageName: String,
+        className: String,
+    ): AppGlyph? = ExtraApps.byClassName(className)?.glyph ?: forPackage(packageName)
+
     /** The glyph for [packageName], or null when the app draws its own icon. */
     fun forPackage(packageName: String): AppGlyph? = BY_PACKAGE[CoreAppIdentity.canonicalPackage(packageName)]
 }

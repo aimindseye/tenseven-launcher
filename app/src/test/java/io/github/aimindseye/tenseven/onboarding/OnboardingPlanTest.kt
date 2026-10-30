@@ -6,13 +6,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OnboardingPlanTest {
-    private val nothing = SetupState(false, false, false, false, false)
-    private val everything = SetupState(true, true, true, true, true)
+    private val nothing = SetupState(false, false, false, false, false, false)
+    private val everything = SetupState(true, true, true, true, true, true)
 
     @Test
     fun stepsComeInTheOrderHomeFirst() {
         assertEquals(
-            listOf(SetupStep.HOME, SetupStep.CONTACTS, SetupStep.PHOTOS, SetupStep.NOTIFICATIONS, SetupStep.USAGE),
+            listOf(SetupStep.HOME, SetupStep.CONTACTS, SetupStep.PHOTOS, SetupStep.NOTIFICATIONS, SetupStep.USAGE, SetupStep.EXTRAS),
             OnboardingPlan.pending(nothing),
         )
     }
@@ -21,10 +21,17 @@ class OnboardingPlanTest {
     fun grantedStepsAreLeftOut() {
         val state = nothing.copy(homeRoleHeld = true, photosGranted = true)
         assertEquals(
-            listOf(SetupStep.CONTACTS, SetupStep.NOTIFICATIONS, SetupStep.USAGE),
+            listOf(SetupStep.CONTACTS, SetupStep.NOTIFICATIONS, SetupStep.USAGE, SetupStep.EXTRAS),
             OnboardingPlan.pending(state),
         )
         assertTrue(OnboardingPlan.pending(everything).isEmpty())
+    }
+
+    @Test
+    fun extrasAreOffUntilChosen() {
+        assertTrue(SetupStep.EXTRAS in OnboardingPlan.pending(nothing))
+        assertFalse(SetupStep.EXTRAS in OnboardingPlan.pending(nothing.copy(extrasChosen = true)))
+        assertFalse(SetupStep.EXTRAS.isSpecialAccess)
     }
 
     @Test

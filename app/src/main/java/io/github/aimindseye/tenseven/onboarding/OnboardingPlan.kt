@@ -11,6 +11,7 @@ enum class SetupStep {
     PHOTOS,
     NOTIFICATIONS,
     USAGE,
+    EXTRAS,
     ;
 
     val required: Boolean get() = this == HOME
@@ -26,6 +27,8 @@ data class SetupState(
     val photosGranted: Boolean,
     val notificationAccess: Boolean,
     val usageAccess: Boolean,
+    /** At least one bundled extra app (Calculator, Notes, a game) is switched on. Off by default. */
+    val extrasChosen: Boolean = false,
 ) {
     fun isDone(step: SetupStep): Boolean =
         when (step) {
@@ -34,6 +37,7 @@ data class SetupState(
             SetupStep.PHOTOS -> photosGranted
             SetupStep.NOTIFICATIONS -> notificationAccess
             SetupStep.USAGE -> usageAccess
+            SetupStep.EXTRAS -> extrasChosen
         }
 }
 

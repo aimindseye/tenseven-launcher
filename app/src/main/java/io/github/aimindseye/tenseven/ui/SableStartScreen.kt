@@ -4000,6 +4000,18 @@ private fun SearchScreen(
                 { onStartIntent(Intent(searchContext, OnboardingActivity::class.java)) },
             ),
             SearchCommand(
+                searchContext.getString(R.string.setup_extras_title),
+                searchContext.getString(R.string.extras_command_hint),
+                "✚",
+                t("start"),
+                {
+                    onStartIntent(
+                        Intent(searchContext, OnboardingActivity::class.java)
+                            .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.EXTRAS.name),
+                    )
+                },
+            ),
+            SearchCommand(
                 searchContext.getString(R.string.backup_menu),
                 searchContext.getString(R.string.backup_command_hint),
                 "⇅",
@@ -4741,7 +4753,7 @@ internal fun AppMark(
     app: AppEntry,
     size: Int,
 ) {
-    val glyph = AppGlyphs.forPackage(app.component.packageName)
+    val glyph = AppGlyphs.forComponent(app.component.packageName, app.component.className)
     if (glyph != null) {
         SableGlyphIcon(glyph = glyph, modifier = Modifier.size(size.dp))
         return
@@ -5502,7 +5514,7 @@ private fun appMark(app: AppEntry): String =
 
 /** The app's accent: its glyph's ([AppGlyphs], by package), else a stable pick from the Sable palette. */
 private fun appColor(app: AppEntry): Color {
-    AppGlyphs.forPackage(app.component.packageName)?.let { return Color(it.accent) }
+    AppGlyphs.forComponent(app.component.packageName, app.component.className)?.let { return Color(it.accent) }
     val index =
         Math.floorMod(
             app.stableKey().hashCode(),
