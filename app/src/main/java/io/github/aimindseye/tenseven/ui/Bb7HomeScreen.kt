@@ -321,8 +321,12 @@ fun Bb7HomeScreen(
                             ) { _, amount -> dragged += amount }
                         }.pointerInput(onDoubleTapEmpty, open) {
                             // Only empty space: taps on icons and rows are consumed by them first.
-                            if (onDoubleTapEmpty != null && !open) {
-                                detectTapGestures(onDoubleTap = { onDoubleTapEmpty() })
+                            // Long-press empty space: open All to pick icons for the home screen.
+                            if (!open) {
+                                detectTapGestures(
+                                    onDoubleTap = { onDoubleTapEmpty?.invoke() },
+                                    onLongPress = { openApps() },
+                                )
                             }
                         },
                 ) {
