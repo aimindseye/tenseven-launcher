@@ -227,7 +227,7 @@ class StartStateRepository(
             }.apply()
     }
 
-    private companion object {
+    companion object {
         const val PREFERENCES_NAME = "sable_start_state"
         const val KEY_FAVORITE_APPS = "favorite_apps"
         const val KEY_START_TILES = "start_tiles"
