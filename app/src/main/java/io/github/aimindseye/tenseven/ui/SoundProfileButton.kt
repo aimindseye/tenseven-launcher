@@ -26,7 +26,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.platform.SoundProfileControl
 
-/** The speaker icon: shows Sound, Vibrate or Silent; a tap switches profile, a long press opens Silent access. */
+/**
+ * The speaker icon: shows Sound, Vibrate or Silent. A tap opens Sound Profiles when that extra is on, otherwise it
+ * switches between Android's own modes; a long press is the quick switch (or, without the extra, Silent access).
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SoundProfileButton(modifier: Modifier = Modifier) {
@@ -57,8 +60,17 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
                 .background(Color.Black.copy(alpha = 0.35f))
                 .semantics { contentDescription = profile.label }
                 .combinedClickable(
-                    onClick = { profile = SoundProfileControl.cycle(context) },
-                    onLongClick = { SoundProfileControl.openSilentAccess(context) },
+                    onClick = {
+                        // With the Sound Profiles extra on, the icon opens it; otherwise it uses Android's own modes.
+                        if (!SoundProfileControl.openProfiles(context)) profile = SoundProfileControl.cycle(context)
+                    },
+                    onLongClick = {
+                        if (SoundProfileControl.profilesEnabled(context)) {
+                            profile = SoundProfileControl.cycle(context)
+                        } else {
+                            SoundProfileControl.openSilentAccess(context)
+                        }
+                    },
                 )
                 .padding(horizontal = 10.dp, vertical = 4.dp),
     )

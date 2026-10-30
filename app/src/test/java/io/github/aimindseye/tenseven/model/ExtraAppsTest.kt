@@ -10,7 +10,7 @@ import org.junit.Test
 class ExtraAppsTest {
     @Test
     fun catalogueHasToolsAndTenGames() {
-        assertEquals(2, ExtraApps.ofGroup(ExtraGroup.Tools).size)
+        assertEquals(3, ExtraApps.ofGroup(ExtraGroup.Tools).size)
         assertEquals(10, ExtraApps.ofGroup(ExtraGroup.Games).size)
         assertEquals(ExtraApps.ALL.size, ExtraApps.ALL.map { it.id }.toSet().size)
         assertEquals(ExtraApps.ALL.size, ExtraApps.ALL.map { it.className }.toSet().size)

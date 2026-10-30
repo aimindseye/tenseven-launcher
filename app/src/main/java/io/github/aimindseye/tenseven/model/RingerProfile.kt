@@ -1,7 +1,7 @@
 package io.github.aimindseye.tenseven.model
 
 /** The phone's ringer profile, as the speaker icon on the home screens shows and cycles it. */
-enum class SoundProfile(
+enum class RingerProfile(
     val ringerMode: Int,
     val symbol: String,
     val label: String,
@@ -12,7 +12,7 @@ enum class SoundProfile(
     ;
 
     /** The profile one tap switches to. Silent is only offered once Android allows it ([canSilence]). */
-    fun next(canSilence: Boolean): SoundProfile =
+    fun next(canSilence: Boolean): RingerProfile =
         when (this) {
             Sound -> Vibrate
             Vibrate -> if (canSilence) Silent else Sound
@@ -25,6 +25,6 @@ enum class SoundProfile(
         const val RINGER_VIBRATE = 1
         const val RINGER_NORMAL = 2
 
-        fun fromRingerMode(mode: Int): SoundProfile = entries.firstOrNull { it.ringerMode == mode } ?: Sound
+        fun fromRingerMode(mode: Int): RingerProfile = entries.firstOrNull { it.ringerMode == mode } ?: Sound
     }
 }

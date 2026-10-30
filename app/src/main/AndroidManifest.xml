@@ -14,6 +14,9 @@
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
          Tenseven under Settings, Usage access, and "appops set" is ignored. The user still grants it there. -->
+    <!-- Sound Profiles (an extra) sets tones, vibration and the light; the user allows it once under "Modify system settings". -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
+
     <!-- Lets the user give Tenseven Do Not Disturb access, which Android requires before an app may pick Silent. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
@@ -184,6 +187,19 @@
             android:exported="true"
             android:label="Calc Plus"
             android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="io.github.aimindseye.tenseven.extras.profiles.MainActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.profiles_MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="Sound Profiles"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
