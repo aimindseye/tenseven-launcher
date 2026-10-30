@@ -38,6 +38,8 @@
     <string name="setup_usage_reason">Only a home screen built into the phone can see other apps\' recent tasks. Usage access lets Tenseven read which apps you used lately, so Active Frames can show a recent-apps row. App names and times only; nothing is stored or sent.</string>
     <string name="setup_usage_action">Open usage access</string>
 
+    <string name="bb7_add_home">Add to home screen</string>
+    <string name="bb7_remove_home">Remove from home screen</string>
     <string name="bb7_add_apps">Add apps to the home screen</string>
     <string name="bb7_command">Command</string>
     <string name="bb7_panel_show">Show %1$s panel</string>

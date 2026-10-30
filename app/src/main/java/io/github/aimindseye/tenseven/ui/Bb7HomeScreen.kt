@@ -180,9 +180,9 @@ fun Bb7HomeScreen(
                 add(t("open") to { onLaunchApp(app) })
                 if (key in favorites) {
                     if (panel == Bb7Panel.Favorites && !searching) add(t("move_2") to { moving = true })
-                    add(t("remove_from_favorites") to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
+                    add(context.getString(R.string.bb7_remove_home) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
                 } else {
-                    add(t("add_to_favorites") to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
+                    add(context.getString(R.string.bb7_add_home) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
                 }
                 add(t("app_info") to { onOpenAppInfo(app) })
             }
@@ -192,7 +192,7 @@ fun Bb7HomeScreen(
             if (!open && !searching && homeRows > Bb7Home.MIN_HOME_ROWS) {
                 add(t("show_fewer_rows") to { onHomeRowsChanged(homeRows - 1) })
             }
-            if (!open && !searching && panel == Bb7Panel.Favorites) {
+            if (!searching && panel != Bb7Panel.All) {
                 // Add icons to the home screen: pick them in All (Menu or long-press an icon, Add to Favorites).
                 add(context.getString(R.string.bb7_add_apps) to openApps)
             }
@@ -321,8 +321,12 @@ fun Bb7HomeScreen(
                             ) { _, amount -> dragged += amount }
                         }.pointerInput(onDoubleTapEmpty, open) {
                             // Only empty space: taps on icons and rows are consumed by them first.
-                            if (onDoubleTapEmpty != null && !open) {
-                                detectTapGestures(onDoubleTap = { onDoubleTapEmpty() })
+                            // Long-press empty space: open All to pick icons for the home screen.
+                            if (!open) {
+                                detectTapGestures(
+                                    onDoubleTap = { onDoubleTapEmpty?.invoke() },
+                                    onLongPress = { openApps() },
+                                )
                             }
                         },
                 ) {
