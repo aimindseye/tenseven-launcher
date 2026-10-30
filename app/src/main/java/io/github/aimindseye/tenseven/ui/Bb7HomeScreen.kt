@@ -105,6 +105,8 @@ fun Bb7HomeScreen(
     onFavoritesChanged: (List<String>) -> Unit,
     onHomeRowsChanged: (Int) -> Unit,
     onOpenMenu: (List<Pair<String, () -> Unit>>) -> Unit,
+    /** Alt+Space (as on the BlackBerry 10 home): Command. */
+    onOpenCommand: () -> Unit = {},
     onDoubleTapEmpty: (() -> Unit)? = null,
     /** The panels the tray cycles through, and how dark the banner and tray are; both are set from the Menu key. */
     panels: List<Bb7Panel> = Bb7Panels.DEFAULT,
@@ -264,6 +266,7 @@ fun Bb7HomeScreen(
                                 native.keyCode == KeyEvent.KEYCODE_ENTER ||
                                     native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ->
                                     shown.getOrNull(selected)?.let { onLaunchApp(it) }
+                                native.keyCode == KeyEvent.KEYCODE_SPACE && native.isAltPressed -> onOpenCommand()
                                 native.keyCode == KeyEvent.KEYCODE_SPACE && !searching -> {
                                     panel = Bb7Home.step(panel, 1, panels)
                                     selected = 0

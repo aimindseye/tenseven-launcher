@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.pm.LauncherApps
 import android.database.ContentObserver
 import android.graphics.Color
+import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -205,6 +206,9 @@ class SableStartActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         StartText.t.bindTo(this)
         DesignText.t.bindTo(this)
+        // The BlackBerry 7 home is see-through over the wallpaper. A window that starts opaque keeps its pixels
+        // when it later turns transparent, so old BlackBerry 10 screens showed through: always ask for alpha.
+        window.setFormat(PixelFormat.TRANSLUCENT)
 
         launcherAppsRepository = LauncherAppsRepository(this)
         liveSurfaceRepository = LiveSurfaceRepository(this)
@@ -304,6 +308,7 @@ class SableStartActivity : ComponentActivity() {
                         startStateRepository.saveBb7HomeRows(rows)
                     },
                     onOpenMenu = ::showBb7Menu,
+                    onOpenCommand = ::openCommandFromBb7,
                     onDoubleTapEmpty = doubleTapLockCallback(),
                     panels = bb7Panels.value,
                     scrimLevel = bb7Scrim.value,
@@ -661,6 +666,7 @@ class SableStartActivity : ComponentActivity() {
                     hubGeneration.value += 1
                     startBb10Detour(returnOnHome = true)
                 },
+                getString(R.string.bb7_command) to ::openCommandFromBb7,
                 t("home_screen_style_2") to {
                     runCatching { startActivity(Intent(this, HomeStyleActivity::class.java)) }
                 },
@@ -704,6 +710,18 @@ class SableStartActivity : ComponentActivity() {
         requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), CONTACTS_PERMISSION_REQUEST_CODE)
     }
 
+    /**
+     * Command (search, actions, settings, `assign`...) from the BlackBerry 7 home: shown on the BlackBerry 10
+     * screen like Hub and Edit Home, and Back returns to the BlackBerry 7 home.
+     */
+    private fun openCommandFromBb7() {
+        homeGeneration.value = 0
+        backGeneration.value = 0
+        hubGeneration.value = 0
+        startRequest.value = StartRequest(SCREEN_SEARCH, startRequest.value.serial + 1)
+        startBb10Detour(returnOnHome = true)
+    }
+
     private fun startBb10Detour(returnOnHome: Boolean) {
         bb10Detour.value = true
         bb7Detour = Bb7Detour(returnOnHome = returnOnHome)
@@ -742,6 +760,7 @@ class SableStartActivity : ComponentActivity() {
         const val ACTION_SHOW_ACTIVE_FRAMES = "org.sableos.start.action.SHOW_ACTIVE_FRAMES"
         const val SCREEN_START = "start"
         const val SCREEN_EDIT_HOME = "home"
+        const val SCREEN_SEARCH = "search"
 
         /** Requests the BlackBerry 7 home shows on the BlackBerry 10 screen. */
         val BB10_ONLY_ACTIONS =
