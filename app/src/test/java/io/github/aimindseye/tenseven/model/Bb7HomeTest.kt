@@ -115,4 +115,21 @@ class Bb7HomeTest {
         assertEquals(null, Bb10Gestures.vertical(-300f, 120f))
         assertEquals(null, Bb10Gestures.vertical(300f, 0f))
     }
+
+    @Test
+    fun anAddedIconStaysVisible() {
+        assertEquals(listOf("a", "b"), Bb7Home.addVisible(listOf("a"), "b", 4))
+        assertEquals(listOf("a"), Bb7Home.addVisible(listOf("a"), "a", 4))
+        // 2 columns x 3 rows = 6 places: a full home puts the new icon in the last place, not past it.
+        val full = listOf("1", "2", "3", "4", "5", "6")
+        assertEquals(listOf("1", "2", "3", "4", "5", "n", "6"), Bb7Home.addVisible(full, "n", 2))
+    }
+
+    @Test
+    fun rowsGrowToFitTheIcons() {
+        assertEquals(1, Bb7Home.rowsFor(0, 4))
+        assertEquals(1, Bb7Home.rowsFor(4, 4))
+        assertEquals(2, Bb7Home.rowsFor(5, 4))
+        assertEquals(3, Bb7Home.rowsFor(40, 4))
+    }
 }

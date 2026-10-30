@@ -183,6 +183,13 @@ fun Bb7HomeScreen(
             selected += delta
         }
     }
+    // Adding an icon makes the home screen as tall as it needs to be (up to the most rows), so it is seen at once.
+    val addToHome = { key: String ->
+        val next = Bb7Home.addVisible(favorites, key, keyColumns)
+        onFavoritesChanged(next)
+        val rows = Bb7Home.rowsFor(next.size, keyColumns)
+        if (rows > homeRows) onHomeRowsChanged(rows)
+    }
     // The Menu key: the highlighted icon's items first, then Start's own (added by the activity).
     val menuFor = { app: AppEntry? ->
         buildList<Pair<String, () -> Unit>> {
@@ -193,7 +200,7 @@ fun Bb7HomeScreen(
                     if (panel == Bb7Panel.Favorites && !searching) add(t("move_2") to { moving = true })
                     add(context.getString(R.string.bb7_remove_home) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
                 } else {
-                    add(context.getString(R.string.bb7_add_home) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
+                    add(context.getString(R.string.bb7_add_home) to { addToHome(key) })
                 }
                 add(t("app_info") to { onOpenAppInfo(app) })
             }

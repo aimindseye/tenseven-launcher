@@ -225,6 +225,26 @@ object Bb7Home {
         return (rows + steps).coerceIn(MIN_HOME_ROWS, MAX_HOME_ROWS + 1)
     }
 
+    /**
+     * Favourites after adding [key] so that it shows on the home screen: it goes at the end, and when the end is past
+     * the last of [MAX_HOME_ROWS] rows of [columns] icons it takes the last visible place instead of vanishing.
+     */
+    fun addVisible(
+        current: List<String>,
+        key: String,
+        columns: Int,
+    ): List<String> {
+        if (key in current) return current
+        val capacity = columns.coerceAtLeast(1) * MAX_HOME_ROWS
+        return if (current.size < capacity) current + key else current.toMutableList().also { it.add(capacity - 1, key) }
+    }
+
+    /** Rows needed to show [count] icons in [columns] columns, within [MIN_HOME_ROWS]..[MAX_HOME_ROWS]. */
+    fun rowsFor(
+        count: Int,
+        columns: Int,
+    ): Int = ((count + columns.coerceAtLeast(1) - 1) / columns.coerceAtLeast(1)).coerceIn(MIN_HOME_ROWS, MAX_HOME_ROWS)
+
     /** Favourites as stable keys after adding or removing [key]; [current] is what the panel shows now. */
     fun toggleFavorite(
         current: List<String>,
