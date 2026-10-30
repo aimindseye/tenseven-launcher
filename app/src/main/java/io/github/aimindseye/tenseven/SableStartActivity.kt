@@ -36,7 +36,9 @@ import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Detour
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.conversations.ConversationHub
+import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.LauncherAppsRepository
+import io.github.aimindseye.tenseven.platform.UsageRecentsRepository
 import io.github.aimindseye.tenseven.platform.PermissionChangeSignal
 import io.github.aimindseye.tenseven.platform.identifier
 import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
@@ -60,6 +62,7 @@ class SableStartActivity : ComponentActivity() {
     private val letterShortcutRepository by lazy { LetterShortcutRepository(this) }
     private val speedDialRepository by lazy { SpeedDialRepository(this, letterShortcutRepository) }
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
+    private lateinit var usageRecentsRepository: UsageRecentsRepository
     private lateinit var startStateRepository: StartStateRepository
     private lateinit var recentTasksRepository: RecentTasksRepository
 
@@ -68,6 +71,8 @@ class SableStartActivity : ComponentActivity() {
     /** Active Frames: recent tasks, refreshed whenever Start comes back. */
     private val framesState = mutableStateOf<List<ActiveFrame>>(emptyList())
     private val framesGeneration = mutableStateOf(0)
+    private val recentAppsState = mutableStateOf<List<String>>(emptyList())
+    private val usageAccessState = mutableStateOf(false)
     private val framesExecutor = Executors.newSingleThreadExecutor()
 
     /** null: no private space; true: locked; false: unlocked. */
@@ -200,6 +205,7 @@ class SableStartActivity : ComponentActivity() {
         bb7Favorites.value = startStateRepository.loadHomeApps()
         bb7HomeRows.value = startStateRepository.loadBb7HomeRows()
         recentTasksRepository = RecentTasksRepository(this)
+        usageRecentsRepository = UsageRecentsRepository(this)
         homeStyle.value = startStateRepository.loadHomeStyle()
         opaqueWindowBackground = window.decorView.background
 
@@ -237,6 +243,10 @@ class SableStartActivity : ComponentActivity() {
         scheduleInventoryRefresh()
         // A recreated activity keeps its own place instead of reopening the requested screen.
         if (savedInstanceState == null) {
+            // Once, on first run: the home role and each optional permission, with the reason for it.
+            if (!startStateRepository.loadOnboardingDone()) {
+                runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
+            }
             startRequest.value = StartRequest(screenFor(intent), 0)
             if (intent?.action == ACTION_SHOW_HUB) requestHub(intent)
             if (intent?.action in BB10_ONLY_ACTIONS) {
@@ -323,6 +333,16 @@ class SableStartActivity : ComponentActivity() {
                     frameSnapshot = { frame -> recentTasksRepository.snapshot(frame.taskId) },
                     onResumeFrame = ::resumeFrame,
                     onCloseFrame = ::closeFrame,
+                    recentApps = recentAppsState.value,
+                    usageAccess = usageAccessState.value,
+                    onAllowUsageAccess = {
+                        runCatching {
+                            startActivity(
+                                Intent(this@SableStartActivity, OnboardingActivity::class.java)
+                                    .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.USAGE.name),
+                            )
+                        }
+                    },
                     onAppearanceChanged = { next ->
                         writeGlobalSableAppearance(this@SableStartActivity, next)
                     },
@@ -483,9 +503,14 @@ class SableStartActivity : ComponentActivity() {
         runCatching {
             framesExecutor.execute {
                 val frames = recentTasksRepository.loadFrames(privateUsers())
+                // An ordinary install sees no other app's tasks; usage access gives a row of recent apps instead.
+                val usageAccess = usageRecentsRepository.hasAccess()
+                val recents = if (frames.isEmpty() && usageAccess) usageRecentsRepository.recentPackages() else emptyList()
                 runOnUiThread {
                     if (!isDestroyed) {
                         framesState.value = frames
+                        recentAppsState.value = recents
+                        usageAccessState.value = usageAccess
                         framesGeneration.value += 1
                     }
                 }
@@ -586,6 +611,9 @@ class SableStartActivity : ComponentActivity() {
                 },
                 t("home_screen_style_2") to {
                     runCatching { startActivity(Intent(this, HomeStyleActivity::class.java)) }
+                },
+                getString(R.string.setup_menu) to {
+                    runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
                 },
                 t("settings") to ::openSystemSettings,
                 t("close") to {},

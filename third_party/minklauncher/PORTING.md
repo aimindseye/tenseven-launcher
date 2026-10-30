@@ -2,7 +2,7 @@
 
 Each row is one unit: port it, its tests and its attribution header together, in one pull request, with
 the package renamed to `io.github.aimindseye.tenseven.<area>` and Mink's stores replaced by Tenseven's
-(`StartStateRepository` for launcher state). Status: row 1 is partly ported (data layer and unread counts); everything else is not. This snapshot is the starting point.
+(`StartStateRepository` for launcher state). Status: row 1 is ported (data layer, unread counts, conversation list and inline reply); rows 2 (the usage-events query only) and 4 (the flow, not Mink's screens) are done as Tenseven code that follows Mink's approach; the rest is not. This snapshot is the starting point.
 
 Tenseven's own rule for every row: **nothing leaves the phone, nothing is kept that the feature does not
 need**, as in Mink's PRIVACY.md.

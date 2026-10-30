@@ -1,6 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Tenseven's own strings. The imported Sable Start strings stay in strings.xml (StartTextTest keeps those
-     equal to StartText.EN), so this file is where the launcher's name and new Tenseven-only text live. -->
-<resources>
+     equal to StartText.EN), so this file is where the launcher's name and new Tenseven-only text live.
+     The new text is English only until it is translated; Android falls back to it in every language. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="tenseven_app_name" translatable="false">Tenseven</string>
+
+    <!-- Setup (OnboardingActivity) -->
+    <string name="setup_menu">Setup and permissions</string>
+    <string name="setup_title">Set up Tenseven</string>
+    <string name="setup_progress">Step %1$d of %2$d</string>
+    <string name="setup_optional">Optional: you can skip this and turn it on later.</string>
+    <string name="setup_required">Needed to be your home screen.</string>
+    <string name="setup_allowed">Allowed</string>
+    <string name="setup_next">Next</string>
+    <string name="setup_skip">Skip</string>
+    <string name="setup_done">Done</string>
+    <string name="setup_all_done">Everything is set up.</string>
+    <string name="setup_all_done_detail">You can change any of this later in Android Settings, or from Setup and permissions in the menu.</string>
+
+    <string name="setup_home_title">Make Tenseven your home screen</string>
+    <string name="setup_home_reason">Android sends the Home key to the Home app. Choose Tenseven so the Home key opens it. You can switch back at any time in Settings, Apps, Default apps.</string>
+    <string name="setup_home_action">Choose home app</string>
+
+    <string name="setup_contacts_title">Show your contacts</string>
+    <string name="setup_contacts_reason">Names and one phone number per person appear on the Hub\'s Contacts tab, and let messages from the same person in different apps group together. Read on the phone when needed; never stored or sent.</string>
+    <string name="setup_contacts_action">Allow contacts</string>
+
+    <string name="setup_photos_title">Show photo counts</string>
+    <string name="setup_photos_reason">Home can show how many photos you have. Only the count is read; pictures are not copied or uploaded.</string>
+    <string name="setup_photos_action">Allow photos</string>
+
+    <string name="setup_notifications_title">Group your messages and email</string>
+    <string name="setup_notifications_reason">Notification access lets the Hub list conversations per person, show unread counts and send an inline reply. Message text is read on the phone, kept in memory only and dropped when you turn this off or restart. Nothing is stored or sent. Android words this as access to all notifications; Tenseven ignores everything that is not a message or an email.</string>
+    <string name="setup_notifications_action">Open notification access</string>
+
+    <string name="setup_usage_title">Show your recent apps</string>
+    <string name="setup_usage_reason">Only a home screen built into the phone can see other apps\' recent tasks. Usage access lets Tenseven read which apps you used lately, so Active Frames can show a recent-apps row. App names and times only; nothing is stored or sent.</string>
+    <string name="setup_usage_action">Open usage access</string>
+
+    <string name="setup_restricted_title">If the switch is greyed out</string>
+    <string name="setup_restricted_reason">Android 13 and newer restricts this setting for apps installed from a downloaded file. To allow it: open App info below, tap the menu at the top right, choose Allow restricted settings and confirm, then come back and open the setting again. Only do this for an APK you trust.</string>
+    <string name="setup_restricted_action">Open App info</string>
+
+    <!-- Hub conversations -->
+    <string name="hub_allow_title">Allow notification access</string>
+    <string name="hub_allow_detail">Group messages and email per person, with unread counts and inline reply. Kept in memory only.</string>
+    <string name="hub_conversations_empty">No message or email notifications right now.</string>
+    <string name="hub_locked_preview">Unlock to read</string>
+    <string name="hub_you">You</string>
+    <string name="hub_reply">Reply</string>
+    <string name="hub_reply_hint">Your reply</string>
+    <string name="hub_send">Send</string>
+    <string name="hub_reply_failed">Could not send. Open the app to reply.</string>
+
+    <!-- Recent apps strip -->
+    <string name="recents_label">Recent apps</string>
+    <string name="recents_allow">Allow usage access to show recent apps</string>
 </resources>

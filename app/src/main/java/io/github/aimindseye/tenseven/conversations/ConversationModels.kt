@@ -94,3 +94,26 @@ internal fun conversationId(
     }
 
 internal fun normalizeName(value: String): String = value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+
+/**
+ * The line shown under a conversation's name: the latest message, with who said it in a group and "You" for
+ * our own. null while the device is locked, so message text never shows on a locked screen.
+ */
+internal fun conversationPreview(
+    conversation: HubConversation,
+    locked: Boolean,
+    you: String,
+    maxChars: Int = 160,
+): String? {
+    if (locked) return null
+    val latest = conversation.latestMessage ?: return ""
+    val who =
+        when {
+            latest.isOutgoing -> you
+            latest.senderName.isNullOrBlank() || latest.senderName == conversation.name -> null
+            else -> latest.senderName
+        }
+    val text = latest.text.replace(Regex("\\s+"), " ").trim()
+    val clipped = if (text.length > maxChars) text.take(maxChars - 1).trimEnd() + "…" else text
+    return if (who == null) clipped else "$who: $clipped"
+}

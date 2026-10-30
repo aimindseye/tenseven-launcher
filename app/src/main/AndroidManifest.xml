@@ -102,6 +102,12 @@
             </intent-filter>
         </activity>
 
+        <!-- First-run setup and "Setup and permissions": the home role, then each optional permission. -->
+        <activity
+            android:name=".OnboardingActivity"
+            android:exported="false"
+            android:label="@string/setup_menu" />
+
         <!-- Notification access, optional and off until the user grants it: groups message and email
              notifications into conversations for the Hub bar. In memory only, nothing is stored or sent. -->
         <service

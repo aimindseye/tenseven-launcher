@@ -162,6 +162,13 @@ class StartStateRepository(
         preferences.edit().putString(KEY_HOME_STYLE, style.stableValue).apply()
     }
 
+    /** Whether the setup flow has been shown (finished, skipped or backed out of); it opens once on first run. */
+    fun loadOnboardingDone(): Boolean = preferences.getBoolean(KEY_ONBOARDING_DONE, false)
+
+    fun saveOnboardingDone() {
+        preferences.edit().putBoolean(KEY_ONBOARDING_DONE, true).apply()
+    }
+
     private fun loadOrdered(key: String): List<String>? =
         preferences
             .getString(key, null)
@@ -198,6 +205,7 @@ class StartStateRepository(
         const val KEY_HOME_HIDDEN_SECTIONS = "home_hidden_sections_v2"
         const val KEY_HOME_MODE = "home_mode"
         const val KEY_HOME_STYLE = "home_style"
+        const val KEY_ONBOARDING_DONE = "onboarding_done"
         const val KEY_GRID_ORDER = "grid_order"
     }
 }

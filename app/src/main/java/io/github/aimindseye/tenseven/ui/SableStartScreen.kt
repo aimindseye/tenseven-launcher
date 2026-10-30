@@ -362,6 +362,11 @@ fun SableStartScreen(
     frameSnapshot: (ActiveFrame) -> Bitmap? = { null },
     onResumeFrame: (ActiveFrame) -> Unit = {},
     onCloseFrame: (ActiveFrame) -> Unit = {},
+    /** Package names of recently used apps, most recent first; shown when [frames] is empty (ordinary install). */
+    recentApps: List<String> = emptyList(),
+    /** Whether usage access is granted; without it the recent-apps row offers to turn it on. */
+    usageAccess: Boolean = false,
+    onAllowUsageAccess: () -> Unit = {},
     onAppearanceChanged: (SableAppearance) -> Unit = {},
     onResetAppearance: () -> Unit = {},
     onLaunchApp: (AppEntry) -> Boolean,
@@ -648,6 +653,9 @@ fun SableStartScreen(
                                             onStartIntent = onStartIntent,
                                             onRequestPermissions = onRequestLivePermissions,
                                             onShowHub = { showHub(HubFilter.All) },
+                                            recentApps = recentApps,
+                                            usageAccess = usageAccess,
+                                            onAllowUsageAccess = onAllowUsageAccess,
                                         )
                                     else -> {
                                         val index = page - StartPages.FIRST_GRID
@@ -1145,6 +1153,9 @@ private fun ActiveFramesPage(
     onStartIntent: (Intent) -> Unit,
     onRequestPermissions: () -> Unit,
     onShowHub: () -> Unit,
+    recentApps: List<String>,
+    usageAccess: Boolean,
+    onAllowUsageAccess: () -> Unit,
 ) {
     val requesters = remember { mutableMapOf<Int, FocusRequester>() }
     val firstWidgetFocus = remember { FocusRequester() }
@@ -1204,6 +1215,9 @@ private fun ActiveFramesPage(
             onStartIntent = onStartIntent,
             onRequestPermissions = onRequestPermissions,
             onShowHub = onShowHub,
+            recentApps = recentApps,
+            usageAccess = usageAccess,
+            onAllowUsageAccess = onAllowUsageAccess,
         )
     }
 }
@@ -1309,23 +1323,37 @@ private fun ColumnScope.ActiveFramesGrid(
     onStartIntent: (Intent) -> Unit,
     onRequestPermissions: () -> Unit,
     onShowHub: () -> Unit,
+    recentApps: List<String>,
+    usageAccess: Boolean,
+    onAllowUsageAccess: () -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
         val cardHeight =
             ((maxHeight - FRAME_PADDING * 2 - FRAME_GAP) / ActiveFrames.ROWS_PER_SCREEN).coerceAtLeast(FRAME_MIN_HEIGHT)
         if (frames.isEmpty()) {
-            GlanceFrames(
-                widgets = widgets,
-                snapshot = snapshot,
-                apps = apps,
-                refreshGeneration = refreshGeneration,
-                cardHeight = cardHeight,
-                firstFocus = firstWidgetFocus,
-                onLaunchApp = onLaunchApp,
-                onStartIntent = onStartIntent,
-                onRequestPermissions = onRequestPermissions,
-                onShowHub = onShowHub,
-            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                // No recent tasks to show (an ordinary install): a row of recent apps from usage access instead.
+                RecentAppsStrip(
+                    packages = recentApps,
+                    apps = apps,
+                    usageAccess = usageAccess,
+                    onLaunchApp = onLaunchApp,
+                    onAllowUsageAccess = onAllowUsageAccess,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                GlanceFrames(
+                    widgets = widgets,
+                    snapshot = snapshot,
+                    apps = apps,
+                    refreshGeneration = refreshGeneration,
+                    cardHeight = cardHeight,
+                    firstFocus = firstWidgetFocus,
+                    onLaunchApp = onLaunchApp,
+                    onStartIntent = onStartIntent,
+                    onRequestPermissions = onRequestPermissions,
+                    onShowHub = onShowHub,
+                )
+            }
             return@BoxWithConstraints
         }
         LazyColumn(
@@ -1977,6 +2005,8 @@ private fun HubPage(
         }
     }
 
+    val conversationsUi = rememberHubConversationsUi(context, refreshGeneration, ::openMessages)
+
     fun openBarItem(item: HubBar.Item) {
         when (val target = HubBar.target(item.packageName)) {
             is HubBar.Target.Tab -> onFilter(target.filter)
@@ -2054,6 +2084,7 @@ private fun HubPage(
                 messagesApp = messagesApp,
                 mailApp = mailApp,
                 actions = actions,
+                conversations = conversationsUi,
             )
         }
     }
@@ -2248,10 +2279,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
     messagesApp: AppEntry?,
     mailApp: AppEntry?,
     actions: HubActions,
+    conversations: HubConversationsUi,
 ) {
     val showMessages = filter != HubFilter.Calls
     val showCalls = filter != HubFilter.Messages
     if (showMessages) {
+        hubConversationItems(conversations)
         item(key = "messages") {
             GlanceCard(
                 title = t("messages"),
