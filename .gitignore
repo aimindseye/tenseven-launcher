@@ -10,6 +10,7 @@ captures/
 
 # Signing material and device files must never be committed
 *.jks
+keystore.properties
 *.keystore
 *.pk8
 *.apk

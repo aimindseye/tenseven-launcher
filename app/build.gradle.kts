@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,10 +7,33 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-// The APK files are named Tenseven-Launcher-debug.apk and Tenseven-Launcher-release-unsigned.apk.
+// The APK files are named Tenseven-Launcher-debug.apk, Tenseven-Launcher-release.apk (signed, see below) or
+// Tenseven-Launcher-release-unsigned.apk (no signing key configured).
 base {
     archivesName.set("Tenseven-Launcher")
 }
+
+// Release signing. The key never lives in this repository: either a keystore.properties file at the repository root
+// (git-ignored) with storeFile, storePassword, keyAlias and keyPassword, or the environment variables
+// TENSEVEN_KEYSTORE, TENSEVEN_KEYSTORE_PASSWORD, TENSEVEN_KEY_ALIAS and TENSEVEN_KEY_PASSWORD. With neither, the
+// release build is left unsigned, as in CI. See docs/BUILD.md.
+val keystoreProperties =
+    Properties().apply {
+        val file = rootProject.file("keystore.properties")
+        if (file.isFile) file.inputStream().use { load(it) }
+    }
+
+fun signingValue(
+    property: String,
+    variable: String,
+): String? = (keystoreProperties.getProperty(property) ?: System.getenv(variable))?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = signingValue("storeFile", "TENSEVEN_KEYSTORE")
+val releaseStorePassword = signingValue("storePassword", "TENSEVEN_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "TENSEVEN_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "TENSEVEN_KEY_PASSWORD")
+val releaseSigned =
+    releaseStoreFile != null && releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null
 
 android {
     // The R class and BuildConfig package; the Kotlin sources use the same package.
@@ -23,6 +48,17 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        if (releaseSigned) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -33,6 +69,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseSigned) signingConfig = signingConfigs.getByName("release")
         }
     }
 
