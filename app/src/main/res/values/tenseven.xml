@@ -40,6 +40,9 @@
 
     <string name="bb7_add_home">Add to home screen</string>
     <string name="bb7_remove_home">Remove from home screen</string>
+    <string name="bb7_add_favorites">Add to Favorites</string>
+    <string name="bb7_remove_favorites">Remove from Favorites</string>
+    <string name="bb7_added_home">%1$s added to the home screen</string>
     <string name="bb7_add_apps">Add apps to the home screen</string>
     <string name="bb7_command">Command</string>
     <string name="bb7_panel_show">Show %1$s panel</string>

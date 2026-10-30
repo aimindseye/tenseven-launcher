@@ -220,6 +220,11 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_BB7_ICON_SIZE, size.stable).apply()
     }
 
+    /** Apps placed in the empty space of the BlackBerry 7 home screen, in order (stable keys). */
+    fun loadBb7Desktop(): List<String> = loadOrdered(KEY_BB7_DESKTOP).orEmpty()
+
+    fun saveBb7Desktop(keys: List<String>) = saveOrdered(KEY_BB7_DESKTOP, keys)
+
     /** Whether the Widgets page is the page left of Hub (default on). */
     fun loadWidgetsPage(): Boolean = preferences.getInt(KEY_WIDGETS_PAGE, 1) != 0
 
@@ -288,6 +293,7 @@ class StartStateRepository(
         const val KEY_TYPE_TO_SEARCH = "type_to_search"
         const val KEY_BB7_ICON_SIZE = "bb7_icon_size"
         const val KEY_WIDGETS_PAGE = "widgets_page"
+        const val KEY_BB7_DESKTOP = "bb7_desktop"
         const val KEY_WIDGET_IDS = "widget_ids"
         const val KEY_GLANCE_WIDGETS = "glance_widgets"
         // v2: the BB10 Home shows the status dials by default; sets saved by the
