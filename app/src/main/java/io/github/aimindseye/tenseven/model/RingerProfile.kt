@@ -1,5 +1,10 @@
 package io.github.aimindseye.tenseven.model
 
+// AudioManager.RINGER_MODE_*: kept as numbers so this stays plain Kotlin.
+const val RINGER_SILENT = 0
+const val RINGER_VIBRATE = 1
+const val RINGER_NORMAL = 2
+
 /** The phone's ringer profile, as the speaker icon on the home screens shows and cycles it. */
 enum class RingerProfile(
     val ringerMode: Int,
@@ -20,11 +25,6 @@ enum class RingerProfile(
         }
 
     companion object {
-        // AudioManager.RINGER_MODE_*: kept as numbers so this stays plain Kotlin.
-        const val RINGER_SILENT = 0
-        const val RINGER_VIBRATE = 1
-        const val RINGER_NORMAL = 2
-
         fun fromRingerMode(mode: Int): RingerProfile = entries.firstOrNull { it.ringerMode == mode } ?: Sound
     }
 }

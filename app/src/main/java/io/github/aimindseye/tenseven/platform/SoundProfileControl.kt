@@ -6,6 +6,7 @@ import android.content.Intent
 import android.media.AudioManager
 import android.provider.Settings
 import io.github.aimindseye.tenseven.model.ExtraApps
+import io.github.aimindseye.tenseven.model.RINGER_NORMAL
 import io.github.aimindseye.tenseven.model.RingerProfile
 
 /**
@@ -16,7 +17,7 @@ import io.github.aimindseye.tenseven.model.RingerProfile
 object SoundProfileControl {
     fun current(context: Context): RingerProfile =
         RingerProfile.fromRingerMode(
-            runCatching { context.getSystemService(AudioManager::class.java)?.ringerMode }.getOrNull() ?: RingerProfile.RINGER_NORMAL,
+            runCatching { context.getSystemService(AudioManager::class.java)?.ringerMode }.getOrNull() ?: RINGER_NORMAL,
         )
 
     fun canSilence(context: Context): Boolean =
