@@ -2426,7 +2426,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
             // Android owns the notifications; its history lists what was dismissed too.
             GlanceCard(
                 title = t("notifications"),
-                detail = summary ?: t("sable_hub_not_installed"),
+                detail = summary ?: stringResource(R.string.hub_notifications_open),
                 accent = SableSun,
                 onClick = { actions.onStartIntent(Intent(ACTION_NOTIFICATION_HISTORY)) },
             )
@@ -5611,7 +5611,7 @@ private const val WEATHER_PACKAGE = "org.sableos.weather"
 private const val MEDIA_PACKAGE = "org.sableos.media"
 private const val DIALER_PACKAGE = "com.android.dialer"
 private const val GALLERY_PACKAGE = "com.android.gallery3d"
-private const val HUB_LABEL = "Sable Hub"
+private const val HUB_LABEL = "Hub"
 private const val WEATHER_LABEL = "Sable Weather"
 private const val MAIL_LABEL = "Sable Mail"
 private const val MESSAGES_LABEL = "Sable Messages"
