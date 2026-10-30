@@ -1,29 +1,29 @@
 kind	name	packages	source	source_url	install_url	file	status	sha256
-messaging	WhatsApp	com.whatsapp	play	https://play.google.com/store/apps/details?id=com.whatsapp	-	brand_messaging_whatsapp	pending	-
-messaging	WhatsApp Business	com.whatsapp.w4b	play	https://play.google.com/store/apps/details?id=com.whatsapp.w4b	-	brand_messaging_whatsapp_business	pending	-
-messaging	Telegram	org.telegram.messenger	play	https://play.google.com/store/apps/details?id=org.telegram.messenger	-	brand_messaging_telegram	pending	-
-messaging	LINE	jp.naver.line.android	play	https://play.google.com/store/apps/details?id=jp.naver.line.android	-	brand_messaging_line	pending	-
-messaging	Beeper	com.beeper.android	play	https://play.google.com/store/apps/details?id=com.beeper.android	-	brand_messaging_beeper	pending	-
+messaging	WhatsApp	com.whatsapp	play	https://play.google.com/store/apps/details?id=com.whatsapp	-	brand_messaging_whatsapp	bundled	85fc915e6eb2652ab70be4dbbc97fc0b2c5b581a23316dc33f96920a0578188e
+messaging	WhatsApp Business	com.whatsapp.w4b	play	https://play.google.com/store/apps/details?id=com.whatsapp.w4b	-	brand_messaging_whatsapp_business	bundled	8bbade386187290addc5f18b441a6aa2e3a366d941b430d9807b97b4caccb1ac
+messaging	Telegram	org.telegram.messenger	play	https://play.google.com/store/apps/details?id=org.telegram.messenger	-	brand_messaging_telegram	bundled	2266614eabc2687a157a3d104225db5b6187b396d1e159100611092bd54d3934
+messaging	LINE	jp.naver.line.android	play	https://play.google.com/store/apps/details?id=jp.naver.line.android	-	brand_messaging_line	bundled	c43375198f54b49c6fc66b8513f02db2bc8046a73092f92707795a70114decdd
+messaging	Beeper	com.beeper.android	play	https://play.google.com/store/apps/details?id=com.beeper.android	-	brand_messaging_beeper	bundled	44188ef98a8ab6e84b81c09e08417baf7bedf799ecb3a644336dd21ef13656a5
 messaging	Nextcloud Talk	com.nextcloud.talk2	vendor	https://nextcloud.com/install/	-	brand_messaging_nextcloud_talk	pending	-
 messaging	Molly	im.molly.app	vendor	https://molly.im/	-	brand_messaging_molly	pending	-
-messaging	Signal	org.thoughtcrime.securesms	play	https://play.google.com/store/apps/details?id=org.thoughtcrime.securesms	-	brand_messaging_signal	pending	-
-messaging	KakaoTalk	com.kakao.talk	play	https://play.google.com/store/apps/details?id=com.kakao.talk	-	brand_messaging_kakaotalk	pending	-
-messaging	WeChat	com.tencent.mm	play	https://play.google.com/store/apps/details?id=com.tencent.mm	-	brand_messaging_wechat	pending	-
-messaging	Viber	com.viber.voip	play	https://play.google.com/store/apps/details?id=com.viber.voip	-	brand_messaging_viber	pending	-
-messaging	Messenger	com.facebook.orca	play	https://play.google.com/store/apps/details?id=com.facebook.orca	-	brand_messaging_messenger	pending	-
-messaging	Slack	com.Slack	play	https://play.google.com/store/apps/details?id=com.Slack	-	brand_messaging_slack	pending	-
-messaging	Microsoft Teams	com.microsoft.teams	play	https://play.google.com/store/apps/details?id=com.microsoft.teams	-	brand_messaging_microsoft_teams	pending	-
-messaging	Discord	com.discord	play	https://play.google.com/store/apps/details?id=com.discord	-	brand_messaging_discord	pending	-
-messaging	Snapchat	com.snapchat.android	play	https://play.google.com/store/apps/details?id=com.snapchat.android	-	brand_messaging_snapchat	pending	-
-messaging	GroupMe	com.groupme.android	play	https://play.google.com/store/apps/details?id=com.groupme.android	-	brand_messaging_groupme	pending	-
-messaging	Zalo	com.zing.zalo	play	https://play.google.com/store/apps/details?id=com.zing.zalo	-	brand_messaging_zalo	pending	-
-messaging	TextNow	com.enflick.android.TextNow	play	https://play.google.com/store/apps/details?id=com.enflick.android.TextNow	-	brand_messaging_textnow	pending	-
-messaging	TextFree	com.pinger.textfree	play	https://play.google.com/store/apps/details?id=com.pinger.textfree	-	brand_messaging_textfree	pending	-
-ai	ChatGPT	com.openai.chatgpt	play	https://play.google.com/store/apps/details?id=com.openai.chatgpt	https://chatgpt.com/download/	brand_ai_chatgpt	pending	-
-ai	Claude	com.anthropic.claude	play	https://play.google.com/store/apps/details?id=com.anthropic.claude	https://claude.com/download	brand_ai_claude	pending	-
-ai	Perplexity	ai.perplexity.app.android	play	https://play.google.com/store/apps/details?id=ai.perplexity.app.android	https://www.perplexity.ai/	brand_ai_perplexity	pending	-
+messaging	Signal	org.thoughtcrime.securesms	play	https://play.google.com/store/apps/details?id=org.thoughtcrime.securesms	-	brand_messaging_signal	bundled	ca85424333c6052ab564f678b8a5f519f9d3deff9d70ad3fb2953c0a97cea80a
+messaging	KakaoTalk	com.kakao.talk	play	https://play.google.com/store/apps/details?id=com.kakao.talk	-	brand_messaging_kakaotalk	bundled	46ca7a67472a6984050153a1a6621762bf5cd02f7a426c18a8dded78e8c4fdee
+messaging	WeChat	com.tencent.mm	play	https://play.google.com/store/apps/details?id=com.tencent.mm	-	brand_messaging_wechat	bundled	d9a3c2f43f99b5da60c43c3ed6f3246195f653db2953a63ad82288e7d76af200
+messaging	Viber	com.viber.voip	play	https://play.google.com/store/apps/details?id=com.viber.voip	-	brand_messaging_viber	bundled	62884db85b59829b4bc5f2c9ebbd33fa58551db9fe01d82131ac03dcbe85ad2d
+messaging	Messenger	com.facebook.orca	play	https://play.google.com/store/apps/details?id=com.facebook.orca	-	brand_messaging_messenger	bundled	d682f98211ebcbd503015b452332cef86337442c24af243405b5e2d8e6b4e755
+messaging	Slack	com.Slack	play	https://play.google.com/store/apps/details?id=com.Slack	-	brand_messaging_slack	bundled	525c222917a5ccfde919b6d3afea2ae124e93d0db5f97b570a018328b91bf43e
+messaging	Microsoft Teams	com.microsoft.teams	play	https://play.google.com/store/apps/details?id=com.microsoft.teams	-	brand_messaging_microsoft_teams	bundled	c3acfb268d4470804ea7c2422cf8412be16bbef5a96dc1a259aa28c479cc7a79
+messaging	Discord	com.discord	play	https://play.google.com/store/apps/details?id=com.discord	-	brand_messaging_discord	bundled	f8c31840dd4ebd6ce852de2e4a2fc487e6d58f8c3baecd08ee42c11d3d314bab
+messaging	Snapchat	com.snapchat.android	play	https://play.google.com/store/apps/details?id=com.snapchat.android	-	brand_messaging_snapchat	bundled	413fdb4bbfa93869e747544252c90acc288285c46eaa0d5e008d47af27c963e4
+messaging	GroupMe	com.groupme.android	play	https://play.google.com/store/apps/details?id=com.groupme.android	-	brand_messaging_groupme	bundled	d7bfac214c6dcdf10122e794d1fedd0c9c543ff8528996b5d7408fc1193b45a7
+messaging	Zalo	com.zing.zalo	play	https://play.google.com/store/apps/details?id=com.zing.zalo	-	brand_messaging_zalo	bundled	700a7c4ed1d3e58afcf723d802d4ae7f581888230872c7a14d618b9a3bd3ecc0
+messaging	TextNow	com.enflick.android.TextNow	play	https://play.google.com/store/apps/details?id=com.enflick.android.TextNow	-	brand_messaging_textnow	bundled	89606e6b2ce2f9d2309c7ec8cc935da721cabc5fed623be0292f05df877ffac2
+messaging	TextFree	com.pinger.textfree	play	https://play.google.com/store/apps/details?id=com.pinger.textfree	-	brand_messaging_textfree	bundled	899f28f049ba900850c888fe7ec9671b10022881f23d5b7d5127d0295fc34241
+ai	ChatGPT	com.openai.chatgpt	play	https://play.google.com/store/apps/details?id=com.openai.chatgpt	https://chatgpt.com/download/	brand_ai_chatgpt	bundled	44bc0b15d06016a75b09370852456296c02227148d0ff5c3efd24fac567e750a
+ai	Claude	com.anthropic.claude	play	https://play.google.com/store/apps/details?id=com.anthropic.claude	https://claude.com/download	brand_ai_claude	bundled	847b12a9af68590aec7fc9addf6267303a0ab94287c9b3e86279e548d682a1f0
+ai	Perplexity	ai.perplexity.app.android	play	https://play.google.com/store/apps/details?id=ai.perplexity.app.android	https://www.perplexity.ai/	brand_ai_perplexity	bundled	9037b3ab7c0498e93bf265600b78ca6bb78e8485147c3d8432c1a1c93099314b
 ai	Microsoft Copilot	com.microsoft.copilot	appstore	https://apps.apple.com/us/app/microsoft-copilot/id6738511300	https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/get-copilot	brand_ai_microsoft_copilot	pending	-
-ai	DeepSeek	com.deepseek.chat	play	https://play.google.com/store/apps/details?id=com.deepseek.chat	https://download.deepseek.com/	brand_ai_deepseek	pending	-
-ai	Meta AI	com.facebook.stella	play	https://play.google.com/store/apps/details?id=com.facebook.stella	https://www.meta.ai/	brand_ai_meta_ai	pending	-
-ai	Google Gemini	com.google.android.apps.bard	play	https://play.google.com/store/apps/details?id=com.google.android.apps.bard	https://gemini.google.com/app/download	brand_ai_google_gemini	pending	-
-ai	Lumo	me.proton.android.lumo,me.proton.lumo	play	https://play.google.com/store/apps/details?id=me.proton.android.lumo	https://proton.me/lumo/download	brand_ai_lumo	pending	-
+ai	DeepSeek	com.deepseek.chat	play	https://play.google.com/store/apps/details?id=com.deepseek.chat	https://download.deepseek.com/	brand_ai_deepseek	bundled	33875ee79e60963931765c690e7227d03b2dc6a20555699803f5b75f63400302
+ai	Meta AI	com.facebook.stella	play	https://play.google.com/store/apps/details?id=com.facebook.stella	https://www.meta.ai/	brand_ai_meta_ai	bundled	4617ee75efa74e57a09b4f11be7624c19738e4db9e99bc6b64ce6a8efc39d3fa
+ai	Google Gemini	com.google.android.apps.bard	play	https://play.google.com/store/apps/details?id=com.google.android.apps.bard	https://gemini.google.com/app/download	brand_ai_google_gemini	bundled	3a43d5c130088f63412eb05b484b5c39307867cd600ee9f2da4234b03f3ee523
+ai	Lumo	me.proton.android.lumo,me.proton.lumo	play	https://play.google.com/store/apps/details?id=me.proton.android.lumo	https://proton.me/lumo/download	brand_ai_lumo	bundled	e17a4d2b3c84d60e43e1bb19402f2c3102dd9a80ae495d1aa1762370a4fb6601
