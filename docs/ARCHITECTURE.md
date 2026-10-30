@@ -35,9 +35,13 @@ Tenseven-only files worth knowing: `model/Bb7Home` (panels, grid maths), `model/
 
 `SableStartActivity` hosts both layouts in a pager (Home, Hub). The BlackBerry 7 layout is chosen in Launcher Settings. Command and Hub are BlackBerry 10 surfaces, so from BlackBerry 7 they open as a **detour**: `startBb10Detour(returnOnHome)` shows the BlackBerry 10 view, and `endBb10Detour()` returns once the user is back on Home, when the app goes to the background (`onPause`) or when Back is pressed on the Hub (`onBackToHomePage`). That ordering is what prevents a flash of the BlackBerry 10 screen when switching. The window is translucent so the BlackBerry 7 banner and tray sit over the wallpaper.
 
+### Widgets page
+
+`StartPages.WIDGETS` is the page left of Hub; when the page is on, every pager index is the page's own number plus one (`lead` in `SableStartScreen`). `WidgetHostController` wraps `AppWidgetHost`: allocate id, bind (Android's permission screen the first time), run the widget's setup screen, save the id (`StartStateRepository`, never backed up). The activity forwards `onActivityResult` and starts/stops listening in `onStart`/`onStop`. `ui/WidgetsPage` draws each widget in an `AndroidView` at the height it asks for (`WidgetSizing`); list policy is `model/WidgetList`. From the BlackBerry 7 home it is a detour like Hub (`widgetsGeneration`).
+
 ### Default apps, not Sable apps
 
-Starting icons, BlackBerry 10 tiles, Hub actions and the Mail, Calendar and Music glance cards resolve through `DefaultApps` (category intents, the default SMS and dialer roles, an image-capture intent) and need `<queries>` entries for package visibility. Nothing requires a Sable app. There is no weather tile: Tenseven makes no network requests, so the only route to live weather is hosting an Android widget (not built yet, see `ROADMAP.md`).
+Starting icons, BlackBerry 10 tiles, Hub actions and the Mail, Calendar and Music glance cards resolve through `DefaultApps` (category intents, the default SMS and dialer roles, an image-capture intent) and need `<queries>` entries for package visibility. Nothing requires a Sable app. There is no weather tile: Tenseven makes no network requests, so the only route to live weather is hosting an Android widget (the Widgets page above).
 
 ### Settings and storage
 

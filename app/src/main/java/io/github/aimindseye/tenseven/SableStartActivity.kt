@@ -52,6 +52,7 @@ import io.github.aimindseye.tenseven.platform.RecentTasksRepository
 import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.platform.WidgetHostController
 import io.github.aimindseye.tenseven.ui.Bb7HomeScreen
 import io.github.aimindseye.tenseven.ui.SableStartScreen
 import java.util.concurrent.Executors
@@ -112,6 +113,10 @@ class SableStartActivity : ComponentActivity() {
     private val bb7Scrim = mutableStateOf(Bb7Scrim.DEFAULT)
     private val bb7IconSize = mutableStateOf(Bb7IconSize.DEFAULT)
     private val typeToSearch = mutableStateOf(true)
+    private val widgetsPageEnabled = mutableStateOf(true)
+    private val widgetIds = mutableStateOf<List<Int>>(emptyList())
+    private val widgetsGeneration = mutableStateOf(0)
+    private val widgetController by lazy { WidgetHostController(this, startStateRepository) { widgetIds.value = it } }
     private val homeWidgets = mutableStateOf(GlanceWidgets.DEFAULT)
     private var opaqueWindowBackground: Drawable? = null
 
@@ -224,6 +229,8 @@ class SableStartActivity : ComponentActivity() {
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()
+        widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
+        widgetIds.value = widgetController.load()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         recentTasksRepository = RecentTasksRepository(this)
         usageRecentsRepository = UsageRecentsRepository(this)
@@ -342,7 +349,7 @@ class SableStartActivity : ComponentActivity() {
             }
 
             val request = startRequest.value
-            key(request.serial) {
+            key(request.serial, widgetsPageEnabled.value) {
                 SableStartScreen(
                     apps = appsState.value,
                     speedDial = speedDialRepository,
@@ -375,6 +382,10 @@ class SableStartActivity : ComponentActivity() {
                     onQuickBarChanged = startStateRepository::saveQuickBar,
                     initialGlanceWidgets = startStateRepository.loadGlanceWidgets(),
                     typeToSearch = typeToSearch.value,
+                    widgetsPage = widgetsPageEnabled.value,
+                    widgetsController = widgetController,
+                    widgetIds = widgetIds.value,
+                    widgetsGeneration = widgetsGeneration.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
                     onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
@@ -436,6 +447,7 @@ class SableStartActivity : ComponentActivity() {
             launcherAppsRepository.registerCallback(launcherCallback)
             callbackRegistered = true
         }
+        widgetController.startListening()
         scheduleInventoryRefresh()
     }
 
@@ -453,10 +465,23 @@ class SableStartActivity : ComponentActivity() {
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()
+        widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
+        widgetIds.value = widgetController.load()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         scheduleInventoryRefresh()
         refreshFrames()
         liveRefreshGeneration.value += 1
+    }
+
+    // Widget binding and setup report back through the framework's request codes.
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?,
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+        widgetController.onActivityResult(requestCode, resultCode)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -500,6 +525,7 @@ class SableStartActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        widgetController.stopListening()
         if (callbackRegistered) {
             launcherAppsRepository.unregisterCallback(launcherCallback)
             callbackRegistered = false
@@ -692,6 +718,7 @@ class SableStartActivity : ComponentActivity() {
                     startBb10Detour(returnOnHome = true)
                 },
                 getString(R.string.bb7_command) to ::openCommandFromBb7,
+                getString(R.string.bb7_widgets) to ::openWidgetsFromBb7,
                 getString(R.string.launcher_settings) to {
                     runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
                 },
@@ -747,6 +774,19 @@ class SableStartActivity : ComponentActivity() {
         backGeneration.value = 0
         hubGeneration.value = 0
         startRequest.value = StartRequest(SCREEN_SEARCH, startRequest.value.serial + 1)
+        startBb10Detour(returnOnHome = true)
+    }
+
+    /** The Widgets page from the BlackBerry 7 home: shown on the BlackBerry 10 screen like Hub, Back returns. */
+    private fun openWidgetsFromBb7() {
+        if (!widgetsPageEnabled.value) {
+            runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
+            return
+        }
+        homeGeneration.value = 0
+        backGeneration.value = 0
+        hubGeneration.value = 0
+        widgetsGeneration.value += 1
         startBb10Detour(returnOnHome = true)
     }
 

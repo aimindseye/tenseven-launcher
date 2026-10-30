@@ -190,6 +190,7 @@ import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.PeopleRepository
 import io.github.aimindseye.tenseven.platform.SpeedDialRepository
+import io.github.aimindseye.tenseven.platform.WidgetHostController
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyAction
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import io.github.aimindseye.tenseven.privacy.AppAction
@@ -383,6 +384,10 @@ fun SableStartScreen(
     initialGlanceWidgets: List<String>? = null,
     /** Launcher Settings: whether typing on Home starts a search. */
     typeToSearch: Boolean = true,
+    widgetsPage: Boolean = false,
+    widgetsController: WidgetHostController? = null,
+    widgetIds: List<Int> = emptyList(),
+    widgetsGeneration: Int = 0,
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
     initialHiddenHomeSections: Set<String>? = null,
     onHiddenHomeSectionsChanged: (Set<String>?) -> Unit = {},
@@ -487,20 +492,26 @@ fun SableStartScreen(
     val gridRows = AppGrid.rowsFor(startGridHeightDp(), GRID_CELL_MIN_DP)
     val gridPerPage = AppGrid.perPage(gridRows)
     val gridPages = AppGrid.pageCount(gridApps.size, gridPerPage)
-    val pageCount = StartPages.count(gridPages)
+    // The Widgets page, when kept on, is one page left of Hub: every pager index is the page's own number plus lead.
+    val lead = if (widgetsPage) 1 else 0
+    val pageCount = StartPages.count(gridPages) + lead
 
     val startPager =
-        rememberPagerState(initialPage = StartPages.forScreen(initialScreen)) { pageCount }
+        rememberPagerState(
+            initialPage = StartPages.forScreen(initialScreen).let { if (it < 0 && lead == 0) StartPages.HOME else it } + lead,
+        ) { pageCount }
+    val currentPage = startPager.currentPage - lead
+    val settledPage = startPager.settledPage - lead
     val pagerScope = rememberCoroutineScope()
 
     fun movePage(delta: Int) {
-        val target = StartPages.target(startPager.currentPage, delta, pageCount)
+        val target = (startPager.currentPage + delta).coerceIn(0, pageCount - 1)
         pagerScope.launch { startPager.animateScrollToPage(target) }
     }
 
     fun showPage(page: Int) {
         destination = SableStartDestination.Start
-        pagerScope.launch { startPager.animateScrollToPage(page) }
+        pagerScope.launch { startPager.animateScrollToPage(page + lead) }
     }
 
     fun launchApp(entry: AppEntry) {
@@ -589,7 +600,7 @@ fun SableStartScreen(
             destination = SableStartDestination.Start
             returnDestination = SableStartDestination.Start
             selectedApp = null
-            startPager.animateScrollToPage(StartPages.HOME)
+            startPager.animateScrollToPage(StartPages.HOME + lead)
         }
     }
 
@@ -598,7 +609,15 @@ fun SableStartScreen(
             destination = SableStartDestination.Start
             selectedApp = null
             hubFilter = HubFilter.fromName(hubRequestFilter) ?: HubFilter.All
-            startPager.animateScrollToPage(StartPages.HUB)
+            startPager.animateScrollToPage(StartPages.HUB + lead)
+        }
+    }
+
+    LaunchedEffect(widgetsGeneration) {
+        if (widgetsGeneration > 0 && lead > 0) {
+            destination = SableStartDestination.Start
+            selectedApp = null
+            startPager.animateScrollToPage(StartPages.WIDGETS + lead)
         }
     }
 
@@ -609,22 +628,22 @@ fun SableStartScreen(
                 destination == SableStartDestination.EditHome -> editBackGeneration += 1
                 destination != SableStartDestination.Start -> navigateBack()
                 // Back on Hub or an app grid page returns to Active Frames.
-                startPager.currentPage != StartPages.HOME -> {
+                currentPage != StartPages.HOME -> {
                     onBackToHomePage()
-                    startPager.animateScrollToPage(StartPages.HOME)
+                    startPager.animateScrollToPage(StartPages.HOME + lead)
                 }
             }
         }
     }
 
-    LaunchedEffect(destination, startPager.currentPage) {
+    LaunchedEffect(destination, currentPage) {
         onCanNavigateBackChanged(
-            destination != SableStartDestination.Start || startPager.currentPage != StartPages.HOME,
+            destination != SableStartDestination.Start || currentPage != StartPages.HOME,
         )
     }
 
-    LaunchedEffect(startPager.settledPage) {
-        if (startPager.settledPage == StartPages.HUB) onRefreshLive()
+    LaunchedEffect(settledPage) {
+        if (settledPage == StartPages.HUB) onRefreshLive()
     }
 
     SableTheme(appearance = appearance) {
@@ -650,6 +669,7 @@ fun SableStartScreen(
                             StartStrip(
                                 state = startPager,
                                 pageCount = pageCount,
+                                pageLead = lead,
                                 quickSlots = quickSlots,
                                 onMovePage = ::movePage,
                                 onShowPage = { page -> pagerScope.launch { startPager.animateScrollToPage(page) } },
@@ -658,15 +678,18 @@ fun SableStartScreen(
                                     selectedSlot = slot
                                     destination = SableStartDestination.SlotOptions
                                 },
-                                onHubPeek = { pagerScope.launch { startPager.animateScrollToPage(StartPages.HUB) } },
+                                onHubPeek = { pagerScope.launch { startPager.animateScrollToPage(StartPages.HUB + lead) } },
                                 onDial = { char -> dial(char.toString()) },
                                 onTypeToSearch = { seed -> if (typeToSearch) openSearch(SableStartDestination.Start, seed) },
                                 speedDialLetters = speedDialLetters,
                                 onSpeedDial = { letter -> speedDial?.call(letter) },
                                 onCommand = { openSearch(SableStartDestination.Start) },
                                 onEditHome = { destination = SableStartDestination.EditHome },
-                            ) { page ->
+                            ) { pagerIndex ->
+                                val page = pagerIndex - lead
                                 when {
+                                    page == StartPages.WIDGETS ->
+                                        WidgetsPage(controller = widgetsController, ids = widgetIds)
                                     page == StartPages.HUB ->
                                         SableRefreshableSurface(
                                             isRefreshing = liveRefreshing,
@@ -676,7 +699,7 @@ fun SableStartScreen(
                                                 snapshot = liveSnapshot,
                                                 apps = apps,
                                                 filter = hubFilter,
-                                                active = startPager.settledPage == StartPages.HUB,
+                                                active = settledPage == StartPages.HUB,
                                                 onFilter = { hubFilter = it },
                                                 onLaunchApp = ::launchApp,
                                                 onOpenHubSettings = ::openHubSettings,
@@ -699,7 +722,7 @@ fun SableStartScreen(
                                             refreshGeneration = refreshGeneration,
                                             framesGeneration = framesGeneration,
                                             frameSnapshot = frameSnapshot,
-                                            active = startPager.settledPage == StartPages.HOME,
+                                            active = settledPage == StartPages.HOME,
                                             onResume = ::resumeFrame,
                                             onClose = onCloseFrame,
                                             onLaunchApp = ::launchApp,
@@ -716,7 +739,7 @@ fun SableStartScreen(
                                             apps = AppGrid.page(gridApps, index, gridPerPage),
                                             rows = gridRows,
                                             gridLabels = gridLabels,
-                                            active = startPager.settledPage == page,
+                                            active = settledPage == page,
                                             onLaunchApp = ::launchApp,
                                             onLaunchSecond = ::launchSecond,
                                             onOpenPeek = { app -> openPeek(app, SableStartDestination.Start) },
@@ -815,7 +838,7 @@ fun SableStartScreen(
                                 hiddenSections = edit.hiddenSections
                                 onHiddenHomeSectionsChanged(edit.hiddenSections)
                                 destination = SableStartDestination.Start
-                                pagerScope.launch { startPager.scrollToPage(StartPages.HOME) }
+                                pagerScope.launch { startPager.scrollToPage(StartPages.HOME + lead) }
                             },
                             onAppearance = {
                                 returnDestination = SableStartDestination.Start
@@ -1005,6 +1028,7 @@ private fun startGridHeightDp(): Int {
 private fun StartStrip(
     state: PagerState,
     pageCount: Int,
+    pageLead: Int,
     quickSlots: List<QuickSlot>,
     onMovePage: (Int) -> Unit,
     onShowPage: (Int) -> Unit,
@@ -1115,6 +1139,7 @@ private fun StartStrip(
         Bb10PageIndicator(
             current = state.currentPage,
             count = pageCount,
+            lead = pageLead,
             onShowPage = onShowPage,
         )
         Bb10ActionBar(
@@ -1135,31 +1160,43 @@ private fun StartStrip(
 private fun Bb10PageIndicator(
     current: Int,
     count: Int,
+    lead: Int,
     onShowPage: (Int) -> Unit,
 ) {
+    val widgetsLabel = stringResource(R.string.widgets_page)
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(INDICATOR_HEIGHT_DP.dp)
                 .semantics {
-                    contentDescription = pageDescription(current)
+                    contentDescription = pageDescription(current - lead, widgetsLabel)
                 },
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        for (page in 0 until count) {
-            val color = if (page == current) Bb10Text else Bb10Dim
+        for (index in 0 until count) {
+            val page = index - lead
+            val color = if (index == current) Bb10Text else Bb10Dim
             Box(
                 modifier =
                     Modifier
                         .size(width = INDICATOR_SLOT_DP.dp, height = INDICATOR_HEIGHT_DP.dp)
-                        .clickable { onShowPage(page) },
+                        .clickable { onShowPage(index) },
                 contentAlignment = Alignment.Center,
             ) {
                 ComposeCanvas(Modifier.size(if (page < StartPages.FIRST_GRID) 10.dp else 6.dp)) {
                     val unit = size.minDimension
                     when (page) {
+                        StartPages.WIDGETS ->
+                            // Widgets: one wide outlined panel.
+                            drawRoundRect(
+                                color = color,
+                                topLeft = Offset(unit * 0.05f, unit * 0.2f),
+                                size = Size(unit * 0.9f, unit * 0.6f),
+                                cornerRadius = CornerRadius(unit * 0.12f),
+                                style = Stroke(width = unit * 0.14f),
+                            )
                         StartPages.HUB ->
                             // Hub: three short lines.
                             for (line in 0..2) {
@@ -1187,8 +1224,12 @@ private fun Bb10PageIndicator(
     }
 }
 
-private fun pageDescription(page: Int): String =
+private fun pageDescription(
+    page: Int,
+    widgetsLabel: String,
+): String =
     when (page) {
+        StartPages.WIDGETS -> widgetsLabel
         StartPages.HUB -> t("hub_page")
         StartPages.HOME -> t("active_frames")
         else -> t("app_grid_page", page - StartPages.FIRST_GRID + 1)

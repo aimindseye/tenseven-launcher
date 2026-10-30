@@ -57,12 +57,14 @@ class LauncherSettingsActivity : ComponentActivity() {
                 var style by remember { mutableStateOf(state.loadHomeStyle()) }
                 var typeToSearch by remember { mutableStateOf(state.loadTypeToSearch()) }
                 var iconSize by remember { mutableStateOf(state.loadBb7IconSize()) }
+                var widgetsPage by remember { mutableStateOf(state.loadWidgetsPage()) }
                 var widgets by remember { mutableStateOf(GlanceWidgets.normalize(state.loadGlanceWidgets())) }
                 LauncherSettings(
                     style = style,
                     typeToSearch = typeToSearch,
                     iconSize = iconSize,
                     widgets = widgets,
+                    widgetsPage = widgetsPage,
                     onStyle = {
                         style = it
                         state.saveHomeStyle(it)
@@ -74,6 +76,10 @@ class LauncherSettingsActivity : ComponentActivity() {
                     onIconSize = {
                         iconSize = it
                         state.saveBb7IconSize(it)
+                    },
+                    onWidgetsPage = {
+                        widgetsPage = it
+                        state.saveWidgetsPage(it)
                     },
                     onWidget = { widget ->
                         widgets = GlanceWidgets.toggle(widgets, widget)
@@ -103,9 +109,11 @@ private fun LauncherSettings(
     typeToSearch: Boolean,
     iconSize: Bb7IconSize,
     widgets: List<String>,
+    widgetsPage: Boolean,
     onStyle: (HomeStyle) -> Unit,
     onTypeToSearch: (Boolean) -> Unit,
     onIconSize: (Bb7IconSize) -> Unit,
+    onWidgetsPage: (Boolean) -> Unit,
     onWidget: (String) -> Unit,
     onLanguage: () -> Unit,
     onBackup: () -> Unit,
@@ -161,6 +169,12 @@ private fun LauncherSettings(
             }
 
             Section(stringResource(R.string.ls_section_widgets))
+            SwitchRow(
+                stringResource(R.string.ls_widgets_page),
+                stringResource(R.string.ls_widgets_page_detail),
+                widgetsPage,
+                onWidgetsPage,
+            )
             SettingsWidgets.TOGGLEABLE.forEach { widget ->
                 val (title, detail) =
                     when (widget) {

@@ -9,6 +9,7 @@ import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.LauncherBackup
+import io.github.aimindseye.tenseven.model.WidgetList
 
 /**
  * Stores launcher-only presentation state.
@@ -219,6 +220,20 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_BB7_ICON_SIZE, size.stable).apply()
     }
 
+    /** Whether the Widgets page is the page left of Hub (default on). */
+    fun loadWidgetsPage(): Boolean = preferences.getInt(KEY_WIDGETS_PAGE, 1) != 0
+
+    fun saveWidgetsPage(enabled: Boolean) {
+        preferences.edit().putInt(KEY_WIDGETS_PAGE, if (enabled) 1 else 0).apply()
+    }
+
+    /** Android widget ids this launcher allocated, in display order. Device-specific, so never part of a backup. */
+    fun loadWidgetIds(): List<Int> = WidgetList.parse(preferences.getString(KEY_WIDGET_IDS, null))
+
+    fun saveWidgetIds(ids: List<Int>) {
+        preferences.edit().putString(KEY_WIDGET_IDS, WidgetList.format(ids)).apply()
+    }
+
     /** The settings a backup carries (see LauncherBackup); nothing else in preferences is read. */
     fun exportSettings(): Map<String, BackupValue> = LauncherBackup.select(preferences.all)
 
@@ -272,6 +287,8 @@ class StartStateRepository(
         const val KEY_BB7_SCRIM = "bb7_scrim"
         const val KEY_TYPE_TO_SEARCH = "type_to_search"
         const val KEY_BB7_ICON_SIZE = "bb7_icon_size"
+        const val KEY_WIDGETS_PAGE = "widgets_page"
+        const val KEY_WIDGET_IDS = "widget_ids"
         const val KEY_GLANCE_WIDGETS = "glance_widgets"
         // v2: the BB10 Home shows the status dials by default; sets saved by the
         // three-page Home hid them without the user choosing, so they are not read.
