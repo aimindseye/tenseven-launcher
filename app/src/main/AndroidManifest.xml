@@ -155,8 +155,15 @@
         <activity
             android:name=".LauncherSettingsActivity"
             android:excludeFromRecents="true"
-            android:exported="false"
-            android:label="@string/launcher_settings" />
+            android:exported="true"
+            android:label="@string/launcher_settings">
+            <!-- What "Open" in Android's app info starts (getLaunchIntentForPackage tries INFO before LAUNCHER). Without
+                 it the first enabled extra app with a launcher entry, such as Calc Plus, opens instead. INFO adds no icon. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.INFO" />
+            </intent-filter>
+        </activity>
 
         <!-- First-run setup and "Setup and permissions": the home role, then each optional permission. -->
         <activity
