@@ -60,7 +60,7 @@ RELEASES=NONE
 | **Mail tile** | The BB10 Mail tile shows the newest unread email from your notifications (text hidden while locked) and opens your default email app. Weather stays a shortcut: Android has no weather data API, and Tenseven asks for no internet access |
 | **BB7 tray** | Menu key: show or hide the Favorites, All, Downloads and Frequent panels, make the banner and tray more see-through or darker, or change the wallpaper |
 | **Gestures** | Swipe down on the BB10 Home to open Command |
-| **Extra apps** | Optional Calculator (with unit converter), Notes and ten games (Sudoku, Minesweeper, 2048, Bricks, Snake, Blocks, Reversi, Solitaire, Mahjong, Words). None is on by default: tick the ones you want in the setup's Extras step, or later from Command, Extra apps. Nothing is downloaded; they ship inside Tenseven. In every extra, Esc leaves and Menu lists its keys |
+| **Extra apps** | Optional Calc Plus (exact and scientific calculator with unit converter; named so it does not clash with the phone's own Calculator), Notes and ten games (Sudoku, Minesweeper, 2048, Bricks, Snake, Blocks, Reversi, Solitaire, Mahjong, Words). None is on by default: tick the ones you want in the setup's Extras step, or later from Command, Extra apps. Nothing is downloaded; they ship inside Tenseven. In every extra, Esc leaves and Menu lists its keys |
 | **Default apps** | BlackBerry 10 tiles open your phone's own Calendar, Weather, Music, Email and Gallery apps; next event and now-playing come from Android |
 
 Keyboard shortcuts in the SableOS build are written, but not yet confirmed on every device; the repo

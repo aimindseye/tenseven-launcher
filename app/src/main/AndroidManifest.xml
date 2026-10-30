@@ -141,9 +141,10 @@
              ships switched off; Setup turns on the ones the user picks (platform/ExtraAppsControl). No permissions. -->
         <activity
             android:name="io.github.aimindseye.tenseven.extras.calculator.MainActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.calculator_MainActivity"
             android:enabled="false"
             android:exported="true"
-            android:label="Calculator"
+            android:label="Calc Plus"
             android:theme="@android:style/Theme.Material.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -152,6 +153,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.notes.MainActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.notes_MainActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Notes"
@@ -171,6 +173,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.SudokuActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_SudokuActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Sudoku"
@@ -182,6 +185,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.MinesweeperActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_MinesweeperActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Minesweeper"
@@ -193,6 +197,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.Game2048Activity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_Game2048Activity"
             android:enabled="false"
             android:exported="true"
             android:label="2048"
@@ -204,6 +209,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.BricksActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_BricksActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Bricks"
@@ -215,6 +221,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.SnakeActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_SnakeActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Snake"
@@ -226,6 +233,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.BlocksActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_BlocksActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Blocks"
@@ -237,6 +245,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.ReversiActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_ReversiActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Reversi"
@@ -248,6 +257,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.SolitaireActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_SolitaireActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Solitaire"
@@ -259,6 +269,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.MahjongActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_MahjongActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Mahjong"
@@ -270,6 +281,7 @@
         </activity>
         <activity
             android:name="io.github.aimindseye.tenseven.extras.games.WordsActivity"
+            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_WordsActivity"
             android:enabled="false"
             android:exported="true"
             android:label="Words"
