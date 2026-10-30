@@ -136,7 +136,7 @@ class RecentTasksRepository(
     fun launchIntent(frame: ActiveFrame): Intent? =
         appContext.packageManager.getLaunchIntentForPackage(frame.packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-    private companion object {
+    companion object {
         /** More than [ActiveFrames.MAX], since some recent tasks are filtered out. */
         const val QUERY_LIMIT = 16
 
