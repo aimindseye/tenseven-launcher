@@ -183,7 +183,7 @@ private fun ConversationRow(
                         placeholder = { Text(stringResource(R.string.hub_reply_hint)) },
                         singleLine = true,
                         isError = failed,
-                        supportingText = if (failed) ({ Text(stringResource(R.string.hub_reply_failed)) }) else null,
+                        supportingText = { if (failed) Text(stringResource(R.string.hub_reply_failed)) },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                         keyboardActions = KeyboardActions(onSend = { send() }),
                     )

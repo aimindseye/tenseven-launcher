@@ -80,7 +80,7 @@ class OnboardingActivity : ComponentActivity() {
                     showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
                     onAction = ::perform,
                     onOpenAppInfo = ::openAppInfo,
-                    onFinish = ::finish,
+                    onFinish = { finish() },
                 )
             }
         }
