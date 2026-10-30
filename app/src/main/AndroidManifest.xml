@@ -46,6 +46,15 @@
         <intent>
             <action android:name="org.adw.ActivityStarter.THEMES" />
         </intent>
+        <!-- The phone's default Mail and Contacts apps, found by category for the Hub. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_EMAIL" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_CONTACTS" />
+        </intent>
         <!-- Optional Sable companions: when installed, their live tiles and Hub data appear on Home. -->
         <provider android:authorities="org.sableos.appearance" />
         <provider android:authorities="org.sableos.weather.snapshot" />

@@ -2080,9 +2080,15 @@ private fun HubPage(
     onRequestContactsPermission: () -> Unit,
 ) {
     val context = LocalContext.current
-    val messagesApp = findLiveApp(apps, MESSAGES_PACKAGE)
-    val mailApp = findLiveApp(apps, MAIL_PACKAGE)
-    val contactsApp = findLiveApp(apps, CONTACTS_PACKAGE)
+    // The phone's own default apps, whichever they are: Tenseven looks for no Sable app here.
+    val messagesPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.MESSAGING) }
+    val mailPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.EMAIL) }
+    val contactsPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.CONTACTS) }
+    val dialerPackage = remember(context) { DefaultApps.dialerPackage(context) }
+    fun appOf(pkg: String?) = pkg?.let { p -> apps.firstOrNull { it.inLauncherUser && it.component.packageName == p } }
+    val messagesApp = appOf(messagesPackage)
+    val mailApp = appOf(mailPackage)
+    val contactsApp = appOf(contactsPackage) ?: findLiveApp(apps, CONTACTS_PACKAGE)
     // The Hub works from Tenseven's own notification listener, or from Sable Hub's snapshot when that is installed.
     val hubInstalled =
         snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
@@ -2125,7 +2131,7 @@ private fun HubPage(
     val conversationsUi = rememberHubConversationsUi(context, refreshGeneration, ::openMessages)
 
     fun openBarItem(item: HubBar.Item) {
-        when (val target = HubBar.target(item.packageName)) {
+        when (val target = HubBar.target(item.packageName, messagesPackage, dialerPackage, contactsPackage)) {
             is HubBar.Target.Tab -> onFilter(target.filter)
             HubBar.Target.Private -> onOpenHubSettings()
             HubBar.Target.OpenApp -> personalApps[item.packageName]?.let(onLaunchApp)

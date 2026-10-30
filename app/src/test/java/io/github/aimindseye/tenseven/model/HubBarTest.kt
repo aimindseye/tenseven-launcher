@@ -82,4 +82,14 @@ class HubBarTest {
         assertNull(HubFilter.fromName("people"))
         assertNull(HubFilter.fromName(null))
     }
+
+    @Test
+    fun theDefaultMessagesPhoneAndContactsAppsOpenTheirTabs() {
+        fun target(pkg: String) = HubBar.target(pkg, messages = "com.google.android.apps.messaging", dialer = "com.google.android.dialer", contacts = "com.google.android.contacts")
+        assertEquals(HubBar.Target.Tab(HubFilter.Messages), target("com.google.android.apps.messaging"))
+        assertEquals(HubBar.Target.Tab(HubFilter.Calls), target("com.google.android.dialer"))
+        assertEquals(HubBar.Target.Tab(HubFilter.Contacts), target("com.google.android.contacts"))
+        assertEquals(HubBar.Target.OpenApp, target("com.spotify.music"))
+        assertEquals(HubBar.Target.Private, target(HubBar.REDACTED))
+    }
 }
