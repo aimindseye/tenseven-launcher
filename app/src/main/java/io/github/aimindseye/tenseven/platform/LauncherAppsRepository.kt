@@ -70,7 +70,11 @@ class LauncherAppsRepository(
                         .asSequence()
                         .filter { info ->
                             val packageName = info.componentName.packageName
-                            (packageName != appContext.packageName || ExtraApps.isExtra(info.componentName.className)) &&
+                            (
+                                packageName != appContext.packageName ||
+                                ExtraApps.isExtra(info.componentName.className) ||
+                                info.componentName.className == LAUNCHER_ENTRY
+                            ) &&
                                 packageName !in SYSTEM_HIDDEN_PACKAGES &&
                                 HiddenAppKey(packageName, userSerial) !in hiddenApps
                         }.map { info ->
@@ -289,6 +293,9 @@ class LauncherAppsRepository(
     )
 
     companion object {
+        /** Tenseven's own entry in All Apps: it opens Launcher Settings (an alias in the manifest). */
+        const val LAUNCHER_ENTRY = "io.github.aimindseye.tenseven.LauncherEntry"
+
         val HIDDEN_APPS_URI: Uri =
             Uri.parse("content://org.sableos.hub.connected_apps/hidden")
 

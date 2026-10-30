@@ -158,6 +158,18 @@
             android:exported="false"
             android:label="@string/launcher_settings" />
 
+        <!-- Tenseven's own icon in All Apps (and what "Open" in app info starts): it opens Launcher Settings. -->
+        <activity-alias
+            android:name=".LauncherEntry"
+            android:exported="true"
+            android:label="@string/tenseven_app_name"
+            android:targetActivity=".LauncherSettingsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- First-run setup and "Setup and permissions": the home role, then each optional permission. -->
         <activity
             android:name=".OnboardingActivity"
