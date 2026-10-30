@@ -195,18 +195,20 @@ object HomeHeader {
     }
 
     /**
-     * The header line while there is no forecast to show, saying what to do: Sable Weather could not be
-     * read (open it once to choose a city), or its last update failed (it retries on its own).
+     * The header line while there is no forecast to show: tapping it opens the phone's default weather app.
      */
     fun weatherFallback(availability: LiveAvailability): String =
         when (availability) {
             LiveAvailability.LOADING -> t("weather_updating")
             LiveAvailability.ERROR -> t("weather_update_failed_retrying")
-            else -> t("weather_open_sable_weather_to")
+            else -> WEATHER_TAP_TO_OPEN
         }
 
     /** Milliseconds from [nowMillisOfDay] to the next midnight, when the date line changes. */
     fun millisToMidnight(nowMillisOfDay: Long): Long = (DAY_MS - nowMillisOfDay.mod(DAY_MS)).coerceAtLeast(1L)
 
     private const val DAY_MS = 24L * 60 * 60 * 1000
+
+    /** English only, like Tenseven's other new lines; Android has no weather source, so this opens the default app. */
+    private const val WEATHER_TAP_TO_OPEN = "Weather · tap to open your weather app"
 }

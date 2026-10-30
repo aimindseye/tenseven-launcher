@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -33,20 +35,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.sableFocusRing
+import io.github.aimindseye.tenseven.model.ExtraApps
+import io.github.aimindseye.tenseven.model.ExtraGroup
 import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.onboarding.OnboardingPlan
 import io.github.aimindseye.tenseven.onboarding.SetupState
 import io.github.aimindseye.tenseven.onboarding.SetupStatus
 import io.github.aimindseye.tenseven.onboarding.SetupStep
+import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
@@ -79,6 +86,8 @@ class OnboardingActivity : ComponentActivity() {
                     state = setup.value ?: state,
                     showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
                     onAction = ::perform,
+                    enabledExtras = ExtraAppsControl.enabledIds(this),
+                    onApplyExtras = ::applyExtras,
                     onOpenAppInfo = ::openAppInfo,
                     onFinish = { finish() },
                 )
@@ -111,7 +120,13 @@ class OnboardingActivity : ComponentActivity() {
             SetupStep.NOTIFICATIONS -> openSettings(ConversationAccess.settingsIntent())
             SetupStep.USAGE ->
                 openSettings(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setData(Uri.parse("package:$packageName")))
+            SetupStep.EXTRAS -> Unit // chosen with checkboxes on the step itself
         }
+    }
+
+    private fun applyExtras(ids: Set<String>) {
+        ExtraAppsControl.apply(this, ids)
+        refresh()
     }
 
     private fun requestHomeRole() {
@@ -143,11 +158,14 @@ private fun SetupScreen(
     state: SetupState,
     showRestrictedHelp: (SetupStep) -> Boolean,
     onAction: (SetupStep) -> Unit,
+    enabledExtras: Set<String>,
+    onApplyExtras: (Set<String>) -> Unit,
     onOpenAppInfo: () -> Unit,
     onFinish: () -> Unit,
 ) {
     var index by rememberSaveable { mutableIntStateOf(0) }
     val firstButton = remember { FocusRequester() }
+    var picked by remember { mutableStateOf(enabledExtras) }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier =
@@ -182,12 +200,22 @@ private fun SetupScreen(
                 if (showRestrictedHelp(step) && !done) {
                     RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
                 }
-                Button(
-                    onClick = { onAction(step) },
-                    enabled = !done,
-                    modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
-                ) {
-                    Text(if (done) stringResource(R.string.setup_allowed) else stepAction(step))
+                if (step == SetupStep.EXTRAS) {
+                    ExtrasPicker(picked = picked, onChange = { picked = it })
+                    Button(
+                        onClick = { onApplyExtras(picked) },
+                        modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
+                    ) {
+                        Text(stringResource(R.string.setup_extras_action))
+                    }
+                } else {
+                    Button(
+                        onClick = { onAction(step) },
+                        enabled = !done,
+                        modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
+                    ) {
+                        Text(if (done) stringResource(R.string.setup_allowed) else stepAction(step))
+                    }
                 }
                 OutlinedButton(
                     onClick = { if (last) onFinish() else index += 1 },
@@ -196,7 +224,7 @@ private fun SetupScreen(
                     Text(
                         when {
                             last -> stringResource(R.string.setup_done)
-                            done -> stringResource(R.string.setup_next)
+                            done || (step == SetupStep.EXTRAS && picked.isNotEmpty()) -> stringResource(R.string.setup_next)
                             else -> stringResource(R.string.setup_skip)
                         },
                     )
@@ -217,6 +245,7 @@ private fun StepCard(step: SetupStep) {
             SetupStep.NOTIFICATIONS ->
                 stringResource(R.string.setup_notifications_title) to stringResource(R.string.setup_notifications_reason)
             SetupStep.USAGE -> stringResource(R.string.setup_usage_title) to stringResource(R.string.setup_usage_reason)
+            SetupStep.EXTRAS -> stringResource(R.string.setup_extras_title) to stringResource(R.string.setup_extras_reason)
         }
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -265,5 +294,40 @@ private fun stepAction(step: SetupStep): String =
             SetupStep.PHOTOS -> R.string.setup_photos_action
             SetupStep.NOTIFICATIONS -> R.string.setup_notifications_action
             SetupStep.USAGE -> R.string.setup_usage_action
+            SetupStep.EXTRAS -> R.string.setup_extras_action
         },
     )
+
+@Composable
+private fun ExtrasPicker(
+    picked: Set<String>,
+    onChange: (Set<String>) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        listOf(ExtraGroup.Tools to R.string.setup_extras_tools, ExtraGroup.Games to R.string.setup_extras_games).forEach { (group, heading) ->
+            Text(stringResource(heading), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp))
+            ExtraApps.ofGroup(group).forEach { app ->
+                val on = app.id in picked
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .sableFocusRing()
+                            .toggleable(
+                                value = on,
+                                role = Role.Checkbox,
+                                onValueChange = { onChange(if (it) picked + app.id else picked - app.id) },
+                            ).padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = on, onCheckedChange = null)
+                    Column {
+                        Text(app.label, style = MaterialTheme.typography.bodyLarge)
+                        Text(app.summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
+}

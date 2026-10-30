@@ -13,6 +13,7 @@ import android.os.UserHandle
 import android.os.UserManager
 import android.provider.Settings
 import io.github.aimindseye.tenseven.model.AppEntry
+import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.AppProfiles
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.privacy.AppInstanceKey
@@ -69,7 +70,7 @@ class LauncherAppsRepository(
                         .asSequence()
                         .filter { info ->
                             val packageName = info.componentName.packageName
-                            packageName != appContext.packageName &&
+                            (packageName != appContext.packageName || ExtraApps.isExtra(info.componentName.className)) &&
                                 packageName !in SYSTEM_HIDDEN_PACKAGES &&
                                 HiddenAppKey(packageName, userSerial) !in hiddenApps
                         }.map { info ->

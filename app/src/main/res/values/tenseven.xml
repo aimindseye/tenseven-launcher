@@ -38,6 +38,12 @@
     <string name="setup_usage_reason">Only a home screen built into the phone can see other apps\' recent tasks. Usage access lets Tenseven read which apps you used lately, so Active Frames can show a recent-apps row. App names and times only; nothing is stored or sent.</string>
     <string name="setup_usage_action">Open usage access</string>
 
+    <string name="setup_extras_title">Extra apps (optional)</string>
+    <string name="setup_extras_reason">Tenseven can include a calculator with unit conversion, notes, and some classic games. Nothing is installed or downloaded and none is on by default: tick what you want and it appears in All Apps. You can change this any time from Extra apps in Command.</string>
+    <string name="setup_extras_action">Save choices</string>
+    <string name="setup_extras_tools">Tools</string>
+    <string name="setup_extras_games">Games</string>
+    <string name="extras_command_hint">Choose the bundled Calculator, Notes and games</string>
     <string name="setup_restricted_title">If the switch is greyed out</string>
     <string name="setup_restricted_reason">Android 13 and newer restricts this setting for apps installed from a downloaded file. To allow it: open App info below, tap the menu at the top right, choose Allow restricted settings and confirm, then come back and open the setting again. Only do this for an APK you trust.</string>
     <string name="setup_restricted_action">Open App info</string>
@@ -103,4 +109,15 @@
     <string name="lock_explain">Uses an Android accessibility service that can do one thing, lock the screen. It reads nothing on screen. Turn it on for Tenseven in Accessibility settings.</string>
     <string name="lock_service_label">Tenseven double-tap to lock</string>
     <string name="lock_accessibility_description">Lets Tenseven lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
+
+    <string name="style_command_hint">Switch between the BlackBerry 10 and BlackBerry 7 home layouts</string>
+    <string name="setup_command_hint">Home role, usage access and notification access</string>
+
+    <!-- Android default apps on the Active Frames tiles -->
+    <string name="default_app_missing">No app on this phone handles that</string>
+    <string name="default_app_open">Open</string>
+    <string name="weather_tile_hint">Opens your weather app</string>
+    <string name="calendar_allow">Allow calendar to show your next event</string>
+    <string name="media_allow">Allow notification access to show what is playing</string>
+    <string name="hub_open">Open the Hub</string>
 </resources>

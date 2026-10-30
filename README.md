@@ -54,6 +54,8 @@ RELEASES=NONE
 | **Hub** | Unread bar, then your message and email conversations grouped per person with inline reply (Tenseven's own notification listener, in memory only, text hidden while locked), calls and contacts. Sable Hub, if installed, still supplies its own counts |
 | **Edit Home** | Reorder the grid, the bottom bar and the frames with the keyboard (Enter picks up and drops, arrows move) |
 | **Status dials** | Wi-Fi, mobile, CPU, RAM, battery time left |
+| **Extra apps** | Optional Calculator (with unit converter), Notes and ten games (Sudoku, Minesweeper, 2048, Bricks, Snake, Blocks, Reversi, Solitaire, Mahjong, Words). None is on by default: tick the ones you want in the setup's Extras step, or later from Command, Extra apps. Nothing is downloaded; they ship inside Tenseven |
+| **Default apps** | BlackBerry 10 tiles open your phone's own Calendar, Weather, Music, Email and Gallery apps; next event and now-playing come from Android |
 
 Keyboard shortcuts in the SableOS build are written, but not yet confirmed on every device; the repo
 records which keys each phone sends in `docs/ARCHITECTURE.md` as they are measured.
@@ -80,6 +82,15 @@ work-profile privacy rows) have an ordinary-install fallback; see the table in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Notification access is used by the Mink-based Hub (unread bar, conversations per person, inline reply) and
 usage access by the recent-apps row on Active Frames. Neither is asked for silently: the setup screen
 (first run, and Setup and permissions in the menu) explains each one, and every optional step can be skipped.
+
+### If Android greys out Usage or Notification access
+
+Android 13+ restricts these for apps installed from a file, and some phones (the Titan 2 included) have no menu in App info to lift it. From a computer with adb, replace the id with `io.github.aimindseye.tenseven` (release) or `io.github.aimindseye.tenseven.debug`:
+
+```
+adb shell appops set --user 0 <id> GET_USAGE_STATS allow
+adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.conversations.ConversationListenerService
+```
 
 ## Install
 

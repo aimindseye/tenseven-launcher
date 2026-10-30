@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import android.Manifest
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
@@ -12,6 +13,7 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.SystemClock
+import android.widget.Toast
 import android.provider.CalendarContract
 import android.provider.Settings
 import android.provider.CallLog
@@ -136,6 +138,11 @@ import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
 import io.github.aimindseye.tenseven.BackupActivity
+import io.github.aimindseye.tenseven.HomeStyleActivity
+import io.github.aimindseye.tenseven.OnboardingActivity
+import io.github.aimindseye.tenseven.SableStartActivity
+import io.github.aimindseye.tenseven.onboarding.SetupStep
+import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
@@ -1185,6 +1192,7 @@ private fun ActiveFramesPage(
     usageAccess: Boolean,
     onAllowUsageAccess: () -> Unit,
 ) {
+    val context = LocalContext.current
     val requesters = remember { mutableMapOf<Int, FocusRequester>() }
     val firstWidgetFocus = remember { FocusRequester() }
     // The frame to focus once the list changes (after a close), else the first one.
@@ -1214,7 +1222,11 @@ private fun ActiveFramesPage(
             WeatherDateHeader(
                 datum = snapshot.weather,
                 refreshGeneration = refreshGeneration,
-                onOpen = { findLiveApp(apps, WEATHER_PACKAGE)?.let(onLaunchApp) },
+                onOpen = {
+                    if (!DefaultApps.launch(context, DefaultApps.WEATHER)) {
+                        Toast.makeText(context, context.getString(R.string.default_app_missing), Toast.LENGTH_SHORT).show()
+                    }
+                },
             )
         }
         if (shown(HomeLayout.SEARCH_ROW)) {
@@ -1558,6 +1570,12 @@ private fun GlanceFrames(
 
     fun open(packageName: String) = findLiveApp(apps, packageName)?.let(onLaunchApp)
 
+    fun openDefault(category: String) {
+        if (!DefaultApps.launch(context, category)) {
+            Toast.makeText(context, context.getString(R.string.default_app_missing), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     if (widgets.isEmpty()) {
         Box(Modifier.fillMaxSize().focusRequester(firstFocus).focusable(), contentAlignment = Alignment.Center) {
             EmptyState(t("no_apps_are_open_press"))
@@ -1579,8 +1597,14 @@ private fun GlanceFrames(
                             .then(if (widget == widgets.first()) Modifier.focusRequester(firstFocus) else Modifier)
                     when (widget) {
                         GlanceWidgets.WEATHER -> {
-                            val (headline, detail) = weatherLines(snapshot.weather)
-                            GlanceFrameCard(t("weather"), headline, detail, SableSun, { open(WEATHER_PACKAGE) }, modifier)
+                            GlanceFrameCard(
+                                t("weather"),
+                                t("weather"),
+                                context.getString(R.string.weather_tile_hint),
+                                SableSun,
+                                { openDefault(DefaultApps.WEATHER) },
+                                modifier,
+                            )
                         }
                         GlanceWidgets.BATTERY -> BatteryGlanceFrame(battery, onStartIntent, modifier)
                         GlanceWidgets.PHOTOS -> {
@@ -1591,11 +1615,19 @@ private fun GlanceFrames(
                                 headline = if (needsPermission) t("photos") else datum.detail,
                                 detail = if (needsPermission) t("enter_to_allow_local_photo") else "",
                                 accent = SablePurple,
-                                onClick = { if (needsPermission) onRequestPermissions() else open(GALLERY_PACKAGE) },
+                                onClick = { if (needsPermission) onRequestPermissions() else openDefault(DefaultApps.GALLERY) },
                                 modifier = modifier,
                             )
                         }
-                        else -> LiveGlanceFrame(widget, snapshot, apps, { open(it) }, onShowHub, modifier)
+                        else ->
+                            LiveGlanceFrame(
+                                widget = widget,
+                                snapshot = snapshot,
+                                openDefault = ::openDefault,
+                                onStartIntent = onStartIntent,
+                                onShowHub = onShowHub,
+                                modifier = modifier,
+                            )
                     }
                 }
                 repeat(ActiveFrames.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
@@ -1622,33 +1654,65 @@ private fun BatteryGlanceFrame(
     )
 }
 
-/** Calendar, Media, Hub and Mail Glance frames: the live snapshot's line for that app. */
+/**
+ * Calendar, Media, Hub and Mail Glance frames. Calendar shows the next event from the phone's calendar and Media
+ * what is playing; each opens the phone's default app for it. Where a line needs a permission the frame asks for it.
+ */
 @Composable
 private fun LiveGlanceFrame(
     widget: String,
     snapshot: LiveSurfaceSnapshot,
-    apps: List<AppEntry>,
-    open: (String) -> Unit,
+    openDefault: (String) -> Unit,
+    onStartIntent: (Intent) -> Unit,
     onShowHub: () -> Unit,
     modifier: Modifier,
 ) {
-    val (datum, packageName, accent) =
+    val context = LocalContext.current
+    val (datum, accent) =
         when (widget) {
-            GlanceWidgets.CALENDAR -> Triple(snapshot.calendar, CALENDAR_PACKAGE, SableBlue)
-            GlanceWidgets.MEDIA -> Triple(snapshot.music, MEDIA_PACKAGE, SablePurple)
-            GlanceWidgets.HUB -> Triple(snapshot.messages, HUB_PACKAGE, SableGreen)
-            else -> Triple(snapshot.mail, MAIL_PACKAGE, SableOrange)
+            GlanceWidgets.CALENDAR -> snapshot.calendar to SableBlue
+            GlanceWidgets.MEDIA -> snapshot.music to SablePurple
+            GlanceWidgets.HUB -> snapshot.messages to SableGreen
+            else -> snapshot.mail to SableOrange
+        }
+    val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED
+    val headline =
+        when {
+            widget == GlanceWidgets.CALENDAR && needsAccess -> context.getString(R.string.calendar_allow)
+            widget == GlanceWidgets.MEDIA && needsAccess -> context.getString(R.string.media_allow)
+            datum.availability == LiveAvailability.LIVE || datum.availability == LiveAvailability.EMPTY -> datum.detail
+            widget == GlanceWidgets.HUB -> context.getString(R.string.hub_open)
+            else -> context.getString(R.string.default_app_open)
         }
     GlanceFrameCard(
         title = GlanceWidgets.label(widget),
-        headline = liveDetail(datum, findLiveApp(apps, packageName)),
+        headline = headline,
         detail = "",
         accent = accent,
-        // The Hub widget opens Start's own Hub page (Sable Hub has no screen of its own).
-        onClick = { if (widget == GlanceWidgets.HUB) onShowHub() else open(packageName) },
+        onClick = {
+            when {
+                widget == GlanceWidgets.HUB -> onShowHub()
+                widget == GlanceWidgets.CALENDAR && needsAccess -> context.findActivity()?.requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), SableStartActivity.LIVE_PERMISSION_REQUEST_CODE)
+                widget == GlanceWidgets.MEDIA && needsAccess ->
+                    onStartIntent(
+                        Intent(context, OnboardingActivity::class.java)
+                            .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.NOTIFICATIONS.name),
+                    )
+                widget == GlanceWidgets.CALENDAR -> openDefault(DefaultApps.CALENDAR)
+                widget == GlanceWidgets.MEDIA -> openDefault(DefaultApps.MUSIC)
+                else -> openDefault(DefaultApps.EMAIL)
+            }
+        },
         modifier = modifier,
     )
 }
+
+private tailrec fun Context.findActivity(): android.app.Activity? =
+    when (this) {
+        is android.app.Activity -> this
+        is android.content.ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
 /** A Glance widget drawn as an Active Frame: its value large, its name along the bottom. */
 @Composable
@@ -3922,6 +3986,32 @@ private fun SearchScreen(
                 null
             },
             SearchCommand(
+                t("home_screen_style_2"),
+                searchContext.getString(R.string.style_command_hint),
+                "▭",
+                t("start"),
+                { onStartIntent(Intent(searchContext, HomeStyleActivity::class.java)) },
+            ),
+            SearchCommand(
+                searchContext.getString(R.string.setup_menu),
+                searchContext.getString(R.string.setup_command_hint),
+                "✓",
+                t("start"),
+                { onStartIntent(Intent(searchContext, OnboardingActivity::class.java)) },
+            ),
+            SearchCommand(
+                searchContext.getString(R.string.setup_extras_title),
+                searchContext.getString(R.string.extras_command_hint),
+                "✚",
+                t("start"),
+                {
+                    onStartIntent(
+                        Intent(searchContext, OnboardingActivity::class.java)
+                            .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.EXTRAS.name),
+                    )
+                },
+            ),
+            SearchCommand(
                 searchContext.getString(R.string.backup_menu),
                 searchContext.getString(R.string.backup_command_hint),
                 "⇅",
@@ -4663,7 +4753,7 @@ internal fun AppMark(
     app: AppEntry,
     size: Int,
 ) {
-    val glyph = AppGlyphs.forPackage(app.component.packageName)
+    val glyph = AppGlyphs.forComponent(app.component.packageName, app.component.className)
     if (glyph != null) {
         SableGlyphIcon(glyph = glyph, modifier = Modifier.size(size.dp))
         return
@@ -5424,7 +5514,7 @@ private fun appMark(app: AppEntry): String =
 
 /** The app's accent: its glyph's ([AppGlyphs], by package), else a stable pick from the Sable palette. */
 private fun appColor(app: AppEntry): Color {
-    AppGlyphs.forPackage(app.component.packageName)?.let { return Color(it.accent) }
+    AppGlyphs.forComponent(app.component.packageName, app.component.className)?.let { return Color(it.accent) }
     val index =
         Math.floorMod(
             app.stableKey().hashCode(),
