@@ -180,9 +180,9 @@ fun Bb7HomeScreen(
                 add(t("open") to { onLaunchApp(app) })
                 if (key in favorites) {
                     if (panel == Bb7Panel.Favorites && !searching) add(t("move_2") to { moving = true })
-                    add(t("remove_from_favorites") to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
+                    add(context.getString(R.string.bb7_remove_home) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
                 } else {
-                    add(t("add_to_favorites") to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
+                    add(context.getString(R.string.bb7_add_home) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
                 }
                 add(t("app_info") to { onOpenAppInfo(app) })
             }
