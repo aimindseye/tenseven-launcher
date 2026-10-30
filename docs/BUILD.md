@@ -32,7 +32,7 @@ Install the debug build next to anything else: its id is `io.github.aimindseye.t
 detekt (rules: `config/detekt.yml`), ktlint (`.editorconfig`) and Android Lint **report without failing** while
 `tenseven.strictQuality` is `false` (the default in `gradle.properties`). Compile errors and failing unit tests
 always fail. The reason is honest and temporary: the imported SableOS sources were written under a different
-rule baseline, and the first run on this repository will show how far apart they are.
+rule baseline, and the gates have not yet been brought clean (`ROADMAP.md` phase 1).
 
 To make the gates fail:
 
@@ -47,7 +47,7 @@ in `build.gradle.kts`.
 
 ## 4. Dependency locks and checksums
 
-Not committed yet: they need network access to write. On a machine with internet and the SDK:
+Not committed yet (`ROADMAP.md` phase 1): they need network access to write. On a machine with internet and the SDK:
 
 ```bash
 bash tools/refresh-locks.sh
@@ -93,4 +93,5 @@ not get `SONAR_TOKEN`, so the SonarCloud job skips them.
 ### What CI cannot do
 
 Run on a phone, test the keyboard, or build a signed release. Those are manual and are tracked in
-`ROADMAP.md`.
+`ROADMAP.md`. A debug build goes onto a phone with `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+(the Titan 2 shows as one adb device; the app id is `io.github.aimindseye.tenseven.debug`).

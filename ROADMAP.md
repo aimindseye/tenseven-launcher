@@ -1,9 +1,10 @@
 # Roadmap
 
 Tenseven is the standalone, ordinary-install version of Sable Start, plus the pieces an ordinary install
-needs that SableOS gets from the system. Nothing below is done unless it says so.
+needs that SableOS gets from the system. A box is ticked only when the work is merged; "done" does not mean
+tried on every phone: only the Unihertz Titan 2 has run a debug build, by hand.
 
-## Phase 0: scaffold (this commit)
+## Phase 0: scaffold (done)
 
 - [x] Sable Start and the Sable design library imported as a Gradle project (`app/`, `design/`), with their unit tests
 - [x] An unbundled manifest with no signature permissions; system-API calls reached by reflection (`PermissionChangeSignal`, `UserContexts`)
@@ -11,29 +12,39 @@ needs that SableOS gets from the system. Nothing below is done unless it says so
 - [x] MinkLauncher reference snapshot with provenance and a porting plan (`third_party/minklauncher/`)
 - [x] Brand-logo catalog and tool, policy in `docs/BRAND_ASSETS.md` (28 providers, no artwork fetched yet)
 - [x] CI modelled on SableOS: `checks`, `Android`, `Security`, `SonarCloud`, Dependabot
-- [ ] First green CI run (**the imported code has never been compiled outside SableOS's own build**)
+- [x] The imported code compiles against the public SDK and its tests pass in CI
 
 ## Phase 1: make it build, test, and look like itself
 
-- [ ] Fix whatever the first CI run finds (compile errors, failing tests, Lint errors)
+- [x] Fix what the first CI runs found; every pull request now builds, tests and scans
+- [x] Rename the packages `org.sableos.start`, `org.sableos.design`, `com.sable.start` to `io.github.aimindseye.tenseven.*`, keeping the SableOS intent actions and provider authorities as named constants
+- [x] Wording: Tenseven, not "Sable Start", in what the user sees (English); the imported translations still carry a few Sable lines
 - [ ] Run `tools/refresh-locks.sh`; commit `gradle.lockfile` per module (checksum metadata later, generated for all OS variants)
 - [ ] Turn `TENSEVEN_STRICT_QUALITY` on once detekt, ktlint and Lint are clean (write a baseline for anything kept on purpose, with a reason)
-- [x] Rename the packages `org.sableos.start`, `org.sableos.design`, `com.sable.start` to `io.github.aimindseye.tenseven.*` in one mechanical commit, and keep the SableOS intent actions and provider authorities as named constants for interop
-- [ ] Split `SableStartScreen.kt` (5,400 lines, 76 composables) by surface: Hub, Active Frames, App Grid, All Apps, Edit Home, Privacy
-- [ ] Replace the Sable accent and "Sable Start" wording with Tenseven's; restyle the glyph lighting so Tenseven does not look like SableOS with different icons
+- [ ] Split `SableStartScreen.kt` (about 5,700 lines) by surface: Hub, Active Frames, App Grid, All Apps, Edit Home, Privacy
+- [ ] Restyle the glyph lighting so Tenseven does not look like SableOS with different icons
 - [ ] Import SonarCloud: create the project `aimindseye_tenseven-launcher`, turn Automatic Analysis off, confirm the quality gate (secret `SONAR_TOKEN` exists); then import Kover XML so coverage is measured
 
 ## Phase 2: ordinary-install replacements and the Mink ports
 
 Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklauncher/PORTING.md).
 
+- [x] Hub from notifications (Mink conversations): grouped per person, inline reply, in memory only; filters, mark read, snooze; works with the phone's default Messages, Mail, Phone and Contacts apps, no Sable app needed
+- [x] Onboarding: home role, then each optional permission with its reason, including **Allow restricted settings** and the Extras step
+- [x] Active Frames fallback: recent apps from usage stats, icons only
+- [x] Command prefixes, icon packs, backup and restore, work-profile pause, double-tap to lock
+- [x] Hold-a-letter assignment from Command (`assign`, `unassign`), most-used-first ranking, swipe down on BB10 Home for Command, Alt+Space from both layouts
+- [x] BlackBerry 7 layout on an ordinary install: see-through banner and tray, panels (Favorites, All, Downloads, Frequent), menu without a Menu key (Alt+Enter, ⋮, long-press), add icons by long-press, icon size, wallpaper chooser, Command and Hub as BlackBerry 10 detours that return to it
+- [x] Default apps instead of Sable apps: starting icons, BB10 tiles, Hub, Mail, Calendar, Music; weather tile removed (no data source without internet)
+- [x] Extra apps ported from SableOS, off by default: Calc Plus, Notes, Sound Profiles, ten games
+- [x] Launcher Settings screen; widget switches (Calendar, Alarm, Now Playing); bell and speaker status row
+- [ ] Host Android app widgets (the only route to a live weather widget): picker, binding, configure screens, sizing, keyboard focus on both layouts
+- [ ] A Sound Profiles glyph of its own (it shares Media's music note; icons must be distinct Tabler glyphs)
 - [ ] A `PlatformCapabilities` interface in front of every system-only feature, with an ordinary-install and a SableOS implementation (table in `docs/ARCHITECTURE.md`)
-- [ ] Hub from notifications (Mink conversations): grouped per person, inline reply, in memory only. **Done:** listener, in-memory hub, unread counts on the Hub bar, conversation list and inline reply on the Hub page (hidden while the device is locked)
-- [x] Onboarding: home role, then each optional permission with its reason, including **Allow restricted settings** (`OnboardingActivity`; first run and menu)
-- [x] Active Frames fallback: recent apps from usage stats, icons only (`UsageRecentsRepository`, shown when no recent tasks are readable)
-- [x] Command prefixes, icon packs, backup and restore, work-profile pause, double-tap to lock (all ported; **none of it has been run on a device yet**)
-- [ ] Key profiles per device (see `docs/ARCHITECTURE.md`), captured on real phones
+- [ ] Key profiles per device, measured on real phones (Titan 2: no Menu key, Alt+Space and Alt+Enter confirmed; the rest in `docs/ARCHITECTURE.md`)
 - [ ] Non-square and tall screens: BlackBerry 10 and 7 layouts on a Key2-shaped display and on a plain phone
+- [ ] Translations for Tenseven's own lines (Launcher Settings, extras, Hub filters); today they are English only
+- [ ] Device-test every feature above on the Titan 2 and record the result
 
 ## Phase 3: the keyboard, and a first release
 
@@ -46,7 +57,7 @@ Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklau
 
 | Risk | Why | What reduces it |
 |---|---|---|
-| The imported code may not compile against the public SDK | SableOS builds it with the system build (system SDK); only `sablestart-presentation-check` is built with Gradle there, and without the activities | Reflection for the two system APIs found; the first CI run finds the rest |
+| Platform-only features differ on an ordinary install | Task thumbnails, closing tasks and the Recents key are platform-only; CI cannot show how a phone behaves | Reflection for the system APIs found; fallbacks in `docs/ARCHITECTURE.md`; testing on the Titan 2 |
 | Active Frames will be much weaker on an ordinary install | Task thumbnails, closing tasks and the Recents key are platform-only | Recent-apps strip from usage stats; Active Frames opened from Home |
 | Keyboard behaviour is unverified | SableOS marks nearly every key and shortcut "written, not run on device" | Key profiles captured per device before anything is called supported |
 | Machine-drafted translations | Imported as they are | The disclaimer in `README.md`; a review path in `CONTRIBUTING.md` |
@@ -55,5 +66,5 @@ Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklau
 ## Not planned
 
 Mink's Day (screen-time limits), MinkSpace mini-apps, MinkPad, an AI provider catalog, a virtual contact
-card, widget pages, an in-app update check or any network access. A launcher that makes no network
+card, Mink's widget pages, a weather source of Tenseven's own, an in-app update check or any network access. A launcher that makes no network
 request is a feature.
