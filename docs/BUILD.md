@@ -17,7 +17,7 @@ SableOS builds the same sources with.
 
 ```bash
 ./gradlew :app:assembleDebug                         # app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk
-./gradlew :app:assembleRelease                       # R8-minified, unsigned: app/build/outputs/apk/release/Tenseven-Launcher-release-unsigned.apk
+./gradlew :app:assembleRelease                       # R8-minified: Tenseven-Launcher-release.apk when signed (section 2a), else -release-unsigned.apk
 ./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
 ./gradlew :design:lintDebug :app:lintDebug           # reports in build/reports/lint-results-debug.*
 ./gradlew detekt ktlintCheck                         # reports in build/reports/detekt, build/reports/ktlint
@@ -26,6 +26,38 @@ bash tests/run.sh                                    # static checks; needs pyth
 ```
 
 Install the debug build next to anything else: its id is `io.github.aimindseye.tenseven.debug`.
+
+### 2a. Signing a release build
+
+Android installs only signed APKs. The build signs the release when it finds a key; the key stays on your computer.
+
+```bash
+# Once: make a key. Keep the .jks file and both passwords safe, and out of this repository.
+keytool -genkeypair -v -keystore ~/tenseven-release.jks -alias tenseven \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Then give the build the key, in either of two ways:
+
+- a file `keystore.properties` at the repository root (git-ignored), with absolute paths:
+
+  ```properties
+  storeFile=/Users/you/tenseven-release.jks
+  storePassword=...
+  keyAlias=tenseven
+  keyPassword=...
+  ```
+
+- or environment variables `TENSEVEN_KEYSTORE`, `TENSEVEN_KEYSTORE_PASSWORD`, `TENSEVEN_KEY_ALIAS`, `TENSEVEN_KEY_PASSWORD`.
+
+```bash
+./gradlew :app:assembleRelease
+adb install -r app/build/outputs/apk/release/Tenseven-Launcher-release.apk
+```
+
+Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
+for every release: Android refuses to update an app signed with a different one. The release app id is
+`io.github.aimindseye.tenseven` (no `.debug`), so it installs beside the debug build as a separate app.
 
 ## 3. Quality gates
 
