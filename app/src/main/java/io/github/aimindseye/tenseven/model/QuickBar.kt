@@ -214,6 +214,8 @@ object StartTypeToSearch {
  * Back return to Active Frames.
  */
 object StartPages {
+    /** The Widgets page, one page left of Hub; it exists only when the user keeps it on (the pager then starts one earlier). */
+    const val WIDGETS = -1
     const val HUB = 0
     const val HOME = 1
     const val FIRST_GRID = 2
@@ -266,6 +268,7 @@ object StartPages {
     fun forScreen(screen: String): Int =
         when (screen.lowercase(java.util.Locale.ROOT)) {
             "hub" -> HUB
+            "widgets" -> WIDGETS
             "grid" -> FIRST_GRID
             else -> HOME
         }

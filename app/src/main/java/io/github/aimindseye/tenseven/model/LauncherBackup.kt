@@ -44,6 +44,7 @@ object LauncherBackup {
             "bb7_scrim" to Type.NUMBER,
             "type_to_search" to Type.NUMBER,
             "bb7_icon_size" to Type.NUMBER,
+            "widgets_page" to Type.NUMBER,
         )
 
     val keys: Set<String> get() = ALLOWED.keys

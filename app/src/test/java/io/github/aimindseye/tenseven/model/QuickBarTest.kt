@@ -101,6 +101,7 @@ class QuickBarTest {
         assertEquals(3, StartPages.target(3, 1, 4))
         assertEquals(StartPages.HUB, StartPages.forScreen("Hub"))
         assertEquals(StartPages.FIRST_GRID, StartPages.forScreen("grid"))
+        assertEquals(StartPages.WIDGETS, StartPages.forScreen("widgets"))
         assertEquals(StartPages.HOME, StartPages.forScreen("start"))
     }
 

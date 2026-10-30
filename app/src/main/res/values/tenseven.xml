@@ -181,4 +181,19 @@
     <string name="ls_android_settings">Android settings</string>
     <string name="ls_android_settings_detail">Wi-Fi, display, apps and the rest of the system</string>
     <string name="ls_privacy_detail">Tenseven has no internet permission and collects nothing. Everything stays on this phone.</string>
+    <string name="widgets_title">Widgets</string>
+    <string name="widgets_add">Add widget</string>
+    <string name="widgets_edit">Edit</string>
+    <string name="widgets_done">Done</string>
+    <string name="widgets_up">Up</string>
+    <string name="widgets_down">Down</string>
+    <string name="widgets_remove">Remove</string>
+    <string name="widgets_cancel">Cancel</string>
+    <string name="widgets_empty">No widgets yet. Choose Add widget to place one from any installed app, such as a weather app.</string>
+    <string name="widgets_picker_title">Choose a widget</string>
+    <string name="widgets_none_installed">No installed app offers a widget.</string>
+    <string name="widgets_page">Widgets page</string>
+    <string name="bb7_widgets">Widgets</string>
+    <string name="ls_widgets_page">Widgets page</string>
+    <string name="ls_widgets_page_detail">A page left of Hub for widgets from other apps</string>
 </resources>

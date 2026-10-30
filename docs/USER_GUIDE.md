@@ -30,6 +30,16 @@ You can change your mind any time. Settings are saved as you tap.
 
 Tiles for your default phone, messages, mail, calendar and music apps, plus battery and glance cards. Swipe down for Command, swipe right for Hub. Edit Home changes which tiles show.
 
+## Widgets page
+
+Swipe right past Hub (or Alt+Left twice from Home) to the Widgets page. It shows widgets from other apps, such as a weather app, in one scrolling column.
+
+- **Add widget** lists the widgets of every installed app. Android asks once to allow Tenseven to hold a widget, and some widgets show their own setup screen first (a weather city, say).
+- **Edit** puts Up, Down and Remove over each widget. Widgets take touches themselves, so the controls only appear in Edit.
+- **BlackBerry 7**: menu, then Widgets. Back returns to BlackBerry 7.
+- The page can be switched off in Launcher Settings. Widget choices belong to the phone and are not in a backup.
+- Widgets are drawn by their own apps, so they will not match Tenseven's look, and controls inside them are touch-only.
+
 ## Finding things
 
 - **Type on Home** to search apps. It can be turned off in Launcher Settings. **Alt+Space** opens Command from either layout.
@@ -52,7 +62,7 @@ Calc Plus, Notes, Sound Profiles and ten games are built in but switched off. Tu
 
 ## Default apps and weather
 
-Tiles and icons open whatever app your phone uses for calls, messages, mail, camera, calendar, browser, gallery and music. Tenseven has **no weather tile**, because it never connects to the internet. Live weather will need Android widget support, which is planned.
+Tiles and icons open whatever app your phone uses for calls, messages, mail, camera, calendar, browser, gallery and music. Tenseven has **no weather tile of its own**, because it never connects to the internet. For live weather, add a weather app's widget on the Widgets page.
 
 ## Backup
 

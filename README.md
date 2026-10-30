@@ -29,7 +29,7 @@ Gradle project so it can run on any Android 11+ phone, with new icons
 
 ```text
 APP=Tenseven Launcher (io.github.aimindseye.tenseven)
-PHASE=beta: both layouts, Hub, Command, extras and Launcher Settings built; Android widget hosting not yet
+PHASE=beta: both layouts, Hub, Command, extras and Launcher Settings built; Widgets page (Android widget hosting) written, not yet run on a phone
 BASE=Android 11+ (minSdk 30), compileSdk and targetSdk 36, ordinary install, no platform signature
 HOME_STYLES=BlackBerry 10 style, BlackBerry 7 style (chosen in Launcher Settings)
 ICONS=Tabler Icons outline 3.50.0 (MIT), generated into the app by tools/tabler_icons.py
@@ -55,8 +55,9 @@ INTERNET=none (no INTERNET permission)
 | **Hold a letter** | Hold a key on Home to open the app you assigned to it (`assign k camera` in Command; `unassign k` frees it), or call a speed-dial contact where Sable Phone is installed |
 | **Most-used first** | Command ranks the apps you open most ahead of other matches, so two letters are usually enough. Counts stay on the phone and fade over time |
 | **All Apps** | A to Z with a privacy row per app (permissions and special access), Private Space and work profile support, uninstall through the system |
+| **Widgets page** | Left of Hub: widgets from any installed app (a weather app, a clock), added from a picker, ordered with Up/Down, removed in Edit. Written but not yet run on a phone; can be switched off in Launcher Settings |
 | **Hub** | Unread bar, then your message and email conversations grouped per person with inline reply (Tenseven's own notification listener, in memory only, text hidden while locked), calls and contacts. Filter by person, unread, messages or email; mark read (button or `M`); snooze for an hour or until tomorrow (button or `S`). It opens your phone's default Messages, Mail, Phone and Contacts apps and needs no Sable app |
-| **Widgets** | Calendar (next event), Alarm (next alarm) and Now Playing, switched in Launcher Settings: a strip on BB7, Active Frames on BB10. Battery, Hub, Mail and Photos frames come from Edit Home. Tenseven does not yet host other apps' Android widgets (roadmap) |
+| **Glance widgets** | Calendar (next event), Alarm (next alarm) and Now Playing, switched in Launcher Settings: a strip on BB7, Active Frames on BB10. Battery, Hub, Mail and Photos frames come from Edit Home. Tenseven does not yet host other apps' Android widgets (roadmap) |
 | **Sound** | The speaker icon on both homes shows Sound, Vibrate or Silent. With the Sound Profiles extra on, a tap opens it (a long press switches modes); otherwise a tap cycles Android's own modes, and Silent needs Do Not Disturb access (long press opens that screen) |
 | **Mail tile** | The BB10 Mail tile shows the newest unread email from your notifications (text hidden while locked) and opens your default email app |
 | **Edit Home** | Reorder the grid, the bottom bar and the frames with the keyboard (Enter picks up and drops, arrows move) |

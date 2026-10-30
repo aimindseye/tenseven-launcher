@@ -38,7 +38,8 @@ Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklau
 - [x] Default apps instead of Sable apps: starting icons, BB10 tiles, Hub, Mail, Calendar, Music; weather tile removed (no data source without internet)
 - [x] Extra apps ported from SableOS, off by default: Calc Plus, Notes, Sound Profiles, ten games
 - [x] Launcher Settings screen; widget switches (Calendar, Alarm, Now Playing); bell and speaker status row
-- [ ] Host Android app widgets (the only route to a live weather widget): picker, binding, configure screens, sizing, keyboard focus on both layouts
+- [x] Widgets page (left of Hub, switch in Launcher Settings): host for Android app widgets, picker, binding, setup screens, Up/Down/Remove; opens from the BlackBerry 7 menu. Written, **not yet run on a phone**
+- [ ] Widgets on the Titan 2: check real widgets (weather, clock), touch-only controls inside widgets, keyboard focus into a widget, work-profile widgets
 - [ ] A Sound Profiles glyph of its own (it shares Media's music note; icons must be distinct Tabler glyphs)
 - [ ] A `PlatformCapabilities` interface in front of every system-only feature, with an ordinary-install and a SableOS implementation (table in `docs/ARCHITECTURE.md`)
 - [ ] Key profiles per device, measured on real phones (Titan 2: no Menu key, Alt+Space and Alt+Enter confirmed; the rest in `docs/ARCHITECTURE.md`)
