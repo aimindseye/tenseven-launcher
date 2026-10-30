@@ -134,6 +134,7 @@
     <string name="weather_tile_hint">Opens your weather app</string>
     <string name="calendar_allow">Allow calendar to show your next event</string>
     <string name="media_allow">Allow notification access to show what is playing</string>
+    <string name="hub_open_default_app">Opens your default app</string>
     <string name="hub_notifications_open">Open your notification history</string>
     <string name="hub_filter_all">All</string>
     <string name="hub_filter_unread">Unread</string>

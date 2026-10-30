@@ -83,7 +83,13 @@ class LiveSurfaceRepository(
                     providerSnapshot(
                         uri = MESSAGES_URI,
                         fallbackTitle = t("hub"),
-                    ),
+                    ).let { provider ->
+                        if (provider.availability == LiveAvailability.LIVE || provider.availability == LiveAvailability.EMPTY) {
+                            provider
+                        } else {
+                            ownMessages(nowEpochMs, provider)
+                        }
+                    },
                 mail = latestMail(nowEpochMs),
                 music = nowPlaying(),
                 photos =
@@ -203,6 +209,29 @@ class LiveSurfaceRepository(
      * no public mail data API). Without notification access the tile just opens the default email app. The text is
      * hidden while the phone is locked.
      */
+    /** The Hub's messages line when Sable Hub is not installed: unread message conversations from Tenseven's listener. */
+    private fun ownMessages(
+        nowEpochMs: Long,
+        unavailable: LiveDatum,
+    ): LiveDatum {
+        if (!ConversationAccess.isGranted(appContext)) return unavailable
+        ConversationHub.ensureStateLoaded(appContext)
+        val state = ConversationHub.state()
+        val unread =
+            ConversationHub
+                .conversations()
+                .filter { !it.isEmail && !state.isSnoozed(it.id, nowEpochMs) && state.unreadCount(it) > 0 }
+        val count = unread.sumOf { state.unreadCount(it) }
+        val newest = unread.maxByOrNull { it.latestMessage?.timestamp ?: it.latestNotification.postedAt }
+        val locked = appContext.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
+        return LiveDatum(
+            title = t("hub"),
+            detail = MailSummary.messagesHeadline(count, newest?.name, newest?.latestMessage?.text, locked),
+            availability = if (count > 0) LiveAvailability.LIVE else LiveAvailability.EMPTY,
+            observedAtEpochMs = nowEpochMs,
+        )
+    }
+
     private fun latestMail(nowEpochMs: Long): LiveDatum {
         val title = t("mail")
         if (!ConversationAccess.isGranted(appContext)) return LiveDatum(title, "unavailable", LiveAvailability.UNAVAILABLE)

@@ -124,6 +124,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.design.SableAlphabetIndex
@@ -541,9 +542,15 @@ fun SableStartScreen(
         destination = backDestination(destination, returnDestination)
     }
 
-    /** Hub's sources, private mode and history (Hub has no launcher entry of its own). */
+    val settingsContext = LocalContext.current
+
+    /** The Hub's settings: the notification access step of Setup. */
     fun openHubSettings() {
-        onStartIntent(hubSettingsIntent())
+        // Tenseven's own Hub reads notifications with its own listener: its settings are the notification step of Setup.
+        onStartIntent(
+            Intent(settingsContext, OnboardingActivity::class.java)
+                .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.NOTIFICATIONS.name),
+        )
     }
 
     fun showHub(filter: HubFilter) {
@@ -1955,10 +1962,11 @@ private fun GridCell(
 private fun liveDetail(
     datum: LiveDatum,
     app: AppEntry?,
+    noApp: String,
 ): String =
     when (datum.availability) {
         LiveAvailability.LIVE, LiveAvailability.EMPTY -> datum.detail
-        else -> if (app == null) t("not_installed") else t("open_2", app.label)
+        else -> if (app == null) noApp else t("open_2", app.label)
     }
 
 /** Battery level and charging from the sticky battery broadcast (no receiver kept). */
@@ -2075,8 +2083,9 @@ private fun HubPage(
     val messagesApp = findLiveApp(apps, MESSAGES_PACKAGE)
     val mailApp = findLiveApp(apps, MAIL_PACKAGE)
     val contactsApp = findLiveApp(apps, CONTACTS_PACKAGE)
-    // Hub has no launcher entry; its snapshot provider answering is how Start knows it is there.
-    val hubInstalled = snapshot.messages.availability != LiveAvailability.UNAVAILABLE
+    // The Hub works from Tenseven's own notification listener, or from Sable Hub's snapshot when that is installed.
+    val hubInstalled =
+        snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val barItems = remember(snapshot.hubApps, personalApps) { HubBar.items(snapshot.hubApps) { it in personalApps } }
     val peopleRepository = remember(context) { PeopleRepository(context) }
@@ -2396,7 +2405,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
         item(key = "messages") {
             GlanceCard(
                 title = t("messages"),
-                detail = liveDetail(snapshot.messages, messagesApp),
+                detail = liveDetail(snapshot.messages, messagesApp, stringResource(R.string.hub_open_default_app)),
                 accent = SableBlue,
                 onClick = actions.onOpenMessages,
             )
@@ -2404,9 +2413,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
         item(key = "mail") {
             GlanceCard(
                 title = t("mail"),
-                detail = liveDetail(snapshot.mail, mailApp),
+                detail = liveDetail(snapshot.mail, mailApp, stringResource(R.string.hub_open_default_app)),
                 accent = Color(0xFFE5484D),
-                onClick = mailApp?.let { { actions.onLaunchApp(it) } },
+                onClick = {
+                    if (mailApp != null) {
+                        actions.onLaunchApp(mailApp)
+                    } else {
+                        actions.onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_EMAIL))
+                    }
+                },
             )
         }
     }
@@ -4398,9 +4413,6 @@ private fun hubResults(
     )
 }
 
-/** Hub's own settings: connected apps, private mode, history (org.sableos.hub). */
-private fun hubSettingsIntent(): Intent = Intent(HUB_ACTION_CONNECTED_APPS).setPackage(HUB_PACKAGE)
-
 @Composable
 private fun SableSearchField(
     value: TextFieldValue,
@@ -5598,7 +5610,6 @@ private const val MAX_SESSION_RECENTS = 8
 private const val KEYCODE_DEL = 67
 private const val HUB_PACKAGE = "org.sableos.hub"
 private const val MESSAGES_PACKAGE = HubBar.MESSAGES_PACKAGE
-private const val HUB_ACTION_CONNECTED_APPS = "org.sableos.hub.action.CONNECTED_APPS"
 private const val ACTION_NOTIFICATION_HISTORY = "android.settings.NOTIFICATION_HISTORY"
 private const val HUB_BAR_ICON_DP = 20
 private val HUB_BAR_ITEM_HEIGHT = 32.dp
