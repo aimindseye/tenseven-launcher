@@ -106,4 +106,12 @@
 
     <string name="style_command_hint">Switch between the BlackBerry 10 and BlackBerry 7 home layouts</string>
     <string name="setup_command_hint">Home role, usage access and notification access</string>
+
+    <!-- Android default apps on the Active Frames tiles -->
+    <string name="default_app_missing">No app on this phone handles that</string>
+    <string name="default_app_open">Open</string>
+    <string name="weather_tile_hint">Opens your weather app</string>
+    <string name="calendar_allow">Allow calendar to show your next event</string>
+    <string name="media_allow">Allow notification access to show what is playing</string>
+    <string name="hub_open">Open the Hub</string>
 </resources>

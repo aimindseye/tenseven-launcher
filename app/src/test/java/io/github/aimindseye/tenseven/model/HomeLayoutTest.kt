@@ -112,7 +112,7 @@ class HomeLayoutTest {
         assertEquals("Weather · updating", HomeHeader.weatherFallback(LiveAvailability.LOADING))
         assertEquals("Weather · update failed, retrying", HomeHeader.weatherFallback(LiveAvailability.ERROR))
         assertEquals(
-            "Weather · open Sable Weather to set it up",
+            "Weather · tap to open your weather app",
             HomeHeader.weatherFallback(LiveAvailability.UNAVAILABLE),
         )
     }
