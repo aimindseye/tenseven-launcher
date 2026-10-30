@@ -2,14 +2,14 @@
 
 Each row is one unit: port it, its tests and its attribution header together, in one pull request, with
 the package renamed to `io.github.aimindseye.tenseven.<area>` and Mink's stores replaced by Tenseven's
-(`StartStateRepository` for launcher state). Status: **none ported yet**; this snapshot is the starting point.
+(`StartStateRepository` for launcher state). Status: row 1 is partly ported (data layer and unread counts); everything else is not. This snapshot is the starting point.
 
 Tenseven's own rule for every row: **nothing leaves the phone, nothing is kept that the feature does not
 need**, as in Mink's PRIVACY.md.
 
 | # | Mink code | What it gives Tenseven | Tenseven target | Needs on the phone | Tests to bring |
 |---|---|---|---|---|---|
-| 1 | `features/conversations/` (`NotificationHub`, `MinkNotificationListenerService`) | The Hub page without Sable Hub: message and email notifications grouped per person across apps, newest first, inline reply where the app offers `RemoteInput` | `app/.../platform/ConversationsRepository`, feeding `HubBar` and the Hub page | Notification access. On a GitHub or F-Droid install Android 13+ blocks it until **Allow restricted settings** is chosen in App info; onboarding must say so | `NotificationHubTest` |
+| 1 | `features/conversations/` (`NotificationHub`, `MinkNotificationListenerService`) | The Hub page without Sable Hub: message and email notifications grouped per person across apps, newest first, inline reply where the app offers `RemoteInput` | `app/.../platform/ConversationsRepository`, feeding `HubBar` and the Hub page | Notification access. On a GitHub or F-Droid install Android 13+ blocks it until **Allow restricted settings** is chosen in App info; onboarding must say so | `NotificationHubTest` (ported in part as `ConversationHubTest`; demo-data cases dropped) |
 | 2 | `features/wellbeing/` (`UsageInsights`, `UsageTimelineAnalysis`) | The usage-stats queries only: which apps ran recently, in what order. Drives Active Frames as a recent-apps strip (icons, no live thumbnails) where task access is unavailable | `app/.../platform/RecentTasksRepository` fallback path | Usage access. **Not ported:** daily limits, the app pause policy and Mink's Day. Tenseven does not ship a screen-time feature | `UsageInsightsTest` (trimmed to what is ported) |
 | 3 | `features/privatespace/`, `features/workprofile/` | Change monitoring for Private Space, the OEM "private area" gateway for phones that have their own, work-profile classification. Compare with `LauncherAppsRepository` (which already handles Private Space) and take only what it lacks | `app/.../platform/` next to `LauncherAppsRepository` | Home role (`ACCESS_HIDDEN_PROFILES`) | none upstream; write tests for the classifier |
 | 4 | `ui/onboarding/` | First run: choose the home app, then each optional permission with an honest explanation, with the restricted-settings steps | `app/.../ui/onboarding/`, replacing the Sable setup hand-off | none | none upstream; test the step order as a pure function |

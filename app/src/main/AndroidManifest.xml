@@ -101,5 +101,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Notification access, optional and off until the user grants it: groups message and email
+             notifications into conversations for the Hub bar. In memory only, nothing is stored or sent. -->
+        <service
+            android:name=".conversations.ConversationListenerService"
+            android:exported="true"
+            android:label="@string/tenseven_app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>
