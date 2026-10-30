@@ -73,6 +73,7 @@ import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeHeader
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
+import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import java.text.DateFormat
 import java.util.Date
@@ -154,10 +155,11 @@ fun Bb7HomeScreen(
         selected = 0
     }
 
+    val defaultPackages = remember(context, apps.size) { DefaultApps.homePackages(context) }
     val searching = query.isNotEmpty()
     val shown =
-        if (searching) Bb7Home.search(apps, query) else Bb7Home.panelApps(panel, apps, favoriteKeys, usage)
-    val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, favoriteKeys).map { it.stableKey() }
+        if (searching) Bb7Home.search(apps, query) else Bb7Home.panelApps(panel, apps, favoriteKeys, usage, defaultPackages)
+    val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, favoriteKeys, defaultPackages = defaultPackages).map { it.stableKey() }
     val trayTitle =
         when {
             moving -> t("move") + shown.getOrNull(selected)?.label.orEmpty() + t("enter_to_drop")

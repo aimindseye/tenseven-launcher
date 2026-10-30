@@ -111,24 +111,14 @@ object Bb7Home {
     const val MIN_HOME_ROWS = 1
     const val MAX_HOME_ROWS = 3
 
-    /** Favourites when the user has none yet: the apps a BlackBerry 7 home tray started with. */
-    val DEFAULT_FAVORITE_PACKAGES =
-        listOf(
-            "com.android.dialer",
-            "org.sableos.messages",
-            "org.sableos.mail",
-            "org.sableos.titan2.camera",
-            "org.sableos.calendar",
-            "org.lineageos.jelly",
-            "org.sableos.media",
-            "com.android.settings",
-        )
+    /** The system Settings app, always part of the starting home next to the phone's default apps. */
+    const val SETTINGS_PACKAGE = "com.android.settings"
 
     fun columns(widthDp: Int): Int = (widthDp / CELL_DP).coerceIn(MIN_COLUMNS, MAX_COLUMNS)
 
     /**
      * The apps of one panel, in order. Favorites: the user's Home apps ([favoriteKeys], stable
-     * keys) or, without any, [DEFAULT_FAVORITE_PACKAGES] that are installed; All: every app by
+     * keys) or, without any, the phone's [defaultPackages] (and Settings) that are installed; All: every app by
      * name; Downloads: apps the user installed (removable ones).
      */
     fun panelApps(
@@ -136,6 +126,7 @@ object Bb7Home {
         apps: List<AppEntry>,
         favoriteKeys: List<String>?,
         usage: AppUsage = AppUsage.EMPTY,
+        defaultPackages: List<String> = emptyList(),
     ): List<AppEntry> {
         val byName = apps.sortedBy { it.label.lowercase() }
         return when (panel) {
@@ -150,7 +141,7 @@ object Bb7Home {
                 val byKey = apps.associateBy { it.stableKey() }
                 val chosen = favoriteKeys.orEmpty().mapNotNull { byKey[it] }
                 chosen.ifEmpty {
-                    DEFAULT_FAVORITE_PACKAGES.mapNotNull { pkg -> byName.firstOrNull { it.component.packageName == pkg } }
+                    (defaultPackages + SETTINGS_PACKAGE).mapNotNull { pkg -> byName.firstOrNull { it.component.packageName == pkg } }
                 }
             }
         }

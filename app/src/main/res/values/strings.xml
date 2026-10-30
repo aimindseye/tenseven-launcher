@@ -4,7 +4,7 @@
 <resources>
     <string name="app_name" translatable="false">Sable Start</string>
     <string name="home_screen_style">Home screen style</string>
-    <string name="sable_start_can_look_like">Sable Start can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites and Hub stay the same.</string>
+    <string name="sable_start_can_look_like">Tenseven can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites and Hub stay the same.</string>
     <string name="current">" · current"</string>
     <string name="another_launcher">Another launcher…</string>
     <string name="pick_any_installed_home_app">Pick any installed home app in Android\'s settings</string>
@@ -56,7 +56,7 @@
     <string name="photos">Photos</string>
     <string name="weather_updating">Weather · updating</string>
     <string name="weather_update_failed_retrying">Weather · update failed, retrying</string>
-    <string name="weather_open_sable_weather_to">Weather · open Sable Weather to set it up</string>
+    <string name="weather_open_sable_weather_to">Weather · open your weather app</string>
     <string name="messages">Messages</string>
     <string name="calls">Calls</string>
     <string name="contacts">Contacts</string>
@@ -127,7 +127,7 @@
     <string name="new_label">%1$s, %2$s new</string>
     <string name="missed_calls">Missed calls</string>
     <string name="recent_calls_in_phone">recent calls in Phone</string>
-    <string name="sable_hub_not_installed">Sable Hub not installed</string>
+    <string name="sable_hub_not_installed">Hub not set up</string>
     <string name="hub_settings">Hub settings</string>
     <string name="allow_contacts">Allow contacts</string>
     <string name="start_shows_names_here_nothing">Start shows names here; nothing leaves the phone</string>
@@ -177,7 +177,7 @@
     <string name="hub_not_installed">Hub (not installed)</string>
     <string name="camera_not_installed">Camera (not installed)</string>
     <string name="search_command">search + command</string>
-    <string name="apps_settings_sable_actions">apps · settings · Sable actions</string>
+    <string name="apps_settings_sable_actions">apps · settings · actions</string>
     <string name="all_apps_2">all apps</string>
     <string name="no_apps_match">No apps match “%1$s”.</string>
     <string name="no_launchable_apps_are_available">No launchable apps are available.</string>
@@ -196,7 +196,7 @@
     <string name="messages_mail_calls_contacts_and">Messages, mail, calls, contacts and notifications</string>
     <string name="order_the_app_grid_the">Order the app grid, the bar and the empty frames</string>
     <string name="appearance">Appearance</string>
-    <string name="theme_and_sable_accent">Theme and Sable accent</string>
+    <string name="theme_and_sable_accent">Theme and accent</string>
     <string name="system_settings">System Settings</string>
     <string name="open_android_settings">Open Android settings</string>
     <string name="open_personal_app">open personal app</string>
@@ -223,14 +223,14 @@
     <string name="open_hub">Open Hub</string>
     <string name="hub_2">Hub · %1$s</string>
     <string name="messages_calls_contacts_and_notifications">Messages, calls, contacts and notifications</string>
-    <string name="search_apps_sable_actions">search apps + Sable actions</string>
+    <string name="search_apps_sable_actions">search apps + actions</string>
     <string name="actions_for">Actions for %1$s</string>
     <string name="profile">%1$s profile</string>
     <string name="special_access_2">special access · %1$s</string>
     <string name="privacy_security">privacy &amp; security</string>
     <string name="shortcuts_and_notification_content_stay">Shortcuts and notification content stay hidden until Android capability and privacy gates are wired.</string>
     <string name="follow_system">follow system</string>
-    <string name="reset_follow_system_sable_blue">reset · follow system + Sable Blue</string>
+    <string name="reset_follow_system_sable_blue">reset · follow system + default accent</string>
     <string name="mobile">Mobile</string>
     <string name="bat">⚡ BAT</string>
     <string name="cell">Cell</string>

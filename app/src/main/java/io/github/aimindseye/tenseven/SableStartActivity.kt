@@ -474,6 +474,13 @@ class SableStartActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        // Leaving from a BlackBerry 10 screen (Hub, Recents, Command) would leave that screen as the last frame, and
+        // it flashes while Home animates back in. Go back to the BlackBerry 7 home as the window leaves.
+        if (homeStyle.value == HomeStyle.Bb7 && bb10Detour.value && !isChangingConfigurations) endBb10Detour()
+        super.onPause()
+    }
+
     override fun onStop() {
         if (callbackRegistered) {
             launcherAppsRepository.unregisterCallback(launcherCallback)

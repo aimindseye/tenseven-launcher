@@ -46,6 +46,26 @@
         <intent>
             <action android:name="org.adw.ActivityStarter.THEMES" />
         </intent>
+        <!-- The default apps the BlackBerry 7 home starts with (Calendar, Browser, Gallery, Music, Camera). -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_CALENDAR" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_BROWSER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_GALLERY" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_MUSIC" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
         <!-- The phone's default Mail and Contacts apps, found by category for the Hub. -->
         <intent>
             <action android:name="android.intent.action.MAIN" />

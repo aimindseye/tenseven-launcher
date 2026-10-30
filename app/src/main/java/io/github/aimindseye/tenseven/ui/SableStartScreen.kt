@@ -463,7 +463,8 @@ fun SableStartScreen(
     val appByKey = apps.associateBy { it.stableKey() }
     // The grid holds every app except Private Space ones, which stay in All Apps behind its lock.
     val gridCandidates = apps.filterNot { it.profileLabel == PROFILE_PRIVATE_LABEL }
-    val defaultHomeKeys = defaultHomeApps(apps).map { it.stableKey() }
+    val homeContext = LocalContext.current
+    val defaultHomeKeys = remember(apps) { defaultHomeApps(apps, homeContext).map { it.stableKey() } }
     val gridKeys =
         AppGrid.resolve(
             saved = savedGridOrder,
@@ -5536,12 +5537,28 @@ private fun buildRailRows(apps: List<AppEntry>): List<AppRailRow> {
  * Mail, Calendar, Contacts, Phone, Camera), each the first installed app of
  * its group in the launcher's own profile.
  */
-private fun defaultHomeApps(apps: List<AppEntry>): List<AppEntry> {
+private fun defaultHomeApps(
+    apps: List<AppEntry>,
+    context: Context,
+): List<AppEntry> {
     val personal = apps.filter { it.inLauncherUser }
-    return HOME_APP_DEFAULT_GROUPS.mapNotNull { group ->
-        group.packageNames.firstNotNullOfOrNull { packageName ->
-            personal.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
-        } ?: personal.firstOrNull { app -> group.labels.any { app.label.equals(it, ignoreCase = true) } }
+    // The phone's own default for each group first (Messages, Mail, Calendar, Contacts, Phone, Camera), then the rest.
+    val defaults =
+        listOf(
+            DefaultApps.packageFor(context, DefaultApps.MESSAGING),
+            DefaultApps.packageFor(context, DefaultApps.EMAIL),
+            DefaultApps.packageFor(context, DefaultApps.CALENDAR),
+            DefaultApps.packageFor(context, DefaultApps.CONTACTS),
+            DefaultApps.dialerPackage(context),
+            DefaultApps.cameraPackage(context),
+        )
+    return HOME_APP_DEFAULT_GROUPS.mapIndexedNotNull { index, group ->
+        val phoneDefault = defaults.getOrNull(index)?.let { pkg -> personal.firstOrNull { it.component.packageName == pkg } }
+        phoneDefault
+            ?: group.packageNames.firstNotNullOfOrNull { packageName ->
+                personal.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
+            }
+            ?: personal.firstOrNull { app -> group.labels.any { app.label.equals(it, ignoreCase = true) } }
     }.distinctBy { it.stableKey() }
 }
 
