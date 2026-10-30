@@ -493,6 +493,8 @@ private fun Bb7Banner(
                     maxLines = 1,
                 )
             }
+            SoundProfileButton()
+            Spacer(Modifier.width(6.dp))
             UnreadBadge(unread, onOpenHub)
         }
     }

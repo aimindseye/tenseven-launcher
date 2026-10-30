@@ -14,6 +14,9 @@
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
          Tenseven under Settings, Usage access, and "appops set" is ignored. The user still grants it there. -->
+    <!-- Lets the user give Tenseven Do Not Disturb access, which Android requires before an app may pick Silent. -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
