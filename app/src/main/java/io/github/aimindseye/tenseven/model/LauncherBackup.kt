@@ -54,6 +54,8 @@ object LauncherBackup {
             "hub_peek_text" to Type.NUMBER,
             "appearance_mode" to Type.TEXT,
             "appearance_accent" to Type.TEXT,
+            "appearance_custom" to Type.TEXT,
+            "custom_themes" to Type.TEXT,
         )
 
     val keys: Set<String> get() = ALLOWED.keys
