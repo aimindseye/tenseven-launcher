@@ -45,6 +45,28 @@ Swipe right past Hub (or Alt+Left twice from Home) to the Widgets page. It shows
 - The page can be switched off in Launcher Settings. Widget choices belong to the phone and are not in a backup.
 - Widgets are drawn by their own apps, so they will not match Tenseven's look, and controls inside them are touch-only.
 
+## Icon grid, themes and wallpapers
+
+Launcher Settings, **Icon grid**: choose Auto or 3 to 6 columns, 1 to 3 rows, the icon size, and whether app names show under icons. The small preview above the buttons changes as you choose. Columns and names apply to the BlackBerry 7 home and tray; names also apply to the BlackBerry 10 app grid, whose columns stay fixed. (Ripe's separate "tile width" is the same choice here: the number of columns sets the width.)
+
+**Theme** has seven looks (Default follows the phone, then Midnight, Daylight, Forest, Dusk, Amber and Slate). They work on an ordinary install and are saved with a backup. **Wallpapers** has eight pictures Tenseven draws itself, with no outside artwork: pick one, then choose **Home**, **Lock** or **Both**.
+
+## Hub settings and the Hub peek
+
+Launcher Settings, **Hub settings** (also the Hub's own settings button): **Clear the Hub now** forgets everything the Hub holds, **Apps in the Hub** turns individual apps off so their notifications stay out of the Hub, the peek and the lock layer, and **Show message text** decides whether the latest message may appear on the peek and the lock layer (off: names and counts only). Nothing is stored.
+
+**Peek**: on the BlackBerry 10 home, drag in from the very left edge to slide the latest conversations over Home. Tap one to open it in its app, **Open Hub** for the full page, Back or Escape to close. Space on the Hub slot of the bottom bar does the same.
+
+## Widgets on the home screen
+
+On the BlackBerry 10 home, other apps' widgets can sit as full-width tiles under the Glance frames. Open **Edit Home**, find **Widgets on Home**, and choose **Add widget**; Up, Down and Remove change the order. Widget changes apply at once; Cancel does not undo them. The home tiles show only while no recent apps fill Active Frames (the ordinary-install case). Edit Home now ends in a bar that stays on screen: **Reset**, **Cancel**, **Done**.
+
+## Lock layer
+
+Launcher Settings, **Lock screen**, switch on **Tenseven lock layer**. When the screen wakes onto your lock screen, Tenseven shows a BlackBerry-style cover: the time, the date, an icon with a count for each app with waiting notifications, and a camera shortcut. It is only a cover: swipe up, press Enter or Space, or tap an app, and Android asks for your PIN, pattern or fingerprint before anything opens. The camera opens the secure camera without unlocking.
+
+It needs two permissions, both explained in Settings: **Display over other apps** (so it can appear when the screen wakes) and **Notification access** (for the counts; message text only if Hub settings allow it). Some Android versions refuse to start a screen from the background; if the layer does not appear, switch it off.
+
 ## Finding things
 
 - **Type on Home** to search apps. It can be turned off in Launcher Settings. **Alt+Space** opens Command from either layout.

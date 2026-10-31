@@ -69,7 +69,8 @@ replaces the missing data.
 | Privacy row for work and private profile apps | `createContextAsUser` for that profile | `UserContexts.forUser` returns null; the row says "permissions · unavailable" | Accept; document |
 | Lock and unlock Private Space | `MODIFY_QUIET_MODE` | Android decides whether a non-system launcher may do it; the call is already wrapped, so a refusal leaves the space as it was | Mink Private Space port; test on Android 15+ |
 | Hub (messages, calls, contacts, notifications) | Sable Hub, Messages and Phone publish snapshot providers | Notification-based Hub (Mink conversations), in memory only | Done |
-| Appearance (theme, accent) | Settings hosts `org.sableos.appearance` | Launcher's own preferences (Launcher Settings) | Done |
+| Appearance (theme, accent) | Settings hosts `org.sableos.appearance` | Launcher's own preferences (Launcher Settings): `LauncherTheme` uses the saved choice when there is one and the Sable provider otherwise; `ThemePresets` and `WallpaperSets` are pure models | Done |
+| Lock layer | Not applicable (the phone's keyguard is Android's) | `LockLayerActivity` (show-when-locked cover, started on screen-on by the notification listener when the overlay permission is granted); it never replaces the keyguard and asks Android to dismiss it before opening anything | Written, not yet run on a phone |
 | Speed dial | Sable Phone provider and `org.sableos.permission.SPEED_DIAL` | Not available; letter shortcuts for apps still work | Launcher-owned letter-to-contact map |
 | Live tiles: calendar, mail, media | Sable app providers | The phone's default apps; calendar entries via `READ_CALENDAR`, Now Playing via notification access | Done; weather removed (see above) |
 
