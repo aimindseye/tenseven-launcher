@@ -11,7 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.aimindseye.tenseven.design.DesignText
-import io.github.aimindseye.tenseven.design.SableGlobalTheme
+import io.github.aimindseye.tenseven.LauncherTheme
 import io.github.aimindseye.tenseven.extras.ExtraKeyAction
 import io.github.aimindseye.tenseven.extras.ExtraKeys
 
@@ -34,7 +34,7 @@ abstract class GameActivity(
         check(qualification.startsWith("PASS:")) { qualification }
 
         setContent {
-            SableGlobalTheme(window = window) {
+            LauncherTheme(window = window) {
                 CompositionLocalProvider(LocalGameKeyHost provides keyHost) {
                     when (game) {
                         "sudoku" -> SudokuScreen()

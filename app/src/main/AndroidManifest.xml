@@ -9,6 +9,8 @@
 
     <!-- Hub page Contacts tab: names, favourites and one number per person, read on the device and never
          stored. Revocable in Settings; the tab then asks again. -->
+    <!-- Sets one of Tenseven's own wallpapers when the user picks one in Launcher Settings. A normal permission, granted at install. -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Only for the optional lock layer: lets it start over the lock screen when the screen wakes. Off until the user turns it on. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />

@@ -29,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.design.DesignText
-import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.LauncherBackup
@@ -58,7 +57,7 @@ class BackupActivity : ComponentActivity() {
         DesignText.t.bindTo(this)
         startState = StartStateRepository(this)
         setContent {
-            SableGlobalTheme(window = window) {
+            LauncherTheme(window = window) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     Column(
                         modifier =

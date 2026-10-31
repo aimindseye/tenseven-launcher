@@ -44,7 +44,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.design.DesignText
-import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.ExtraGroup
@@ -82,7 +81,7 @@ class OnboardingActivity : ComponentActivity() {
         val overview = only == null && startState.loadOnboardingDone()
         val installer = SetupStatus.installer(this)
         setContent {
-            SableGlobalTheme(window = window) {
+            LauncherTheme(window = window) {
                 SetupScreen(
                     steps = steps,
                     startOnOverview = overview,

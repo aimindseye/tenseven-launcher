@@ -29,7 +29,6 @@ import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.applySableSystemBars
-import io.github.aimindseye.tenseven.design.rememberGlobalSableAppearance
 import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
 import io.github.aimindseye.tenseven.design.writeGlobalSableAppearance
 import io.github.aimindseye.tenseven.model.ActiveFrame
@@ -297,7 +296,7 @@ class SableStartActivity : ComponentActivity() {
         }
 
         setContent {
-            val appearance = rememberGlobalSableAppearance()
+            val appearance = rememberLauncherAppearance()
 
             SideEffect {
                 applySableSystemBars(
@@ -428,9 +427,11 @@ class SableStartActivity : ComponentActivity() {
                         }
                     },
                     onAppearanceChanged = { next ->
+                        startStateRepository.saveAppearance(next.mode.stableValue, next.accent.stableValue)
                         writeGlobalSableAppearance(this@SableStartActivity, next)
                     },
                     onResetAppearance = {
+                        startStateRepository.saveAppearance(null, null)
                         writeGlobalSableAppearance(
                             this@SableStartActivity,
                             io.github.aimindseye.tenseven.design.SableAppearance(),

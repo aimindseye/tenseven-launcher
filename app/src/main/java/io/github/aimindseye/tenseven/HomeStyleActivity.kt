@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.design.DesignText
-import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.platform.StartStateRepository
@@ -44,7 +43,7 @@ class HomeStyleActivity : ComponentActivity() {
         DesignText.t.bindTo(this)
         val state = StartStateRepository(this)
         setContent {
-            SableGlobalTheme(window = window) {
+            LauncherTheme(window = window) {
                 HomeStyleChooser(
                     current = state.loadHomeStyle(),
                     onPick = { style ->

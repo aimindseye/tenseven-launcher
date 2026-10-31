@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.design.DesignText
-import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HubApps
 import io.github.aimindseye.tenseven.model.StartText
@@ -61,7 +60,7 @@ class HubSettingsActivity : ComponentActivity() {
         val state = StartStateRepository(this)
         val repository = LauncherAppsRepository(this)
         setContent {
-            SableGlobalTheme(window = window) {
+            LauncherTheme(window = window) {
                 var excluded by remember { mutableStateOf(state.loadHubExcludedApps()) }
                 var showText by remember { mutableStateOf(state.loadHubPeekText()) }
                 var cleared by remember { mutableStateOf(false) }

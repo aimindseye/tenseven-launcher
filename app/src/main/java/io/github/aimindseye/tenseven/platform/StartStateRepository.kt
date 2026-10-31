@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
+import android.content.SharedPreferences
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panel
@@ -280,6 +281,16 @@ class StartStateRepository(
             if (mode == null) remove(KEY_APPEARANCE_MODE) else putString(KEY_APPEARANCE_MODE, mode)
             if (accent == null) remove(KEY_APPEARANCE_ACCENT) else putString(KEY_APPEARANCE_ACCENT, accent)
         }.apply()
+    }
+
+    /** Calls [listener] when the theme choice changes; the returned function stops listening. */
+    fun onAppearanceChanged(listener: () -> Unit): () -> Unit {
+        val callback =
+            SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key == KEY_APPEARANCE_MODE || key == KEY_APPEARANCE_ACCENT) listener()
+            }
+        preferences.registerOnSharedPreferenceChangeListener(callback)
+        return { preferences.unregisterOnSharedPreferenceChangeListener(callback) }
     }
 
     /** Whether the Widgets page is the page left of Hub (default on). */

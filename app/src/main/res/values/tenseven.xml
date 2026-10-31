@@ -242,4 +242,14 @@
     <string name="edit_cancel">Cancel</string>
     <string name="edit_widgets">Widgets on Home</string>
     <string name="edit_widgets_detail">Widgets from other apps, shown below the frames. They apply at once; Cancel does not undo them.</string>
+    <string name="ls_section_theme">Theme</string>
+    <string name="ls_theme_default_detail">Follow the phone</string>
+    <string name="ls_section_wallpaper">Wallpapers</string>
+    <string name="ls_wallpaper_detail">Original wallpapers drawn by Tenseven. Pick one, then choose where it goes.</string>
+    <string name="ls_wallpaper_home">Home</string>
+    <string name="ls_wallpaper_lock">Lock</string>
+    <string name="ls_wallpaper_both">Both</string>
+    <string name="ls_wallpaper_working">Setting the wallpaper…</string>
+    <string name="ls_wallpaper_done">Wallpaper set.</string>
+    <string name="ls_wallpaper_failed">Android did not allow that wallpaper change.</string>
 </resources>
