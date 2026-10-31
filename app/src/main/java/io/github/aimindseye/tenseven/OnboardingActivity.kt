@@ -94,6 +94,7 @@ class OnboardingActivity : ComponentActivity() {
                     onManage = ::manage,
                     onOpenLauncherSettings = { openSettings(Intent(this, LauncherSettingsActivity::class.java)) },
                     onFinish = { finish() },
+                    settings = startState,
                 )
             }
         }
@@ -125,6 +126,7 @@ class OnboardingActivity : ComponentActivity() {
             SetupStep.USAGE ->
                 openSettings(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setData(Uri.parse("package:$packageName")))
             SetupStep.EXTRAS -> Unit // chosen with checkboxes on the step itself
+            SetupStep.STYLE, SetupStep.LOOK, SetupStep.GRID, SetupStep.WIDGETS, SetupStep.HUB, SetupStep.LOCK -> Unit // controls on the step itself
         }
     }
 
@@ -178,6 +180,7 @@ private fun SetupScreen(
     onManage: (SetupStep) -> Unit,
     onOpenLauncherSettings: () -> Unit,
     onFinish: () -> Unit,
+    settings: StartStateRepository,
 ) {
     var index by rememberSaveable { mutableIntStateOf(0) }
     var overview by rememberSaveable { mutableStateOf(startOnOverview) }
@@ -206,6 +209,7 @@ private fun SetupScreen(
                     onApplyExtras = { onApplyExtras(picked) },
                     onOpenLauncherSettings = onOpenLauncherSettings,
                     onFinish = onFinish,
+                    settings = settings,
                 )
             } else {
                 val done = state.isDone(step)
@@ -227,6 +231,8 @@ private fun SetupScreen(
                     ) {
                         Text(stringResource(R.string.setup_extras_action))
                     }
+                } else if (step.isChoice) {
+                    ChoiceSection(step, settings)
                 } else {
                     Button(
                         onClick = { onAction(step) },
@@ -269,6 +275,7 @@ private fun SetupOverview(
     onApplyExtras: () -> Unit,
     onOpenLauncherSettings: () -> Unit,
     onFinish: () -> Unit,
+    settings: StartStateRepository,
 ) {
     Text(
         stringResource(R.string.setup_all_done_detail),
@@ -285,6 +292,10 @@ private fun SetupOverview(
         ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(stepLabel(step), style = MaterialTheme.typography.titleMedium)
+                if (step.isChoice) {
+                    ChoiceSection(step, settings)
+                    return@Column
+                }
                 Text(
                     when {
                         step == SetupStep.EXTRAS -> stringResource(R.string.setup_extras_status, picked.size)
@@ -321,6 +332,26 @@ private fun SetupOverview(
     }
 }
 
+/** The controls of a choice step, the same ones Launcher Settings shows. */
+@Composable
+private fun ChoiceSection(
+    step: SetupStep,
+    state: StartStateRepository,
+) {
+    when (step) {
+        SetupStep.STYLE -> HomeStyleSection(state)
+        SetupStep.LOOK -> {
+            ThemeSection(state)
+            WallpaperSection(state)
+        }
+        SetupStep.GRID -> IconGridSection(state)
+        SetupStep.WIDGETS -> WidgetsSection(state)
+        SetupStep.HUB -> HubSection()
+        SetupStep.LOCK -> LockLayerSection(state)
+        else -> Unit
+    }
+}
+
 @Composable
 private fun stepLabel(step: SetupStep): String =
     stringResource(
@@ -331,6 +362,12 @@ private fun stepLabel(step: SetupStep): String =
             SetupStep.NOTIFICATIONS -> R.string.setup_label_notifications
             SetupStep.USAGE -> R.string.setup_label_usage
             SetupStep.EXTRAS -> R.string.setup_label_extras
+            SetupStep.STYLE -> R.string.setup_label_style
+            SetupStep.LOOK -> R.string.setup_label_look
+            SetupStep.GRID -> R.string.setup_label_grid
+            SetupStep.WIDGETS -> R.string.setup_label_widgets
+            SetupStep.HUB -> R.string.setup_label_hub
+            SetupStep.LOCK -> R.string.setup_label_lock
         },
     )
 
@@ -345,6 +382,12 @@ private fun StepCard(step: SetupStep) {
                 stringResource(R.string.setup_notifications_title) to stringResource(R.string.setup_notifications_reason)
             SetupStep.USAGE -> stringResource(R.string.setup_usage_title) to stringResource(R.string.setup_usage_reason)
             SetupStep.EXTRAS -> stringResource(R.string.setup_extras_title) to stringResource(R.string.setup_extras_reason)
+            SetupStep.STYLE -> stringResource(R.string.setup_style_title) to stringResource(R.string.setup_style_reason)
+            SetupStep.LOOK -> stringResource(R.string.setup_look_title) to stringResource(R.string.setup_look_reason)
+            SetupStep.GRID -> stringResource(R.string.setup_grid_title) to stringResource(R.string.setup_grid_reason)
+            SetupStep.WIDGETS -> stringResource(R.string.setup_widgets_title) to stringResource(R.string.setup_widgets_reason)
+            SetupStep.HUB -> stringResource(R.string.setup_hub_title) to stringResource(R.string.setup_hub_reason)
+            SetupStep.LOCK -> stringResource(R.string.setup_lock_title) to stringResource(R.string.setup_lock_reason)
         }
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -394,6 +437,7 @@ private fun stepAction(step: SetupStep): String =
             SetupStep.NOTIFICATIONS -> R.string.setup_notifications_action
             SetupStep.USAGE -> R.string.setup_usage_action
             SetupStep.EXTRAS -> R.string.setup_extras_action
+            else -> R.string.setup_next
         },
     )
 

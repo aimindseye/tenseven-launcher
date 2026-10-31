@@ -12,7 +12,20 @@ class OnboardingPlanTest {
     @Test
     fun stepsComeInTheOrderHomeFirst() {
         assertEquals(
-            listOf(SetupStep.HOME, SetupStep.CONTACTS, SetupStep.PHOTOS, SetupStep.NOTIFICATIONS, SetupStep.USAGE, SetupStep.EXTRAS),
+            listOf(
+                SetupStep.HOME,
+                SetupStep.STYLE,
+                SetupStep.CONTACTS,
+                SetupStep.PHOTOS,
+                SetupStep.NOTIFICATIONS,
+                SetupStep.USAGE,
+                SetupStep.LOOK,
+                SetupStep.GRID,
+                SetupStep.WIDGETS,
+                SetupStep.HUB,
+                SetupStep.LOCK,
+                SetupStep.EXTRAS,
+            ),
             OnboardingPlan.pending(nothing),
         )
     }
@@ -20,11 +33,12 @@ class OnboardingPlanTest {
     @Test
     fun grantedStepsAreLeftOut() {
         val state = nothing.copy(homeRoleHeld = true, photosGranted = true)
-        assertEquals(
-            listOf(SetupStep.CONTACTS, SetupStep.NOTIFICATIONS, SetupStep.USAGE, SetupStep.EXTRAS),
-            OnboardingPlan.pending(state),
-        )
-        assertTrue(OnboardingPlan.pending(everything).isEmpty())
+        val pending = OnboardingPlan.pending(state)
+        assertFalse(SetupStep.HOME in pending)
+        assertFalse(SetupStep.PHOTOS in pending)
+        assertTrue(SetupStep.CONTACTS in pending && SetupStep.NOTIFICATIONS in pending && SetupStep.USAGE in pending)
+        // Only the choice steps remain when every permission is granted and extras are chosen.
+        assertEquals(SetupStep.entries.filter { it.isChoice }, OnboardingPlan.pending(everything))
     }
 
     @Test
@@ -32,6 +46,15 @@ class OnboardingPlanTest {
         assertTrue(SetupStep.EXTRAS in OnboardingPlan.pending(nothing))
         assertFalse(SetupStep.EXTRAS in OnboardingPlan.pending(nothing.copy(extrasChosen = true)))
         assertFalse(SetupStep.EXTRAS.isSpecialAccess)
+    }
+
+    @Test
+    fun everyLauncherSettingsGroupHasAChoiceStep() {
+        assertEquals(
+            setOf(SetupStep.STYLE, SetupStep.LOOK, SetupStep.GRID, SetupStep.WIDGETS, SetupStep.HUB, SetupStep.LOCK),
+            SetupStep.entries.filter { it.isChoice }.toSet(),
+        )
+        assertTrue(SetupStep.entries.filter { it.isChoice }.none { it.required || it.isSpecialAccess })
     }
 
     @Test

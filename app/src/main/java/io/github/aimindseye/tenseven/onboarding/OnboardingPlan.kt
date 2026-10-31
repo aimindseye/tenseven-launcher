@@ -7,17 +7,34 @@ package io.github.aimindseye.tenseven.onboarding
  */
 enum class SetupStep {
     HOME,
+    STYLE,
     CONTACTS,
     PHOTOS,
     NOTIFICATIONS,
     USAGE,
+    LOOK,
+    GRID,
+    WIDGETS,
+    HUB,
+    LOCK,
     EXTRAS,
     ;
 
     val required: Boolean get() = this == HOME
 
+    /**
+     * A step of choices rather than one permission: its controls are on the step itself and apply at once, so it is
+     * always offered and never "not done". Every setting in Launcher Settings has such a step, so a feature added there
+     * is part of the first-run setup too.
+     */
+    val isChoice: Boolean get() = this in CHOICES
+
     /** Android calls these "special access": granted in Settings, not by a permission dialog. */
     val isSpecialAccess: Boolean get() = this == NOTIFICATIONS || this == USAGE
+
+    companion object {
+        private val CHOICES = setOf(STYLE, LOOK, GRID, WIDGETS, HUB, LOCK)
+    }
 }
 
 /** What is already granted. */
@@ -33,6 +50,7 @@ data class SetupState(
     fun isDone(step: SetupStep): Boolean =
         when (step) {
             SetupStep.HOME -> homeRoleHeld
+            SetupStep.STYLE, SetupStep.LOOK, SetupStep.GRID, SetupStep.WIDGETS, SetupStep.HUB, SetupStep.LOCK -> true
             SetupStep.CONTACTS -> contactsGranted
             SetupStep.PHOTOS -> photosGranted
             SetupStep.NOTIFICATIONS -> notificationAccess
@@ -48,7 +66,7 @@ object OnboardingPlan {
     private const val PLAY_STORE = "com.android.vending"
 
     /** The steps still to do, in order. Empty when everything is set up. */
-    fun pending(state: SetupState): List<SetupStep> = SetupStep.entries.filterNot(state::isDone)
+    fun pending(state: SetupState): List<SetupStep> = SetupStep.entries.filter { it.isChoice || !state.isDone(it) }
 
     /**
      * Whether to explain "Allow restricted settings". On Android 13 or newer, the switch for notification or
