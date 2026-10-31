@@ -63,14 +63,33 @@ LEFT=$((W / 10))
 RIGHT=$((W * 9 / 10))
 
 hash_screen() {
-  if command -v md5 >/dev/null; then "${ADB[@]}" exec-out screencap -p | md5; else "${ADB[@]}" exec-out screencap -p | md5sum; fi
+  # Capture on the phone: screencap prints a multi-display warning to stdout, which would corrupt a pipe.
+  "${ADB[@]}" shell screencap -p /sdcard/tenseven-hash.png >/dev/null 2>&1 || true
+  if command -v md5 >/dev/null; then "${ADB[@]}" exec-out cat /sdcard/tenseven-hash.png | md5; else "${ADB[@]}" exec-out cat /sdcard/tenseven-hash.png | md5sum; fi
+}
+
+# A PNG starts with the bytes 89 50 4E 47 0D 0A 1A 0A. Anything else is corrupt.
+is_png() {
+  [ -s "$1" ] && [ "$(head -c 8 "$1" | od -An -tx1 | tr -d ' \n')" = "89504e470d0a1a0a" ]
 }
 
 shot() { # shot <name>
   N=$((N + 1))
   local file; file="$OUT/$(printf '%02d' "$N")-$1.png"
-  "${ADB[@]}" exec-out screencap -p > "$file"
-  echo "  $file"
+  for _ in 1 2 3; do
+    # Capture on the phone, then copy the file. Piping screencap output can pick up a
+    # "[Warning] Multiple displays" text line in front of the image, which corrupts the PNG.
+    "${ADB[@]}" shell screencap -p /sdcard/tenseven-shot.png >/dev/null 2>&1 || true
+    "${ADB[@]}" pull /sdcard/tenseven-shot.png "$file" >/dev/null 2>&1 || true
+    "${ADB[@]}" shell rm -f /sdcard/tenseven-shot.png >/dev/null 2>&1 || true
+    if is_png "$file"; then break; fi
+    sleep 0.7
+  done
+  if is_png "$file"; then
+    echo "  $file"
+  else
+    echo "  WARNING: $file is not a valid PNG (screen may be secure or off)"
+  fi
 }
 
 wake() {
