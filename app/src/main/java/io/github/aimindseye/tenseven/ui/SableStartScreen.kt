@@ -440,6 +440,7 @@ fun SableStartScreen(
         produceState(emptySet<Char>(), refreshGeneration, speedDial, shortcutVersion) {
             value = speedDial?.assignedLetters() ?: emptySet()
         }
+    var hubPeek by remember { mutableStateOf(false) }
     var destination by remember(initialScreen) {
         mutableStateOf(destinationFor(initialScreen))
     }
@@ -624,6 +625,7 @@ fun SableStartScreen(
     LaunchedEffect(backGeneration) {
         if (backGeneration > 0) {
             when {
+                hubPeek -> hubPeek = false
                 // Edit Home decides: cancel the item being moved, else leave without saving.
                 destination == SableStartDestination.EditHome -> editBackGeneration += 1
                 destination != SableStartDestination.Start -> navigateBack()
@@ -636,9 +638,9 @@ fun SableStartScreen(
         }
     }
 
-    LaunchedEffect(destination, currentPage) {
+    LaunchedEffect(destination, currentPage, hubPeek) {
         onCanNavigateBackChanged(
-            destination != SableStartDestination.Start || currentPage != StartPages.HOME,
+            destination != SableStartDestination.Start || currentPage != StartPages.HOME || hubPeek,
         )
     }
 
@@ -665,7 +667,13 @@ fun SableStartScreen(
             ) {
                 when (destination) {
                     SableStartDestination.Start ->
-                        Bb10Theme(appearance) {
+                        Bb10ThemeWithPeek(
+                            appearance = appearance,
+                            peekOpen = hubPeek,
+                            edgeEnabled = currentPage == StartPages.HOME,
+                            onPeekChange = { hubPeek = it },
+                            onOpenHub = { pagerScope.launch { startPager.animateScrollToPage(StartPages.HUB + lead) } },
+                        ) {
                             StartStrip(
                                 state = startPager,
                                 pageCount = pageCount,
@@ -678,7 +686,7 @@ fun SableStartScreen(
                                     selectedSlot = slot
                                     destination = SableStartDestination.SlotOptions
                                 },
-                                onHubPeek = { pagerScope.launch { startPager.animateScrollToPage(StartPages.HUB + lead) } },
+                                onHubPeek = { hubPeek = true },
                                 onDial = { char -> dial(char.toString()) },
                                 onTypeToSearch = { seed -> if (typeToSearch) openSearch(SableStartDestination.Start, seed) },
                                 speedDialLetters = speedDialLetters,
@@ -1616,6 +1624,21 @@ private fun FrameCard(
                 )
             }
         }
+    }
+}
+
+/** [Bb10Theme] with the Hub peek layered over the Start strip. */
+@Composable
+private fun Bb10ThemeWithPeek(
+    appearance: SableAppearance,
+    peekOpen: Boolean,
+    edgeEnabled: Boolean,
+    onPeekChange: (Boolean) -> Unit,
+    onOpenHub: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Bb10Theme(appearance) {
+        HubPeekHost(peekOpen, edgeEnabled, onPeekChange, onOpenHub, content)
     }
 }
 

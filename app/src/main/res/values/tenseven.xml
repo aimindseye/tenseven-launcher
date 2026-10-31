@@ -252,4 +252,8 @@
     <string name="ls_wallpaper_working">Setting the wallpaper…</string>
     <string name="ls_wallpaper_done">Wallpaper set.</string>
     <string name="ls_wallpaper_failed">Android did not allow that wallpaper change.</string>
+    <string name="peek_title">Hub</string>
+    <string name="peek_empty">No conversations right now.</string>
+    <string name="peek_count">%1$d new</string>
+    <string name="peek_open_hub">Open Hub</string>
 </resources>
