@@ -121,6 +121,7 @@ class SableStartActivity : ComponentActivity() {
     private val widgetIds = mutableStateOf<List<Int>>(emptyList())
     private val widgetsGeneration = mutableStateOf(0)
     private val homeWidgetIds = mutableStateOf<List<Int>>(emptyList())
+    private val homeWallpaper = mutableStateOf(true)
     private val widgetController by lazy {
         WidgetHostController(this, startStateRepository) { target, ids ->
             if (target == WidgetTarget.HOME) homeWidgetIds.value = ids else widgetIds.value = ids
@@ -244,6 +245,7 @@ class SableStartActivity : ComponentActivity() {
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
         homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
+        homeWallpaper.value = startStateRepository.loadHomeWallpaper()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         recentTasksRepository = RecentTasksRepository(this)
         usageRecentsRepository = UsageRecentsRepository(this)
@@ -310,7 +312,7 @@ class SableStartActivity : ComponentActivity() {
             }
 
             val bb7 = homeStyle.value == HomeStyle.Bb7 && !bb10Detour.value
-            SideEffect { showWallpaper(bb7) }
+            SideEffect { showWallpaper(bb7 || homeWallpaper.value) }
             if (bb7) {
                 Bb7HomeScreen(
                     apps = appsState.value,
@@ -406,6 +408,7 @@ class SableStartActivity : ComponentActivity() {
                     widgetsController = widgetController,
                     widgetIds = widgetIds.value,
                     homeWidgetIds = homeWidgetIds.value,
+                    wallpaperBehind = homeWallpaper.value,
                     widgetsGeneration = widgetsGeneration.value,
                     showIconLabels = gridLabels.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
@@ -495,6 +498,7 @@ class SableStartActivity : ComponentActivity() {
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
         homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
+        homeWallpaper.value = startStateRepository.loadHomeWallpaper()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         scheduleInventoryRefresh()
         refreshFrames()

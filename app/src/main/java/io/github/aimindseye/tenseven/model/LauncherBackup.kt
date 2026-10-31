@@ -49,6 +49,7 @@ object LauncherBackup {
             "grid_columns" to Type.NUMBER,
             "grid_labels" to Type.NUMBER,
             "lock_layer" to Type.NUMBER,
+            "home_wallpaper" to Type.NUMBER,
             "hub_excluded_apps" to Type.ITEMS,
             "hub_peek_text" to Type.NUMBER,
             "appearance_mode" to Type.TEXT,

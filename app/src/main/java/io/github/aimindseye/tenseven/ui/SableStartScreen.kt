@@ -390,6 +390,7 @@ fun SableStartScreen(
     widgetsController: WidgetHostController? = null,
     widgetIds: List<Int> = emptyList(),
     homeWidgetIds: List<Int> = emptyList(),
+    wallpaperBehind: Boolean = false,
     widgetsGeneration: Int = 0,
     showIconLabels: Boolean = true,
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
@@ -648,10 +649,11 @@ fun SableStartScreen(
         if (settledPage == StartPages.HUB) onRefreshLive()
     }
 
-    SableThemeWithWidgets(appearance, widgetsController, homeWidgetIds) {
+    SableThemeWithWidgets(appearance, widgetsController, homeWidgetIds, if (wallpaperBehind) HOME_BACKDROP_ALPHA else 1f) {
+        val seeThrough = wallpaperBehind && destination == SableStartDestination.Start
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background,
+            color = if (seeThrough) Color.Transparent else MaterialTheme.colorScheme.background,
         ) {
             Box(
                 modifier =
@@ -1060,7 +1062,7 @@ private fun StartStrip(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(Bb10Background)
+                .background(Bb10Background.copy(alpha = LocalHomeBackdrop.current))
                 .onPreviewKeyEvent { event ->
                     val native = event.nativeKeyEvent
                     val delta = StartPages.keyDelta(native.keyCode, native.metaState)
@@ -5979,3 +5981,6 @@ private const val ASSIGN_ROWS = 6
 
 /** How far a swipe down on the BlackBerry 10 home must travel to open Command. */
 private const val HOME_SWIPE_DP = 120
+
+/** How solid the BlackBerry 10 home is over the wallpaper: enough dim to keep text readable. */
+private const val HOME_BACKDROP_ALPHA = 0.6f
