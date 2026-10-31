@@ -174,7 +174,7 @@ private fun HubPeekPanel(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.3f * slide.value))
+                .background(Color.Black.copy(alpha = 0.45f * slide.value))
                 .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClose)
                 .onPreviewKeyEvent { event ->
                     if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) {
@@ -287,7 +287,7 @@ private fun PeekRow(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
         shape = RoundedCornerShape(12.dp),
-        color = if (focused) accent.copy(alpha = 0.22f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+        color = if (focused) accent.copy(alpha = 0.22f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
         contentColor = MaterialTheme.colorScheme.onSurface,
         border = BorderStroke(if (focused) 2.dp else 1.dp, if (focused) accent else MaterialTheme.colorScheme.outlineVariant),
     ) {
@@ -363,4 +363,4 @@ private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
 /** How opaque the peek panel is; the rest lets Home show through. */
-private const val PANEL_ALPHA = 0.72f
+private const val PANEL_ALPHA = 0.9f
