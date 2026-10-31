@@ -241,7 +241,8 @@
     <string name="edit_widgets">Widgets on Home</string>
     <string name="edit_widgets_detail">Widgets from other apps, shown below the frames. They apply at once; Cancel does not undo them.</string>
     <string name="ls_section_theme">Theme</string>
-    <string name="ls_theme_default_detail">Follow the phone</string>
+    <string name="ls_theme_default_detail">Black with BlackBerry blue</string>
+    <string name="ls_theme_phone_detail">Your wallpaper colours, light or dark</string>
     <string name="ls_section_wallpaper">Wallpapers</string>
     <string name="ls_wallpaper_detail">Original wallpapers drawn by Tenseven. Pick one, then choose where it goes.</string>
     <string name="ls_wallpaper_home">Home</string>

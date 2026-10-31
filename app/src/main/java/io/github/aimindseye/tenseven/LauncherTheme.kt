@@ -19,9 +19,8 @@ import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
- * The appearance the launcher draws with: the theme chosen in Launcher Settings when there is one, otherwise the
- * phone's Sable appearance. The global provider only exists on a SableOS phone, so on an ordinary install the choice
- * made here is the one that counts.
+ * The appearance the launcher draws with: the theme chosen in Launcher Settings, else the BlackBerry theme. Only the
+ * corner style still comes from the phone's Sable appearance, which exists only on a SableOS phone.
  */
 @Composable
 fun rememberLauncherAppearance(): SableAppearance {
@@ -39,7 +38,8 @@ fun rememberLauncherAppearance(): SableAppearance {
         onDispose(stop)
     }
     return if (mode == null && accent == null) {
-        global
+        // No choice made: the BlackBerry look, pure black with the BlackBerry blue.
+        SableAppearance(mode = AppearanceMode.Dark, accent = AccentPreset.Blue, cornerStyle = global.cornerStyle)
     } else {
         SableAppearance(
             mode = AppearanceMode.fromStableValue(mode),

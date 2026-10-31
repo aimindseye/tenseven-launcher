@@ -13,15 +13,18 @@ data class ThemePreset(
 )
 
 /**
- * The themes on offer in Launcher Settings. "Default" takes no choice of its own and follows the phone's appearance;
+ * The themes on offer in Launcher Settings. "BlackBerry" is the default: it stores no choice of its own, and is pure
+ * black with the BlackBerry blue. "Phone colours" follows the phone's wallpaper colours and light or dark setting;
  * the rest set the mode and accent for the launcher's own screens and keep working on an ordinary install.
  */
 object ThemePresets {
-    const val DEFAULT_ID = "default"
+    const val DEFAULT_ID = "blackberry"
+    const val PHONE_ID = "phone"
 
     val ALL: List<ThemePreset> =
         listOf(
-            ThemePreset(DEFAULT_ID, "Default", AppearanceMode.FollowSystem, AccentPreset.Blue, "sky"),
+            ThemePreset(DEFAULT_ID, "BlackBerry", AppearanceMode.Dark, AccentPreset.Blue, "sky"),
+            ThemePreset(PHONE_ID, "Phone colours", AppearanceMode.FollowSystem, AccentPreset.Phone, "slate"),
             ThemePreset("midnight", "Midnight", AppearanceMode.Dark, AccentPreset.Purple, "midnight"),
             ThemePreset("daylight", "Daylight", AppearanceMode.Light, AccentPreset.Blue, "cream"),
             ThemePreset("forest", "Forest", AppearanceMode.Dark, AccentPreset.Green, "forest"),

@@ -1,7 +1,12 @@
 package io.github.aimindseye.tenseven.ui
 
 import android.graphics.Rect
+import android.os.Build
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,17 +16,25 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,14 +42,18 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -111,11 +128,33 @@ internal fun HubPeekHost(
             },
     ) {
         content()
-        if (peekOpen) HubPeekPanel(onClose = { onPeekChange(false) }, onOpenHub = {
-            onPeekChange(false)
-            onOpenHub()
-        })
+        if (peekOpen) {
+            PhoneColors {
+                HubPeekPanel(onClose = { onPeekChange(false) }, onOpenHub = {
+                    onPeekChange(false)
+                    onOpenHub()
+                })
+            }
+        }
     }
+}
+
+/**
+ * The peek is drawn in the phone's own colours, not the launcher's theme: Material You colours from the wallpaper on
+ * Android 12 and newer, and the plain system light or dark colours before that.
+ */
+@Composable
+private fun PhoneColors(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val dark = isSystemInDarkTheme()
+    val scheme =
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(context)
+            dark -> darkColorScheme()
+            else -> lightColorScheme()
+        }
+    MaterialTheme(colorScheme = scheme, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
 }
 
 @Composable
@@ -127,11 +166,15 @@ private fun HubPeekPanel(
     val showText = remember { StartStateRepository(context).loadHubPeekText() }
     val conversations = remember { ConversationHub.conversations().take(MAX_ROWS) }
     val focus = remember { FocusRequester() }
-    Box(
+    // The panel slides in from the left edge while the rest of Home dims.
+    val slide = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { slide.animateTo(1f, tween(durationMillis = 220, easing = FastOutSlowInEasing)) }
+    val accent = MaterialTheme.colorScheme.primary
+    BoxWithConstraints(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.55f))
+                .background(Color.Black.copy(alpha = 0.3f * slide.value))
                 .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClose)
                 .onPreviewKeyEvent { event ->
                     if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) {
@@ -145,44 +188,80 @@ private fun HubPeekPanel(
         Surface(
             modifier =
                 Modifier
-                    .align(Alignment.CenterStart)
-                    .fillMaxHeight()
-                    .fillMaxWidth(0.84f)
-                    .widthIn(max = 340.dp)
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth(0.88f)
+                    .widthIn(max = 360.dp)
+                    .heightIn(max = maxHeight * 0.92f)
+                    .graphicsLayer { translationX = (slide.value - 1f) * size.width }
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
-            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 18.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = PANEL_ALPHA),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 0.dp,
+            shadowElevation = 12.dp,
         ) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.peek_title), style = MaterialTheme.typography.titleLarge)
+            Column {
+                Box(Modifier.fillMaxWidth().height(3.dp).background(accent))
                 Column(
-                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    if (conversations.isEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            stringResource(R.string.peek_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            stringResource(R.string.peek_title),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.weight(1f),
                         )
-                    }
-                    conversations.forEach { conversation ->
-                        PeekRow(
-                            name = conversation.name,
-                            detail =
-                                if (showText) {
-                                    conversation.latestMessage?.text.orEmpty()
-                                } else {
-                                    stringResource(R.string.peek_count, conversation.notifications.size)
-                                },
-                            packageName = conversation.sourcePackages.firstOrNull(),
-                        ) {
-                            ConversationHub.open(context, conversation.openTarget)
-                            onClose()
+                        val total = conversations.sumOf { it.notifications.size }
+                        if (total > 0) {
+                            Surface(shape = RoundedCornerShape(50), color = accent) {
+                                Text(
+                                    stringResource(R.string.peek_count, total),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
                         }
                     }
+                    Column(
+                        modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (conversations.isEmpty()) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 22.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text("\u2713", style = MaterialTheme.typography.headlineMedium, color = accent)
+                                Text(
+                                    stringResource(R.string.peek_empty),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        conversations.forEach { conversation ->
+                            PeekRow(
+                                name = conversation.name,
+                                detail =
+                                    if (showText) {
+                                        conversation.latestMessage?.text.orEmpty()
+                                    } else {
+                                        stringResource(R.string.peek_count, conversation.notifications.size)
+                                    },
+                                count = if (showText) conversation.notifications.size else 0,
+                                packageName = conversation.sourcePackages.firstOrNull(),
+                            ) {
+                                ConversationHub.open(context, conversation.openTarget)
+                                onClose()
+                            }
+                        }
+                    }
+                    PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
                 }
-                PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
             }
         }
     }
@@ -193,27 +272,37 @@ private fun HubPeekPanel(
 private fun PeekRow(
     name: String,
     detail: String,
+    count: Int,
     packageName: String?,
     onClick: () -> Unit,
 ) {
     val packageManager = LocalContext.current.packageManager
     val icon =
         remember(packageName) {
-            packageName?.let { runCatching { packageManager.getApplicationIcon(it).toBitmap(96, 96).asImageBitmap() }.getOrNull() }
+            packageName?.let { runCatching { packageManager.getApplicationIcon(it).toBitmap(120, 120).asImageBitmap() }.getOrNull() }
         }
+    var focused by remember { mutableStateOf(false) }
+    val accent = MaterialTheme.colorScheme.primary
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().sableFocusRing(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
+        shape = RoundedCornerShape(12.dp),
+        color = if (focused) accent.copy(alpha = 0.22f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(if (focused) 2.dp else 1.dp, if (focused) accent else MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (icon != null) Image(icon, contentDescription = null, modifier = Modifier.size(32.dp))
+            if (icon != null) {
+                Image(
+                    icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (detail.isNotBlank()) {
@@ -221,8 +310,18 @@ private fun PeekRow(
                         detail,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (count > 1) {
+                Surface(shape = RoundedCornerShape(50), color = accent) {
+                    Text(
+                        count.toString(),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             }
@@ -238,16 +337,22 @@ private fun PeekButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().sableFocusRing(),
-        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).sableFocusRing(),
+        shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.primary,
     ) {
-        Text(
-            label,
-            modifier = Modifier.padding(12.dp),
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.titleMedium,
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                label,
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text("\u203A", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.headlineSmall)
+        }
     }
 }
 
@@ -256,3 +361,6 @@ private const val EDGE_DP = 20
 /** Android lets an app exclude at most this much height from the system gestures on one edge. */
 private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
+
+/** How opaque the peek panel is; the rest lets Home show through. */
+private const val PANEL_ALPHA = 0.72f

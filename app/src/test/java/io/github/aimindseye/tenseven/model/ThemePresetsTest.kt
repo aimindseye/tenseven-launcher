@@ -33,6 +33,21 @@ class ThemePresetsTest {
     }
 
     @Test
+    fun phoneColoursIsAThemeOfItsOwn() {
+        val phone = ThemePresets.byId(ThemePresets.PHONE_ID)
+        assertEquals(AccentPreset.Phone, phone.accent)
+        assertEquals(phone, ThemePresets.matching(AppearanceMode.FollowSystem.stableValue, AccentPreset.Phone.stableValue))
+    }
+
+    @Test
+    fun defaultIsBlackBerryBlackWithBlue() {
+        val default = ThemePresets.byId(ThemePresets.DEFAULT_ID)
+        assertEquals("BlackBerry", default.title)
+        assertEquals(AppearanceMode.Dark, default.mode)
+        assertEquals(AccentPreset.Blue, default.accent)
+    }
+
+    @Test
     fun wallpaperCountIsAtLeastEight() {
         assertTrue(WallpaperSets.ALL.size >= 8)
     }

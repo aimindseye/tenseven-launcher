@@ -95,6 +95,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -328,6 +329,22 @@ internal fun startPalette(
         )
     }
 }
+
+/** The BlackBerry 10 pages in the phone's own colours: the Material You scheme already set up by the theme. */
+internal fun phonePalette(scheme: androidx.compose.material3.ColorScheme): StartPalette =
+    StartPalette(
+        accent = scheme.primary,
+        onAccent = scheme.onPrimary,
+        background = scheme.background,
+        card = scheme.surfaceVariant.copy(alpha = 0.55f).compositeOver(scheme.background),
+        tile = scheme.surfaceVariant,
+        line = scheme.outlineVariant,
+        barTop = scheme.surfaceVariant,
+        barBottom = scheme.background,
+        text = scheme.onBackground,
+        muted = scheme.onSurfaceVariant,
+        dim = scheme.outline,
+    )
 
 private val LocalStartPalette = staticCompositionLocalOf { startPalette(dark = true, accent = AccentPreset.Blue) }
 
@@ -983,8 +1000,11 @@ internal fun Bb10Theme(
             AppearanceMode.Light -> false
             AppearanceMode.Dark -> true
         }
-    val palette = remember(dark, appearance.accent) { startPalette(dark, appearance.accent) }
     val base = MaterialTheme.colorScheme
+    val palette =
+        remember(dark, appearance.accent, base) {
+            if (appearance.accent == AccentPreset.Phone) phonePalette(base) else startPalette(dark, appearance.accent)
+        }
     CompositionLocalProvider(LocalStartPalette provides palette) {
         MaterialTheme(
             colorScheme =

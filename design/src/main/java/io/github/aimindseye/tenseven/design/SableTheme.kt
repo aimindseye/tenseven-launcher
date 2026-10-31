@@ -1,16 +1,20 @@
 package io.github.aimindseye.tenseven.design
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,6 +44,12 @@ enum class AccentPreset(
     Purple("purple", "Purple", Color(0xFF7A42E8), Color.White),
     Orange("orange", "Orange", Color(0xFFF28C45), Color(0xFF1D0C02)),
     Slate("slate", "Slate", Color(0xFF64748B), Color.White),
+
+    /**
+     * Not a colour of its own: the launcher takes its colours from the phone (Material You, from the wallpaper) on
+     * Android 12 and newer. The colour here is only the fallback for older versions.
+     */
+    Phone("phone", "Phone colours", Color(0xFFB69DF8), Color(0xFF2B1B54)),
     ;
 
     companion object {
@@ -208,8 +218,12 @@ fun SableTheme(
             AppearanceMode.Dark -> true
         }
     val accent = appearance.accent
+    val context = LocalContext.current
+    val phoneColors = accent == AccentPreset.Phone && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val colors =
-        if (dark) {
+        if (phoneColors) {
+            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        } else if (dark) {
             darkColorScheme(
                 primary = accent.color,
                 onPrimary = accent.onColor,
