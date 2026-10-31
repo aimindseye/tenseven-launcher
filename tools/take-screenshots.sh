@@ -101,8 +101,9 @@ wake() {
 
 start() { # start <activity class> [extra args...]
   local cls="$1"; shift
-  adbs am start -W -n "$PKG/$ACT.$cls" "$@" >/dev/null
-  sleep 1.2
+  # No -W: it waits for Android to report the screen as drawn, which can block for good (a dialog over the app).
+  adbs am start -n "$PKG/$ACT.$cls" "$@" >/dev/null
+  sleep 2.5
 }
 
 # Like start, but stops the app first (-S). Without that, Android only brings the Setup task that is already open
@@ -112,8 +113,8 @@ start_fresh() { # start_fresh <activity class> [extra args...]
   adbs input keyevent KEYCODE_HOME
   adbs am force-stop "$PKG"
   sleep 0.5
-  adbs am start -W -S -n "$PKG/$ACT.$cls" "$@" >/dev/null
-  sleep 1.2
+  adbs am start -S -n "$PKG/$ACT.$cls" "$@" >/dev/null
+  sleep 3
 }
 
 home() { adbs input keyevent KEYCODE_HOME; sleep 1.2; }
