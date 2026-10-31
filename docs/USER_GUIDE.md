@@ -223,6 +223,11 @@ The pictures in this guide are in [`images/`](images/). `tools/take-screenshots.
 
 ## Theme files
 
+In **Launcher Settings → Theme**, **Import theme…** opens Android's file picker; the theme is added next to the built-in
+ones and switched on. **Export current theme** saves the theme in use as a file you can share or edit (built-in themes
+make a ready template; Phone colours follows the phone and has no file). **Remove** deletes an imported theme and goes
+back to the built-in one you had.
+
 A theme file is a small text file (JSON, under 64 KB) named like `ocean.tenseventheme.json`. It is only read as data: it
 can set colours and a wallpaper, and nothing in it is ever run. Only `format`, `version`, `name`, `mode` and `accent`
 are required; the rest take the defaults of the mode.
@@ -243,5 +248,5 @@ are required; the rest take the defaults of the mode.
 
 - `mode` is `dark`, `light` or `follow-system`. Colours are `#RRGGBB`. `seed` (0 to 9999) shapes the wallpaper ridges.
 - Tenseven refuses a file whose text, muted or accent colour would be hard to see: text needs a contrast of 4.5 on the
-  background, and muted, accent and `onAccent` (on the accent) 3.
+  background, muted and accent 3, and `onAccent` 2.5 on the accent.
 - Up to 12 imported themes are kept. They are saved with a backup. The peek always uses the phone's colours.
