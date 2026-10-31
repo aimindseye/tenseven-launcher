@@ -233,6 +233,13 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_GRID_COLUMNS, GridColumns.normalize(columns)).apply()
     }
 
+    /** The Tenseven lock layer shown over the system lock screen when the screen wakes; off until chosen. */
+    fun loadLockLayer(): Boolean = preferences.getInt(KEY_LOCK_LAYER, 0) != 0
+
+    fun saveLockLayer(enabled: Boolean) {
+        preferences.edit().putInt(KEY_LOCK_LAYER, if (enabled) 1 else 0).apply()
+    }
+
     fun loadGridLabels(): Boolean = preferences.getInt(KEY_GRID_LABELS, 1) != 0
 
     fun saveGridLabels(shown: Boolean) {
@@ -346,6 +353,7 @@ class StartStateRepository(
         const val KEY_BB7_DESKTOP = "bb7_desktop"
         const val KEY_GRID_COLUMNS = "grid_columns"
         const val KEY_GRID_LABELS = "grid_labels"
+        const val KEY_LOCK_LAYER = "lock_layer"
         const val KEY_HUB_EXCLUDED = "hub_excluded_apps"
         const val KEY_HUB_PEEK_TEXT = "hub_peek_text"
         const val KEY_HOME_WIDGET_IDS = "home_widget_ids"

@@ -35,6 +35,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.sableFocusRing
@@ -45,6 +46,7 @@ import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.StartText
+import io.github.aimindseye.tenseven.platform.LockLayerLauncher
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
@@ -53,6 +55,14 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  * Device and Privacy. Every change is saved at once; the home screens read it when they come forward.
  */
 class LauncherSettingsActivity : ComponentActivity() {
+    /** Bumped on resume so the permission rows re-check after the user comes back from Android's settings. */
+    private var resumeTick by mutableStateOf(0)
+
+    override fun onResume() {
+        super.onResume()
+        resumeTick++
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         StartText.t.bindTo(this)
@@ -66,7 +76,8 @@ class LauncherSettingsActivity : ComponentActivity() {
                 var gridColumns by remember { mutableStateOf(state.loadGridColumns()) }
                 var rows by remember { mutableStateOf(state.loadBb7HomeRows()) }
                 var labels by remember { mutableStateOf(state.loadGridLabels()) }
-                var widgetsPage by remember { mutableStateOf(state.loadWidgetsPage()) }
+                var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
+                                var widgetsPage by remember { mutableStateOf(state.loadWidgetsPage()) }
                 var widgets by remember { mutableStateOf(GlanceWidgets.normalize(state.loadGlanceWidgets())) }
                 LauncherSettings(
                     style = style,
@@ -74,6 +85,21 @@ class LauncherSettingsActivity : ComponentActivity() {
                     iconSize = iconSize,
                     widgets = widgets,
                     widgetsPage = widgetsPage,
+                    lockLayer = lockLayer,
+                    overlayAllowed = resumeTick >= 0 && LockLayerLauncher.canDrawOverlays(this),
+                    accessAllowed = resumeTick >= 0 && ConversationAccess.isGranted(this),
+                    onLockLayer = {
+                        lockLayer = it
+                        state.saveLockLayer(it)
+                    },
+                    onOverlay = {
+                        runCatching {
+                            startActivity(
+                                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName")),
+                            )
+                        }
+                    },
+                    onAccess = { runCatching { startActivity(ConversationAccess.settingsIntent()) } },
                     gridColumns = gridColumns,
                     rows = rows,
                     labels = labels,
@@ -134,6 +160,12 @@ private fun LauncherSettings(
     iconSize: Bb7IconSize,
     widgets: List<String>,
     widgetsPage: Boolean,
+    lockLayer: Boolean,
+    overlayAllowed: Boolean,
+    accessAllowed: Boolean,
+    onLockLayer: (Boolean) -> Unit,
+    onOverlay: () -> Unit,
+    onAccess: () -> Unit,
     gridColumns: Int,
     rows: Int,
     labels: Boolean,
@@ -239,6 +271,24 @@ private fun LauncherSettings(
                         else -> R.string.ls_widget_media to R.string.ls_widget_media_detail
                     }
                 SwitchRow(stringResource(title), stringResource(detail), widget in widgets) { onWidget(widget) }
+            }
+
+            Section(stringResource(R.string.ls_section_lock))
+            SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer, onLockLayer)
+            if (lockLayer) {
+                if (!overlayAllowed) {
+                    Card(stringResource(R.string.ls_lock_overlay), stringResource(R.string.ls_lock_overlay_detail), false, onClick = onOverlay)
+                }
+                if (!accessAllowed) {
+                    Card(stringResource(R.string.ls_lock_access), stringResource(R.string.ls_lock_access_detail), false, onClick = onAccess)
+                }
+                if (overlayAllowed && accessAllowed) {
+                    Text(
+                        stringResource(R.string.ls_lock_ready),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             Section(stringResource(R.string.ls_section_device))

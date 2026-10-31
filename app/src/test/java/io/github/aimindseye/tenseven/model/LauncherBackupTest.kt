@@ -86,6 +86,7 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_BB7_DESKTOP,
                 StartStateRepository.KEY_GRID_COLUMNS,
                 StartStateRepository.KEY_GRID_LABELS,
+                StartStateRepository.KEY_LOCK_LAYER,
                 StartStateRepository.KEY_HUB_EXCLUDED,
                 StartStateRepository.KEY_HUB_PEEK_TEXT,
                 StartStateRepository.KEY_APPEARANCE_MODE,
