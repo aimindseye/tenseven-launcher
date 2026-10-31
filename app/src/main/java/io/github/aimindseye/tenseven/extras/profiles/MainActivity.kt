@@ -3,6 +3,17 @@
 // English only (no string resources); no Quick Settings tile.
 package io.github.aimindseye.tenseven.extras.profiles
 
+import android.content.Context
+import android.content.res.Configuration
+import android.os.Build
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.ui.graphics.toArgb
+import io.github.aimindseye.tenseven.design.AccentPreset
+import io.github.aimindseye.tenseven.design.AppearanceMode
+import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.ui.phonePalette
+import io.github.aimindseye.tenseven.ui.startPalette
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
@@ -33,7 +44,7 @@ import io.github.aimindseye.tenseven.extras.profiles.core.SoundProfiles
 class MainActivity : Activity() {
     private lateinit var store: SoundProfileStore
     private lateinit var body: LinearLayout
-    private val palette = ProfilesPalette
+    private val palette by lazy { ProfilesPalette.forLauncher(this) }
     private var editing = SoundProfile.NORMAL
     private var status: String? = null
     private var focusKey: String? = null
@@ -365,12 +376,44 @@ class MainActivity : Activity() {
 }
 
 /** The colours of the Sound Profiles screen: pure black with a blue accent, like the other Tenseven extras. */
-private object ProfilesPalette {
-    val window = 0xFF000000.toInt()
-    val surface = 0xFF1A1A1A.toInt()
-    val text = 0xFFFFFFFF.toInt()
-    val muted = 0xFFB0B7BF.toInt()
-    val accent = 0xFF1E9BE0.toInt()
-    val onAccent = 0xFFFFFFFF.toInt()
-    val warn = 0xFFFFB300.toInt()
+/** The colours of this screen: the launcher's chosen theme, the same palette the Hub and Launcher Settings use. */
+private class ProfilesPalette(
+    val window: Int,
+    val surface: Int,
+    val text: Int,
+    val muted: Int,
+    val accent: Int,
+    val onAccent: Int,
+    val warn: Int = 0xFFFFB300.toInt(),
+) {
+    companion object {
+        fun forLauncher(context: Context): ProfilesPalette {
+            val state = StartStateRepository(context)
+            val mode = state.loadAppearanceMode()
+            val accentValue = state.loadAppearanceAccent()
+            val chosen = mode != null || accentValue != null
+            val accent = if (chosen) AccentPreset.fromStableValue(accentValue) else AccentPreset.Blue
+            val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            val dark =
+                when (if (chosen) AppearanceMode.fromStableValue(mode) else AppearanceMode.Dark) {
+                    AppearanceMode.FollowSystem -> night
+                    AppearanceMode.Light -> false
+                    AppearanceMode.Dark -> true
+                }
+            val p =
+                if (accent == AccentPreset.Phone && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    phonePalette(if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context))
+                } else {
+                    startPalette(dark, accent)
+                }
+            return ProfilesPalette(
+                window = p.background.toArgb(),
+                surface = p.card.toArgb(),
+                text = p.text.toArgb(),
+                muted = p.muted.toArgb(),
+                accent = p.accent.toArgb(),
+                onAccent = p.onAccent.toArgb(),
+            )
+        }
+    }
 }
