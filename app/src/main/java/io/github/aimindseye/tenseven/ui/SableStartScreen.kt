@@ -1483,6 +1483,7 @@ private fun ColumnScope.ActiveFramesGrid(
     usageAccess: Boolean,
     onAllowUsageAccess: () -> Unit,
 ) {
+    val hostedWidgets = LocalHomeWidgets.current
     BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
         val cardHeight =
             ((maxHeight - FRAME_PADDING * 2 - FRAME_GAP) / ActiveFrames.ROWS_PER_SCREEN).coerceAtLeast(FRAME_MIN_HEIGHT)
@@ -1535,9 +1536,8 @@ private fun ColumnScope.ActiveFramesGrid(
                 }
             }
             // Widgets from other apps, added in Edit Home, go after the recent apps.
-            val host = LocalHomeWidgets.current.controller
-            if (recentMode && host != null) {
-                items(LocalHomeWidgets.current.ids, key = { id -> "hosted:$id" }) { id -> WidgetItem(host, id, editing = false) }
+            if (recentMode && hostedWidgets.controller != null) {
+                items(hostedWidgets.ids, key = { id -> "hosted:$id" }) { id -> WidgetItem(hostedWidgets.controller, id, editing = false) }
             }
         }
     }
