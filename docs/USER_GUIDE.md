@@ -88,7 +88,7 @@ You can change your mind any time. Settings are saved as you tap.
 
 ## BlackBerry 10 home
 
-**Active Frames** show the apps you opened recently, newest first, up to eight cards in two columns, each with the app's icon and name. Press Enter or tap to open one; the **×**, a long-press, or the X or Backspace key hides that card until you open the app again. Apps you start from Tenseven appear at once; with usage access, apps you opened another way (from a notification, say) appear too. Android only lets the phone's built-in home screen show other apps' live pictures, so on an ordinary install the cards are icons, not live pictures. Until you have opened an app, the home shows the Glance cards (Calendar, Battery, Media and so on) instead; Edit Home changes which. Swipe down for Command, swipe right for Hub.
+**Active Frames** show the apps you opened recently, newest first, up to eight cards in two columns, each with the app's icon and name. Press Enter or tap to open one; the **×**, a long-press, or the X or Backspace key hides that card until you open the app again. Apps you start from Tenseven appear at once; with usage access, apps you opened another way (from a notification, say) appear too. Android only lets the phone's built-in home screen show other apps' live pictures, so on an ordinary install the cards are icons, not live pictures. Until you have opened an app the home is empty: widgets live on the Widgets page, not here. Swipe down for Command, swipe right for Hub.
 
 |  |  |  |  |
 |---|---|---|---|
@@ -97,10 +97,10 @@ You can change your mind any time. Settings are saved as you tap.
 
 ## Widgets page
 
-Swipe right past Hub (or Alt+Left twice from Home) to the Widgets page. It shows widgets from other apps, such as a weather app, in one scrolling column.
+Swipe right past Hub (or Alt+Left twice from Home) to the Widgets page. The built-in widgets you switched on in Launcher Settings (Calendar, Alarm, Battery, Now playing) sit at the top as cards; all of them are off until you switch them on. Below them are widgets from other apps, such as a weather app, in one scrolling column.
 
 - **Add widget** lists the widgets of every installed app. Android asks once to allow Tenseven to hold a widget, and some widgets show their own setup screen first (a weather city, say).
-- **Edit** puts Up, Down and Remove over each widget. Widgets take touches themselves, so the controls only appear in Edit.
+- **Edit** dims each added widget and puts Up, Down and Remove in a row under it. Widgets take touches themselves, so the controls only appear in Edit.
 - **BlackBerry 7**: menu, then Widgets. Back returns to BlackBerry 7.
 - The page can be switched off in Launcher Settings. Widget choices belong to the phone and are not in a backup.
 - Widgets are drawn by their own apps, so they will not match Tenseven's look, and controls inside them are touch-only.
@@ -132,9 +132,9 @@ Launcher Settings, **Hub settings** (also the Hub's own settings button): **Clea
 | <img src="images/hub-settings-05.png" width="190" alt="Hub settings 5 of 7"> | <img src="images/hub-settings-06.png" width="190" alt="Hub settings 6 of 7"> | <img src="images/hub-settings-07.png" width="190" alt="Hub settings 7 of 7"> |
 | <sub>Hub settings 5 of 7</sub> | <sub>Hub settings 6 of 7</sub> | <sub>Hub settings 7 of 7</sub> |
 
-## Widgets on the home screen
+## Edit Home
 
-On the BlackBerry 10 home, other apps' widgets can sit as full-width tiles under the Glance frames. Open **Edit Home**, find **Widgets on Home**, and choose **Add widget**; Up, Down and Remove change the order. Widget changes apply at once; Cancel does not undo them. They show after the recent-app cards, or under the Glance cards while no app has been opened. Edit Home now ends in a bar that stays on screen: **Reset**, **Cancel**, **Done**.
+Edit Home orders the app grid and the bottom bar and chooses which parts of the home show (the status dials, the date, the search row). It ends in a bar that stays on screen: **Reset**, **Cancel**, **Done**. Open it by long-pressing an empty spot on the app pages, long-pressing a bottom-bar slot, or typing `edit home` in Command.
 
 ## Lock layer
 

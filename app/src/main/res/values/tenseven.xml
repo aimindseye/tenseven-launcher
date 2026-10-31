@@ -179,6 +179,8 @@
     <string name="ls_icon_size">Icon size (BlackBerry 7)</string>
     <string name="ls_widget_calendar">Calendar events</string>
     <string name="ls_widget_calendar_detail">Your next event</string>
+    <string name="ls_widget_battery">Battery</string>
+    <string name="ls_widget_battery_detail">Charge level and whether it is charging</string>
     <string name="ls_widget_alarm">Alarm</string>
     <string name="ls_widget_alarm_detail">Your next alarm</string>
     <string name="ls_widget_media">Now playing</string>

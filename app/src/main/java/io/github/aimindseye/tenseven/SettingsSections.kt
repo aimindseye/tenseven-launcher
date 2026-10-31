@@ -212,7 +212,7 @@ internal fun WallpaperSection(state: StartStateRepository) {
     }
 }
 
-/** The Widgets page switch and the Glance widgets. */
+/** The Widgets page switch and the built-in widgets that show on it. */
 @Composable
 internal fun WidgetsSection(state: StartStateRepository) {
     var widgetsPage by remember { mutableStateOf(state.loadWidgetsPage()) }
@@ -226,6 +226,7 @@ internal fun WidgetsSection(state: StartStateRepository) {
             when (widget) {
                 GlanceWidgets.CALENDAR -> R.string.ls_widget_calendar to R.string.ls_widget_calendar_detail
                 GlanceWidgets.ALARM -> R.string.ls_widget_alarm to R.string.ls_widget_alarm_detail
+                GlanceWidgets.BATTERY -> R.string.ls_widget_battery to R.string.ls_widget_battery_detail
                 else -> R.string.ls_widget_media to R.string.ls_widget_media_detail
             }
         SwitchRow(stringResource(title), stringResource(detail), widget in widgets) {

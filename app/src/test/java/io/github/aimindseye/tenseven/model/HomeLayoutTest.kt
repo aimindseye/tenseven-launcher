@@ -79,15 +79,15 @@ class HomeLayoutTest {
     }
 
     @Test
-    fun glanceDefaultsAreWeatherCalendarBatteryMedia() {
-        assertEquals(listOf("calendar", "battery", "media"), GlanceWidgets.normalize(null))
+    fun noBuiltInWidgetIsOnByDefault() {
+        assertEquals(emptyList<String>(), GlanceWidgets.normalize(null))
         assertEquals(listOf("media", "calendar"), GlanceWidgets.normalize(listOf("media", "bogus", "weather", "calendar", "media")))
         assertEquals(emptyList<String>(), GlanceWidgets.normalize(emptyList()))
     }
 
     @Test
     fun glanceWidgetsHideAndShow() {
-        val shown = GlanceWidgets.toggle(GlanceWidgets.DEFAULT, GlanceWidgets.BATTERY)
+        val shown = GlanceWidgets.toggle(GlanceWidgets.toggle(GlanceWidgets.DEFAULT, GlanceWidgets.CALENDAR), GlanceWidgets.MEDIA)
         assertEquals(listOf("calendar", "media"), shown)
         assertEquals(
             listOf("calendar", "media", "battery"),

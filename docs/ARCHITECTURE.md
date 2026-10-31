@@ -39,9 +39,9 @@ Tenseven-only files worth knowing: `model/GridColumns`, `model/HubApps`, `model/
 
 `StartPages.WIDGETS` is the page left of Hub; when the page is on, every pager index is the page's own number plus one (`lead` in `SableStartScreen`). `WidgetHostController` wraps `AppWidgetHost`: allocate id, bind (Android's permission screen the first time), run the widget's setup screen, save the id (`StartStateRepository`, never backed up). The activity forwards `onActivityResult` and starts/stops listening in `onStart`/`onStop`. `ui/WidgetsPage` draws each widget in an `AndroidView` at the height it asks for (`WidgetSizing`); list policy is `model/WidgetList`. From the BlackBerry 7 home it is a detour like Hub (`widgetsGeneration`).
 
-### Widgets on the page and on the home screen
+### Widgets: the page, and nothing on the home
 
-One `WidgetHostController` (one `AppWidgetHost` id) serves two lists, chosen by `WidgetTarget`: `PAGE` (the Widgets page) and `HOME` (full-width tiles on the BlackBerry 10 home). Two hosts with the same id would take the updates from each other. Ids are saved separately (`widget_ids`, `home_widget_ids`) and never backed up. The tiles are drawn by `GlanceFrames` after the Glance frames, read from the `LocalHomeWidgets` composition local that `SableThemeWithWidgets` provides, and are managed from Edit Home (`HostedWidgetsEditor`; changes apply at once, not on Done). Edit Home ends in a bar that stays on screen (`EditBar`: Reset, Cancel, Done).
+One `WidgetHostController` (one `AppWidgetHost` id) serves the Widgets page (`WidgetTarget.PAGE`). The `HOME` target and `home_widget_ids` are kept for old saves but nothing draws them: the BlackBerry 10 home holds only recent-app Active Frames (empty when there are none). The built-in widgets (`GlanceWidgets`: Calendar, Alarm, Battery, Now playing; none on by default, switched in Launcher Settings) are drawn by `BuiltInWidgets` as the top of the Widgets page, passed into `WidgetsPage` as its `builtIn` slot. Edit mode dims an added widget and puts Up, Down, Remove in a row under it. Edit Home ends in a bar that stays on screen (`EditBar`: Reset, Cancel, Done).
 
 ### Settings groups shared with Setup
 
