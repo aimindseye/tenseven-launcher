@@ -255,4 +255,6 @@
     <string name="peek_empty">No conversations right now.</string>
     <string name="peek_count">%1$d new</string>
     <string name="peek_open_hub">Open Hub</string>
+    <string name="ls_lock_preview">Preview the lock layer</string>
+    <string name="ls_lock_preview_detail">Shows it now so you can see the layout. Swipe up or press Enter to leave.</string>
 </resources>
