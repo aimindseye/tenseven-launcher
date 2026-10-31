@@ -21,6 +21,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,13 +67,32 @@ import kotlinx.coroutines.withContext
  * fall behind Launcher Settings. They draw no heading: the caller supplies one.
  */
 
+private val LocalHomeStyleState = compositionLocalOf<MutableState<HomeStyle>?> { null }
+
+/**
+ * Gives every section on one screen the same current home style, so the BlackBerry 7 settings appear or go the moment
+ * the style is picked. A screen that shows several sections wraps them in this; a section alone reads the saved style.
+ */
+@Composable
+internal fun ProvideHomeStyle(
+    state: StartStateRepository,
+    content: @Composable () -> Unit,
+) {
+    val holder = remember { mutableStateOf(state.loadHomeStyle()) }
+    CompositionLocalProvider(LocalHomeStyleState provides holder, content = content)
+}
+
+@Composable
+private fun homeStyleState(state: StartStateRepository): MutableState<HomeStyle> =
+    LocalHomeStyleState.current ?: remember { mutableStateOf(state.loadHomeStyle()) }
+
 /** BlackBerry 7 or BlackBerry 10. */
 @Composable
 internal fun HomeStyleSection(
     state: StartStateRepository,
     firstFocus: FocusRequester? = null,
 ) {
-    var style by remember { mutableStateOf(state.loadHomeStyle()) }
+    var style by homeStyleState(state)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StyleCard(
             title = stringResource(R.string.ls_bb7_title),
@@ -93,13 +115,29 @@ internal fun HomeStyleSection(
     }
 }
 
-/** Columns, rows, icon size and app names, with a small live preview. */
+/**
+ * Columns, rows, icon size and app names, with a small live preview. Only the app names switch also applies to the
+ * BlackBerry 10 home, so the rest shows only while BlackBerry 7 is the home screen style.
+ */
 @Composable
 internal fun IconGridSection(state: StartStateRepository) {
+    val bb7 = homeStyleState(state).value == HomeStyle.Bb7
     var iconSize by remember { mutableStateOf(state.loadBb7IconSize()) }
     var gridColumns by remember { mutableStateOf(state.loadGridColumns()) }
     var rows by remember { mutableStateOf(state.loadBb7HomeRows()) }
     var labels by remember { mutableStateOf(state.loadGridLabels()) }
+    if (!bb7) {
+        SwitchRow(stringResource(R.string.ls_labels), stringResource(R.string.ls_labels_detail), labels) {
+            labels = it
+            state.saveGridLabels(it)
+        }
+        Text(
+            stringResource(R.string.ls_grid_bb7_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
     IconGridPreview(columns = gridColumns, rows = rows, iconSize = iconSize, labels = labels)
     Text(stringResource(R.string.ls_icon_size), style = MaterialTheme.typography.bodyLarge)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -190,9 +228,12 @@ internal fun WallpaperSection(state: StartStateRepository) {
     Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         WallpaperSets.ALL.forEach { set -> WallpaperThumb(set, active = set.id == wallpaperId) { wallpaperId = set.id } }
     }
-    SwitchRow(stringResource(R.string.ls_home_wallpaper), stringResource(R.string.ls_home_wallpaper_detail), homeWallpaper) {
-        homeWallpaper = it
-        state.saveHomeWallpaper(it)
+    // The BlackBerry 7 home always shows the wallpaper, so this switch is for the BlackBerry 10 home only.
+    if (homeStyleState(state).value == HomeStyle.Bb10) {
+        SwitchRow(stringResource(R.string.ls_home_wallpaper), stringResource(R.string.ls_home_wallpaper_detail), homeWallpaper) {
+            homeWallpaper = it
+            state.saveHomeWallpaper(it)
+        }
     }
     fun apply(target: WallpaperTarget) {
         status = R.string.ls_wallpaper_working
