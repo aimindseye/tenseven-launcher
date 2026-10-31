@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import android.graphics.Rect
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,8 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -39,7 +44,10 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,9 +71,23 @@ internal fun HubPeekHost(
     onOpenHub: () -> Unit,
     content: @Composable () -> Unit,
 ) {
+    // With gesture navigation Android takes a swipe from the left edge for Back before the app sees it (a small "<"
+    // arrow appears). Ask it to leave a strip of the edge to us while the peek can be opened. Android allows at most
+    // 200dp of height per edge, so the strip sits halfway down.
+    val view = LocalView.current
+    val density = LocalDensity.current.density
+    var heightPx by remember { mutableIntStateOf(0) }
+    DisposableEffect(view, edgeEnabled, peekOpen, heightPx) {
+        if (edgeEnabled && !peekOpen && heightPx > 0) {
+            val half = (EXCLUSION_DP * density / 2).toInt()
+            val mid = heightPx / 2
+            view.systemGestureExclusionRects = listOf(Rect(0, mid - half, (EDGE_DP * density).toInt(), mid + half))
+        }
+        onDispose { view.systemGestureExclusionRects = emptyList() }
+    }
     Box(
         modifier =
-            Modifier.fillMaxSize().pointerInput(edgeEnabled, peekOpen) {
+            Modifier.fillMaxSize().onSizeChanged { heightPx = it.height }.pointerInput(edgeEnabled, peekOpen) {
                 if (!edgeEnabled || peekOpen) return@pointerInput
                 val edge = EDGE_DP.dp.toPx()
                 val slop = viewConfiguration.touchSlop
@@ -230,4 +252,7 @@ private fun PeekButton(
 }
 
 private const val EDGE_DP = 20
+
+/** Android lets an app exclude at most this much height from the system gestures on one edge. */
+private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
