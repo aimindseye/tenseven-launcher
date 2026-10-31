@@ -6,13 +6,16 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -29,13 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.sableFocusRing
+import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.GlanceWidgets
+import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.StartText
@@ -57,6 +63,9 @@ class LauncherSettingsActivity : ComponentActivity() {
                 var style by remember { mutableStateOf(state.loadHomeStyle()) }
                 var typeToSearch by remember { mutableStateOf(state.loadTypeToSearch()) }
                 var iconSize by remember { mutableStateOf(state.loadBb7IconSize()) }
+                var gridColumns by remember { mutableStateOf(state.loadGridColumns()) }
+                var rows by remember { mutableStateOf(state.loadBb7HomeRows()) }
+                var labels by remember { mutableStateOf(state.loadGridLabels()) }
                 var widgetsPage by remember { mutableStateOf(state.loadWidgetsPage()) }
                 var widgets by remember { mutableStateOf(GlanceWidgets.normalize(state.loadGlanceWidgets())) }
                 LauncherSettings(
@@ -65,6 +74,21 @@ class LauncherSettingsActivity : ComponentActivity() {
                     iconSize = iconSize,
                     widgets = widgets,
                     widgetsPage = widgetsPage,
+                    gridColumns = gridColumns,
+                    rows = rows,
+                    labels = labels,
+                    onGridColumns = {
+                        gridColumns = it
+                        state.saveGridColumns(it)
+                    },
+                    onRows = {
+                        rows = it
+                        state.saveBb7HomeRows(it)
+                    },
+                    onLabels = {
+                        labels = it
+                        state.saveGridLabels(it)
+                    },
                     onStyle = {
                         style = it
                         state.saveHomeStyle(it)
@@ -110,6 +134,12 @@ private fun LauncherSettings(
     iconSize: Bb7IconSize,
     widgets: List<String>,
     widgetsPage: Boolean,
+    gridColumns: Int,
+    rows: Int,
+    labels: Boolean,
+    onGridColumns: (Int) -> Unit,
+    onRows: (Int) -> Unit,
+    onLabels: (Boolean) -> Unit,
     onStyle: (HomeStyle) -> Unit,
     onTypeToSearch: (Boolean) -> Unit,
     onIconSize: (Bb7IconSize) -> Unit,
@@ -156,6 +186,9 @@ private fun LauncherSettings(
                 typeToSearch,
                 onTypeToSearch,
             )
+
+            Section(stringResource(R.string.ls_section_grid))
+            IconGridPreview(columns = gridColumns, rows = rows, iconSize = iconSize, labels = labels)
             Text(stringResource(R.string.ls_icon_size), style = MaterialTheme.typography.bodyLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Bb7IconSize.entries.forEach { size ->
@@ -167,6 +200,29 @@ private fun LauncherSettings(
                     ) { onIconSize(size) }
                 }
             }
+            Text(stringResource(R.string.ls_columns), style = MaterialTheme.typography.bodyLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                GridColumns.OPTIONS.forEach { option ->
+                    Card(
+                        title = if (option == GridColumns.AUTO) stringResource(R.string.ls_auto) else option.toString(),
+                        detail = "",
+                        active = option == gridColumns,
+                        modifier = Modifier.weight(1f),
+                    ) { onGridColumns(option) }
+                }
+            }
+            Text(stringResource(R.string.ls_rows), style = MaterialTheme.typography.bodyLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                (Bb7Home.MIN_HOME_ROWS..Bb7Home.MAX_HOME_ROWS).forEach { option ->
+                    Card(
+                        title = option.toString(),
+                        detail = "",
+                        active = option == rows,
+                        modifier = Modifier.weight(1f),
+                    ) { onRows(option) }
+                }
+            }
+            SwitchRow(stringResource(R.string.ls_labels), stringResource(R.string.ls_labels_detail), labels, onLabels)
 
             Section(stringResource(R.string.ls_section_widgets))
             SwitchRow(
@@ -205,6 +261,55 @@ private fun LauncherSettings(
         }
     }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+}
+
+/**
+ * A small picture of the icon grid: the chosen number of columns and rows of icon squares, each with a name bar when
+ * labels are on, at the chosen icon size. A stand-in for the BlackBerry 7 tray, so the choices show as they change.
+ */
+@Composable
+private fun IconGridPreview(
+    columns: Int,
+    rows: Int,
+    iconSize: Bb7IconSize,
+    labels: Boolean,
+) {
+    val shownColumns = if (columns == GridColumns.AUTO) 5 else columns
+    val icon = (iconSize.iconDp * 0.6f).dp
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = Color(0xFF14181F),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            repeat(rows) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    repeat(shownColumns) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                Modifier
+                                    .size(icon)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), MaterialTheme.shapes.small),
+                            )
+                            if (labels) {
+                                Box(
+                                    Modifier
+                                        .padding(top = 3.dp)
+                                        .size(width = icon, height = 4.dp)
+                                        .background(Color.White.copy(alpha = 0.6f), MaterialTheme.shapes.extraSmall),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -208,4 +208,10 @@
     <string name="bb7_widgets">Widgets</string>
     <string name="ls_widgets_page">Widgets page</string>
     <string name="ls_widgets_page_detail">A page left of Hub for widgets from other apps</string>
+    <string name="ls_section_grid">Icon grid</string>
+    <string name="ls_columns">Columns</string>
+    <string name="ls_rows">Rows on the home screen</string>
+    <string name="ls_auto">Auto</string>
+    <string name="ls_labels">App names under icons</string>
+    <string name="ls_labels_detail">Turn off for a cleaner grid of icons only</string>
 </resources>
