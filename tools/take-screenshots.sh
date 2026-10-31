@@ -110,11 +110,12 @@ start() { # start <activity class> [extra args...]
 # to the front and ignores the new step, so every shot would show the same page.
 start_fresh() { # start_fresh <activity class> [extra args...]
   local cls="$1"; shift
-  adbs input keyevent KEYCODE_HOME
+  # No Home key here: Tenseven is the home app, so pressing it (or stopping it) makes Android start it again, and that
+  # start can land on top of the screen asked for.
   adbs am force-stop "$PKG"
-  sleep 0.5
+  sleep 1.5
   adbs am start -S -n "$PKG/$ACT.$cls" "$@" >/dev/null
-  sleep 3
+  sleep 4
 }
 
 home() { adbs input keyevent KEYCODE_HOME; sleep 1.2; }
@@ -182,7 +183,9 @@ wake
 # --- Setup: each step on its own, then the overview -----------------------------------------------------------------
 if [ "$RELEASE" = 0 ]; then
   echo "Setup steps"
-  set_pref boolean onboarding_done false
+  # Setup is "done" while the steps are captured: with it false, Tenseven's home opens the first-run Setup (all steps,
+  # "Step 1 of 6") on top of the step this script asked for. A single step ignores the flag.
+  set_pref boolean onboarding_done true
   for step in HOME STYLE CONTACTS PHOTOS NOTIFICATIONS USAGE LOOK GRID WIDGETS HUB LOCK EXTRAS; do
     start_fresh OnboardingActivity --es io.github.aimindseye.tenseven.extra.SETUP_STEP "$step"
     shot "setup-$(echo "$step" | tr '[:upper:]' '[:lower:]')"
