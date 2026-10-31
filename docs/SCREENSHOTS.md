@@ -38,6 +38,15 @@ Frames, a widget tile, Edit Home with its bottom bar, Command, All Apps with a p
 menu, home icons and All panel, Sound Profiles and an extra app. Type `s` to skip one. The last prompt wakes the
 screen to capture the lock layer on a real lock screen (switch it on and allow both permissions first).
 
+## While it runs
+
+- **Automatic part (about the first 50 shots, roughly 5 minutes):** do nothing. Leave the phone unlocked, on the cable
+  and awake, and do not touch it, since a touch lands on whatever screen is showing.
+- **Guided part:** the script prints the screen it wants, you move the phone to that screen, then press Enter in the
+  terminal. Type `s` to skip a screen.
+- **If something looks wrong,** just run it again with a new `-o` folder. It puts your preferences back each time, so
+  running it twice is safe.
+
 Files are numbered in the order taken (`01-setup-home.png`, `02-setup-style.png`, ...).
 
 ## What it changes on the phone
