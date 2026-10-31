@@ -10,7 +10,8 @@ import android.os.Process
 import io.github.aimindseye.tenseven.model.WidgetList
 
 /**
- * Hosts other apps' Android widgets for the Widgets page.
+ * Hosts other apps' Android widgets, on the Widgets page and as tiles on the home screen. One host serves both lists
+ * (a second host with the same id would take the updates from the first).
  *
  * Adding one: allocate an id, ask Android to bind it to the chosen provider (the first time it shows its own
  * permission screen), run the widget's setup screen if it has one, then keep the id. Android reports each step
@@ -20,12 +21,13 @@ import io.github.aimindseye.tenseven.model.WidgetList
 class WidgetHostController(
     private val activity: Activity,
     private val state: StartStateRepository,
-    private val onChanged: (List<Int>) -> Unit,
+    private val onChanged: (WidgetTarget, List<Int>) -> Unit,
 ) {
     private val manager: AppWidgetManager = AppWidgetManager.getInstance(activity)
     private val host = AppWidgetHost(activity.applicationContext, HOST_ID)
     private var pendingId = NO_ID
     private var pendingInfo: AppWidgetProviderInfo? = null
+    private var pendingTarget = WidgetTarget.PAGE
     private var listening = false
 
     /** The widgets on offer: every provider Android lists for this user and profiles. */
@@ -34,12 +36,26 @@ class WidgetHostController(
     fun info(id: Int): AppWidgetProviderInfo? = runCatching { manager.getAppWidgetInfo(id) }.getOrNull()
 
     /** Saved ids that Android still has a provider for; stale ones are released and forgotten. */
-    fun load(): List<Int> {
-        val saved = state.loadWidgetIds()
+    fun load(target: WidgetTarget = WidgetTarget.PAGE): List<Int> {
+        val saved = idsOf(target)
         val known = WidgetList.keepKnown(saved) { info(it) != null }
         (saved - known.toSet()).forEach { runCatching { host.deleteAppWidgetId(it) } }
-        if (known != saved) state.saveWidgetIds(known)
+        if (known != saved) store(target, known)
         return known
+    }
+
+    private fun idsOf(target: WidgetTarget): List<Int> =
+        when (target) {
+            WidgetTarget.PAGE -> state.loadWidgetIds()
+            WidgetTarget.HOME -> state.loadHomeWidgetIds()
+        }
+
+    private fun store(
+        target: WidgetTarget,
+        ids: List<Int>,
+    ) = when (target) {
+        WidgetTarget.PAGE -> state.saveWidgetIds(ids)
+        WidgetTarget.HOME -> state.saveHomeWidgetIds(ids)
     }
 
     fun startListening() {
@@ -59,8 +75,12 @@ class WidgetHostController(
         return runCatching { host.createView(activity, id, info) }.getOrNull()
     }
 
-    fun begin(info: AppWidgetProviderInfo) {
+    fun begin(
+        info: AppWidgetProviderInfo,
+        target: WidgetTarget = WidgetTarget.PAGE,
+    ) {
         cancelPending()
+        pendingTarget = target
         val id = runCatching { host.allocateAppWidgetId() }.getOrNull() ?: return
         pendingId = id
         pendingInfo = info
@@ -92,13 +112,15 @@ class WidgetHostController(
 
     fun remove(id: Int) {
         runCatching { host.deleteAppWidgetId(id) }
-        save(WidgetList.remove(state.loadWidgetIds(), id))
+        WidgetTarget.entries.filter { id in idsOf(it) }.forEach { save(it, WidgetList.remove(idsOf(it), id)) }
     }
 
     fun move(
         id: Int,
         delta: Int,
-    ) = save(WidgetList.move(state.loadWidgetIds(), id, delta))
+    ) {
+        WidgetTarget.entries.filter { id in idsOf(it) }.forEach { save(it, WidgetList.move(idsOf(it), id, delta)) }
+    }
 
     private fun configureOrFinish() {
         val info = pendingInfo
@@ -115,7 +137,7 @@ class WidgetHostController(
         val id = pendingId
         pendingId = NO_ID
         pendingInfo = null
-        if (id != NO_ID) save(WidgetList.add(state.loadWidgetIds(), id))
+        if (id != NO_ID) save(pendingTarget, WidgetList.add(idsOf(pendingTarget), id))
     }
 
     private fun cancelPending() {
@@ -124,9 +146,12 @@ class WidgetHostController(
         pendingInfo = null
     }
 
-    private fun save(ids: List<Int>) {
-        state.saveWidgetIds(ids)
-        onChanged(ids)
+    private fun save(
+        target: WidgetTarget,
+        ids: List<Int>,
+    ) {
+        store(target, ids)
+        onChanged(target, ids)
     }
 
     companion object {
@@ -139,3 +164,6 @@ class WidgetHostController(
         private const val EXTRA_PROVIDER_PROFILE = "appWidgetProviderProfile"
     }
 }
+
+/** Where a widget is shown: its own page beside Home and the Hub, or as a tile on the home screen. */
+enum class WidgetTarget { PAGE, HOME }

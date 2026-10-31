@@ -7,6 +7,10 @@ package io.github.aimindseye.tenseven.conversations
 import android.Manifest
 import android.app.Notification
 import android.app.RemoteInput
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -14,6 +18,11 @@ import android.provider.ContactsContract
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.content.ContextCompat
+import io.github.aimindseye.tenseven.model.HubApps
+import io.github.aimindseye.tenseven.model.LockLayer
+import io.github.aimindseye.tenseven.platform.LockLayerLauncher
+import io.github.aimindseye.tenseven.platform.LockLayerState
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
  * Turns message and email notifications into [HubNotification]s in [ConversationHub]. Only runs once the
@@ -21,27 +30,64 @@ import androidx.core.content.ContextCompat
  * never sends it anywhere.
  */
 class ConversationListenerService : NotificationListenerService() {
+    private val screenOn =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) = LockLayerLauncher.showIfLocked(context)
+        }
+    private var screenOnRegistered = false
+    private val startState by lazy { StartStateRepository(this) }
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         ConversationHub.replace(activeNotifications.orEmpty().mapNotNull(::toHubNotification))
+        refreshLockCounts()
+        if (!screenOnRegistered) {
+            ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
+            screenOnRegistered = true
+        }
     }
 
     override fun onListenerDisconnected() {
         ConversationHub.clear()
+        LockLayerState.update(emptyMap())
+        if (screenOnRegistered) {
+            runCatching { unregisterReceiver(screenOn) }
+            screenOnRegistered = false
+        }
         super.onListenerDisconnected()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         toHubNotification(sbn)?.let(ConversationHub::upsert)
+        refreshLockCounts()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         ConversationHub.remove(sbn.key)
+        refreshLockCounts()
+    }
+
+    /** Counts per app for the lock layer: how many notifications wait, nothing of what they say. */
+    private fun refreshLockCounts() {
+        val waiting =
+            activeNotifications.orEmpty().map {
+                val flags = it.notification?.flags ?: 0
+                Triple(
+                    it.packageName,
+                    flags and Notification.FLAG_ONGOING_EVENT != 0,
+                    flags and Notification.FLAG_GROUP_SUMMARY != 0,
+                )
+            }
+        LockLayerState.update(LockLayer.tally(waiting, packageName))
     }
 
     private fun toHubNotification(sbn: StatusBarNotification): HubNotification? {
         val notification = sbn.notification ?: return null
         if (sbn.packageName == packageName || notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return null
+        if (!HubApps.isIncluded(startState.loadHubExcludedApps(), sbn.packageName)) return null
         val style = messagingStyleOf(notification)
         val extracted = style?.let(::extractMessages).orEmpty()
         if (!isConversationNotification(notification.category, extracted.isNotEmpty())) return null

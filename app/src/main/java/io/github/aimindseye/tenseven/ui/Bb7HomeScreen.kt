@@ -70,6 +70,7 @@ import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
+import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
@@ -130,6 +131,9 @@ fun Bb7HomeScreen(
     /** Apps placed in the empty space between the banner and the tray (Add to home screen), in order. */
     desktopKeys: List<String> = emptyList(),
     onDesktopChanged: (List<String>) -> Unit = {},
+    /** Icon grid (Launcher Settings): columns (0 = as many as fit) and whether icons carry their names. */
+    gridColumns: Int = GridColumns.AUTO,
+    showLabels: Boolean = true,
 ) {
     val context = LocalContext.current
     val usage = remember(apps, refreshGeneration, homeGeneration) { AppUsageRepository(context).load() }
@@ -413,7 +417,12 @@ fun Bb7HomeScreen(
                             true
                         },
             ) {
-                val columns = Bb7Home.columns(maxWidth.value.toInt(), iconSize.cellDp)
+                val columns =
+                    GridColumns.resolve(
+                        chosen = gridColumns,
+                        widthDp = maxWidth.value.toInt(),
+                        autoColumns = Bb7Home.columns(maxWidth.value.toInt(), iconSize.cellDp),
+                    )
                 SideEffect { keyColumns = columns }
                 val swipe = with(LocalDensity.current) { SWIPE_DP.dp.toPx() }
                 val rowPx = with(LocalDensity.current) { ROW_DP.dp.toPx() }
@@ -460,6 +469,7 @@ fun Bb7HomeScreen(
                             apps = desktopApps,
                             columns = columns,
                             iconDp = iconSize.iconDp,
+                            showLabels = showLabels,
                             selected = if (inDesktop) deskIndex else -1,
                             moving = moving,
                             modifier = Modifier.weight(1f),
@@ -477,6 +487,7 @@ fun Bb7HomeScreen(
                         columns = columns,
                         open = open || searching,
                         iconDp = iconSize.iconDp,
+                        showLabels = showLabels,
                         moving = moving,
                         scrim = Color.Black.copy(alpha = Bb7Scrim.trayAlpha(scrimLevel)),
                         onResize = { dragged ->
@@ -647,6 +658,7 @@ private fun Bb7Tray(
     columns: Int,
     open: Boolean,
     iconDp: Int,
+    showLabels: Boolean,
     moving: Boolean,
     selected: Int,
     scrim: Color,
@@ -722,6 +734,7 @@ private fun Bb7Tray(
                 Bb7IconCell(
                     app = app,
                     iconDp = iconDp,
+                    showLabel = showLabels,
                     selected = isSelected,
                     moving = moving,
                     onLaunch = { onLaunch(app) },
@@ -738,6 +751,7 @@ private fun Bb7Tray(
 private fun Bb7IconCell(
     app: AppEntry,
     iconDp: Int,
+    showLabel: Boolean,
     selected: Boolean,
     moving: Boolean,
     onLaunch: () -> Unit,
@@ -758,8 +772,8 @@ private fun Bb7IconCell(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AppMark(app = app, size = iconDp)
-        Spacer(Modifier.height(2.dp))
-        Text(
+        if (showLabel) Spacer(Modifier.height(2.dp))
+        if (showLabel) Text(
             text = app.label,
             color = Color.White,
             fontSize = 11.sp,
@@ -779,6 +793,7 @@ private fun Bb7Desktop(
     apps: List<AppEntry>,
     columns: Int,
     iconDp: Int,
+    showLabels: Boolean,
     selected: Int,
     moving: Boolean,
     modifier: Modifier,
@@ -804,6 +819,7 @@ private fun Bb7Desktop(
             Bb7IconCell(
                 app = app,
                 iconDp = iconDp,
+                showLabel = showLabels,
                 selected = index == selected,
                 moving = moving,
                 onLaunch = { onLaunch(app) },

@@ -84,10 +84,18 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_BB7_ICON_SIZE,
                 StartStateRepository.KEY_WIDGETS_PAGE,
                 StartStateRepository.KEY_BB7_DESKTOP,
+                StartStateRepository.KEY_GRID_COLUMNS,
+                StartStateRepository.KEY_GRID_LABELS,
+                StartStateRepository.KEY_LOCK_LAYER,
+                StartStateRepository.KEY_HUB_EXCLUDED,
+                StartStateRepository.KEY_HUB_PEEK_TEXT,
+                StartStateRepository.KEY_APPEARANCE_MODE,
+                StartStateRepository.KEY_APPEARANCE_ACCENT,
             )
         assertEquals(owned, LauncherBackup.keys)
         assertFalse(LauncherBackup.keys.contains(StartStateRepository.KEY_ONBOARDING_DONE))
         // Widget ids belong to this phone's widget host; restoring them elsewhere would point at nothing.
         assertFalse(LauncherBackup.keys.contains(StartStateRepository.KEY_WIDGET_IDS))
+        assertFalse(LauncherBackup.keys.contains(StartStateRepository.KEY_HOME_WIDGET_IDS))
     }
 }

@@ -29,7 +29,6 @@ import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.applySableSystemBars
-import io.github.aimindseye.tenseven.design.rememberGlobalSableAppearance
 import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
 import io.github.aimindseye.tenseven.design.writeGlobalSableAppearance
 import io.github.aimindseye.tenseven.model.ActiveFrame
@@ -39,6 +38,7 @@ import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.GlanceWidgets
+import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -53,6 +53,7 @@ import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
+import io.github.aimindseye.tenseven.platform.WidgetTarget
 import io.github.aimindseye.tenseven.ui.Bb7HomeScreen
 import io.github.aimindseye.tenseven.ui.SableStartScreen
 import java.util.concurrent.Executors
@@ -114,10 +115,17 @@ class SableStartActivity : ComponentActivity() {
     private val bb7Scrim = mutableStateOf(Bb7Scrim.DEFAULT)
     private val bb7IconSize = mutableStateOf(Bb7IconSize.DEFAULT)
     private val typeToSearch = mutableStateOf(true)
+    private val gridColumns = mutableStateOf(GridColumns.AUTO)
+    private val gridLabels = mutableStateOf(true)
     private val widgetsPageEnabled = mutableStateOf(true)
     private val widgetIds = mutableStateOf<List<Int>>(emptyList())
     private val widgetsGeneration = mutableStateOf(0)
-    private val widgetController by lazy { WidgetHostController(this, startStateRepository) { widgetIds.value = it } }
+    private val homeWidgetIds = mutableStateOf<List<Int>>(emptyList())
+    private val widgetController by lazy {
+        WidgetHostController(this, startStateRepository) { target, ids ->
+            if (target == WidgetTarget.HOME) homeWidgetIds.value = ids else widgetIds.value = ids
+        }
+    }
     private val homeWidgets = mutableStateOf(GlanceWidgets.DEFAULT)
     private var opaqueWindowBackground: Drawable? = null
 
@@ -231,8 +239,11 @@ class SableStartActivity : ComponentActivity() {
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()
+        gridColumns.value = startStateRepository.loadGridColumns()
+        gridLabels.value = startStateRepository.loadGridLabels()
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
+        homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         recentTasksRepository = RecentTasksRepository(this)
         usageRecentsRepository = UsageRecentsRepository(this)
@@ -285,7 +296,7 @@ class SableStartActivity : ComponentActivity() {
         }
 
         setContent {
-            val appearance = rememberGlobalSableAppearance()
+            val appearance = rememberLauncherAppearance()
 
             SideEffect {
                 applySableSystemBars(
@@ -332,6 +343,8 @@ class SableStartActivity : ComponentActivity() {
                     onOpenMenu = ::showBb7Menu,
                     onOpenCommand = ::openCommandFromBb7,
                     iconSize = bb7IconSize.value,
+                    gridColumns = gridColumns.value,
+                    showLabels = gridLabels.value,
                     widgets = homeWidgets.value,
                     onDoubleTapEmpty = doubleTapLockCallback(),
                     panels = bb7Panels.value,
@@ -392,7 +405,9 @@ class SableStartActivity : ComponentActivity() {
                     widgetsPage = widgetsPageEnabled.value,
                     widgetsController = widgetController,
                     widgetIds = widgetIds.value,
+                    homeWidgetIds = homeWidgetIds.value,
                     widgetsGeneration = widgetsGeneration.value,
+                    showIconLabels = gridLabels.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
                     onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
@@ -412,9 +427,11 @@ class SableStartActivity : ComponentActivity() {
                         }
                     },
                     onAppearanceChanged = { next ->
+                        startStateRepository.saveAppearance(next.mode.stableValue, next.accent.stableValue)
                         writeGlobalSableAppearance(this@SableStartActivity, next)
                     },
                     onResetAppearance = {
+                        startStateRepository.saveAppearance(null, null)
                         writeGlobalSableAppearance(
                             this@SableStartActivity,
                             io.github.aimindseye.tenseven.design.SableAppearance(),
@@ -473,8 +490,11 @@ class SableStartActivity : ComponentActivity() {
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()
+        gridColumns.value = startStateRepository.loadGridColumns()
+        gridLabels.value = startStateRepository.loadGridLabels()
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
+        homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         scheduleInventoryRefresh()
         refreshFrames()

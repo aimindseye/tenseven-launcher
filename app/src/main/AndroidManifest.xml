@@ -9,7 +9,11 @@
 
     <!-- Hub page Contacts tab: names, favourites and one number per person, read on the device and never
          stored. Revocable in Settings; the tab then asks again. -->
+    <!-- Sets one of Tenseven's own wallpapers when the user picks one in Launcher Settings. A normal permission, granted at install. -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Only for the optional lock layer: lets it start over the lock screen when the screen wakes. Off until the user turns it on. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
@@ -176,6 +180,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
+
+        <!-- Hub settings: clear the Hub, choose which apps feed it, and whether message text may be shown. -->
+        <activity
+            android:name=".HubSettingsActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/hub_settings" />
+
+        <!-- The optional lock layer: a BlackBerry-style cover over the system lock screen. The real lock stays underneath. -->
+        <activity
+            android:name=".LockLayerActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Tenseven.LockLayer"
+            android:turnScreenOn="true" />
 
         <!-- First-run setup and "Setup and permissions": the home role, then each optional permission. -->
         <activity

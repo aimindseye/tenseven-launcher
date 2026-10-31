@@ -2,6 +2,7 @@
 // Apache License 2.0. Changed: package and imports renamed for Tenseven; native Rust calls replaced by Kotlin where noted.
 package io.github.aimindseye.tenseven.extras.notes
 
+import io.github.aimindseye.tenseven.LauncherTheme
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
@@ -9,7 +10,6 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.extras.ExtraKeyAction
 import io.github.aimindseye.tenseven.extras.ExtraKeys
 import io.github.aimindseye.tenseven.extras.notes.core.NotesKeys
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         controller = NotesController(this)
         controller.load()
         setContent {
-            SableGlobalTheme(window = window) {
+            LauncherTheme(window = window) {
                 NotesApp(controller.state, controller.actions)
             }
         }

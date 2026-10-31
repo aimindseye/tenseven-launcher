@@ -2,6 +2,7 @@
 // Apache License 2.0. Changed: package and imports renamed for Tenseven; native Rust calls replaced by Kotlin where noted.
 package io.github.aimindseye.tenseven.extras.calculator
 
+import io.github.aimindseye.tenseven.LauncherTheme
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.KeyEvent
@@ -35,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.extras.calculator.CalculatorText.t
 import io.github.aimindseye.tenseven.extras.convert.ConverterScreen
 import io.github.aimindseye.tenseven.design.SableActionButton
-import io.github.aimindseye.tenseven.design.SableGlobalTheme
 import io.github.aimindseye.tenseven.design.SableHeroHeader
 import io.github.aimindseye.tenseven.design.SableScrollableScreen
 import io.github.aimindseye.tenseven.design.SableSpacing
@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity() {
         check(nativeQualification.startsWith("PASS:")) { nativeQualification }
 
         setContent {
-            SableGlobalTheme(window = window) {
+            LauncherTheme(window = window) {
                 CalculatorApp()
             }
         }

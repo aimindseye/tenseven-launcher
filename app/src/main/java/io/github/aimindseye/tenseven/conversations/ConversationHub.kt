@@ -104,6 +104,12 @@ object ConversationHub {
 
     internal fun clear() = update { emptyList() }
 
+    /** Forgets what the Hub holds for apps the user turned off, now. Their notifications in the shade are untouched. */
+    internal fun dropPackages(packages: Set<String>) = update { old -> old.filterNot { it.packageName in packages } }
+
+    /** The "Clear the Hub now" button: the Hub's in-memory copy goes; the shade keeps its notifications. */
+    fun clearNow() = clear()
+
     private fun update(change: (List<HubNotification>) -> List<HubNotification>) {
         synchronized(lock) {
             items = change(items)
