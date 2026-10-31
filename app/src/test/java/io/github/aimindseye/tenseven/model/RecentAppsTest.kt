@@ -28,4 +28,52 @@ class RecentAppsTest {
         assertEquals(listOf("p30", "p29"), RecentApps.select(many, emptySet(), limit = 2))
         assertEquals(emptyList<String>(), RecentApps.select(emptyList(), emptySet()))
     }
+
+    private fun resumed(
+        pkg: String,
+        cls: String,
+        time: Long,
+    ) = UsageSample(pkg, cls, resumed = true, timeMs = time)
+
+    private fun left(
+        pkg: String,
+        cls: String,
+        time: Long,
+    ) = UsageSample(pkg, cls, resumed = false, timeMs = time)
+
+    @Test
+    fun aBlinkOfAnActivityIsNotOpening() {
+        val samples =
+            listOf(
+                resumed("mail", "Main", 1_000),
+                left("mail", "Main", 60_000),
+                // A permission prompt another app flashes up for half a second.
+                resumed("permissioncontroller", "Grant", 61_000),
+                left("permissioncontroller", "Grant", 61_500),
+            )
+        assertEquals(listOf("mail"), RecentApps.opened(samples).map { it.packageName })
+    }
+
+    @Test
+    fun theAppInFrontNowCounts() {
+        val samples = listOf(resumed("maps", "Main", 5_000))
+        assertEquals(listOf(at("maps", 5_000)), RecentApps.opened(samples))
+    }
+
+    @Test
+    fun eachActivityIsMeasuredOnItsOwn() {
+        val samples =
+            listOf(
+                resumed("a", "One", 0),
+                resumed("a", "Two", 100),
+                left("a", "Two", 300),
+                left("a", "One", 9_000),
+            )
+        assertEquals(listOf(at("a", 0)), RecentApps.opened(samples))
+    }
+
+    @Test
+    fun aLeaveWithoutAnEarlierResumeIsIgnored() {
+        assertEquals(emptyList<ForegroundEvent>(), RecentApps.opened(listOf(left("a", "One", 5_000))))
+    }
 }

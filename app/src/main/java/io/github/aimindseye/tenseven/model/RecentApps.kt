@@ -6,6 +6,14 @@ data class ForegroundEvent(
     val timeMs: Long,
 )
 
+/** One step of an activity's life from Android's usage events: it came to the front, or left it. */
+data class UsageSample(
+    val packageName: String,
+    val className: String,
+    val resumed: Boolean,
+    val timeMs: Long,
+)
+
 /**
  * Apps started from this launcher, with the time, kept so the recent-apps row is right the moment you come back
  * (Android's usage events can lag, and need a permission the user may not have given). Pure, unit tested.
@@ -44,6 +52,34 @@ object RecentLaunches {
  */
 object RecentApps {
     const val MAX = 12
+
+    /** An app has to stay in front this long to count as opened; anything quicker is a pass-through screen. */
+    const val MIN_FOREGROUND_MS = 2_000L
+
+    /**
+     * The times apps were really opened, from usage events: an activity counts when it stayed in front for at least
+     * [minForegroundMs], or is in front now. Dialogs and pass-through screens that other apps start for a moment
+     * (permission prompts, pickers, sign-in hops) come to the front for a blink and are left out.
+     */
+    fun opened(
+        samples: List<UsageSample>,
+        minForegroundMs: Long = MIN_FOREGROUND_MS,
+    ): List<ForegroundEvent> {
+        val inFront = mutableMapOf<Pair<String, String>, Long>()
+        val opened = mutableListOf<ForegroundEvent>()
+        for (sample in samples.sortedBy(UsageSample::timeMs)) {
+            val key = sample.packageName to sample.className
+            if (sample.resumed) {
+                inFront[key] = sample.timeMs
+            } else {
+                val since = inFront.remove(key) ?: continue
+                if (sample.timeMs - since >= minForegroundMs) opened.add(ForegroundEvent(sample.packageName, since))
+            }
+        }
+        // Whatever is still in front now has been opened.
+        inFront.forEach { (key, since) -> opened.add(ForegroundEvent(key.first, since)) }
+        return opened
+    }
 
     /** Most recent first, each app once, without [excluded] packages. */
     fun select(
