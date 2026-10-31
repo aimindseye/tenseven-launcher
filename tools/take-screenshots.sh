@@ -104,6 +104,17 @@ start() { # start <activity class> [extra args...]
   sleep 1.2
 }
 
+# Like start, but stops the app first (-S). Without that, Android only brings the Setup task that is already open
+# to the front and ignores the new step, so every shot would show the same page.
+start_fresh() { # start_fresh <activity class> [extra args...]
+  local cls="$1"; shift
+  adbs input keyevent KEYCODE_HOME
+  adbs am force-stop "$PKG"
+  sleep 0.5
+  adbs am start -W -S -n "$PKG/$ACT.$cls" "$@" >/dev/null
+  sleep 1.2
+}
+
 home() { adbs input keyevent KEYCODE_HOME; sleep 1.2; }
 
 # Scrolls the current screen down and captures each step until the picture stops changing.
@@ -171,13 +182,13 @@ if [ "$RELEASE" = 0 ]; then
   echo "Setup steps"
   set_pref boolean onboarding_done false
   for step in HOME STYLE CONTACTS PHOTOS NOTIFICATIONS USAGE LOOK GRID WIDGETS HUB LOCK EXTRAS; do
-    start OnboardingActivity --es io.github.aimindseye.tenseven.extra.SETUP_STEP "$step"
+    start_fresh OnboardingActivity --es io.github.aimindseye.tenseven.extra.SETUP_STEP "$step"
     shot "setup-$(echo "$step" | tr '[:upper:]' '[:lower:]')"
     case "$step" in LOOK|GRID|LOCK|EXTRAS) adbs input swipe "$X" "$LOW" "$X" "$TOP" 400; sleep 0.6; shot "setup-$(echo "$step" | tr '[:upper:]' '[:lower:]')-more" ;; esac
   done
   echo "Setup overview (the screen Launcher Settings, then Setup, opens)"
   set_pref boolean onboarding_done true
-  start OnboardingActivity
+  start_fresh OnboardingActivity
   scroll_shots setup-overview
 fi
 
