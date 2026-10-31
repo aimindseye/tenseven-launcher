@@ -46,6 +46,12 @@ object LauncherBackup {
             "bb7_icon_size" to Type.NUMBER,
             "widgets_page" to Type.NUMBER,
             "bb7_desktop" to Type.TEXT,
+            "grid_columns" to Type.NUMBER,
+            "grid_labels" to Type.NUMBER,
+            "hub_excluded_apps" to Type.ITEMS,
+            "hub_peek_text" to Type.NUMBER,
+            "appearance_mode" to Type.TEXT,
+            "appearance_accent" to Type.TEXT,
         )
 
     val keys: Set<String> get() = ALLOWED.keys

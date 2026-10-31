@@ -7,6 +7,7 @@ import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.BackupValue
+import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.LauncherBackup
 import io.github.aimindseye.tenseven.model.WidgetList
@@ -225,6 +226,55 @@ class StartStateRepository(
 
     fun saveBb7Desktop(keys: List<String>) = saveOrdered(KEY_BB7_DESKTOP, keys)
 
+    /** Icon grid: columns (0 = as many as fit) and whether icons carry their names. */
+    fun loadGridColumns(): Int = GridColumns.normalize(preferences.getInt(KEY_GRID_COLUMNS, GridColumns.AUTO))
+
+    fun saveGridColumns(columns: Int) {
+        preferences.edit().putInt(KEY_GRID_COLUMNS, GridColumns.normalize(columns)).apply()
+    }
+
+    fun loadGridLabels(): Boolean = preferences.getInt(KEY_GRID_LABELS, 1) != 0
+
+    fun saveGridLabels(shown: Boolean) {
+        preferences.edit().putInt(KEY_GRID_LABELS, if (shown) 1 else 0).apply()
+    }
+
+    /** Packages whose notifications the Hub ignores ("Apps in the Hub": the ones switched off). */
+    fun loadHubExcludedApps(): Set<String> = preferences.getStringSet(KEY_HUB_EXCLUDED, null).orEmpty().toSet()
+
+    fun saveHubExcludedApps(packages: Set<String>) {
+        preferences.edit().putStringSet(KEY_HUB_EXCLUDED, packages.toSet()).apply()
+    }
+
+    /** Whether the Hub peek on the home screen shows message text (off: names and counts only). */
+    fun loadHubPeekText(): Boolean = preferences.getInt(KEY_HUB_PEEK_TEXT, 0) != 0
+
+    fun saveHubPeekText(shown: Boolean) {
+        preferences.edit().putInt(KEY_HUB_PEEK_TEXT, if (shown) 1 else 0).apply()
+    }
+
+    /** Android widget ids shown as tiles on the BlackBerry 10 home. Device-specific, so never part of a backup. */
+    fun loadHomeWidgetIds(): List<Int> = WidgetList.parse(preferences.getString(KEY_HOME_WIDGET_IDS, null))
+
+    fun saveHomeWidgetIds(ids: List<Int>) {
+        preferences.edit().putString(KEY_HOME_WIDGET_IDS, WidgetList.format(ids)).apply()
+    }
+
+    /** The theme chosen in Tenseven (mode and accent, stable values); null means follow the system's Sable appearance. */
+    fun loadAppearanceMode(): String? = preferences.getString(KEY_APPEARANCE_MODE, null)
+
+    fun loadAppearanceAccent(): String? = preferences.getString(KEY_APPEARANCE_ACCENT, null)
+
+    fun saveAppearance(
+        mode: String?,
+        accent: String?,
+    ) {
+        preferences.edit().apply {
+            if (mode == null) remove(KEY_APPEARANCE_MODE) else putString(KEY_APPEARANCE_MODE, mode)
+            if (accent == null) remove(KEY_APPEARANCE_ACCENT) else putString(KEY_APPEARANCE_ACCENT, accent)
+        }.apply()
+    }
+
     /** Whether the Widgets page is the page left of Hub (default on). */
     fun loadWidgetsPage(): Boolean = preferences.getInt(KEY_WIDGETS_PAGE, 1) != 0
 
@@ -294,6 +344,13 @@ class StartStateRepository(
         const val KEY_BB7_ICON_SIZE = "bb7_icon_size"
         const val KEY_WIDGETS_PAGE = "widgets_page"
         const val KEY_BB7_DESKTOP = "bb7_desktop"
+        const val KEY_GRID_COLUMNS = "grid_columns"
+        const val KEY_GRID_LABELS = "grid_labels"
+        const val KEY_HUB_EXCLUDED = "hub_excluded_apps"
+        const val KEY_HUB_PEEK_TEXT = "hub_peek_text"
+        const val KEY_HOME_WIDGET_IDS = "home_widget_ids"
+        const val KEY_APPEARANCE_MODE = "appearance_mode"
+        const val KEY_APPEARANCE_ACCENT = "appearance_accent"
         const val KEY_WIDGET_IDS = "widget_ids"
         const val KEY_GLANCE_WIDGETS = "glance_widgets"
         // v2: the BB10 Home shows the status dials by default; sets saved by the

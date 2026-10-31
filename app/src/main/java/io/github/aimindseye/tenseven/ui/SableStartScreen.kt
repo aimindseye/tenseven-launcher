@@ -388,6 +388,7 @@ fun SableStartScreen(
     widgetsController: WidgetHostController? = null,
     widgetIds: List<Int> = emptyList(),
     widgetsGeneration: Int = 0,
+    showIconLabels: Boolean = true,
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
     initialHiddenHomeSections: Set<String>? = null,
     onHiddenHomeSectionsChanged: (Set<String>?) -> Unit = {},
@@ -744,6 +745,7 @@ fun SableStartScreen(
                                             onLaunchSecond = ::launchSecond,
                                             onOpenPeek = { app -> openPeek(app, SableStartDestination.Start) },
                                             onEditHome = { destination = SableStartDestination.EditHome },
+                                            showLabels = showIconLabels,
                                         )
                                     }
                                 }
@@ -1875,6 +1877,7 @@ private fun AppGridPage(
     onLaunchSecond: (AppEntry) -> Unit,
     onOpenPeek: (AppEntry) -> Unit,
     onEditHome: () -> Unit,
+    showLabels: Boolean = true,
 ) {
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(active, apps.firstOrNull()?.stableKey()) {
@@ -1894,7 +1897,7 @@ private fun AppGridPage(
             AppGrid.iconSizeFor(
                 cellWidthDp = (maxWidth / AppGrid.COLUMNS).value.toInt(),
                 cellHeightDp = (maxHeight / rows).value.toInt(),
-                labelDp = GRID_LABEL_LINE_DP + GRID_CELL_CHROME_DP,
+                labelDp = if (showLabels) GRID_LABEL_LINE_DP + GRID_CELL_CHROME_DP else GRID_CELL_CHROME_DP,
             )
         Column(modifier = Modifier.fillMaxSize()) {
             for (row in 0 until rows) {
@@ -1908,6 +1911,7 @@ private fun AppGridPage(
                                 app = app,
                                 label = AppGrid.gridLabel(app.label, gridLabels),
                                 iconDp = iconDp,
+                                showLabel = showLabels,
                                 onOpen = { onLaunchApp(app) },
                                 onOpenSecond = { onLaunchSecond(app) },
                                 onActions = { onOpenPeek(app) },
@@ -1938,6 +1942,7 @@ private fun GridCell(
     onOpenSecond: () -> Unit,
     onActions: () -> Unit,
     modifier: Modifier = Modifier,
+    showLabel: Boolean = true,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
@@ -1992,8 +1997,8 @@ private fun GridCell(
                 )
             }
         }
-        Spacer(Modifier.height(GRID_ICON_LABEL_GAP))
-        Text(
+        if (showLabel) Spacer(Modifier.height(GRID_ICON_LABEL_GAP))
+        if (showLabel) Text(
             text = label,
             // No tracking: "Minesweeper" fits a fifth of 411dp on one line.
             style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),

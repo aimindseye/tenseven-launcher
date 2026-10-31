@@ -39,6 +39,7 @@ import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.GlanceWidgets
+import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -114,6 +115,8 @@ class SableStartActivity : ComponentActivity() {
     private val bb7Scrim = mutableStateOf(Bb7Scrim.DEFAULT)
     private val bb7IconSize = mutableStateOf(Bb7IconSize.DEFAULT)
     private val typeToSearch = mutableStateOf(true)
+    private val gridColumns = mutableStateOf(GridColumns.AUTO)
+    private val gridLabels = mutableStateOf(true)
     private val widgetsPageEnabled = mutableStateOf(true)
     private val widgetIds = mutableStateOf<List<Int>>(emptyList())
     private val widgetsGeneration = mutableStateOf(0)
@@ -231,6 +234,8 @@ class SableStartActivity : ComponentActivity() {
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()
+        gridColumns.value = startStateRepository.loadGridColumns()
+        gridLabels.value = startStateRepository.loadGridLabels()
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
@@ -332,6 +337,8 @@ class SableStartActivity : ComponentActivity() {
                     onOpenMenu = ::showBb7Menu,
                     onOpenCommand = ::openCommandFromBb7,
                     iconSize = bb7IconSize.value,
+                    gridColumns = gridColumns.value,
+                    showLabels = gridLabels.value,
                     widgets = homeWidgets.value,
                     onDoubleTapEmpty = doubleTapLockCallback(),
                     panels = bb7Panels.value,
@@ -393,6 +400,7 @@ class SableStartActivity : ComponentActivity() {
                     widgetsController = widgetController,
                     widgetIds = widgetIds.value,
                     widgetsGeneration = widgetsGeneration.value,
+                    showIconLabels = gridLabels.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
                     onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
@@ -473,6 +481,8 @@ class SableStartActivity : ComponentActivity() {
         bb7Scrim.value = startStateRepository.loadBb7Scrim()
         bb7IconSize.value = startStateRepository.loadBb7IconSize()
         typeToSearch.value = startStateRepository.loadTypeToSearch()
+        gridColumns.value = startStateRepository.loadGridColumns()
+        gridLabels.value = startStateRepository.loadGridLabels()
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
