@@ -154,12 +154,39 @@ It needs two permissions, both explained in Settings: **Display over other apps*
 
 - **Type on Home** to search apps. It can be turned off in Launcher Settings. **Alt+Space** opens Command from either layout.
 - **Hold a letter** to open the app or contact assigned to it. In Command, `assign` and `unassign` set letters. Without an assignment, the most-used app starting with that letter comes first.
-- **Command prefixes**: `-` makes a to-do, `/` a note, `+` an event, a web address opens the browser. To-dos and notes go to an app you pick; Tenseven stores none.
+- **Command prefixes**: `-` makes a to-do, `/` a note, `+` an event, a web address opens the browser, and `?`, `@`, `#`, `!` and `/settings`-style words narrow the search. To-dos and notes go to an app you pick; Tenseven stores none. See the [table below](#command-prefixes).
 
 |  |  |  |  |
 |---|---|---|---|
 | <img src="images/command.png" width="190" alt="Command"> | <img src="images/all-apps.png" width="190" alt="All Apps"> | <img src="images/app-privacy-row.png" width="190" alt="App privacy detail (Space)"> | <img src="images/appearance.png" width="190" alt="Appearance"> |
 | <sub>Command</sub> | <sub>All Apps</sub> | <sub>App privacy detail (Space)</sub> | <sub>Appearance</sub> |
+
+### Command prefixes
+
+Type the prefix first, with nothing before it, then your text. Each one shows as a row in Command; press Enter on the row to run it. The first three are the quick
+actions that came from the MinkLauncher Magic Box; the rest narrow the search and are Tenseven's own.
+
+| Type | What it does | Example |
+|---|---|---|
+| `-text` | Shows a to-do row; Enter opens Android's "send to" list so you pick the app that keeps it. Tenseven keeps nothing | `-Buy milk` |
+| `/text` | Shows a note row; Enter sends the text to the app you pick the same way | `/Draft the release notes` |
+| `+text` | Shows an event row; Enter opens your calendar's new-event screen with that title | `+Dinner Friday at 7` |
+| A web address | Shows an open-address row; Enter opens it in the browser (`https://` is added when missing) | `example.com/page`, `www.example.org` |
+| `?name` | Searches apps only | `?cam` |
+| `@name` or `#name` | Searches people only | `@alex` |
+| `!action` | Searches actions only | `!` then the first letters of an action |
+| `/settings text` | Searches Settings only | `/settings wifi` |
+| `/apps text` | Apps only, the same as `?` | `/apps clock` |
+| `/hub text` | Searches the Hub only | `/hub invoice` |
+| `/private`, `/dual`, `/work` | Lists the apps of one profile: Private Space, Dual (cloned) apps, or the work profile | `/work mail` |
+| A phone number | Shows a call row; Enter opens the dialer with the number (it does not dial for you). Its menu also offers a message and Add to contacts. Needs three digits or more | `917 555 0100` |
+
+- A `/` that starts one of the scope words (`settings`, `apps`, `hub`, `private`, `dual`, `work`) is that scope, not a
+  note. To write a note that starts with one of those words, put something else first.
+- A prefix with nothing after it does nothing yet; keep typing.
+- A number that starts with `+` is read as an event, so type it without the plus (or use `#` first).
+- Without a prefix, Command searches everything: apps, people, Settings and actions, with the apps you open most first.
+- Not included from Mink: the `*` prefix for AI. Tenseven has no network access.
 
 ## Hub
 
