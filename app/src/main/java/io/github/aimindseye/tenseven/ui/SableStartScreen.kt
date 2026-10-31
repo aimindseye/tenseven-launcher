@@ -716,7 +716,27 @@ fun SableStartScreen(
                                 val page = pagerIndex - lead
                                 when {
                                     page == StartPages.WIDGETS ->
-                                        WidgetsPage(controller = widgetsController, ids = widgetIds)
+                                        WidgetsPage(
+                                            controller = widgetsController,
+                                            ids = widgetIds,
+                                            builtIn =
+                                                if (glanceWidgets.isEmpty()) {
+                                                    null
+                                                } else {
+                                                    {
+                                                        BuiltInWidgets(
+                                                            widgets = glanceWidgets,
+                                                            snapshot = liveSnapshot,
+                                                            apps = apps,
+                                                            refreshGeneration = refreshGeneration,
+                                                            onLaunchApp = ::launchApp,
+                                                            onStartIntent = onStartIntent,
+                                                            onRequestPermissions = onRequestLivePermissions,
+                                                            onShowHub = { showHub(HubFilter.All) },
+                                                        )
+                                                    }
+                                                },
+                                        )
                                     page == StartPages.HUB ->
                                         SableRefreshableSurface(
                                             isRefreshing = liveRefreshing,
@@ -1503,26 +1523,13 @@ private fun ColumnScope.ActiveFramesGrid(
     usageAccess: Boolean,
     onAllowUsageAccess: () -> Unit,
 ) {
-    val hostedWidgets = LocalHomeWidgets.current
     BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
         val cardHeight =
             ((maxHeight - FRAME_PADDING * 2 - FRAME_GAP) / ActiveFrames.ROWS_PER_SCREEN).coerceAtLeast(FRAME_MIN_HEIGHT)
         if (frames.isEmpty()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Nothing recent yet (a new install, or every card hidden): the Glance frames, and the usage access offer.
+            // Nothing recent: the home is empty. Only the usage access offer shows, while that access is off.
+            Column(modifier = Modifier.fillMaxSize().focusRequester(firstWidgetFocus).focusable()) {
                 if (!usageAccess) UsageAccessHint(onClick = onAllowUsageAccess, modifier = Modifier.padding(top = 8.dp))
-                GlanceFrames(
-                    widgets = widgets,
-                    snapshot = snapshot,
-                    apps = apps,
-                    refreshGeneration = refreshGeneration,
-                    cardHeight = cardHeight,
-                    firstFocus = firstWidgetFocus,
-                    onLaunchApp = onLaunchApp,
-                    onStartIntent = onStartIntent,
-                    onRequestPermissions = onRequestPermissions,
-                    onShowHub = onShowHub,
-                )
             }
             return@BoxWithConstraints
         }
@@ -1554,10 +1561,6 @@ private fun ColumnScope.ActiveFramesGrid(
                     }
                     repeat(ActiveFrames.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
                 }
-            }
-            // Widgets from other apps, added in Edit Home, go after the recent apps.
-            if (recentMode && hostedWidgets.controller != null) {
-                items(hostedWidgets.ids, key = { id -> "hosted:$id" }) { id -> WidgetItem(hostedWidgets.controller, id, editing = false) }
             }
         }
     }
@@ -1697,18 +1700,15 @@ private fun Bb10ThemeWithPeek(
 }
 
 /**
- * No frames: the Glance widgets as frames, in the user's order (Weather,
- * Calendar, Battery, Media by default). No ambient polling: values refresh
- * with Start's live snapshot.
+ * The built-in widgets Launcher Settings turned on (Calendar, Alarm, Battery, Now playing) as cards at the top of the
+ * Widgets page, in the user's order. No ambient polling: values refresh with Start's live snapshot.
  */
 @Composable
-private fun GlanceFrames(
+private fun BuiltInWidgets(
     widgets: List<String>,
     snapshot: LiveSurfaceSnapshot,
     apps: List<AppEntry>,
     refreshGeneration: Int,
-    cardHeight: Dp,
-    firstFocus: FocusRequester,
     onLaunchApp: (AppEntry) -> Unit,
     onStartIntent: (Intent) -> Unit,
     onRequestPermissions: () -> Unit,
@@ -1728,26 +1728,14 @@ private fun GlanceFrames(
         }
     }
 
-    val hosted = LocalHomeWidgets.current
-    if (widgets.isEmpty() && hosted.ids.isEmpty()) {
-        Box(Modifier.fillMaxSize().focusRequester(firstFocus).focusable(), contentAlignment = Alignment.Center) {
-            EmptyState(t("no_apps_are_open_press"))
-        }
-        return
-    }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(FRAME_PADDING),
-        verticalArrangement = Arrangement.spacedBy(FRAME_GAP),
-    ) {
-        items(widgets.chunked(ActiveFrames.COLUMNS), key = { row -> row.first() }) { row ->
+    Column(verticalArrangement = Arrangement.spacedBy(FRAME_GAP)) {
+        widgets.chunked(ActiveFrames.COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(FRAME_GAP)) {
                 row.forEach { widget ->
                     val modifier =
                         Modifier
                             .weight(1f)
-                            .height(cardHeight)
-                            .then(if (widget == widgets.first()) Modifier.focusRequester(firstFocus) else Modifier)
+                            .height(BUILT_IN_WIDGET_HEIGHT)
                     when (widget) {
                         GlanceWidgets.ALARM -> {
                             val alarm = remember { NextAlarm.text(context) }
@@ -1790,11 +1778,6 @@ private fun GlanceFrames(
                 }
                 repeat(ActiveFrames.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
             }
-        }
-        // Widgets from other apps, added in Edit Home: full-width tiles after the Glance frames.
-        val host = hosted.controller
-        if (host != null) {
-            items(hosted.ids, key = { id -> "hosted:$id" }) { id -> WidgetItem(host, id, editing = false) }
         }
     }
 }
@@ -3324,40 +3307,8 @@ private fun EditHomeScreen(
                     text = t("reset_bar_to_phone_search"),
                     onClick = { draft = draft.copy(quickBar = QuickBar.DEFAULT) },
                 )
-                Spacer(Modifier.height(10.dp))
-                SectionLabel(t("frames_while_no_app_is"))
-                Spacer(Modifier.height(4.dp))
             }
-            itemsIndexed(draft.glanceWidgets, key = { _, widget -> "glance:$widget" }) { index, widget ->
-                EditListRow(
-                    label = GlanceWidgets.label(widget),
-                    leading = {},
-                    picked = moving?.let { it.section == EditSection.Glance && it.key == widget } == true,
-                    onKey = { event -> itemKeys(EditSection.Glance, widget, event) },
-                    onClick = { optionsFor = if (optionsFor == "Glance:$widget") null else "Glance:$widget" },
-                    onDragStep = { delta -> move(EditSection.Glance, widget, delta) },
-                )
-                if (optionsFor == "Glance:$widget") {
-                    EditOptions(
-                        listOf(
-                            t("move_up") to { move(EditSection.Glance, widget, -1) },
-                            t("move_down") to { move(EditSection.Glance, widget, 1) },
-                            "hide" to {
-                                draft = draft.copy(glanceWidgets = GlanceWidgets.toggle(draft.glanceWidgets, widget))
-                                optionsFor = null
-                            },
-                        ).filterIndexed { i, _ -> !(i == 0 && index == 0) && !(i == 1 && index == draft.glanceWidgets.lastIndex) },
-                    )
-                }
-            }
-            item(key = "glance-add") {
-                GlanceWidgets.ALL.filterNot { it in draft.glanceWidgets }.forEach { widget ->
-                    MetroLink(
-                        text = t("show", GlanceWidgets.label(widget)),
-                        onClick = { draft = draft.copy(glanceWidgets = GlanceWidgets.toggle(draft.glanceWidgets, widget)) },
-                    )
-                }
-                HostedWidgetsEditor(hosted, onAdd = { pickingWidget = true })
+            item(key = "frames-options") {
                 Spacer(Modifier.height(10.dp))
                 SectionLabel(t("active_frames_header"))
                 Spacer(Modifier.height(4.dp))
@@ -5884,6 +5835,8 @@ private val PrivacyBadgeWidth = 18.dp
 // BB10 strip metrics, designed for the Q25's 720x720 panel at density 280
 // (411dp square, about 387dp tall under the status bar). The grid's rows and
 // icon size, and the Active Frames card height, come from the window.
+/** The built-in widget cards on the Widgets page. */
+private val BUILT_IN_WIDGET_HEIGHT = 110.dp
 private val FRAME_PADDING = 6.dp
 private val FRAME_GAP = 6.dp
 private val FRAME_LABEL_HEIGHT = 28.dp

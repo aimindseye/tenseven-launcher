@@ -6,7 +6,9 @@ import android.widget.FrameLayout
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,11 +31,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -44,15 +49,17 @@ import io.github.aimindseye.tenseven.model.WidgetSizing
 import io.github.aimindseye.tenseven.platform.WidgetHostController
 
 /**
- * The Widgets page: other apps' Android widgets in one scrolling column, at the width of the page and the
- * height each widget asks for. Edit mode puts Up, Down and Remove over each widget (a widget is drawn by
- * another app and takes touches itself, so the controls cannot sit on it any other way).
+ * The Widgets page, where all widgets live: first the built-in ones Launcher Settings turned on (Calendar, Alarm,
+ * Battery, Now playing), then other apps' Android widgets in one scrolling column, at the width of the page and
+ * the height each widget asks for. Edit mode dims each added widget and puts Up, Down and Remove in a row under it
+ * (a widget is drawn by another app and takes touches itself, so the controls cannot sit on it).
  */
 @Composable
 internal fun WidgetsPage(
     controller: WidgetHostController?,
     ids: List<Int>,
     modifier: Modifier = Modifier,
+    builtIn: (@Composable () -> Unit)? = null,
 ) {
     var editing by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf(false) }
@@ -72,7 +79,8 @@ internal fun WidgetsPage(
             }
             if (controller != null) PageButton(stringResource(R.string.widgets_add)) { picking = true }
         }
-        if (controller == null || ids.isEmpty()) {
+        val hasAdded = controller != null && ids.isNotEmpty()
+        if (!hasAdded && builtIn == null) {
             Text(
                 stringResource(R.string.widgets_empty),
                 style = MaterialTheme.typography.bodyLarge,
@@ -83,7 +91,8 @@ internal fun WidgetsPage(
                 modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                ids.forEach { id -> WidgetItem(controller, id, editing) }
+                builtIn?.invoke()
+                if (controller != null) ids.forEach { id -> WidgetItem(controller, id, editing) }
             }
         }
     }
@@ -108,36 +117,36 @@ internal fun WidgetItem(
     val density = LocalDensity.current.density
     val info = controller.info(id)
     val height = WidgetSizing.heightDp(info?.minHeight ?: 0, density)
-    BoxWithConstraints(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(height.dp)
-                .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium),
-    ) {
-        val widthDp = maxWidth.value.toInt()
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context -> controller.createView(id) ?: FrameLayout(context) },
-            update = { view ->
-                // Tell the widget how much room it has, so one that lays itself out by size picks the right layout.
-                if (view is AppWidgetHostView) {
-                    runCatching { view.updateAppWidgetSize(null, widthDp, height, widthDp, height) }
-                }
-            },
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        BoxWithConstraints(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(height.dp)
+                    .alpha(if (editing) 0.4f else 1f)
+                    .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium),
+        ) {
+            val widthDp = maxWidth.value.toInt()
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { context -> controller.createView(id) ?: FrameLayout(context) },
+                update = { view ->
+                    // Tell the widget how much room it has, so one that lays itself out by size picks the right layout.
+                    if (view is AppWidgetHostView) {
+                        runCatching { view.updateAppWidgetSize(null, widthDp, height, widthDp, height) }
+                    }
+                },
+            )
+            // While editing, touches must not reach the widget underneath.
+            if (editing) {
+                Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { } })
+            }
+        }
         if (editing) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.6f), MaterialTheme.shapes.medium),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-            ) {
-                PageButton(stringResource(R.string.widgets_up)) { controller.move(id, -1) }
-                PageButton(stringResource(R.string.widgets_down)) { controller.move(id, 1) }
-                PageButton(stringResource(R.string.widgets_remove)) { controller.remove(id) }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PageButton(stringResource(R.string.widgets_up), Modifier.weight(1f)) { controller.move(id, -1) }
+                PageButton(stringResource(R.string.widgets_down), Modifier.weight(1f)) { controller.move(id, 1) }
+                PageButton(stringResource(R.string.widgets_remove), Modifier.weight(1f)) { controller.remove(id) }
             }
         }
     }
@@ -217,7 +226,7 @@ internal fun WidgetPicker(
                         }
                     }
                 }
-                PageButton(stringResource(R.string.widgets_cancel), onDismiss)
+                PageButton(stringResource(R.string.widgets_cancel), onClick = onDismiss)
             }
         }
     }
@@ -232,18 +241,20 @@ private data class PickerRow(
 @Composable
 internal fun PageButton(
     label: String,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.sableFocusRing(),
+        modifier = modifier.sableFocusRing(),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Text(
             label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.labelLarge,
         )

@@ -34,6 +34,6 @@ class LauncherSettingsTest {
     @Test
     fun alarmIsAGlanceWidgetThatCanBeSwitchedOn() {
         assertTrue(GlanceWidgets.ALARM in GlanceWidgets.ALL)
-        assertEquals(listOf("calendar", "battery", "media", "alarm"), GlanceWidgets.toggle(GlanceWidgets.DEFAULT, GlanceWidgets.ALARM))
+        assertEquals(listOf("alarm"), GlanceWidgets.toggle(GlanceWidgets.DEFAULT, GlanceWidgets.ALARM))
     }
 }

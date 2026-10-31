@@ -39,10 +39,15 @@ object GridColumns {
     }
 }
 
-/** The widgets Launcher Settings can switch on or off; they are the Glance widgets of the BlackBerry 10 home too. */
+/**
+ * The built-in widgets Launcher Settings can switch on or off. They all show on the BlackBerry 10 Widgets page; the
+ * BlackBerry 7 home shows three of them in the strip under its banner.
+ */
 object SettingsWidgets {
-    val TOGGLEABLE: List<String> = listOf(GlanceWidgets.CALENDAR, GlanceWidgets.ALARM, GlanceWidgets.MEDIA)
+    val TOGGLEABLE: List<String> = listOf(GlanceWidgets.CALENDAR, GlanceWidgets.ALARM, GlanceWidgets.BATTERY, GlanceWidgets.MEDIA)
 
-    /** The BlackBerry 7 home's widget strip: the toggleable widgets that are on, in a fixed order. */
-    fun strip(shown: List<String>): List<String> = TOGGLEABLE.filter { it in shown }
+    private val STRIP: List<String> = listOf(GlanceWidgets.CALENDAR, GlanceWidgets.ALARM, GlanceWidgets.MEDIA)
+
+    /** The BlackBerry 7 home's widget strip: Calendar, Alarm and Now Playing when on, in a fixed order. */
+    fun strip(shown: List<String>): List<String> = STRIP.filter { it in shown }
 }

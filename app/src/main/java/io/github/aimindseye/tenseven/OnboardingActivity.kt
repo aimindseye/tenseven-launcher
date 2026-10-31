@@ -82,6 +82,7 @@ class OnboardingActivity : ComponentActivity() {
         val installer = SetupStatus.installer(this)
         setContent {
             LauncherTheme(window = window) {
+                ProvideHomeStyle(startState) {
                 SetupScreen(
                     steps = steps,
                     startOnOverview = overview,
@@ -96,6 +97,7 @@ class OnboardingActivity : ComponentActivity() {
                     onFinish = { finish() },
                     settings = startState,
                 )
+                }
             }
         }
     }

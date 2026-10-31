@@ -79,6 +79,7 @@ private fun LauncherSettings(
         ) {
             Text(stringResource(R.string.launcher_settings), style = MaterialTheme.typography.titleLarge)
 
+            ProvideHomeStyle(state) {
             Section(stringResource(R.string.ls_section_style))
             HomeStyleSection(state, first)
 
@@ -123,6 +124,7 @@ private fun LauncherSettings(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            }
         }
     }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }

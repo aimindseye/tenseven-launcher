@@ -125,8 +125,8 @@ object GlanceWidgets {
 
     val ALL: List<String> = listOf(CALENDAR, ALARM, BATTERY, MEDIA, HUB, MAIL, PHOTOS)
 
-    /** "Curated widgets: Calendar, Battery, Media." */
-    val DEFAULT: List<String> = listOf(CALENDAR, BATTERY, MEDIA)
+    /** None: the built-in widgets are all off until Launcher Settings turns one on. */
+    val DEFAULT: List<String> = emptyList()
 
     /** Drops unknown and duplicate names; null (never customised) gives [DEFAULT]. */
     fun normalize(saved: List<String>?): List<String> = saved?.filter { it in ALL }?.distinct() ?: DEFAULT
