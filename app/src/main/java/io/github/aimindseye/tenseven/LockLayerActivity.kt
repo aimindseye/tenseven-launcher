@@ -140,7 +140,7 @@ class LockLayerActivity : ComponentActivity() {
 
     /** The secure camera opens over the lock screen without unlocking; if none answers, unlock and open the normal one. */
     private fun openCamera() {
-        val secure = Intent(MediaStore.ACTION_STILL_IMAGE_CAMERA_SECURE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val secure = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA_SECURE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (runCatching { startActivity(secure) }.isFailure) {
             unlock(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
         }
