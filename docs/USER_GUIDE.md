@@ -114,7 +114,7 @@ Swipe right past Hub (or Alt+Left twice from Home) to the Widgets page. The buil
 
 Launcher Settings, **Icon grid**: choose Auto or 3 to 6 columns, 1 to 3 rows, the icon size, and whether app names show under icons. The small preview above the buttons changes as you choose. Only the app names switch applies to the BlackBerry 10 home, so size, columns, rows and the preview appear only while **BlackBerry 7** is the home screen style, and the **wallpaper behind the home** switch appears only for BlackBerry 10. Columns and names apply to the BlackBerry 7 home and tray; names also apply to the BlackBerry 10 app grid, whose columns stay fixed. (Ripe's separate "tile width" is the same choice here: the number of columns sets the width.)
 
-**Theme** has eight looks. **BlackBerry** is the default: pure black with the BlackBerry blue, on the launcher and on the built-in apps (Calc Plus, Notes, Sound Profiles, the games). **Phone colours** follows your wallpaper colours and the phone's light or dark setting (Android 12 or newer; older versions show the BlackBerry blue). The rest are Midnight, Daylight, Forest, Dusk, Amber and Slate. They work on an ordinary install and are saved with a backup. Android has no way to install other apps' themes into a launcher; a theme file you can import is planned. **Wallpapers** has eight pictures Tenseven draws itself, with no outside artwork: pick one, then choose **Home**, **Lock** or **Both**.
+**Theme** has eight looks. **BlackBerry** is the default: pure black with the BlackBerry blue, on the launcher and on the built-in apps (Calc Plus, Notes, Sound Profiles, the games). **Phone colours** follows your wallpaper colours and the phone's light or dark setting (Android 12 or newer; older versions show the BlackBerry blue). The rest are Midnight, Daylight, Forest, Dusk, Amber and Slate. They work on an ordinary install and are saved with a backup. Android has no way to install other apps' themes into a launcher; you can import a theme file (see **Theme files** below). **Wallpapers** has eight pictures Tenseven draws itself, with no outside artwork: pick one, then choose **Home**, **Lock** or **Both**.
 
 ## Hub settings and the Hub peek
 
@@ -220,3 +220,28 @@ The pictures in this guide are in [`images/`](images/). `tools/take-screenshots.
 - **A small "<" appears instead of the peek**: that is Android's Back gesture. Go to the Home page, start the drag at the left edge halfway down the screen, or select the Hub slot of the bottom bar and press Space.
 - **Wrong home after an update**: press Home and choose Tenseven, then **Always**.
 - Report problems with the device, Android version and steps on the GitHub issue tracker.
+
+## Theme files
+
+A theme file is a small text file (JSON, under 64 KB) named like `ocean.tenseventheme.json`. It is only read as data: it
+can set colours and a wallpaper, and nothing in it is ever run. Only `format`, `version`, `name`, `mode` and `accent`
+are required; the rest take the defaults of the mode.
+
+```json
+{
+  "format": "tenseven-theme",
+  "version": 1,
+  "name": "Ocean",
+  "mode": "dark",
+  "accent": "#00A8DF",
+  "onAccent": "#FFFFFF",
+  "palette": { "background": "#001018", "card": "#0B1A22", "tile": "#122632", "line": "#1E3A48",
+               "text": "#FFFFFF", "muted": "#9EB4C0", "dim": "#5B7280" },
+  "wallpaper": { "top": "#1F6FEB", "bottom": "#9CD3FF", "glow": "#FFF4C2", "ridge": "#0B3C8C", "seed": 11 }
+}
+```
+
+- `mode` is `dark`, `light` or `follow-system`. Colours are `#RRGGBB`. `seed` (0 to 9999) shapes the wallpaper ridges.
+- Tenseven refuses a file whose text, muted or accent colour would be hard to see: text needs a contrast of 4.5 on the
+  background, and muted, accent and `onAccent` (on the accent) 3.
+- Up to 12 imported themes are kept. They are saved with a backup. The peek always uses the phone's colours.

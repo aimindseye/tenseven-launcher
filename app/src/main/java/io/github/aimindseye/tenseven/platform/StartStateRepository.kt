@@ -2,6 +2,8 @@ package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
 import android.content.SharedPreferences
+import io.github.aimindseye.tenseven.model.CustomTheme
+import io.github.aimindseye.tenseven.model.CustomThemes
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panel
@@ -280,6 +282,7 @@ class StartStateRepository(
 
     fun loadAppearanceAccent(): String? = preferences.getString(KEY_APPEARANCE_ACCENT, null)
 
+    /** Choosing a built-in theme also clears any imported theme that was chosen. */
     fun saveAppearance(
         mode: String?,
         accent: String?,
@@ -287,14 +290,34 @@ class StartStateRepository(
         preferences.edit().apply {
             if (mode == null) remove(KEY_APPEARANCE_MODE) else putString(KEY_APPEARANCE_MODE, mode)
             if (accent == null) remove(KEY_APPEARANCE_ACCENT) else putString(KEY_APPEARANCE_ACCENT, accent)
+            remove(KEY_APPEARANCE_CUSTOM)
         }.apply()
+    }
+
+    /** The imported themes (a JSON array, see [CustomThemes.formatStored]); included in a backup. */
+    fun loadCustomThemes(): List<CustomTheme> = CustomThemes.parseStored(preferences.getString(KEY_CUSTOM_THEMES, null))
+
+    fun saveCustomThemes(themes: List<CustomTheme>) {
+        preferences.edit().putString(KEY_CUSTOM_THEMES, CustomThemes.formatStored(themes)).apply()
+    }
+
+    /** The id of the imported theme in use, or null when a built-in theme is. */
+    fun loadActiveCustomThemeId(): String? = preferences.getString(KEY_APPEARANCE_CUSTOM, null)
+
+    /** Uses the imported [theme]: its mode, the "custom" accent, and its id. */
+    fun saveActiveCustomTheme(theme: CustomTheme) {
+        preferences.edit()
+            .putString(KEY_APPEARANCE_MODE, theme.mode)
+            .putString(KEY_APPEARANCE_ACCENT, CustomThemes.ACCENT_VALUE)
+            .putString(KEY_APPEARANCE_CUSTOM, theme.id)
+            .apply()
     }
 
     /** Calls [listener] when the theme choice changes; the returned function stops listening. */
     fun onAppearanceChanged(listener: () -> Unit): () -> Unit {
         val callback =
             SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                if (key == KEY_APPEARANCE_MODE || key == KEY_APPEARANCE_ACCENT) listener()
+                if (key == KEY_APPEARANCE_MODE || key == KEY_APPEARANCE_ACCENT || key == KEY_APPEARANCE_CUSTOM || key == KEY_CUSTOM_THEMES) listener()
             }
         preferences.registerOnSharedPreferenceChangeListener(callback)
         return { preferences.unregisterOnSharedPreferenceChangeListener(callback) }
@@ -378,6 +401,8 @@ class StartStateRepository(
         const val KEY_HOME_WIDGET_IDS = "home_widget_ids"
         const val KEY_APPEARANCE_MODE = "appearance_mode"
         const val KEY_APPEARANCE_ACCENT = "appearance_accent"
+        const val KEY_APPEARANCE_CUSTOM = "appearance_custom"
+        const val KEY_CUSTOM_THEMES = "custom_themes"
         const val KEY_WIDGET_IDS = "widget_ids"
         const val KEY_GLANCE_WIDGETS = "glance_widgets"
         // v2: the BB10 Home shows the status dials by default; sets saved by the

@@ -330,6 +330,27 @@ internal fun startPalette(
     }
 }
 
+/** An imported theme's palette: the colours its file sets over the default for the light or dark mode. */
+internal fun customPalette(
+    custom: io.github.aimindseye.tenseven.design.SableCustomColors,
+    dark: Boolean,
+): StartPalette {
+    val base = startPalette(dark, AccentPreset.Blue)
+    return base.copy(
+        accent = custom.accent,
+        onAccent = custom.onAccent,
+        background = custom.background ?: base.background,
+        card = custom.card ?: base.card,
+        tile = custom.tile ?: base.tile,
+        line = custom.line ?: base.line,
+        barTop = custom.tile ?: base.barTop,
+        barBottom = custom.background ?: base.barBottom,
+        text = custom.text ?: base.text,
+        muted = custom.muted ?: base.muted,
+        dim = custom.dim ?: base.dim,
+    )
+}
+
 /** The BlackBerry 10 pages in the phone's own colours: the Material You scheme already set up by the theme. */
 internal fun phonePalette(scheme: androidx.compose.material3.ColorScheme): StartPalette =
     StartPalette(
@@ -1025,8 +1046,15 @@ internal fun Bb10Theme(
         }
     val base = MaterialTheme.colorScheme
     val palette =
-        remember(dark, appearance.accent, base) {
-            if (appearance.accent == AccentPreset.Phone) phonePalette(base) else startPalette(dark, appearance.accent)
+        remember(dark, appearance.accent, appearance.custom, base) {
+            val custom = appearance.custom
+            if (custom != null) {
+                customPalette(custom, dark)
+            } else if (appearance.accent == AccentPreset.Phone) {
+                phonePalette(base)
+            } else {
+                startPalette(dark, appearance.accent)
+            }
         }
     CompositionLocalProvider(LocalStartPalette provides palette) {
         MaterialTheme(

@@ -57,10 +57,25 @@ enum class AccentPreset(
     }
 }
 
+/** Colours from an imported theme file; a null entry takes the default for the light or dark mode. */
+data class SableCustomColors(
+    val accent: Color,
+    val onAccent: Color,
+    val background: Color? = null,
+    val card: Color? = null,
+    val tile: Color? = null,
+    val line: Color? = null,
+    val text: Color? = null,
+    val muted: Color? = null,
+    val dim: Color? = null,
+)
+
 data class SableAppearance(
     val mode: AppearanceMode = AppearanceMode.FollowSystem,
     val accent: AccentPreset = AccentPreset.Blue,
     val cornerStyle: SableCornerStyle = SableCornerStyle.DEFAULT,
+    /** An imported theme's colours, drawn by the launcher's own screens; null for the built-in themes. */
+    val custom: SableCustomColors? = null,
 )
 
 object SableDesignContract {
