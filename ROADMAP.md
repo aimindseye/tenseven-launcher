@@ -3,6 +3,7 @@
 Tenseven is the standalone, ordinary-install version of Sable Start, plus the pieces an ordinary install
 needs that SableOS gets from the system. A box is ticked only when the work is merged; "done" does not mean
 tried on every phone: only the Unihertz Titan 2 has run a debug build, by hand.
+A one-time "new settings" prompt for people who finished Setup before a setting existed is not built.
 
 ## Phase 0: scaffold (done)
 
@@ -39,8 +40,10 @@ Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklau
 - [x] Extra apps ported from SableOS, off by default: Calc Plus, Notes, Sound Profiles, ten games
 - [x] Launcher Settings screen; widget switches (Calendar, Alarm, Now Playing); bell and speaker status row
 - [x] Widgets page (left of Hub, switch in Launcher Settings): host for Android app widgets, picker, binding, setup screens, Up/Down/Remove; opens from the BlackBerry 7 menu. Written, **not yet run on a phone**
-- [x] Home customisation (one branch, **written without a local SDK and not yet run on a phone**): icon grid settings (columns, rows, labels, live preview); Hub settings (clear the Hub now, apps in the Hub, message text switch); widgets as full-width home tiles with Add/Up/Down/Remove in Edit Home; a sticky Reset/Cancel/Done bar in Edit Home; seven themes and eight original wallpapers (set for Home, Lock or both); Hub peek (drag in from the left edge of Home); an optional lock layer over the system lock screen
-- [ ] Lock layer on the Titan 2: check it appears on wake (Android may refuse a background start), that Enter, Space and swipe up reach the PIN, that the secure camera opens, and that counts match the shade
+- [x] Setup covers every Launcher Settings group (style, theme and wallpaper, icon grid, widgets, Hub, lock screen), with the controls shared between Setup and Launcher Settings; the lock layer preview returns to where it was opened
+- [x] Home customisation (merged; theme, wallpaper, lock layer and Setup confirmed on the Titan 2, the rest **not yet confirmed**): icon grid settings (columns, rows, labels, live preview); Hub settings (clear the Hub now, apps in the Hub, message text switch); widgets as full-width home tiles with Add/Up/Down/Remove in Edit Home; a sticky Reset/Cancel/Done bar in Edit Home; seven themes and eight original wallpapers (set for Home, Lock or both); Hub peek (drag in from the left edge of Home); an optional lock layer over the system lock screen
+- [ ] Lock layer on the Titan 2: preview and wake-up confirmed; still to check that Enter, Space and swipe up reach the PIN, that the secure camera opens, and that counts match the shade
+- [ ] Hub peek (left-edge drag not stealing taps), Hub settings, icon grid options and the Edit Home bar on the Titan 2
 - [ ] Widgets on the Titan 2: check real widgets (weather, clock), touch-only controls inside widgets, keyboard focus into a widget, work-profile widgets
 - [ ] A Sound Profiles glyph of its own (it shares Media's music note; icons must be distinct Tabler glyphs)
 - [ ] A `PlatformCapabilities` interface in front of every system-only feature, with an ordinary-install and a SableOS implementation (table in `docs/ARCHITECTURE.md`)

@@ -27,17 +27,37 @@ Directory `app/src/main/java/io/github/aimindseye/tenseven` (packages renamed fr
 | `ui/` | `io.github.aimindseye.tenseven.ui` | Compose: `SableStartScreen` (BlackBerry 10 home, Hub, Command, All Apps), `Bb7HomeScreen` (BlackBerry 7 home, widget strip, tray, menu), `SoundProfileButton`, `LineIcon` (Tabler-style line icons drawn from path data), glyphs and status rings |
 | `live/` | `io.github.aimindseye.tenseven.live` | Models for the live tiles (calendar, mail, media) |
 | `extras/` | `io.github.aimindseye.tenseven.extras` | Optional apps ported from SableOS: Calc Plus, Notes, Sound Profiles, ten games. Their manifest entries are disabled with their own task affinity; `ExtraAppsControl` switches them on. Each has its own palette and strings so it does not touch the launcher's |
-| (root) | `io.github.aimindseye.tenseven` | `SableStartActivity` (HOME, both layouts, the BlackBerry 10 detour), `HomeStyleActivity`, `LauncherSettingsActivity`, `BackupActivity`, `OnboardingActivity` |
+| (root) | `io.github.aimindseye.tenseven` | `SableStartActivity` (HOME, both layouts, the BlackBerry 10 detour), `HomeStyleActivity`, `LauncherSettingsActivity` and `SettingsSections` (the setting groups shared with Setup), `HubSettingsActivity`, `LockLayerActivity`, `BackupActivity`, `OnboardingActivity`, `LauncherTheme` |
 
-Tenseven-only files worth knowing: `model/Bb7Home` (panels, grid maths), `model/LauncherSettings` (icon sizes, which widgets can be switched), `model/HomeLayout` (`GlanceWidgets`), `model/RingerProfile` (sound-mode cycle), `platform/DefaultApps` (finds the phone's own dialer, messages, mail, camera, calendar, browser, gallery and music apps), `platform/SoundProfileControl`, `platform/NextAlarm`.
+Tenseven-only files worth knowing: `model/GridColumns`, `model/HubApps`, `model/LockLayer`, `model/ThemePresets` (themes and `WallpaperSets`), `model/WidgetList`, `platform/WidgetHostController`, `platform/WallpaperArt`, `platform/LockLayerLauncher` and `LockLayerState`, `platform/RecentLaunchesRepository`, `ui/WidgetsPage`, `ui/HubPeek`, `model/Bb7Home` (panels, grid maths), `model/LauncherSettings` (icon sizes, which widgets can be switched), `model/HomeLayout` (`GlanceWidgets`), `model/RingerProfile` (sound-mode cycle), `platform/DefaultApps` (finds the phone's own dialer, messages, mail, camera, calendar, browser, gallery and music apps), `platform/SoundProfileControl`, `platform/NextAlarm`.
 
 ### Two home layouts, one activity
 
-`SableStartActivity` hosts both layouts in a pager (Home, Hub). The BlackBerry 7 layout is chosen in Launcher Settings. Command and Hub are BlackBerry 10 surfaces, so from BlackBerry 7 they open as a **detour**: `startBb10Detour(returnOnHome)` shows the BlackBerry 10 view, and `endBb10Detour()` returns once the user is back on Home, when the app goes to the background (`onPause`) or when Back is pressed on the Hub (`onBackToHomePage`). That ordering is what prevents a flash of the BlackBerry 10 screen when switching. The window is translucent so the BlackBerry 7 banner and tray sit over the wallpaper.
+`SableStartActivity` hosts both layouts in a pager (Widgets page, Hub, Home, app grid pages). The BlackBerry 7 layout is chosen in Launcher Settings. Command and Hub are BlackBerry 10 surfaces, so from BlackBerry 7 they open as a **detour**: `startBb10Detour(returnOnHome)` shows the BlackBerry 10 view, and `endBb10Detour()` returns once the user is back on Home, when the app goes to the background (`onPause`) or when Back is pressed on the Hub (`onBackToHomePage`). That ordering is what prevents a flash of the BlackBerry 10 screen when switching. The window is translucent so the BlackBerry 7 banner and tray sit over the wallpaper.
 
 ### Widgets page
 
 `StartPages.WIDGETS` is the page left of Hub; when the page is on, every pager index is the page's own number plus one (`lead` in `SableStartScreen`). `WidgetHostController` wraps `AppWidgetHost`: allocate id, bind (Android's permission screen the first time), run the widget's setup screen, save the id (`StartStateRepository`, never backed up). The activity forwards `onActivityResult` and starts/stops listening in `onStart`/`onStop`. `ui/WidgetsPage` draws each widget in an `AndroidView` at the height it asks for (`WidgetSizing`); list policy is `model/WidgetList`. From the BlackBerry 7 home it is a detour like Hub (`widgetsGeneration`).
+
+### Widgets on the page and on the home screen
+
+One `WidgetHostController` (one `AppWidgetHost` id) serves two lists, chosen by `WidgetTarget`: `PAGE` (the Widgets page) and `HOME` (full-width tiles on the BlackBerry 10 home). Two hosts with the same id would take the updates from each other. Ids are saved separately (`widget_ids`, `home_widget_ids`) and never backed up. The tiles are drawn by `GlanceFrames` after the Glance frames, read from the `LocalHomeWidgets` composition local that `SableThemeWithWidgets` provides, and are managed from Edit Home (`HostedWidgetsEditor`; changes apply at once, not on Done). Edit Home ends in a bar that stays on screen (`EditBar`: Reset, Cancel, Done).
+
+### Settings groups shared with Setup
+
+`SettingsSections.kt` holds one composable per Launcher Settings group (`HomeStyleSection`, `IconGridSection`, `ThemeSection`, `WallpaperSection`, `WidgetsSection`, `HubSection`, `LockLayerSection`). Each reads and saves its own choices through `StartStateRepository`, draws no heading, and is used by both `LauncherSettingsActivity` and `OnboardingActivity`. Setup has a choice step (`SetupStep.isChoice`) for each group: always offered, never "not done", applied at once. `OnboardingPlanTest` fails if the choice steps and the groups drift apart. To add a setting: put it in a section, and add a step if it is a new group.
+
+### Themes, wallpapers and the home backdrop
+
+`LauncherTheme` replaces `SableGlobalTheme` in every Tenseven activity: the theme chosen in Launcher Settings (`appearance_mode`, `appearance_accent`, backed up) wins when set; otherwise the Sable global provider is read, which only exists on SableOS. `ThemePresets` and `WallpaperSets` are pure models (unit tested). `WallpaperArt` paints each wallpaper in code (gradient, soft disc, layered ridges, seeded per set), so no image files ship, and sets it through `WallpaperManager` for Home, Lock or both (`SET_WALLPAPER`). The BlackBerry 7 home always draws on the wallpaper; the BlackBerry 10 home does so when `home_wallpaper` is on (default), by showing the wallpaper window flag and painting its background at 60% (`LocalHomeBackdrop`).
+
+### Hub controls and the peek
+
+`ConversationListenerService` drops notifications from apps in `hub_excluded_apps` (`HubApps`) before they reach `ConversationHub`; `ConversationHub.clearNow()` is the "Clear the Hub now" button. Nothing about message text is persisted. `hub_peek_text` (off by default) decides whether the lock layer and the peek may show the latest message. The peek (`ui/HubPeek`) is an overlay on the BlackBerry 10 Start destination; a pointer handler on the Initial pass opens it from a drag that starts in the left 20 dp of Home and consumes the rest of that drag so the pager does not also move.
+
+### Lock layer
+
+The system keyguard cannot be replaced by a launcher, so the lock layer is a cover: `LockLayerActivity` is `showWhenLocked` and `turnScreenOn`, in its own task, with a translucent wallpaper theme. `ConversationListenerService` registers for `ACTION_SCREEN_ON` while notification access is connected and calls `LockLayerLauncher.showIfLocked`, which needs the setting on, `SYSTEM_ALERT_WINDOW` granted and the keyguard up; it shows a one-pixel overlay window around `startActivity` because Android 14+ only allows a background start while the app has a visible window. Counts come from `LockLayer.tally` over the active notifications (never their text). Unlocking calls `KeyguardManager.requestDismissKeyguard`, so the real lock is always what lets the user in; the camera uses the secure camera intent. A preview from Settings or Setup carries `EXTRA_RETURN_TO` and returns to the screen it came from.
 
 ### Default apps, not Sable apps
 
