@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Takes screenshots of Tenseven from a phone connected over adb: every Setup step, the Setup overview, Launcher
 # Settings (scrolled to the end), Hub settings, Backup, the home style chooser, the lock layer, both home screens, and
-# then a guided list of screens that need your hands (Hub, Widgets page, peek, Edit Home, Command, All Apps, ...).
+# the Phone colours theme, then a guided list of screens that need your hands (Hub, peek, Widgets page, Edit Home,
+# Command, All Apps, the extras, ...). It also writes docs-ready/ with names and sizes for docs/images.
 #
 #   tools/take-screenshots.sh                  # debug build, first connected phone, folder ./screenshots/<date-time>
 #   tools/take-screenshots.sh -s SERIAL        # a particular phone (adb devices)
@@ -193,9 +194,14 @@ if [ "$RELEASE" = 0 ]; then
 fi
 
 # --- Launcher Settings and the other Tenseven screens ---------------------------------------------------------------
-echo "Launcher Settings"
+echo "Launcher Settings (BlackBerry 10 home style, then BlackBerry 7: its own options show only there)"
+set_pref string home_style bb10
 start LauncherSettingsActivity
 scroll_shots launcher-settings
+set_pref string home_style bb7
+start LauncherSettingsActivity
+scroll_shots launcher-settings-bb7
+set_pref string home_style bb10
 
 if [ "$RELEASE" = 0 ]; then
   echo "Hub settings"
@@ -232,6 +238,23 @@ for style in bb10 bb7; do
   home
 done
 
+# --- The Phone colours theme (the launcher follows the phone's wallpaper colours) ------------------------------------
+if [ "$HAVE_PREFS" = 1 ]; then
+  echo "Phone colours theme"
+  set_pref string home_style bb10
+  set_pref string appearance_mode follow-system
+  set_pref string appearance_accent phone
+  home
+  shot theme-phone-home
+  adbs input swipe "$LEFT" "$MID" "$RIGHT" "$MID" 300; sleep 1; shot theme-phone-hub
+  start LauncherSettingsActivity
+  shot theme-phone-settings
+  # Back to the default BlackBerry theme (no stored choice) for the rest.
+  set_pref string appearance_mode dark
+  set_pref string appearance_accent blue
+  home
+fi
+
 # --- Guided part: screens that need keys and taps ------------------------------------------------------------------
 if [ "$MANUAL" = 1 ]; then
   echo
@@ -243,12 +266,13 @@ if [ "$MANUAL" = 1 ]; then
   }
   [ "$HAVE_PREFS" = 1 ] && set_pref string home_style bb10 && home
   guided hub-page "BlackBerry 10: swipe right to the Hub."
-  guided widgets-page "BlackBerry 10: the Widgets page (swipe right past the Hub), with a widget added if you have one."
-  guided hub-peek "BlackBerry 10 Home: drag in from the very left edge so the peek panel is open."
-  guided active-frames "BlackBerry 10 Home with some apps open (Active Frames)."
-  guided home-widget-tile "BlackBerry 10 Home with a widget added under Widgets on Home."
+  guided hub-peek "BlackBerry 10 Home: drag in from the very left edge so the peek panel is open (the new design)."
+  guided home-empty "BlackBerry 10 Home with no apps open (close them all, or clear Tenseven's recents): the empty home."
+  guided active-frames "BlackBerry 10 Home with some apps open: the recent-app cards (Active Frames)."
+  guided widgets-page "BlackBerry 10: the Widgets page, with the built-in cards (Launcher Settings, Widgets, switch some on) and no widget added yet."
+  guided widgets-page-with-widget "The Widgets page with a widget added; each shows Up, Down, Remove below it in Edit mode."
+  guided widgets-page-edit "The Widgets page in Edit mode (Edit widgets): the three buttons under each widget."
   guided edit-home "BlackBerry 10: Edit Home (gear, or Command: edit home). The Reset / Cancel / Done bar stays at the bottom."
-  guided edit-home-widgets "Edit Home scrolled to Widgets on Home."
   guided command "Command (Alt+Space, or swipe down on the BlackBerry 10 home), with a few letters typed."
   guided all-apps "All Apps (A to Z)."
   guided app-privacy-row "All Apps (BlackBerry 10 bottom bar, All Apps), move to an app with the trackpad or arrows and press Space: its privacy detail (permissions and special access) opens."
@@ -257,8 +281,11 @@ if [ "$MANUAL" = 1 ]; then
   guided bb7-menu "BlackBerry 7: open the menu (Alt+Enter or the three dots)."
   guided bb7-desktop-icons "BlackBerry 7 with icons added to the home screen (Add to home screen)."
   guided bb7-tray-all "BlackBerry 7 with the All panel open."
-  guided sound-profiles "Sound Profiles, if switched on in Extras (tap the speaker icon)."
-  guided extras "An extra app, for example Calc Plus or Notes."
+  guided sound-profiles "Sound Profiles, if switched on in Extras (tap the speaker icon): it now follows the launcher theme."
+  guided notes "Notes, if switched on in Extras."
+  guided calc-plus "Calc Plus, if switched on in Extras."
+  guided game-2048 "2048, if switched on in Extras (the games share the launcher's colours)."
+  guided game-sudoku "Sudoku, if switched on in Extras."
   echo
   echo "Last one needs the screen off. In Launcher Settings, switch on the lock layer and allow both permissions first."
   printf 'Capture the lock layer on a real wake now? (y/N): '
@@ -270,6 +297,21 @@ if [ "$MANUAL" = 1 ]; then
     echo "(The phone is on its lock screen; unlock it yourself.)"
   fi
 fi
+
+# --- Files named for the docs --------------------------------------------------------------------------------------
+# docs-ready/ holds the same pictures without the order number (setup-home.png, ...), 640 px wide when sips or
+# ImageMagick is on this computer, so they can be copied straight into docs/images/.
+mkdir -p "$OUT/docs-ready"
+for f in "$OUT"/[0-9][0-9]-*.png; do
+  [ -e "$f" ] || continue
+  base="$(basename "$f")"
+  dest="$OUT/docs-ready/${base#??-}"
+  cp "$f" "$dest"
+  if command -v sips >/dev/null; then sips --resampleWidth 640 "$dest" >/dev/null 2>&1 || true
+  elif command -v convert >/dev/null; then convert "$dest" -resize 640x "$dest" 2>/dev/null || true
+  fi
+done
+echo "Docs-ready copies: $OUT/docs-ready"
 
 echo
 echo "Done: $N screenshots in $OUT"

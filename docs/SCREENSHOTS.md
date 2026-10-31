@@ -29,13 +29,15 @@ Automatic (no touching the phone):
 |---|---|
 | Setup steps | home app, home screen style, contacts, photo counts, notification access, usage access, theme and wallpaper, icon grid, widgets, Hub, lock screen, extra apps (the longer ones also scrolled) |
 | Setup overview | the screen from Launcher Settings, then Setup, scrolled to the end |
-| Launcher Settings | scrolled from the top until the picture stops changing |
+| Launcher Settings | scrolled from the top until the picture stops changing, once with the BlackBerry 10 home style and once with BlackBerry 7 (its own options show only there) |
 | Other screens | Hub settings (scrolled), Backup, the lock layer (a preview), the home style chooser |
 | Home screens | BlackBerry 10 and BlackBerry 7, each with a swipe right and a swipe left |
+| Phone colours theme | the home, the Hub and Launcher Settings in the Phone colours theme (then back to BlackBerry) |
 
-Guided (the script names a screen, you get the phone there, press Enter): the Hub, Widgets page, Hub peek, Active
-Frames, a widget tile, Edit Home with its bottom bar, Command, All Apps with a privacy row, Appearance, the BlackBerry 7
-menu, home icons and All panel, Sound Profiles and an extra app. Type `s` to skip one. The last prompt wakes the
+Guided (the script names a screen, you get the phone there, press Enter): the Hub, the peek (drag in from the left
+edge), the empty home, Active Frames (recent-app cards), the Widgets page (built-in cards, with a widget, in Edit
+mode), Edit Home with its bottom bar, Command, All Apps with a privacy row, Appearance, the BlackBerry 7 menu, home
+icons and All panel, Sound Profiles, Notes, Calc Plus, 2048 and Sudoku. Type `s` to skip one. The last prompt wakes the
 screen to capture the lock layer on a real lock screen (switch it on and allow both permissions first).
 
 ## While it runs
@@ -47,11 +49,13 @@ screen to capture the lock layer on a real lock screen (switch it on and allow b
 - **If something looks wrong,** just run it again with a new `-o` folder. It puts your preferences back each time, so
   running it twice is safe.
 
-Files are numbered in the order taken (`01-setup-home.png`, `02-setup-style.png`, ...).
+Files are numbered in the order taken (`01-setup-home.png`, `02-setup-style.png`, ...). The same pictures, without the
+number and 640 px wide (when `sips` or ImageMagick is installed), are also written to `docs-ready/`: copy them into
+`docs/images/` to refresh the README and the user guide.
 
 ## What it changes on the phone
 
-To reach each screen it sets two preferences (`onboarding_done`, `home_style`) in the debug app's private storage and
+To reach each screen it sets a few preferences (`onboarding_done`, `home_style`, and for the Phone colours shots the theme) in the debug app's private storage and
 stops the app. It saves the originals first and puts them back when it finishes, unless you pass `--keep`. It never
 touches the release app, contacts, or anything outside Tenseven.
 
