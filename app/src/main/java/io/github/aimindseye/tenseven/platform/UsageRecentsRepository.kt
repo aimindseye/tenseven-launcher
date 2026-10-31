@@ -3,6 +3,7 @@ package io.github.aimindseye.tenseven.platform
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.os.SystemClock
 import io.github.aimindseye.tenseven.model.ForegroundEvent
 import io.github.aimindseye.tenseven.model.RecentApps
 import io.github.aimindseye.tenseven.model.UsageSample
@@ -31,14 +32,17 @@ class UsageRecentsRepository(
         limit: Int = RecentApps.MAX,
         windowMs: Long = WINDOW_MS,
     ): List<String> {
-        val started = launches.load()
+        // Nothing from before the phone last started, or before the look-back window, counts as open.
+        val bootMs = System.currentTimeMillis() - SystemClock.elapsedRealtime()
+        val since = maxOf(System.currentTimeMillis() - windowMs, bootMs)
+        val started = RecentApps.since(launches.load(), since)
         val manager =
             appContext.getSystemService(UsageStatsManager::class.java).takeIf { hasAccess() }
                 ?: return RecentApps.select(started, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit)
         val now = System.currentTimeMillis()
         val events =
             runCatching {
-                val stream = manager.queryEvents(now - windowMs, now)
+                val stream = manager.queryEvents(since, now)
                 val event = UsageEvents.Event()
                 val samples = mutableListOf<UsageSample>()
                 while (stream.hasNextEvent()) {
