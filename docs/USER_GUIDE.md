@@ -23,10 +23,10 @@ Tenseven is a launcher for phones with a physical keyboard. Screenshots are from
 | <img src="images/setup-grid.png" width="190" alt="Icon grid"> | <img src="images/setup-grid-more.png" width="190" alt="Icon grid, more"> | <img src="images/setup-widgets.png" width="190" alt="Widgets"> | <img src="images/setup-hub.png" width="190" alt="Hub"> |
 | <sub>Icon grid</sub> | <sub>Icon grid, more</sub> | <sub>Widgets</sub> | <sub>Hub</sub> |
 
-|  |  |  |
-|---|---|---|
-| <img src="images/setup-lock.png" width="190" alt="Lock screen"> | <img src="images/setup-extras.png" width="190" alt="Extra apps"> | <img src="images/setup-extras-more.png" width="190" alt="Extra apps, more"> |
-| <sub>Lock screen</sub> | <sub>Extra apps</sub> | <sub>Extra apps, more</sub> |
+|  |  |  |  |
+|---|---|---|---|
+| <img src="images/setup-lock.png" width="190" alt="Lock screen"> | <img src="images/setup-lock-more.png" width="190" alt="Lock screen, more"> | <img src="images/setup-extras.png" width="190" alt="Extra apps"> | <img src="images/setup-extras-more.png" width="190" alt="Extra apps, more"> |
+| <sub>Lock screen</sub> | <sub>Lock screen, more</sub> | <sub>Extra apps</sub> | <sub>Extra apps, more</sub> |
 
 ## Changing setup later
 
@@ -34,18 +34,18 @@ Launcher Settings, then **Setup**, lists every choice with its state: home app, 
 
 |  |  |  |  |
 |---|---|---|---|
-| <img src="images/setup-overview-01.png" width="190" alt="Setup overview 1 of 10"> | <img src="images/setup-overview-02.png" width="190" alt="Setup overview 2 of 10"> | <img src="images/setup-overview-03.png" width="190" alt="Setup overview 3 of 10"> | <img src="images/setup-overview-04.png" width="190" alt="Setup overview 4 of 10"> |
-| <sub>Setup overview 1 of 10</sub> | <sub>Setup overview 2 of 10</sub> | <sub>Setup overview 3 of 10</sub> | <sub>Setup overview 4 of 10</sub> |
+| <img src="images/setup-overview-01.png" width="190" alt="Setup overview 1 of 9"> | <img src="images/setup-overview-02.png" width="190" alt="Setup overview 2 of 9"> | <img src="images/setup-overview-03.png" width="190" alt="Setup overview 3 of 9"> | <img src="images/setup-overview-04.png" width="190" alt="Setup overview 4 of 9"> |
+| <sub>Setup overview 1 of 9</sub> | <sub>Setup overview 2 of 9</sub> | <sub>Setup overview 3 of 9</sub> | <sub>Setup overview 4 of 9</sub> |
 
 |  |  |  |  |
 |---|---|---|---|
-| <img src="images/setup-overview-05.png" width="190" alt="Setup overview 5 of 10"> | <img src="images/setup-overview-06.png" width="190" alt="Setup overview 6 of 10"> | <img src="images/setup-overview-07.png" width="190" alt="Setup overview 7 of 10"> | <img src="images/setup-overview-08.png" width="190" alt="Setup overview 8 of 10"> |
-| <sub>Setup overview 5 of 10</sub> | <sub>Setup overview 6 of 10</sub> | <sub>Setup overview 7 of 10</sub> | <sub>Setup overview 8 of 10</sub> |
+| <img src="images/setup-overview-05.png" width="190" alt="Setup overview 5 of 9"> | <img src="images/setup-overview-06.png" width="190" alt="Setup overview 6 of 9"> | <img src="images/setup-overview-07.png" width="190" alt="Setup overview 7 of 9"> | <img src="images/setup-overview-08.png" width="190" alt="Setup overview 8 of 9"> |
+| <sub>Setup overview 5 of 9</sub> | <sub>Setup overview 6 of 9</sub> | <sub>Setup overview 7 of 9</sub> | <sub>Setup overview 8 of 9</sub> |
 
-|  |  |
-|---|---|
-| <img src="images/setup-overview-09.png" width="190" alt="Setup overview 9 of 10"> | <img src="images/setup-overview-10.png" width="190" alt="Setup overview 10 of 10"> |
-| <sub>Setup overview 9 of 10</sub> | <sub>Setup overview 10 of 10</sub> |
+|  |
+|---|
+| <img src="images/setup-overview-09.png" width="190" alt="Setup overview 9 of 9"> |
+| <sub>Setup overview 9 of 9</sub> |
 
 ## Choosing a home screen
 
@@ -58,13 +58,13 @@ You can change your mind any time. Settings are saved as you tap.
 
 |  |  |  |  |
 |---|---|---|---|
-| <img src="images/home-style.png" width="190" alt="Home style chooser"> | <img src="images/launcher-settings-01.png" width="190" alt="Launcher Settings 1 of 7"> | <img src="images/launcher-settings-02.png" width="190" alt="Launcher Settings 2 of 7"> | <img src="images/launcher-settings-03.png" width="190" alt="Launcher Settings 3 of 7"> |
-| <sub>Home style chooser</sub> | <sub>Launcher Settings 1 of 7</sub> | <sub>Launcher Settings 2 of 7</sub> | <sub>Launcher Settings 3 of 7</sub> |
+| <img src="images/home-style.png" width="190" alt="Home style chooser"> | <img src="images/launcher-settings-01.png" width="190" alt="Launcher Settings 1 of 6"> | <img src="images/launcher-settings-02.png" width="190" alt="Launcher Settings 2 of 6"> | <img src="images/launcher-settings-03.png" width="190" alt="Launcher Settings 3 of 6"> |
+| <sub>Home style chooser</sub> | <sub>Launcher Settings 1 of 6</sub> | <sub>Launcher Settings 2 of 6</sub> | <sub>Launcher Settings 3 of 6</sub> |
 
-|  |  |  |  |
-|---|---|---|---|
-| <img src="images/launcher-settings-04.png" width="190" alt="Launcher Settings 4 of 7"> | <img src="images/launcher-settings-05.png" width="190" alt="Launcher Settings 5 of 7"> | <img src="images/launcher-settings-06.png" width="190" alt="Launcher Settings 6 of 7"> | <img src="images/launcher-settings-07.png" width="190" alt="Launcher Settings 7 of 7"> |
-| <sub>Launcher Settings 4 of 7</sub> | <sub>Launcher Settings 5 of 7</sub> | <sub>Launcher Settings 6 of 7</sub> | <sub>Launcher Settings 7 of 7</sub> |
+|  |  |  |
+|---|---|---|
+| <img src="images/launcher-settings-04.png" width="190" alt="Launcher Settings 4 of 6"> | <img src="images/launcher-settings-05.png" width="190" alt="Launcher Settings 5 of 6"> | <img src="images/launcher-settings-06.png" width="190" alt="Launcher Settings 6 of 6"> |
+| <sub>Launcher Settings 4 of 6</sub> | <sub>Launcher Settings 5 of 6</sub> | <sub>Launcher Settings 6 of 6</sub> |
 
 ## BlackBerry 7 home
 
@@ -81,10 +81,22 @@ You can change your mind any time. Settings are saved as you tap.
 | <img src="images/home-bb7.png" width="190" alt="BlackBerry 7 home"> | <img src="images/bb7-menu.png" width="190" alt="Menu"> | <img src="images/bb7-desktop-icons.png" width="190" alt="Icons on the home screen"> | <img src="images/bb7-tray-all.png" width="190" alt="All panel"> |
 | <sub>BlackBerry 7 home</sub> | <sub>Menu</sub> | <sub>Icons on the home screen</sub> | <sub>All panel</sub> |
 
-|  |
-|---|
-| <img src="images/home-bb7-swipe-left.png" width="190" alt="Apps (swipe left)"> |
-| <sub>Apps (swipe left)</sub> |
+|  |  |
+|---|---|
+| <img src="images/home-bb7-swipe-right.png" width="190" alt="Hub (swipe right)"> | <img src="images/home-bb7-swipe-left.png" width="190" alt="Apps (swipe left)"> |
+| <sub>Hub (swipe right)</sub> | <sub>Apps (swipe left)</sub> |
+
+Launcher Settings with BlackBerry 7 chosen. The BlackBerry 7 options (panels, rows, banner and tray darkness) show only while BlackBerry 7 is the home style:
+
+|  |  |  |  |
+|---|---|---|---|
+| <img src="images/launcher-settings-bb7-01.png" width="190" alt="BlackBerry 7 settings 1 of 6"> | <img src="images/launcher-settings-bb7-02.png" width="190" alt="BlackBerry 7 settings 2 of 6"> | <img src="images/launcher-settings-bb7-03.png" width="190" alt="BlackBerry 7 settings 3 of 6"> | <img src="images/launcher-settings-bb7-04.png" width="190" alt="BlackBerry 7 settings 4 of 6"> |
+| <sub>BlackBerry 7 settings 1 of 6</sub> | <sub>BlackBerry 7 settings 2 of 6</sub> | <sub>BlackBerry 7 settings 3 of 6</sub> | <sub>BlackBerry 7 settings 4 of 6</sub> |
+
+|  |  |
+|---|---|
+| <img src="images/launcher-settings-bb7-05.png" width="190" alt="BlackBerry 7 settings 5 of 6"> | <img src="images/launcher-settings-bb7-06.png" width="190" alt="BlackBerry 7 settings 6 of 6"> |
+| <sub>BlackBerry 7 settings 5 of 6</sub> | <sub>BlackBerry 7 settings 6 of 6</sub> |
 
 ## BlackBerry 10 home
 
@@ -92,8 +104,18 @@ You can change your mind any time. Settings are saved as you tap.
 
 |  |  |  |  |
 |---|---|---|---|
-| <img src="images/home-bb10.png" width="190" alt="BlackBerry 10 home"> | <img src="images/active-frames.png" width="190" alt="Active Frames"> | <img src="images/home-bb10-swipe-right.png" width="190" alt="Hub (swipe right)"> | <img src="images/home-bb10-swipe-left.png" width="190" alt="App pages (swipe left)"> |
-| <sub>BlackBerry 10 home</sub> | <sub>Active Frames</sub> | <sub>Hub (swipe right)</sub> | <sub>App pages (swipe left)</sub> |
+| <img src="images/home-bb10.png" width="190" alt="BlackBerry 10 home"> | <img src="images/active-frames.png" width="190" alt="Active Frames"> | <img src="images/home-empty.png" width="190" alt="Nothing open yet"> | <img src="images/home-bb10-swipe-right.png" width="190" alt="Hub (swipe right)"> |
+| <sub>BlackBerry 10 home</sub> | <sub>Active Frames</sub> | <sub>Nothing open yet</sub> | <sub>Hub (swipe right)</sub> |
+
+|  |
+|---|
+| <img src="images/home-bb10-swipe-left.png" width="190" alt="App pages (swipe left)"> |
+| <sub>App pages (swipe left)</sub> |
+
+|  |
+|---|
+| <img src="images/home-bb10-swipe-left.png" width="190" alt="App pages (swipe left)"> |
+| <sub>App pages (swipe left)</sub> |
 
 ## Widgets page
 
@@ -116,6 +138,13 @@ Launcher Settings, **Icon grid**: choose Auto or 3 to 6 columns, 1 to 3 rows, th
 
 **Theme** has eight looks. **BlackBerry** is the default: pure black with the BlackBerry blue, on the launcher and on the built-in apps (Calc Plus, Notes, Sound Profiles, the games). **Phone colours** follows your wallpaper colours and the phone's light or dark setting (Android 12 or newer; older versions show the BlackBerry blue). The rest are Midnight, Daylight, Forest, Dusk, Amber and Slate. They work on an ordinary install and are saved with a backup. Android has no way to install other apps' themes into a launcher; you can import a theme file (see **Theme files** below). **Wallpapers** has eight pictures Tenseven draws itself, with no outside artwork: pick one, then choose **Home**, **Lock** or **Both**.
 
+The launcher in the Phone colours theme:
+
+|  |  |  |
+|---|---|---|
+| <img src="images/theme-phone-home.png" width="190" alt="Phone colours: home"> | <img src="images/theme-phone-hub.png" width="190" alt="Phone colours: Hub"> | <img src="images/theme-phone-settings.png" width="190" alt="Phone colours: Launcher Settings"> |
+| <sub>Phone colours: home</sub> | <sub>Phone colours: Hub</sub> | <sub>Phone colours: Launcher Settings</sub> |
+
 ## Hub settings and the Hub peek
 
 Launcher Settings, **Hub settings** (also the Hub's own settings button): **Clear the Hub now** forgets everything the Hub holds, **Apps in the Hub** turns individual apps off so their notifications stay out of the Hub, the peek and the lock layer, and **Show message text** decides whether the latest message may appear on the peek and the lock layer (off: names and counts only). Nothing is stored.
@@ -124,17 +153,30 @@ Launcher Settings, **Hub settings** (also the Hub's own settings button): **Clea
 
 |  |  |  |  |
 |---|---|---|---|
-| <img src="images/hub-settings-01.png" width="190" alt="Hub settings 1 of 7"> | <img src="images/hub-settings-02.png" width="190" alt="Hub settings 2 of 7"> | <img src="images/hub-settings-03.png" width="190" alt="Hub settings 3 of 7"> | <img src="images/hub-settings-04.png" width="190" alt="Hub settings 4 of 7"> |
-| <sub>Hub settings 1 of 7</sub> | <sub>Hub settings 2 of 7</sub> | <sub>Hub settings 3 of 7</sub> | <sub>Hub settings 4 of 7</sub> |
+| <img src="images/hub-settings-01.png" width="190" alt="Hub settings 1 of 8"> | <img src="images/hub-settings-02.png" width="190" alt="Hub settings 2 of 8"> | <img src="images/hub-settings-03.png" width="190" alt="Hub settings 3 of 8"> | <img src="images/hub-settings-04.png" width="190" alt="Hub settings 4 of 8"> |
+| <sub>Hub settings 1 of 8</sub> | <sub>Hub settings 2 of 8</sub> | <sub>Hub settings 3 of 8</sub> | <sub>Hub settings 4 of 8</sub> |
 
-|  |  |  |
-|---|---|---|
-| <img src="images/hub-settings-05.png" width="190" alt="Hub settings 5 of 7"> | <img src="images/hub-settings-06.png" width="190" alt="Hub settings 6 of 7"> | <img src="images/hub-settings-07.png" width="190" alt="Hub settings 7 of 7"> |
-| <sub>Hub settings 5 of 7</sub> | <sub>Hub settings 6 of 7</sub> | <sub>Hub settings 7 of 7</sub> |
+|  |  |  |  |
+|---|---|---|---|
+| <img src="images/hub-settings-05.png" width="190" alt="Hub settings 5 of 8"> | <img src="images/hub-settings-06.png" width="190" alt="Hub settings 6 of 8"> | <img src="images/hub-settings-07.png" width="190" alt="Hub settings 7 of 8"> | <img src="images/hub-settings-08.png" width="190" alt="Hub settings 8 of 8"> |
+| <sub>Hub settings 5 of 8</sub> | <sub>Hub settings 6 of 8</sub> | <sub>Hub settings 7 of 8</sub> | <sub>Hub settings 8 of 8</sub> |
+
+
+**The peek** slides in from the left edge over Home, in the phone's own colours:
+
+|  |
+|---|
+| <img src="images/hub-peek.png" width="190" alt="Hub peek"> |
+| <sub>Hub peek</sub> |
 
 ## Edit Home
 
 Edit Home orders the app grid and the bottom bar and chooses which parts of the home show (the status dials, the date, the search row). It ends in a bar that stays on screen: **Reset**, **Cancel**, **Done**. Open it by long-pressing an empty spot on the app pages, long-pressing a bottom-bar slot, or typing `edit home` in Command.
+
+|  |
+|---|
+| <img src="images/edit-home.png" width="190" alt="Edit Home with its bottom bar"> |
+| <sub>Edit Home with its bottom bar</sub> |
 
 ## Lock layer
 
@@ -212,10 +254,10 @@ If you switch on **Sound Profiles** in Extras, tapping the speaker opens it (Nor
 
 Calc Plus, Notes, Sound Profiles and ten games are built in but switched off. Turn them on in the Extras step of setup (Launcher Settings, then Setup, runs it again); they then appear like any other app. Turning them off hides them again.
 
-|  |
-|---|
-| <img src="images/notes.png" width="190" alt="An extra app (Notes)"> |
-| <sub>An extra app (Notes)</sub> |
+|  |  |  |  |
+|---|---|---|---|
+| <img src="images/notes.png" width="190" alt="Notes"> | <img src="images/calc-plus.png" width="190" alt="Calc Plus"> | <img src="images/game-2048.png" width="190" alt="2048"> | <img src="images/game-sudoku.png" width="190" alt="Sudoku"> |
+| <sub>Notes</sub> | <sub>Calc Plus</sub> | <sub>2048</sub> | <sub>Sudoku</sub> |
 
 ## Default apps and weather
 
