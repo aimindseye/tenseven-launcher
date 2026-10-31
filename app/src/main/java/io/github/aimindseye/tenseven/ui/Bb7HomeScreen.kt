@@ -1,7 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
 import android.content.Intent
-import android.provider.AlarmClock
 import android.widget.Toast
 import android.view.KeyEvent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -65,8 +64,6 @@ import androidx.compose.ui.unit.sp
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.SableTheme
-import io.github.aimindseye.tenseven.live.LiveAvailability
-import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
@@ -75,15 +72,12 @@ import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
-import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.HomeApps
-import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
-import io.github.aimindseye.tenseven.platform.NextAlarm
 import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
@@ -459,12 +453,6 @@ fun Bb7HomeScreen(
                         onOpenHub = onOpenHub,
                     )
                     if (!open && !searching) {
-                        Bb7WidgetStrip(
-                            widgets = SettingsWidgets.strip(widgets),
-                            calendar = live.calendar,
-                            media = live.music,
-                            refreshGeneration = refreshGeneration,
-                        )
                         Bb7Desktop(
                             apps = desktopApps,
                             columns = columns,
@@ -526,66 +514,6 @@ fun Bb7HomeScreen(
         }
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-}
-
-/** One widget of the strip: its name small, its line below, a tap opens the phone's app for it. */
-private data class Bb7Widget(
-    val title: String,
-    val line: String,
-    val open: () -> Unit,
-)
-
-/** The widgets Launcher Settings turned on (Calendar, Alarm, Now Playing), side by side under the banner. */
-@Composable
-private fun Bb7WidgetStrip(
-    widgets: List<String>,
-    calendar: LiveDatum,
-    media: LiveDatum,
-    refreshGeneration: Int,
-) {
-    if (widgets.isEmpty()) return
-    val context = LocalContext.current
-    val alarm = remember(refreshGeneration) { NextAlarm.text(context) }
-    val cards =
-        widgets.map { widget ->
-            when (widget) {
-                GlanceWidgets.CALENDAR ->
-                    Bb7Widget(
-                        "Calendar",
-                        calendar.detail.takeIf { calendar.availability == LiveAvailability.LIVE }.orEmpty().ifBlank { "No events" },
-                    ) { DefaultApps.launch(context, DefaultApps.CALENDAR) }
-                GlanceWidgets.ALARM ->
-                    Bb7Widget("Alarm", alarm ?: "No alarm") {
-                        runCatching {
-                            context.startActivity(Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                        }
-                    }
-                else ->
-                    Bb7Widget(
-                        "Now Playing",
-                        media.detail.takeIf { media.availability == LiveAvailability.LIVE }.orEmpty().ifBlank { "Nothing playing" },
-                    ) { DefaultApps.launch(context, DefaultApps.MUSIC) }
-            }
-        }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        cards.forEach { card ->
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable(onClick = card.open)
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-            ) {
-                Text(card.title, color = BANNER_MUTED, fontSize = 10.sp, maxLines = 1)
-                Text(card.line, color = Color.White, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            }
-        }
-    }
 }
 
 /**

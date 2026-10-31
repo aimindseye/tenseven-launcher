@@ -392,6 +392,8 @@ fun SableStartScreen(
     onCanNavigateBackChanged: (Boolean) -> Unit = {},
     /** Back from the Hub or an app page is about to slide to the home page. */
     onBackToHomePage: () -> Unit = {},
+    /** A visit from the BlackBerry 7 home: its Home page stays empty so the BlackBerry 10 cards never flash. */
+    blankHomePage: Boolean = false,
     /** Start tiles chosen before Home became an ordered list; seeds the grid order with [initialHomeApps]. */
     initialStartTileKeys: Set<String>? = null,
     /** The three-page Home apps; they lead the app grid until the user orders it. */
@@ -755,6 +757,7 @@ fun SableStartScreen(
                                                 onRequestContactsPermission = onRequestContactsPermission,
                                             )
                                         }
+                                    page == StartPages.HOME && blankHomePage -> Spacer(Modifier.fillMaxSize())
                                     page == StartPages.HOME ->
                                         ActiveFramesPage(
                                             frames = frames,
