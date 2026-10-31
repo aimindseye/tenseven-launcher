@@ -88,7 +88,7 @@ You can change your mind any time. Settings are saved as you tap.
 
 ## BlackBerry 10 home
 
-**Active Frames** show the apps you opened recently, newest first, up to eight cards in two columns, each with the app's icon and name. Press Enter or tap to open one; the **×**, a long-press, or the X or Backspace key hides that card until you open the app again. Apps you start from Tenseven appear at once; with usage access, apps you opened another way (from a notification, say) appear too. Android only lets the phone's built-in home screen show other apps' live pictures, so on an ordinary install the cards are icons, not live pictures. Until you have opened an app the home is empty: widgets live on the Widgets page, not here. Swipe down for Command, swipe right for Hub.
+**Active Frames** show the apps you opened recently, newest first, up to eight cards in two columns, each with the app's icon and name. Press Enter or tap to open one; the **×**, a long-press, or the X or Backspace key hides that card until you open the app again. Apps you start from Tenseven appear at once; with usage access, apps you opened another way (from a notification, say) appear too, if they stayed in front for a couple of seconds in the last 12 hours; a permission prompt or picker that another app flashes up does not count. Android only lets the phone's built-in home screen show other apps' live pictures, so on an ordinary install the cards are icons, not live pictures. Until you have opened an app the home is empty: widgets live on the Widgets page, not here. Swipe down for Command, swipe right for Hub.
 
 |  |  |  |  |
 |---|---|---|---|

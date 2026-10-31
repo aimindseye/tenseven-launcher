@@ -5,6 +5,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import io.github.aimindseye.tenseven.model.ForegroundEvent
 import io.github.aimindseye.tenseven.model.RecentApps
+import io.github.aimindseye.tenseven.model.UsageSample
 import io.github.aimindseye.tenseven.onboarding.SetupStatus
 
 /**
@@ -39,20 +40,24 @@ class UsageRecentsRepository(
             runCatching {
                 val stream = manager.queryEvents(now - windowMs, now)
                 val event = UsageEvents.Event()
-                buildList {
-                    while (stream.hasNextEvent()) {
-                        stream.getNextEvent(event)
-                        if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-                            add(ForegroundEvent(event.packageName.orEmpty(), event.timeStamp))
-                        }
+                val samples = mutableListOf<UsageSample>()
+                while (stream.hasNextEvent()) {
+                    stream.getNextEvent(event)
+                    val resumed = event.eventType == UsageEvents.Event.ACTIVITY_RESUMED
+                    val left =
+                        event.eventType == UsageEvents.Event.ACTIVITY_PAUSED || event.eventType == UsageEvents.Event.ACTIVITY_STOPPED
+                    if (resumed || left) {
+                        samples.add(UsageSample(event.packageName.orEmpty(), event.className.orEmpty(), resumed, event.timeStamp))
                     }
                 }
+                // Only apps that stayed in front: a permission prompt or picker another app flashes up is not "opened".
+                RecentApps.opened(samples)
             }.getOrDefault(emptyList())
         return RecentApps.select(started + events, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit)
     }
 
     companion object {
-        /** Two days back is plenty for a row of a dozen apps, and keeps the query small. */
-        const val WINDOW_MS = 2L * 24 * 60 * 60 * 1000
+        /** Half a day back: Active Frames are what you have open now, not what you used last week. */
+        const val WINDOW_MS = 12L * 60 * 60 * 1000
     }
 }
