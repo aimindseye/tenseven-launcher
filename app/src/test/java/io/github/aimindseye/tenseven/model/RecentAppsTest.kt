@@ -76,4 +76,11 @@ class RecentAppsTest {
     fun aLeaveWithoutAnEarlierResumeIsIgnored() {
         assertEquals(emptyList<ForegroundEvent>(), RecentApps.opened(listOf(left("a", "One", 5_000))))
     }
+
+    @Test
+    fun nothingFromBeforeTheCutoffCounts() {
+        val events = listOf(at("old", 100), at("edge", 500), at("new", 900))
+        assertEquals(listOf("edge", "new"), RecentApps.since(events, 500).map { it.packageName })
+        assertEquals(emptyList<ForegroundEvent>(), RecentApps.since(events, 1_000))
+    }
 }

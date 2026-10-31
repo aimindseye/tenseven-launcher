@@ -53,6 +53,15 @@ object RecentLaunches {
 object RecentApps {
     const val MAX = 12
 
+    /**
+     * [events] that happened at or after [sinceMs]. Nothing from before the phone started or before the look-back
+     * window is "open" any more, however recently it was launched from here.
+     */
+    fun since(
+        events: List<ForegroundEvent>,
+        sinceMs: Long,
+    ): List<ForegroundEvent> = events.filter { it.timeMs >= sinceMs }
+
     /** An app has to stay in front this long to count as opened; anything quicker is a pass-through screen. */
     const val MIN_FOREGROUND_MS = 2_000L
 
