@@ -100,7 +100,7 @@ internal fun WidgetsPage(
 }
 
 @Composable
-private fun WidgetItem(
+internal fun WidgetItem(
     controller: WidgetHostController,
     id: Int,
     editing: Boolean,
@@ -144,7 +144,7 @@ private fun WidgetItem(
 }
 
 @Composable
-private fun WidgetPicker(
+internal fun WidgetPicker(
     providers: List<AppWidgetProviderInfo>,
     onPick: (AppWidgetProviderInfo) -> Unit,
     onDismiss: () -> Unit,
@@ -230,7 +230,7 @@ private data class PickerRow(
 )
 
 @Composable
-private fun PageButton(
+internal fun PageButton(
     label: String,
     onClick: () -> Unit,
 ) {
@@ -247,5 +247,26 @@ private fun PageButton(
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.labelLarge,
         )
+    }
+}
+
+/** The widgets shown as tiles on the home screen, and the host that draws them; read where the tiles are laid out. */
+internal class HomeWidgets(
+    val controller: WidgetHostController?,
+    val ids: List<Int>,
+)
+
+internal val LocalHomeWidgets = androidx.compose.runtime.compositionLocalOf { HomeWidgets(null, emptyList()) }
+
+/** The theme plus the home widgets, so the tiles deep in the Start screen reach them without a long parameter chain. */
+@Composable
+internal fun SableThemeWithWidgets(
+    appearance: io.github.aimindseye.tenseven.design.SableAppearance,
+    controller: WidgetHostController?,
+    ids: List<Int>,
+    content: @Composable () -> Unit,
+) {
+    io.github.aimindseye.tenseven.design.SableTheme(appearance = appearance) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalHomeWidgets provides HomeWidgets(controller, ids), content = content)
     }
 }

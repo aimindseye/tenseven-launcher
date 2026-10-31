@@ -54,6 +54,7 @@ import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
+import io.github.aimindseye.tenseven.platform.WidgetTarget
 import io.github.aimindseye.tenseven.ui.Bb7HomeScreen
 import io.github.aimindseye.tenseven.ui.SableStartScreen
 import java.util.concurrent.Executors
@@ -120,7 +121,12 @@ class SableStartActivity : ComponentActivity() {
     private val widgetsPageEnabled = mutableStateOf(true)
     private val widgetIds = mutableStateOf<List<Int>>(emptyList())
     private val widgetsGeneration = mutableStateOf(0)
-    private val widgetController by lazy { WidgetHostController(this, startStateRepository) { widgetIds.value = it } }
+    private val homeWidgetIds = mutableStateOf<List<Int>>(emptyList())
+    private val widgetController by lazy {
+        WidgetHostController(this, startStateRepository) { target, ids ->
+            if (target == WidgetTarget.HOME) homeWidgetIds.value = ids else widgetIds.value = ids
+        }
+    }
     private val homeWidgets = mutableStateOf(GlanceWidgets.DEFAULT)
     private var opaqueWindowBackground: Drawable? = null
 
@@ -238,6 +244,7 @@ class SableStartActivity : ComponentActivity() {
         gridLabels.value = startStateRepository.loadGridLabels()
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
+        homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         recentTasksRepository = RecentTasksRepository(this)
         usageRecentsRepository = UsageRecentsRepository(this)
@@ -399,6 +406,7 @@ class SableStartActivity : ComponentActivity() {
                     widgetsPage = widgetsPageEnabled.value,
                     widgetsController = widgetController,
                     widgetIds = widgetIds.value,
+                    homeWidgetIds = homeWidgetIds.value,
                     widgetsGeneration = widgetsGeneration.value,
                     showIconLabels = gridLabels.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
@@ -485,6 +493,7 @@ class SableStartActivity : ComponentActivity() {
         gridLabels.value = startStateRepository.loadGridLabels()
         widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
         widgetIds.value = widgetController.load()
+        homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         scheduleInventoryRefresh()
         refreshFrames()

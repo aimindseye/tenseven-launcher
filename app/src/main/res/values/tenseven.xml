@@ -238,4 +238,8 @@
     <string name="ls_hub">Hub settings</string>
     <string name="ls_hub_detail">Clear the Hub, choose which apps feed it, and control message text.</string>
     <string name="ls_section_hub">Hub</string>
+    <string name="edit_reset">Reset</string>
+    <string name="edit_cancel">Cancel</string>
+    <string name="edit_widgets">Widgets on Home</string>
+    <string name="edit_widgets_detail">Widgets from other apps, shown below the frames. They apply at once; Cancel does not undo them.</string>
 </resources>

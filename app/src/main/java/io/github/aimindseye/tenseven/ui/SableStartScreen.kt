@@ -192,6 +192,7 @@ import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.PeopleRepository
 import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
+import io.github.aimindseye.tenseven.platform.WidgetTarget
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyAction
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import io.github.aimindseye.tenseven.privacy.AppAction
@@ -388,6 +389,7 @@ fun SableStartScreen(
     widgetsPage: Boolean = false,
     widgetsController: WidgetHostController? = null,
     widgetIds: List<Int> = emptyList(),
+    homeWidgetIds: List<Int> = emptyList(),
     widgetsGeneration: Int = 0,
     showIconLabels: Boolean = true,
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
@@ -644,7 +646,7 @@ fun SableStartScreen(
         if (settledPage == StartPages.HUB) onRefreshLive()
     }
 
-    SableTheme(appearance = appearance) {
+    SableThemeWithWidgets(appearance, widgetsController, homeWidgetIds) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
@@ -1649,7 +1651,8 @@ private fun GlanceFrames(
         }
     }
 
-    if (widgets.isEmpty()) {
+    val hosted = LocalHomeWidgets.current
+    if (widgets.isEmpty() && hosted.ids.isEmpty()) {
         Box(Modifier.fillMaxSize().focusRequester(firstFocus).focusable(), contentAlignment = Alignment.Center) {
             EmptyState(t("no_apps_are_open_press"))
         }
@@ -1710,6 +1713,11 @@ private fun GlanceFrames(
                 }
                 repeat(ActiveFrames.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
             }
+        }
+        // Widgets from other apps, added in Edit Home: full-width tiles after the Glance frames.
+        val host = hosted.controller
+        if (host != null) {
+            items(hosted.ids, key = { id -> "hosted:$id" }) { id -> WidgetItem(host, id, editing = false) }
         }
     }
 }
@@ -3006,6 +3014,8 @@ private fun EditHomeScreen(
     var picking by remember { mutableStateOf<String?>(null) }
     val startBack = remember { backGeneration }
     val doneFocus = remember { FocusRequester() }
+    val hosted = LocalHomeWidgets.current
+    var pickingWidget by remember { mutableStateOf(false) }
 
     LaunchedEffect(backGeneration) {
         if (backGeneration > startBack) {
@@ -3075,221 +3085,299 @@ private fun EditHomeScreen(
     }
 
     val pickKind = picking
-    LazyColumn(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        contentPadding = PaddingValues(bottom = 28.dp),
-    ) {
-        if (pickKind != null) {
-            val choices = quickBarChoices(apps, appByKey, draft.quickBar)
-            item {
-                MetroHeader(
-                    title = if (pickKind == "bar") t("add_a_slot") else t("replace_slot"),
-                    onBack = { picking = null },
-                )
-                Spacer(Modifier.height(12.dp))
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(bottom = 28.dp),
+        ) {
+            if (pickKind != null) {
+                val choices = quickBarChoices(apps, appByKey, draft.quickBar)
+                item {
+                    MetroHeader(
+                        title = if (pickKind == "bar") t("add_a_slot") else t("replace_slot"),
+                        onBack = { picking = null },
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (choices.isEmpty()) {
+                    item { EmptyState(t("every_available_app_is_already")) }
+                }
+                items(choices, key = { it.token }) { choice ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 52.dp)
+                                .sableFocusRing()
+                                .clickable {
+                                    draft =
+                                        if (pickKind == "bar") {
+                                            draft.copy(quickBar = QuickBar.add(draft.quickBar, choice.token))
+                                        } else {
+                                            val index = pickKind.substringAfter(':').toIntOrNull() ?: -1
+                                            draft.copy(quickBar = QuickBar.replace(draft.quickBar, index, choice.token))
+                                        }
+                                    picking = null
+                                }.padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        QuickSlotMark(slot = choice, size = 32)
+                        Spacer(Modifier.width(14.dp))
+                        Text(choice.label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+                return@LazyColumn
             }
-            if (choices.isEmpty()) {
-                item { EmptyState(t("every_available_app_is_already")) }
-            }
-            items(choices, key = { it.token }) { choice ->
+
+            item(key = "header") {
                 Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 52.dp)
-                            .sableFocusRing()
-                            .clickable {
-                                draft =
-                                    if (pickKind == "bar") {
-                                        draft.copy(quickBar = QuickBar.add(draft.quickBar, choice.token))
-                                    } else {
-                                        val index = pickKind.substringAfter(':').toIntOrNull() ?: -1
-                                        draft.copy(quickBar = QuickBar.replace(draft.quickBar, index, choice.token))
-                                    }
-                                picking = null
-                            }.padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    QuickSlotMark(slot = choice, size = 32)
-                    Spacer(Modifier.width(14.dp))
-                    Text(choice.label, style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-            return@LazyColumn
-        }
-
-        item(key = "header") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = 48.dp).width(48.dp)) {
-                    Text(text = "‹", fontSize = 32.sp, fontWeight = FontWeight.Light)
+                    TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = 48.dp).width(48.dp)) {
+                        Text(text = "‹", fontSize = 32.sp, fontWeight = FontWeight.Light)
+                    }
+                    Text(
+                        text = t("edit_home"),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f).semantics { heading() },
+                    )
                 }
                 Text(
-                    text = t("edit_home"),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f).semantics { heading() },
+                    text = t("drag_or_use_keyboard_order"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(
-                    onClick = { onDone(draft) },
-                    modifier = Modifier.focusRequester(doneFocus).sableFocusRing(),
-                ) { Text(t("done"), style = MaterialTheme.typography.titleMedium) }
+                Text(
+                    text = t("enter_picks_up_and_drops"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                SectionLabel(t("app_grid"))
+                Spacer(Modifier.height(4.dp))
             }
-            Text(
-                text = t("drag_or_use_keyboard_order"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = t("enter_picks_up_and_drops"),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(10.dp))
-            SectionLabel(t("app_grid"))
-            Spacer(Modifier.height(4.dp))
-        }
-        items(draft.gridOrder.chunked(AppGrid.COLUMNS), key = { row -> "grid:" + row.first() }) { row ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                row.forEach { key ->
-                    val app = appByKey[key]
-                    EditGridCell(
-                        app = app,
-                        picked = moving?.let { it.section == EditSection.Grid && it.key == key } == true,
-                        onKey = { event -> itemKeys(EditSection.Grid, key, event) },
-                        onClick = { optionsFor = if (optionsFor == "Grid:$key") null else "Grid:$key" },
-                        onDragStep = { delta -> move(EditSection.Grid, key, delta) },
-                        modifier = Modifier.weight(1f),
-                    )
+            items(draft.gridOrder.chunked(AppGrid.COLUMNS), key = { row -> "grid:" + row.first() }) { row ->
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    row.forEach { key ->
+                        val app = appByKey[key]
+                        EditGridCell(
+                            app = app,
+                            picked = moving?.let { it.section == EditSection.Grid && it.key == key } == true,
+                            onKey = { event -> itemKeys(EditSection.Grid, key, event) },
+                            onClick = { optionsFor = if (optionsFor == "Grid:$key") null else "Grid:$key" },
+                            onDragStep = { delta -> move(EditSection.Grid, key, delta) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(AppGrid.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
                 }
-                repeat(AppGrid.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-            val open = optionsFor?.takeIf { it.startsWith("Grid:") }?.substringAfter(':')
-            if (open != null && open in row) {
-                val index = draft.gridOrder.indexOf(open)
-                EditOptions(
-                    buildList {
-                        if (index > 0) add(t("move_left") to { move(EditSection.Grid, open, -1) })
-                        if (index < draft.gridOrder.lastIndex) add(t("move_right") to { move(EditSection.Grid, open, 1) })
-                        if (index >= AppGrid.COLUMNS) add(t("move_up_a_row") to { move(EditSection.Grid, open, -AppGrid.COLUMNS) })
-                        if (index + AppGrid.COLUMNS <= draft.gridOrder.lastIndex) {
-                            add(t("move_down_a_row") to { move(EditSection.Grid, open, AppGrid.COLUMNS) })
-                        }
-                        add(t("move_to_the_start") to { move(EditSection.Grid, open, -index) })
-                    },
-                )
-            }
-        }
-        item(key = "bar") {
-            Spacer(Modifier.height(10.dp))
-            SectionLabel(t("bottom_bar"))
-            Spacer(Modifier.height(6.dp))
-            EditQuickBarRow(
-                tokens = draft.quickBar,
-                apps = apps,
-                appByKey = appByKey,
-                moving = moving?.takeIf { it.section == EditSection.QuickBar }?.key,
-                onKey = { token, event -> itemKeys(EditSection.QuickBar, token, event) },
-                onClick = { token ->
-                    optionsFor = if (optionsFor == "QuickBar:$token") null else "QuickBar:$token"
-                },
-                onDragStep = { token, delta -> move(EditSection.QuickBar, token, delta) },
-            )
-            val barOptions = optionsFor?.takeIf { it.startsWith("QuickBar:") }?.substringAfter(':')
-            if (barOptions != null && barOptions in draft.quickBar) {
-                val index = draft.quickBar.indexOf(barOptions)
-                val required = QuickBar.isRequired(barOptions)
-                EditOptions(
-                    buildList {
-                        if (index > 0) add(t("move_left") to { move(EditSection.QuickBar, barOptions, -1) })
-                        if (index < draft.quickBar.lastIndex) add(t("move_right") to { move(EditSection.QuickBar, barOptions, 1) })
-                        if (!required) {
-                            add(
-                                "replace" to {
-                                    picking = "bar:$index"
-                                    optionsFor = null
-                                },
-                            )
-                            add(
-                                "remove" to {
-                                    draft = draft.copy(quickBar = QuickBar.remove(draft.quickBar, index))
-                                    optionsFor = null
-                                },
-                            )
-                        }
-                    },
-                )
-                if (required) {
-                    Text(
-                        text = t("search_always_stays_on_the"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            if (draft.quickBar.size < QuickBar.MAX_SLOTS) {
-                MetroLink(text = t("add_a_slot_2"), onClick = { picking = "bar" })
-            }
-            MetroLink(
-                text = t("reset_bar_to_phone_search"),
-                onClick = { draft = draft.copy(quickBar = QuickBar.DEFAULT) },
-            )
-            Spacer(Modifier.height(10.dp))
-            SectionLabel(t("frames_while_no_app_is"))
-            Spacer(Modifier.height(4.dp))
-        }
-        itemsIndexed(draft.glanceWidgets, key = { _, widget -> "glance:$widget" }) { index, widget ->
-            EditListRow(
-                label = GlanceWidgets.label(widget),
-                leading = {},
-                picked = moving?.let { it.section == EditSection.Glance && it.key == widget } == true,
-                onKey = { event -> itemKeys(EditSection.Glance, widget, event) },
-                onClick = { optionsFor = if (optionsFor == "Glance:$widget") null else "Glance:$widget" },
-                onDragStep = { delta -> move(EditSection.Glance, widget, delta) },
-            )
-            if (optionsFor == "Glance:$widget") {
-                EditOptions(
-                    listOf(
-                        t("move_up") to { move(EditSection.Glance, widget, -1) },
-                        t("move_down") to { move(EditSection.Glance, widget, 1) },
-                        "hide" to {
-                            draft = draft.copy(glanceWidgets = GlanceWidgets.toggle(draft.glanceWidgets, widget))
-                            optionsFor = null
+                val open = optionsFor?.takeIf { it.startsWith("Grid:") }?.substringAfter(':')
+                if (open != null && open in row) {
+                    val index = draft.gridOrder.indexOf(open)
+                    EditOptions(
+                        buildList {
+                            if (index > 0) add(t("move_left") to { move(EditSection.Grid, open, -1) })
+                            if (index < draft.gridOrder.lastIndex) add(t("move_right") to { move(EditSection.Grid, open, 1) })
+                            if (index >= AppGrid.COLUMNS) add(t("move_up_a_row") to { move(EditSection.Grid, open, -AppGrid.COLUMNS) })
+                            if (index + AppGrid.COLUMNS <= draft.gridOrder.lastIndex) {
+                                add(t("move_down_a_row") to { move(EditSection.Grid, open, AppGrid.COLUMNS) })
+                            }
+                            add(t("move_to_the_start") to { move(EditSection.Grid, open, -index) })
                         },
-                    ).filterIndexed { i, _ -> !(i == 0 && index == 0) && !(i == 1 && index == draft.glanceWidgets.lastIndex) },
+                    )
+                }
+            }
+            item(key = "bar") {
+                Spacer(Modifier.height(10.dp))
+                SectionLabel(t("bottom_bar"))
+                Spacer(Modifier.height(6.dp))
+                EditQuickBarRow(
+                    tokens = draft.quickBar,
+                    apps = apps,
+                    appByKey = appByKey,
+                    moving = moving?.takeIf { it.section == EditSection.QuickBar }?.key,
+                    onKey = { token, event -> itemKeys(EditSection.QuickBar, token, event) },
+                    onClick = { token ->
+                        optionsFor = if (optionsFor == "QuickBar:$token") null else "QuickBar:$token"
+                    },
+                    onDragStep = { token, delta -> move(EditSection.QuickBar, token, delta) },
                 )
+                val barOptions = optionsFor?.takeIf { it.startsWith("QuickBar:") }?.substringAfter(':')
+                if (barOptions != null && barOptions in draft.quickBar) {
+                    val index = draft.quickBar.indexOf(barOptions)
+                    val required = QuickBar.isRequired(barOptions)
+                    EditOptions(
+                        buildList {
+                            if (index > 0) add(t("move_left") to { move(EditSection.QuickBar, barOptions, -1) })
+                            if (index < draft.quickBar.lastIndex) add(t("move_right") to { move(EditSection.QuickBar, barOptions, 1) })
+                            if (!required) {
+                                add(
+                                    "replace" to {
+                                        picking = "bar:$index"
+                                        optionsFor = null
+                                    },
+                                )
+                                add(
+                                    "remove" to {
+                                        draft = draft.copy(quickBar = QuickBar.remove(draft.quickBar, index))
+                                        optionsFor = null
+                                    },
+                                )
+                            }
+                        },
+                    )
+                    if (required) {
+                        Text(
+                            text = t("search_always_stays_on_the"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (draft.quickBar.size < QuickBar.MAX_SLOTS) {
+                    MetroLink(text = t("add_a_slot_2"), onClick = { picking = "bar" })
+                }
+                MetroLink(
+                    text = t("reset_bar_to_phone_search"),
+                    onClick = { draft = draft.copy(quickBar = QuickBar.DEFAULT) },
+                )
+                Spacer(Modifier.height(10.dp))
+                SectionLabel(t("frames_while_no_app_is"))
+                Spacer(Modifier.height(4.dp))
+            }
+            itemsIndexed(draft.glanceWidgets, key = { _, widget -> "glance:$widget" }) { index, widget ->
+                EditListRow(
+                    label = GlanceWidgets.label(widget),
+                    leading = {},
+                    picked = moving?.let { it.section == EditSection.Glance && it.key == widget } == true,
+                    onKey = { event -> itemKeys(EditSection.Glance, widget, event) },
+                    onClick = { optionsFor = if (optionsFor == "Glance:$widget") null else "Glance:$widget" },
+                    onDragStep = { delta -> move(EditSection.Glance, widget, delta) },
+                )
+                if (optionsFor == "Glance:$widget") {
+                    EditOptions(
+                        listOf(
+                            t("move_up") to { move(EditSection.Glance, widget, -1) },
+                            t("move_down") to { move(EditSection.Glance, widget, 1) },
+                            "hide" to {
+                                draft = draft.copy(glanceWidgets = GlanceWidgets.toggle(draft.glanceWidgets, widget))
+                                optionsFor = null
+                            },
+                        ).filterIndexed { i, _ -> !(i == 0 && index == 0) && !(i == 1 && index == draft.glanceWidgets.lastIndex) },
+                    )
+                }
+            }
+            item(key = "glance-add") {
+                GlanceWidgets.ALL.filterNot { it in draft.glanceWidgets }.forEach { widget ->
+                    MetroLink(
+                        text = t("show", GlanceWidgets.label(widget)),
+                        onClick = { draft = draft.copy(glanceWidgets = GlanceWidgets.toggle(draft.glanceWidgets, widget)) },
+                    )
+                }
+                HostedWidgetsEditor(hosted, onAdd = { pickingWidget = true })
+                Spacer(Modifier.height(10.dp))
+                SectionLabel(t("active_frames_header"))
+                Spacer(Modifier.height(4.dp))
+                val accent = MaterialTheme.colorScheme.primary
+                HomeLayout.SECTIONS.forEach { section ->
+                    HomeToggleRow(
+                        title = HomeLayout.label(section),
+                        subtitle = HomeLayout.description(section),
+                        selected = HomeLayout.isShown(draft.hiddenSections, section),
+                        accent = accent,
+                        onClick = { draft = draft.copy(hiddenSections = HomeLayout.toggle(draft.hiddenSections, section)) },
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                MetroLink(text = "appearance", onClick = onAppearance)
             }
         }
-        item(key = "glance-add") {
-            GlanceWidgets.ALL.filterNot { it in draft.glanceWidgets }.forEach { widget ->
-                MetroLink(
-                    text = t("show", GlanceWidgets.label(widget)),
-                    onClick = { draft = draft.copy(glanceWidgets = GlanceWidgets.toggle(draft.glanceWidgets, widget)) },
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            SectionLabel(t("active_frames_header"))
-            Spacer(Modifier.height(4.dp))
-            val accent = MaterialTheme.colorScheme.primary
-            HomeLayout.SECTIONS.forEach { section ->
-                HomeToggleRow(
-                    title = HomeLayout.label(section),
-                    subtitle = HomeLayout.description(section),
-                    selected = HomeLayout.isShown(draft.hiddenSections, section),
-                    accent = accent,
-                    onClick = { draft = draft.copy(hiddenSections = HomeLayout.toggle(draft.hiddenSections, section)) },
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            MetroLink(text = "appearance", onClick = onAppearance)
-            MetroLink(text = t("reset_home_to_default"), onClick = { draft = defaults })
+        if (pickKind == null) {
+            EditBar(
+                onReset = { draft = defaults },
+                onCancel = onCancel,
+                onDone = { onDone(draft) },
+                doneFocus = doneFocus,
+            )
+        }
+        if (pickingWidget && hosted.controller != null) {
+            WidgetPicker(
+                providers = hosted.controller.providers(),
+                onPick = {
+                    pickingWidget = false
+                    hosted.controller.begin(it, WidgetTarget.HOME)
+                },
+                onDismiss = { pickingWidget = false },
+            )
         }
     }
+}
+
+/**
+ * The bar that stays at the bottom of Edit Home however far the list is scrolled: Reset puts the layout back to
+ * the default, Cancel leaves without saving, Done saves. It is what tells you the screen is in edit mode.
+ */
+@Composable
+private fun EditBar(
+    onReset: () -> Unit,
+    onCancel: () -> Unit,
+    onDone: () -> Unit,
+    doneFocus: FocusRequester,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(1.dp, MaterialTheme.colorScheme.primary)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onReset, modifier = Modifier.sableFocusRing()) { Text(stringResource(R.string.edit_reset)) }
+        Spacer(Modifier.weight(1f))
+        TextButton(onClick = onCancel, modifier = Modifier.sableFocusRing()) { Text(stringResource(R.string.edit_cancel)) }
+        TextButton(onClick = onDone, modifier = Modifier.focusRequester(doneFocus).sableFocusRing()) {
+            Text(t("done"), style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+/** Widgets from other apps on the home screen: each with Up, Down and Remove, and Add. These apply at once, not on Done. */
+@Composable
+private fun HostedWidgetsEditor(
+    hosted: HomeWidgets,
+    onAdd: () -> Unit,
+) {
+    val controller = hosted.controller ?: return
+    val packageManager = LocalContext.current.packageManager
+    Spacer(Modifier.height(10.dp))
+    SectionLabel(stringResource(R.string.edit_widgets))
+    Text(
+        text = stringResource(R.string.edit_widgets_detail),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    hosted.ids.forEach { id ->
+        val name = controller.info(id)?.let { runCatching { it.loadLabel(packageManager) }.getOrNull() } ?: "#$id"
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(name.toString(), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            PageButton(stringResource(R.string.widgets_up)) { controller.move(id, -1) }
+            PageButton(stringResource(R.string.widgets_down)) { controller.move(id, 1) }
+            PageButton(stringResource(R.string.widgets_remove)) { controller.remove(id) }
+        }
+    }
+    MetroLink(text = stringResource(R.string.widgets_add), onClick = onAdd)
 }
 
 /** One app in the Edit Home grid: Enter picks it up, arrows move it, or drag it in any direction. */
