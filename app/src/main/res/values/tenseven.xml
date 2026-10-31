@@ -25,7 +25,7 @@
     <string name="setup_skip">Skip</string>
     <string name="setup_done">Done</string>
     <string name="setup_all_done">Everything is set up.</string>
-    <string name="setup_all_done_detail">Change any of these at any time: turn a permission on or off, switch the home app, or add and remove the extra apps.</string>
+    <string name="setup_all_done_detail">Change any of these at any time: permissions, home screen style, theme and wallpaper, icon grid, widgets, Hub, lock screen, and the extra apps.</string>
 
     <string name="setup_home_title">Make Tenseven your home screen</string>
     <string name="setup_home_reason">Android sends the Home key to the Home app. Choose Tenseven so the Home key opens it. You can switch back at any time in Settings, Apps, Default apps.</string>
@@ -259,4 +259,22 @@
     <string name="ls_lock_preview_detail">Shows it now so you can see the layout. Swipe up or press Enter to leave.</string>
     <string name="ls_home_wallpaper">Show wallpaper behind the BlackBerry 10 home</string>
     <string name="ls_home_wallpaper_detail">The wallpaper shows through, dimmed so text stays readable. The BlackBerry 7 home always shows it.</string>
+    <string name="setup_label_style">Home screen style</string>
+    <string name="setup_label_look">Theme and wallpaper</string>
+    <string name="setup_label_grid">Icon grid</string>
+    <string name="setup_label_widgets">Widgets</string>
+    <string name="setup_label_hub">Hub</string>
+    <string name="setup_label_lock">Lock screen</string>
+    <string name="setup_style_title">Choose your home screen</string>
+    <string name="setup_style_reason">BlackBerry 7 is a tray of icons; BlackBerry 10 is tiles with a Hub. You can switch any time.</string>
+    <string name="setup_look_title">Theme and wallpaper</string>
+    <string name="setup_look_reason">Pick a theme, then one of Tenseven\'s own wallpapers for Home, Lock or both.</string>
+    <string name="setup_grid_title">Icon grid</string>
+    <string name="setup_grid_reason">How many columns and rows of icons, the icon size, and whether app names show.</string>
+    <string name="setup_widgets_title">Widgets</string>
+    <string name="setup_widgets_reason">A Widgets page beside Home and the Hub, and the Calendar, Alarm and Now Playing strip.</string>
+    <string name="setup_hub_title">Hub</string>
+    <string name="setup_hub_reason">Clear the Hub, choose which apps feed it, and decide whether message text may be shown. Needs notification access above.</string>
+    <string name="setup_lock_title">Lock screen</string>
+    <string name="setup_lock_reason">An optional BlackBerry-style cover over your lock screen. Your PIN or fingerprint still unlocks the phone.</string>
 </resources>
