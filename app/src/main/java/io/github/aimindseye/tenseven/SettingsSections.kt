@@ -1,5 +1,11 @@
 package io.github.aimindseye.tenseven
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import io.github.aimindseye.tenseven.model.CustomThemes
+import io.github.aimindseye.tenseven.model.ThemeParse
+import io.github.aimindseye.tenseven.model.wallpaperSet
+import io.github.aimindseye.tenseven.ui.presetAsCustomTheme
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -177,10 +183,64 @@ internal fun IconGridSection(state: StartStateRepository) {
     }
 }
 
-/** The themes: BlackBerry (the default), Phone colours and six more. */
+/** The themes: BlackBerry (the default), Phone colours, six more, and the ones imported from a theme file. */
 @Composable
 internal fun ThemeSection(state: StartStateRepository) {
+    val context = LocalContext.current
+    var custom by remember { mutableStateOf(state.loadCustomThemes()) }
+    var activeCustom by remember { mutableStateOf(state.loadActiveCustomThemeId()?.takeIf { id -> custom.any { it.id == id } }) }
     var themeId by remember { mutableStateOf(ThemePresets.matching(state.loadAppearanceMode(), state.loadAppearanceAccent()).id) }
+    var status by remember { mutableStateOf<String?>(null) }
+
+    val importer =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            val text =
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        // One byte past the limit is enough to tell the file is too big, without reading all of it.
+                        val buffer = ByteArray(CustomThemes.MAX_BYTES + 1)
+                        var filled = 0
+                        while (filled < buffer.size) {
+                            val read = input.read(buffer, filled, buffer.size - filled)
+                            if (read < 0) break
+                            filled += read
+                        }
+                        String(buffer, 0, filled, Charsets.UTF_8)
+                    }
+                }.getOrNull()
+            if (text == null) {
+                status = "That file could not be read."
+                return@rememberLauncherForActivityResult
+            }
+            when (val result = CustomThemes.parse(text, takenIds = custom.map { it.id }.toSet())) {
+                is ThemeParse.Refused -> status = result.reason
+                is ThemeParse.Ok -> {
+                    if (custom.size >= CustomThemes.MAX_THEMES) {
+                        status = "You can keep up to ${CustomThemes.MAX_THEMES} imported themes. Remove one first."
+                    } else {
+                        custom = custom + result.theme
+                        state.saveCustomThemes(custom)
+                        state.saveActiveCustomTheme(result.theme)
+                        activeCustom = result.theme.id
+                        status = "Imported ${result.theme.name} and switched to it."
+                    }
+                }
+            }
+        }
+    val current = custom.firstOrNull { it.id == activeCustom }
+    val exportTheme = current ?: presetAsCustomTheme(ThemePresets.byId(themeId))
+    val exporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val theme = exportTheme
+            if (uri == null || theme == null) return@rememberLauncherForActivityResult
+            val ok =
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(CustomThemes.toJson(theme).toByteArray(Charsets.UTF_8)) }
+                }.isSuccess
+            status = if (ok) "Exported ${theme.name}." else "The theme could not be saved."
+        }
+
     ThemePresets.ALL.chunked(2).forEach { pair ->
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             pair.forEach { preset ->
@@ -194,10 +254,11 @@ internal fun ThemeSection(state: StartStateRepository) {
                         } else {
                             preset.mode.name + " · " + preset.accent.displayName
                         },
-                    active = preset.id == themeId,
+                    active = activeCustom == null && preset.id == themeId,
                     modifier = Modifier.weight(1f),
                 ) {
                     themeId = preset.id
+                    activeCustom = null
                     if (preset.id == ThemePresets.DEFAULT_ID) {
                         state.saveAppearance(null, null)
                     } else {
@@ -208,6 +269,47 @@ internal fun ThemeSection(state: StartStateRepository) {
             if (pair.size == 1) Spacer(Modifier.weight(1f))
         }
     }
+    custom.chunked(2).forEach { pair ->
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            pair.forEach { theme ->
+                Card(
+                    title = theme.name,
+                    detail = "Imported · " + theme.mode,
+                    active = theme.id == activeCustom,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    state.saveActiveCustomTheme(theme)
+                    activeCustom = theme.id
+                }
+            }
+            if (pair.size == 1) Spacer(Modifier.weight(1f))
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card("Import theme…", "", false, Modifier.weight(1f)) { importer.launch(arrayOf("*/*")) }
+        Card("Export current theme", "", false, Modifier.weight(1f)) {
+            val theme = exportTheme
+            if (theme == null) {
+                status = "Phone colours follows your phone, so it has no file to export."
+            } else {
+                exporter.launch(theme.id.removePrefix("custom-") + CustomThemes.FILE_SUFFIX)
+            }
+        }
+    }
+    current?.let { theme ->
+        Card("Remove ${theme.name}", "", false, Modifier.fillMaxWidth()) {
+            custom = custom.filterNot { it.id == theme.id }
+            state.saveCustomThemes(custom)
+            // Back to the built-in theme that was chosen before; removing never leaves the launcher without a theme.
+            val preset = ThemePresets.byId(themeId)
+            if (preset.id == ThemePresets.DEFAULT_ID) state.saveAppearance(null, null) else state.saveAppearance(preset.mode.stableValue, preset.accent.stableValue)
+            activeCustom = null
+            status = "Removed ${theme.name}."
+        }
+    }
+    status?.let {
+        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 /** Pick one of the eight wallpapers and set it for Home, Lock or both; plus the BlackBerry 10 see-through switch. */
@@ -215,8 +317,13 @@ internal fun ThemeSection(state: StartStateRepository) {
 internal fun WallpaperSection(state: StartStateRepository) {
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
+    // Wallpapers that imported themes bring; a theme imported just now shows here the next time Launcher Settings opens.
+    val importedSets = remember { state.loadCustomThemes().mapNotNull { it.wallpaperSet() } }
     var wallpaperId by remember {
-        mutableStateOf(ThemePresets.matching(state.loadAppearanceMode(), state.loadAppearanceAccent()).wallpaperId)
+        mutableStateOf(
+            state.loadActiveCustomThemeId()?.takeIf { id -> importedSets.any { it.id == id } }
+                ?: ThemePresets.matching(state.loadAppearanceMode(), state.loadAppearanceAccent()).wallpaperId,
+        )
     }
     var status by remember { mutableStateOf<Int?>(null) }
     var homeWallpaper by remember { mutableStateOf(state.loadHomeWallpaper()) }
@@ -226,7 +333,7 @@ internal fun WallpaperSection(state: StartStateRepository) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        WallpaperSets.ALL.forEach { set -> WallpaperThumb(set, active = set.id == wallpaperId) { wallpaperId = set.id } }
+        (WallpaperSets.ALL + importedSets).forEach { set -> WallpaperThumb(set, active = set.id == wallpaperId) { wallpaperId = set.id } }
     }
     // The BlackBerry 7 home always shows the wallpaper, so this switch is for the BlackBerry 10 home only.
     if (homeStyleState(state).value == HomeStyle.Bb10) {
@@ -237,7 +344,7 @@ internal fun WallpaperSection(state: StartStateRepository) {
     }
     fun apply(target: WallpaperTarget) {
         status = R.string.ls_wallpaper_working
-        val set = WallpaperSets.byId(wallpaperId)
+        val set = importedSets.firstOrNull { it.id == wallpaperId } ?: WallpaperSets.byId(wallpaperId)
         scope.launch {
             val ok = withContext(Dispatchers.IO) { WallpaperArt.apply(context, set, target) }
             status = if (ok) R.string.ls_wallpaper_done else R.string.ls_wallpaper_failed

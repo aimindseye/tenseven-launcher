@@ -253,3 +253,7 @@ object CustomThemes {
     private const val ON_ACCENT_CONTRAST = 2.5
     private const val MAX_SEED = 9999
 }
+
+/** The wallpaper this theme brings, in the form the wallpaper picker draws; null when the file has none. */
+fun CustomTheme.wallpaperSet(): WallpaperSet? =
+    wallpaper?.let { WallpaperSet(id, name, it.top, it.bottom, it.glow, it.ridge, it.seed) }

@@ -223,6 +223,11 @@ The pictures in this guide are in [`images/`](images/). `tools/take-screenshots.
 
 ## Theme files
 
+In **Launcher Settings → Theme**, **Import theme…** opens Android's file picker; the theme is added next to the built-in
+ones and switched on. **Export current theme** saves the theme in use as a file you can share or edit (built-in themes
+make a ready template; Phone colours follows the phone and has no file). **Remove** deletes an imported theme and goes
+back to the built-in one you had.
+
 A theme file is a small text file (JSON, under 64 KB) named like `ocean.tenseventheme.json`. It is only read as data: it
 can set colours and a wallpaper, and nothing in it is ever run. Only `format`, `version`, `name`, `mode` and `accent`
 are required; the rest take the defaults of the mode.
