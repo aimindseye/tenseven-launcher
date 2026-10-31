@@ -223,7 +223,6 @@
     <string name="ls_lock_access">Allow notification access</string>
     <string name="ls_lock_access_detail">Needed for the icons and counts. Only counts are used, never what a message says.</string>
     <string name="ls_lock_ready">Ready. Lock the phone and wake it to see the layer.</string>
-    <string name="hub_settings">Hub settings</string>
     <string name="hub_settings_intro">The Hub keeps conversations in memory only. Nothing is saved or sent.</string>
     <string name="hub_access">Notification access</string>
     <string name="hub_access_on">On. Tap to change it in Android settings.</string>
