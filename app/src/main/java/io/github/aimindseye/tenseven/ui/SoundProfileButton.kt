@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -67,7 +68,7 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
             },
         modifier =
             modifier
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .background(Color.Black.copy(alpha = 0.35f))
                 .semantics { contentDescription = profile.label }
                 .combinedClickable(
@@ -82,8 +83,7 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
                             SoundProfileControl.openSilentAccess(context)
                         }
                     },
-                )
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                ).padding(horizontal = 10.dp, vertical = 6.dp)
                 .size(22.dp),
     )
 }
