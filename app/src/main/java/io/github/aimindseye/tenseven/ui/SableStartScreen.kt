@@ -1288,10 +1288,37 @@ private fun ActiveFramesPage(
 
     fun requesterFor(taskId: Int) = requesters.getOrPut(taskId) { FocusRequester() }
 
-    LaunchedEffect(active, frames.map { it.taskId }) {
+    // An ordinary install sees no other app's tasks, so the apps you opened recently become the frames instead:
+    // one card per app, newest first, the way Active Frames list running apps. The x hides a card until you open it again.
+    var dismissed by remember { mutableStateOf(emptySet<String>()) }
+    val byPackage = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
+    val recentFrames =
+        remember(frames, recentApps, byPackage, dismissed) {
+            if (frames.isNotEmpty()) {
+                emptyList()
+            } else {
+                recentApps
+                    .filter { it !in dismissed }
+                    .mapNotNull(byPackage::get)
+                    .take(ActiveFrames.MAX)
+                    .map { app ->
+                        ActiveFrame(
+                            taskId = app.component.packageName.hashCode(),
+                            packageName = app.component.packageName,
+                            className = null,
+                            userId = app.user.hashCode(),
+                            running = false,
+                        )
+                    }
+            }
+        }
+    val recentMode = frames.isEmpty() && recentFrames.isNotEmpty()
+    val shownFrames = if (frames.isNotEmpty()) frames else recentFrames
+
+    LaunchedEffect(active, shownFrames.map { it.taskId }) {
         if (!active) return@LaunchedEffect
         withFrameNanos { }
-        val target = focusTask?.takeIf { id -> frames.any { it.taskId == id } } ?: frames.firstOrNull()?.taskId
+        val target = focusTask?.takeIf { id -> shownFrames.any { it.taskId == id } } ?: shownFrames.firstOrNull()?.taskId
         focusTask = null
         if (target != null) {
             runCatching { requesterFor(target).requestFocus() }
@@ -1317,7 +1344,8 @@ private fun ActiveFramesPage(
             Box(Modifier.padding(horizontal = FRAME_PADDING)) { SearchLaunchButton(onClick = onSearch) }
         }
         ActiveFramesGrid(
-            frames = frames,
+            frames = shownFrames,
+            recentMode = recentMode,
             apps = apps,
             snapshot = snapshot,
             widgets = widgets,
@@ -1326,14 +1354,16 @@ private fun ActiveFramesPage(
             frameSnapshot = frameSnapshot,
             requesterFor = ::requesterFor,
             firstWidgetFocus = firstWidgetFocus,
-            onResume = onResume,
+            onResume = { frame ->
+                if (recentMode) byPackage[frame.packageName]?.let(onLaunchApp) else onResume(frame)
+            },
             onClose = { frame ->
-                val index = frames.indexOf(frame)
+                val index = shownFrames.indexOf(frame)
                 focusTask =
-                    ActiveFrames.focusAfterClose(index, frames.size)?.let { next ->
-                        frames.filterNot { it == frame }.getOrNull(next)?.taskId
+                    ActiveFrames.focusAfterClose(index, shownFrames.size)?.let { next ->
+                        shownFrames.filterNot { it == frame }.getOrNull(next)?.taskId
                     }
-                onClose(frame)
+                if (recentMode) dismissed = dismissed + frame.packageName else onClose(frame)
             },
             onLaunchApp = onLaunchApp,
             onStartIntent = onStartIntent,
@@ -1434,6 +1464,7 @@ private fun DateHeader(
 @Composable
 private fun ColumnScope.ActiveFramesGrid(
     frames: List<ActiveFrame>,
+    recentMode: Boolean,
     apps: List<AppEntry>,
     snapshot: LiveSurfaceSnapshot,
     widgets: List<String>,
@@ -1452,20 +1483,14 @@ private fun ColumnScope.ActiveFramesGrid(
     usageAccess: Boolean,
     onAllowUsageAccess: () -> Unit,
 ) {
+    val hostedWidgets = LocalHomeWidgets.current
     BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
         val cardHeight =
             ((maxHeight - FRAME_PADDING * 2 - FRAME_GAP) / ActiveFrames.ROWS_PER_SCREEN).coerceAtLeast(FRAME_MIN_HEIGHT)
         if (frames.isEmpty()) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // No recent tasks to show (an ordinary install): a row of recent apps from usage access instead.
-                RecentAppsStrip(
-                    packages = recentApps,
-                    apps = apps,
-                    usageAccess = usageAccess,
-                    onLaunchApp = onLaunchApp,
-                    onAllowUsageAccess = onAllowUsageAccess,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+                // Nothing recent yet (a new install, or every card hidden): the Glance frames, and the usage access offer.
+                if (!usageAccess) UsageAccessHint(onClick = onAllowUsageAccess, modifier = Modifier.padding(top = 8.dp))
                 GlanceFrames(
                     widgets = widgets,
                     snapshot = snapshot,
@@ -1486,6 +1511,9 @@ private fun ColumnScope.ActiveFramesGrid(
             contentPadding = PaddingValues(FRAME_PADDING),
             verticalArrangement = Arrangement.spacedBy(FRAME_GAP),
         ) {
+            if (recentMode && !usageAccess) {
+                item(key = "usage-hint") { UsageAccessHint(onClick = onAllowUsageAccess) }
+            }
             items(frames.chunked(ActiveFrames.COLUMNS), key = { row -> row.first().taskId }) { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(FRAME_GAP)) {
                     row.forEach { frame ->
@@ -1506,6 +1534,10 @@ private fun ColumnScope.ActiveFramesGrid(
                     }
                     repeat(ActiveFrames.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
                 }
+            }
+            // Widgets from other apps, added in Edit Home, go after the recent apps.
+            if (recentMode && hostedWidgets.controller != null) {
+                items(hostedWidgets.ids, key = { id -> "hosted:$id" }) { id -> WidgetItem(hostedWidgets.controller, id, editing = false) }
             }
         }
     }

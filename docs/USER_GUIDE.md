@@ -88,7 +88,7 @@ You can change your mind any time. Settings are saved as you tap.
 
 ## BlackBerry 10 home
 
-Tiles for your default phone, messages, mail, calendar and music apps, plus battery and glance cards. Swipe down for Command, swipe right for Hub. Edit Home changes which tiles show. A **Recent** row of app icons sits above them: apps you start from Tenseven appear in it at once, and with usage access it also shows apps you opened another way, such as from a notification.
+**Active Frames** show the apps you opened recently, newest first, up to eight cards in two columns, each with the app's icon and name. Press Enter or tap to open one; the **×**, a long-press, or the X or Backspace key hides that card until you open the app again. Apps you start from Tenseven appear at once; with usage access, apps you opened another way (from a notification, say) appear too. Android only lets the phone's built-in home screen show other apps' live pictures, so on an ordinary install the cards are icons, not live pictures. Until you have opened an app, the home shows the Glance cards (Calendar, Battery, Media and so on) instead; Edit Home changes which. Swipe down for Command, swipe right for Hub.
 
 |  |  |  |  |
 |---|---|---|---|
@@ -134,7 +134,7 @@ Launcher Settings, **Hub settings** (also the Hub's own settings button): **Clea
 
 ## Widgets on the home screen
 
-On the BlackBerry 10 home, other apps' widgets can sit as full-width tiles under the Glance frames. Open **Edit Home**, find **Widgets on Home**, and choose **Add widget**; Up, Down and Remove change the order. Widget changes apply at once; Cancel does not undo them. The home tiles show only while no recent apps fill Active Frames (the ordinary-install case). Edit Home now ends in a bar that stays on screen: **Reset**, **Cancel**, **Done**.
+On the BlackBerry 10 home, other apps' widgets can sit as full-width tiles under the Glance frames. Open **Edit Home**, find **Widgets on Home**, and choose **Add widget**; Up, Down and Remove change the order. Widget changes apply at once; Cancel does not undo them. They show after the recent-app cards, or under the Glance cards while no app has been opened. Edit Home now ends in a bar that stays on screen: **Reset**, **Cancel**, **Done**.
 
 ## Lock layer
 
