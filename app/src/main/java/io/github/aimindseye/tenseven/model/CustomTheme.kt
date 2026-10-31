@@ -132,7 +132,7 @@ object CustomThemes {
             return "The muted colour is hard to read on the background (needs a contrast of at least 3)."
         }
         if (backgrounds.any { contrast(accent, it) < ACCENT_CONTRAST }) {
-            return "The accent colour is hard to see on the background (needs a contrast of at least 3)."
+            return "The accent colour is hard to see on the background (needs a contrast of at least 2)."
         }
         if (contrast(onAccent, accent) < ON_ACCENT_CONTRAST) return "onAccent is hard to read on the accent colour (needs a contrast of at least 2.5)."
         return null
@@ -249,7 +249,7 @@ object CustomThemes {
     private const val OPAQUE = 0xFF000000.toInt()
     private const val TEXT_CONTRAST = 4.5
     private const val MUTED_CONTRAST = 3.0
-    private const val ACCENT_CONTRAST = 3.0
+    private const val ACCENT_CONTRAST = 2.0
     private const val ON_ACCENT_CONTRAST = 2.5
     private const val MAX_SEED = 9999
 }
