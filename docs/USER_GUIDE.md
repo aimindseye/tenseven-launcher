@@ -69,6 +69,9 @@ It needs two permissions, both explained in Settings: **Display over other apps*
 
 ## Finding things
 
+- **All Apps privacy detail**: in All Apps, move to an app and press **Space** to open its permissions and special access (Space again closes it). The same works in Peek.
+- **Appearance**: type `appearance` in Command, or scroll to the bottom of Edit Home and tap **appearance**. It sets the theme and accent; Launcher Settings, Theme has the ready-made looks.
+
 - **Type on Home** to search apps. It can be turned off in Launcher Settings. **Alt+Space** opens Command from either layout.
 - **Hold a letter** to open the app or contact assigned to it. In Command, `assign` and `unassign` set letters. Without an assignment, the most-used app starting with that letter comes first.
 - **Command prefixes**: `-` makes a to-do, `/` a note, `+` an event, a web address opens the browser. To-dos and notes go to an app you pick; Tenseven stores none.
