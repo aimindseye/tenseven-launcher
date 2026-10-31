@@ -257,4 +257,6 @@
     <string name="peek_open_hub">Open Hub</string>
     <string name="ls_lock_preview">Preview the lock layer</string>
     <string name="ls_lock_preview_detail">Shows it now so you can see the layout. Swipe up or press Enter to leave.</string>
+    <string name="ls_home_wallpaper">Show wallpaper behind the BlackBerry 10 home</string>
+    <string name="ls_home_wallpaper_detail">The wallpaper shows through, dimmed so text stays readable. The BlackBerry 7 home always shows it.</string>
 </resources>

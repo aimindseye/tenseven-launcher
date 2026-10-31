@@ -90,6 +90,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                 }
                 var wallpaperId by remember { mutableStateOf(ThemePresets.byId(themeId).wallpaperId) }
                 var wallpaperStatus by remember { mutableStateOf<Int?>(null) }
+                var homeWallpaper by remember { mutableStateOf(state.loadHomeWallpaper()) }
                 var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
                                 var widgetsPage by remember { mutableStateOf(state.loadWidgetsPage()) }
                 var widgets by remember { mutableStateOf(GlanceWidgets.normalize(state.loadGlanceWidgets())) }
@@ -121,6 +122,11 @@ class LauncherSettingsActivity : ComponentActivity() {
                                 wallpaperStatus = if (ok) R.string.ls_wallpaper_done else R.string.ls_wallpaper_failed
                             }
                         }.start()
+                    },
+                    homeWallpaper = homeWallpaper,
+                    onHomeWallpaper = {
+                        homeWallpaper = it
+                        state.saveHomeWallpaper(it)
                     },
                     lockLayer = lockLayer,
                     overlayAllowed = resumeTick >= 0 && LockLayerLauncher.canDrawOverlays(this),
@@ -205,6 +211,8 @@ private fun LauncherSettings(
     onTheme: (ThemePreset) -> Unit,
     onWallpaper: (String) -> Unit,
     onApplyWallpaper: (WallpaperTarget) -> Unit,
+    homeWallpaper: Boolean,
+    onHomeWallpaper: (Boolean) -> Unit,
     lockLayer: Boolean,
     overlayAllowed: Boolean,
     accessAllowed: Boolean,
@@ -332,6 +340,7 @@ private fun LauncherSettings(
                     WallpaperThumb(set, active = set.id == wallpaperId) { onWallpaper(set.id) }
                 }
             }
+            SwitchRow(stringResource(R.string.ls_home_wallpaper), stringResource(R.string.ls_home_wallpaper_detail), homeWallpaper, onHomeWallpaper)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Card(stringResource(R.string.ls_wallpaper_home), "", false, Modifier.weight(1f)) { onApplyWallpaper(WallpaperTarget.HOME) }
                 Card(stringResource(R.string.ls_wallpaper_lock), "", false, Modifier.weight(1f)) { onApplyWallpaper(WallpaperTarget.LOCK) }

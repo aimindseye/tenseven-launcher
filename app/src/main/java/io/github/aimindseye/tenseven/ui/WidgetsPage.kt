@@ -256,6 +256,9 @@ internal class HomeWidgets(
     val ids: List<Int>,
 )
 
+/** How opaque the BlackBerry 10 home paints over the wallpaper (1 is solid). */
+internal val LocalHomeBackdrop = androidx.compose.runtime.compositionLocalOf { 1f }
+
 internal val LocalHomeWidgets = androidx.compose.runtime.compositionLocalOf { HomeWidgets(null, emptyList()) }
 
 /** The theme plus the home widgets, so the tiles deep in the Start screen reach them without a long parameter chain. */
@@ -264,9 +267,14 @@ internal fun SableThemeWithWidgets(
     appearance: io.github.aimindseye.tenseven.design.SableAppearance,
     controller: WidgetHostController?,
     ids: List<Int>,
+    backdrop: Float = 1f,
     content: @Composable () -> Unit,
 ) {
     io.github.aimindseye.tenseven.design.SableTheme(appearance = appearance) {
-        androidx.compose.runtime.CompositionLocalProvider(LocalHomeWidgets provides HomeWidgets(controller, ids), content = content)
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalHomeWidgets provides HomeWidgets(controller, ids),
+            LocalHomeBackdrop provides backdrop,
+            content = content,
+        )
     }
 }
