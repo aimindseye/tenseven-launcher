@@ -624,7 +624,7 @@ class SableStartActivity : ComponentActivity() {
                 val frames = recentTasksRepository.loadFrames(privateUsers())
                 // An ordinary install sees no other app's tasks; usage access gives a row of recent apps instead.
                 val usageAccess = usageRecentsRepository.hasAccess()
-                val recents = if (frames.isEmpty() && usageAccess) usageRecentsRepository.recentPackages() else emptyList()
+                val recents = if (frames.isEmpty()) usageRecentsRepository.recentPackages() else emptyList()
                 runOnUiThread {
                     if (!isDestroyed) {
                         framesState.value = frames
