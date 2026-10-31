@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import android.content.Intent
 import android.widget.Toast
 import android.view.KeyEvent
 import androidx.compose.foundation.ExperimentalFoundationApi
