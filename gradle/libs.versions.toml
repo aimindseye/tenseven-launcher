@@ -2,7 +2,7 @@
 # (aimindseye/zinwaq25-sableos, sable-src/apps/r8/android/gradle/libs.versions.toml), so the imported
 # sources compile against what they were written for. Changing one here changes every module.
 [versions]
-agp = "9.3.3"
+agp = "9.5.0"
 kotlin = "2.4.21"
 detekt = "1.23.8"
 ktlint-gradle = "14.2.0"
