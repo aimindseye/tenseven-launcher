@@ -215,6 +215,7 @@ class LauncherAppsRepository(
     }
 
     private val usage by lazy { AppUsageRepository(appContext) }
+    private val launches by lazy { RecentLaunchesRepository(appContext) }
 
     /** Starts the app and counts the launch, so Command can rank the apps you use most first. */
     fun launch(entry: AppEntry): Boolean =
@@ -226,6 +227,7 @@ class LauncherAppsRepository(
                 null,
             )
             runCatching { usage.record(entry.stableKey()) }
+            runCatching { launches.record(entry.component.packageName) }
             true
         } catch (_: ActivityNotFoundException) {
             false

@@ -33,7 +33,7 @@ You can change your mind any time. Settings are saved as you tap.
 
 ## BlackBerry 10 home
 
-Tiles for your default phone, messages, mail, calendar and music apps, plus battery and glance cards. Swipe down for Command, swipe right for Hub. Edit Home changes which tiles show.
+Tiles for your default phone, messages, mail, calendar and music apps, plus battery and glance cards. Swipe down for Command, swipe right for Hub. Edit Home changes which tiles show. A **Recent** row of app icons sits above them: apps you start from Tenseven appear in it at once, and with usage access it also shows apps you opened another way, such as from a notification.
 
 ## Widgets page
 

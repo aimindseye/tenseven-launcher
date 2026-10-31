@@ -50,6 +50,7 @@ internal fun RecentAppsStrip(
     val byPackage = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val shown = remember(packages, byPackage) { packages.mapNotNull(byPackage::get) }
     if (!usageAccess) {
+        // Apps started from here still show below; usage access adds the ones opened any other way.
         Text(
             text = stringResource(R.string.recents_allow),
             style = MaterialTheme.typography.labelLarge,
@@ -62,7 +63,6 @@ internal fun RecentAppsStrip(
                     .clickable(onClick = onAllowUsageAccess)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        return
     }
     if (shown.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {

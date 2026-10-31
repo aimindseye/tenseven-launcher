@@ -19,14 +19,21 @@ class UsageRecentsRepository(
 
     fun hasAccess(): Boolean = SetupStatus.hasUsageAccess(appContext)
 
-    /** Most recent first, at most [limit]; empty without usage access. */
+    private val launches by lazy { RecentLaunchesRepository(appContext) }
+
+    /**
+     * Most recent first, at most [limit]. Apps started from this launcher count at once; with usage access, apps
+     * opened any other way (a notification, another app) are included from Android's usage events.
+     */
     fun recentPackages(
         excluded: Set<String> = emptySet(),
         limit: Int = RecentApps.MAX,
         windowMs: Long = WINDOW_MS,
     ): List<String> {
-        if (!hasAccess()) return emptyList()
-        val manager = appContext.getSystemService(UsageStatsManager::class.java) ?: return emptyList()
+        val started = launches.load()
+        val manager =
+            appContext.getSystemService(UsageStatsManager::class.java).takeIf { hasAccess() }
+                ?: return RecentApps.select(started, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit)
         val now = System.currentTimeMillis()
         val events =
             runCatching {
@@ -41,7 +48,7 @@ class UsageRecentsRepository(
                     }
                 }
             }.getOrDefault(emptyList())
-        return RecentApps.select(events, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit)
+        return RecentApps.select(started + events, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit)
     }
 
     companion object {
