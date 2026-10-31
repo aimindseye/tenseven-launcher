@@ -142,6 +142,7 @@ import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
 import io.github.aimindseye.tenseven.BackupActivity
 import io.github.aimindseye.tenseven.HomeStyleActivity
+import io.github.aimindseye.tenseven.HubSettingsActivity
 import io.github.aimindseye.tenseven.LauncherSettingsActivity
 import io.github.aimindseye.tenseven.OnboardingActivity
 import io.github.aimindseye.tenseven.SableStartActivity
@@ -566,11 +567,7 @@ fun SableStartScreen(
 
     /** The Hub's settings: the notification access step of Setup. */
     fun openHubSettings() {
-        // Tenseven's own Hub reads notifications with its own listener: its settings are the notification step of Setup.
-        onStartIntent(
-            Intent(settingsContext, OnboardingActivity::class.java)
-                .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.NOTIFICATIONS.name),
-        )
+        onStartIntent(Intent(settingsContext, HubSettingsActivity::class.java))
     }
 
     fun showHub(filter: HubFilter) {

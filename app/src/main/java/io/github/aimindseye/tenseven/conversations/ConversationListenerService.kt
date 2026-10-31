@@ -18,9 +18,11 @@ import android.provider.ContactsContract
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.content.ContextCompat
+import io.github.aimindseye.tenseven.model.HubApps
 import io.github.aimindseye.tenseven.model.LockLayer
 import io.github.aimindseye.tenseven.platform.LockLayerLauncher
 import io.github.aimindseye.tenseven.platform.LockLayerState
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
  * Turns message and email notifications into [HubNotification]s in [ConversationHub]. Only runs once the
@@ -36,6 +38,7 @@ class ConversationListenerService : NotificationListenerService() {
             ) = LockLayerLauncher.showIfLocked(context)
         }
     private var screenOnRegistered = false
+    private val startState by lazy { StartStateRepository(this) }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -84,6 +87,7 @@ class ConversationListenerService : NotificationListenerService() {
     private fun toHubNotification(sbn: StatusBarNotification): HubNotification? {
         val notification = sbn.notification ?: return null
         if (sbn.packageName == packageName || notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return null
+        if (!HubApps.isIncluded(startState.loadHubExcludedApps(), sbn.packageName)) return null
         val style = messagingStyleOf(notification)
         val extracted = style?.let(::extractMessages).orEmpty()
         if (!isConversationNotification(notification.category, extracted.isNotEmpty())) return null

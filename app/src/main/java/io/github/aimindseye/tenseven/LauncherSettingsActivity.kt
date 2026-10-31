@@ -100,6 +100,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                         }
                     },
                     onAccess = { runCatching { startActivity(ConversationAccess.settingsIntent()) } },
+                    onHub = { runCatching { startActivity(Intent(this, HubSettingsActivity::class.java)) } },
                     gridColumns = gridColumns,
                     rows = rows,
                     labels = labels,
@@ -164,6 +165,7 @@ private fun LauncherSettings(
     overlayAllowed: Boolean,
     accessAllowed: Boolean,
     onLockLayer: (Boolean) -> Unit,
+    onHub: () -> Unit,
     onOverlay: () -> Unit,
     onAccess: () -> Unit,
     gridColumns: Int,
@@ -272,6 +274,9 @@ private fun LauncherSettings(
                     }
                 SwitchRow(stringResource(title), stringResource(detail), widget in widgets) { onWidget(widget) }
             }
+
+            Section(stringResource(R.string.ls_section_hub))
+            Card(stringResource(R.string.ls_hub), stringResource(R.string.ls_hub_detail), false, onClick = onHub)
 
             Section(stringResource(R.string.ls_section_lock))
             SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer, onLockLayer)

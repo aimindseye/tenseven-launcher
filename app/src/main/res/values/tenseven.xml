@@ -223,4 +223,19 @@
     <string name="ls_lock_access">Allow notification access</string>
     <string name="ls_lock_access_detail">Needed for the icons and counts. Only counts are used, never what a message says.</string>
     <string name="ls_lock_ready">Ready. Lock the phone and wake it to see the layer.</string>
+    <string name="hub_settings">Hub settings</string>
+    <string name="hub_settings_intro">The Hub keeps conversations in memory only. Nothing is saved or sent.</string>
+    <string name="hub_access">Notification access</string>
+    <string name="hub_access_on">On. Tap to change it in Android settings.</string>
+    <string name="hub_access_off">Off. Tap to allow it so the Hub can fill.</string>
+    <string name="hub_clear">Clear the Hub now</string>
+    <string name="hub_clear_detail">Forget everything the Hub holds. Notifications in your shade stay where they are.</string>
+    <string name="hub_cleared">Cleared. The Hub fills again as new messages arrive.</string>
+    <string name="hub_show_text">Show message text</string>
+    <string name="hub_show_text_detail">Let the lock layer and the Hub peek show the latest message. Off shows names and counts only.</string>
+    <string name="hub_apps">Apps in the Hub</string>
+    <string name="hub_apps_detail">Turn an app off to keep its notifications out of the Hub, the peek and the lock layer.</string>
+    <string name="ls_hub">Hub settings</string>
+    <string name="ls_hub_detail">Clear the Hub, choose which apps feed it, and control message text.</string>
+    <string name="ls_section_hub">Hub</string>
 </resources>

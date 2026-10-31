@@ -179,6 +179,13 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- Hub settings: clear the Hub, choose which apps feed it, and whether message text may be shown. -->
+        <activity
+            android:name=".HubSettingsActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/hub_settings" />
+
         <!-- The optional lock layer: a BlackBerry-style cover over the system lock screen. The real lock stays underneath. -->
         <activity
             android:name=".LockLayerActivity"
