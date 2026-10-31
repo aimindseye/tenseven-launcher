@@ -137,6 +137,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                         }
                     },
                     onAccess = { runCatching { startActivity(ConversationAccess.settingsIntent()) } },
+                    onPreviewLock = { runCatching { startActivity(Intent(this, LockLayerActivity::class.java)) } },
                     onHub = { runCatching { startActivity(Intent(this, HubSettingsActivity::class.java)) } },
                     gridColumns = gridColumns,
                     rows = rows,
@@ -209,6 +210,7 @@ private fun LauncherSettings(
     accessAllowed: Boolean,
     onLockLayer: (Boolean) -> Unit,
     onHub: () -> Unit,
+    onPreviewLock: () -> Unit,
     onOverlay: () -> Unit,
     onAccess: () -> Unit,
     gridColumns: Int,
@@ -372,6 +374,7 @@ private fun LauncherSettings(
                 if (!accessAllowed) {
                     Card(stringResource(R.string.ls_lock_access), stringResource(R.string.ls_lock_access_detail), false, onClick = onAccess)
                 }
+                Card(stringResource(R.string.ls_lock_preview), stringResource(R.string.ls_lock_preview_detail), false, onClick = onPreviewLock)
                 if (overlayAllowed && accessAllowed) {
                     Text(
                         stringResource(R.string.ls_lock_ready),
