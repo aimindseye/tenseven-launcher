@@ -89,7 +89,6 @@
     <string name="hub_reply_failed">Could not send. Open the app to reply.</string>
 
     <!-- Recent apps strip -->
-    <string name="recents_label">Recent apps</string>
     <string name="recents_allow">Allow usage access to show recent apps</string>
 
     <!-- Command quick actions -->

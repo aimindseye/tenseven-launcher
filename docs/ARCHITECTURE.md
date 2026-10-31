@@ -82,7 +82,7 @@ replaces the missing data.
 
 | Feature | On SableOS | Ordinary install today | Plan |
 |---|---|---|---|
-| Active Frames: list and live pictures of recent apps | `ActivityManager` recents plus hidden `IActivityTaskManager` calls (`READ_FRAME_BUFFER`, `REAL_GET_TASKS`) | Recent apps from usage stats, icons only (needs usage access) | Done |
+| Active Frames: list and live pictures of recent apps | `ActivityManager` recents plus hidden `IActivityTaskManager` calls (`READ_FRAME_BUFFER`, `REAL_GET_TASKS`) | Recent apps from launches and usage stats as icon cards in the same frame grid (usage access adds apps opened elsewhere) | Done |
 | Close a frame (X / Backspace) | `removeTask` | Hides it from the list | Same |
 | Recents key opens Active Frames | The system's Recents is redirected to `SHOW_ACTIVE_FRAMES` | Android keeps its own Recents; SableOS's key notes report the system opens its Overview even when an accessibility service consumes the key | A home key or letter opens Active Frames |
 | Runtime-permission changes refresh the privacy rows | `OnPermissionsChangedListener` (system API) | `PermissionChangeSignal.register()` returns false; rows refresh on package events only | Refresh when returning to Home |
