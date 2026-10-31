@@ -55,7 +55,7 @@ Launcher Settings, **Icon grid**: choose Auto or 3 to 6 columns, 1 to 3 rows, th
 
 Launcher Settings, **Hub settings** (also the Hub's own settings button): **Clear the Hub now** forgets everything the Hub holds, **Apps in the Hub** turns individual apps off so their notifications stay out of the Hub, the peek and the lock layer, and **Show message text** decides whether the latest message may appear on the peek and the lock layer (off: names and counts only). Nothing is stored.
 
-**Peek**: on the BlackBerry 10 home, drag in from the very left edge to slide the latest conversations over Home. Tap one to open it in its app, **Open Hub** for the full page, Back or Escape to close. Space on the Hub slot of the bottom bar does the same.
+**Peek**: on the BlackBerry 10 home, drag in from the very left edge to slide the latest conversations over Home. Tap one to open it in its app, **Open Hub** for the full page, Back or Escape to close. Space on the Hub slot of the bottom bar does the same, and works with any navigation style. The drag only works on the Home page, and with Android gesture navigation it must start in the strip of the left edge about halfway down the screen: Android keeps the rest of that edge for its own Back gesture (a small "<" arrow appears instead).
 
 ## Widgets on the home screen
 
@@ -112,5 +112,6 @@ No network access, no analytics, no accounts. Optional permissions: notification
 - **Silent mode will not stick**: grant Do Not Disturb access.
 - **The lock layer does not appear on wake**: use **Preview the lock layer** (Launcher Settings or Setup) to check the screen itself, confirm both permissions show as allowed, and note that Android may block a screen from starting in the background. Switch it off if it does not work on your phone.
 - **Wallpaper not visible on the BlackBerry 10 home**: Launcher Settings, Wallpapers, **Show wallpaper behind the BlackBerry 10 home**.
+- **A small "<" appears instead of the peek**: that is Android's Back gesture. Go to the Home page, start the drag at the left edge halfway down the screen, or select the Hub slot of the bottom bar and press Space.
 - **Wrong home after an update**: press Home and choose Tenseven, then **Always**.
 - Report problems with the device, Android version and steps on the GitHub issue tracker.
