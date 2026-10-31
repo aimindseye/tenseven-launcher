@@ -19,35 +19,12 @@ Gradle project so it can run on any Android 11+ phone, with new icons
 ([Tabler](https://github.com/tabler/tabler-icons)) and the missing pieces filled in from
 [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch).
 
-> **Status: working beta, debug builds only.** The launcher builds in CI (compile, 46 unit-test files, Lint,
-> detekt, ktlint, security scans) and has been installed and tried by hand on a Unihertz Titan 2. Both
-> layouts, Command, the Hub, the extra apps and Launcher Settings exist and run there; the newest changes
-> (Launcher Settings, the widget strip, the sound-profile icon, Sound Profiles) are the least tested.
-> There is **no release** and no installable APK except the debug build CI uploads.
-> The layouts were designed for the Zinwa Q25's 411 dp square screen; other screens need checking.
-> What is done and what is next: [`ROADMAP.md`](ROADMAP.md). How to use it: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
-
-```text
-APP=Tenseven Launcher (io.github.aimindseye.tenseven)
-PHASE=beta: both layouts, Hub, Command, extras and Launcher Settings built; Widgets page (Android widget hosting) written, not yet run on a phone
-BASE=Android 11+ (minSdk 30), compileSdk and targetSdk 36, ordinary install, no platform signature
-HOME_STYLES=BlackBerry 10 style, BlackBerry 7 style (chosen in Launcher Settings)
-ICONS=Tabler Icons outline 3.50.0 (MIT), generated into the app by tools/tabler_icons.py
-APPS_BUILD=GitHub Actions on every pull request (Gradle build, unit tests, Lint, detekt, ktlint, Kover)
-DEVICE_TESTED=Unihertz Titan 2, debug build, by hand; no other device
-QUALITY_GATES=report only until TENSEVEN_STRICT_QUALITY=true (docs/BUILD.md)
-BORROWED_FROM_MINK=Hub conversations, onboarding, usage recents, icon packs, backup, command prefixes, lock service (third_party/minklauncher/PORTING.md)
-EXTRAS=Calc Plus, Notes, Sound Profiles, ten games, ported from SableOS, off by default
-SABLE_KEYBOARD=separate companion app, not in this repository yet (docs/ARCHITECTURE.md)
-RELEASES=NONE
-INTERNET=none (no INTERNET permission)
-```
-
 ## What you get
 
 | | |
 |---|---|
-| **Launcher Settings** | One screen (BB7 menu, BB10 gear, or Command: "Launcher Settings") with the two style cards (BlackBerry 7 or 10), Type to search on or off, BB7 icon size (small, medium, large), Calendar, Alarm and Now Playing widget switches, Language, Back up and restore, Setup, Android settings and a privacy note. Every change is saved at once |
+| **Launcher Settings** | One screen (BB7 menu, BB10 gear, or Command: "Launcher Settings"): home style (BlackBerry 7 or 10), Type to search, icon grid (columns, rows, icon size, app names, live preview), theme (seven) and wallpaper (eight, set for Home, Lock or both), Widgets page and Glance widget switches, Hub settings, lock layer, Language, Back up and restore, Setup, Android settings and a privacy note. Every change is saved at once |
+| **Setup** | First run and Launcher Settings, then Setup: the home role, each optional permission with its reason, and a step for every Launcher Settings group (style, theme and wallpaper, icon grid, widgets, Hub, lock screen, extra apps). The choice steps share their controls with Launcher Settings, so setup cannot fall behind it |
 | **BlackBerry 10 style** | Hub, then Active Frames (your recent apps and widgets), then pages of app icons. Phone, Search and Camera along the bottom. A top row with the status dials, the gear (Launcher Settings), today's date, a bell with the unread count (opens the Hub) and the speaker icon. Up to 8 frames, 5 icons per row |
 | **BlackBerry 7 style** | Status dials, date, unread badge and speaker icon over the wallpaper, a widget strip (Calendar and Now Playing until you change them), and a tray with Favorites, All and Downloads panels (Frequent, the apps you open most, can be added from the menu). A new home starts with your phone's own Phone, Messages, Mail, Camera, Calendar, Browser, Gallery and Music apps plus Settings. Swipe right for the Hub, left for the apps; long-press empty space, then Add to home screen, to place icons between the banner and the tray; Alt+Left/Right or Space switches panels |
 | **BB7 menu** | Alt+Enter, the ⋮ button on the tray or a long-press on an icon (the Titan 2 has no Menu key): add to or remove from the home screen, move, App info, show or hide panels, more rows, clearer or darker banner and tray, change wallpaper, Launcher Settings, Command |
@@ -55,7 +32,11 @@ INTERNET=none (no INTERNET permission)
 | **Hold a letter** | Hold a key on Home to open the app you assigned to it (`assign k camera` in Command; `unassign k` frees it), or call a speed-dial contact where Sable Phone is installed |
 | **Most-used first** | Command ranks the apps you open most ahead of other matches, so two letters are usually enough. Counts stay on the phone and fade over time |
 | **All Apps** | A to Z with a privacy row per app (permissions and special access), Private Space and work profile support, uninstall through the system |
-| **Widgets page** | Left of Hub: widgets from any installed app (a weather app, a clock), added from a picker, ordered with Up/Down, removed in Edit. Written but not yet run on a phone; can be switched off in Launcher Settings |
+| **Widgets page and home tiles** | Left of Hub: widgets from any installed app (a weather app, a clock), added from a picker, ordered with Up/Down, removed in Edit; can be switched off in Launcher Settings. The same widgets can be full-width tiles on the BB10 home (Edit Home, Widgets on Home). Not yet confirmed on a phone |
+| **Edit Home** | Reorder the grid, bottom bar and frames with the keyboard; a bar at the bottom (Reset, Cancel, Done) stays on screen |
+| **Hub peek and Hub settings** | Drag in from the left edge of the BB10 home (or Space on the Hub slot) for the latest conversations without leaving Home. Hub settings: clear the Hub now, choose which apps feed it, and whether message text may be shown |
+| **Themes and wallpapers** | Seven themes that work on an ordinary install, and eight wallpapers Tenseven draws itself (no image files, no BlackBerry artwork); the BB10 home can show the wallpaper through, dimmed |
+| **Lock layer** | Optional BlackBerry-style cover over your lock screen: time, date, app icons with counts, camera shortcut. The phone's own lock stays underneath. Needs Display over other apps and notification access |
 | **Hub** | Unread bar, then your message and email conversations grouped per person with inline reply (Tenseven's own notification listener, in memory only, text hidden while locked), calls and contacts. Filter by person, unread, messages or email; mark read (button or `M`); snooze for an hour or until tomorrow (button or `S`). It opens your phone's default Messages, Mail, Phone and Contacts apps and needs no Sable app |
 | **Glance widgets** | Calendar (next event), Alarm (next alarm) and Now Playing, switched in Launcher Settings: a strip on BB7, Active Frames on BB10. Battery, Hub, Mail and Photos frames come from Edit Home. Other apps' Android widgets go on the Widgets page and as tiles on the BB10 home (Edit Home, Widgets on Home) |
 | **Sound** | The speaker icon on both homes shows Sound, Vibrate or Silent. With the Sound Profiles extra on, a tap opens it (a long press switches modes); otherwise a tap cycles Android's own modes, and Silent needs Do Not Disturb access (long press opens that screen) |
@@ -107,11 +88,11 @@ adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.con
 
 ## Install
 
-There is no release yet. When there is one:
+There is no published release yet; build one yourself (signed, see [`docs/BUILD.md`](docs/BUILD.md)) or use a CI debug build. With an APK:
 
 1. Download the APK from the GitHub release and open it; approve installing from that source if Android asks.
 2. Press Home and choose **Tenseven** as the home app (or Settings > Apps > Default apps > Home app).
-3. Follow the setup screen that opens on first run: the home role first, then each optional permission with its reason.
+3. Follow the setup screens that open on first run: the home role first, then each optional permission with its reason, then your choices (home style, theme and wallpaper, icon grid, widgets, Hub, lock screen, extra apps). All of it can be changed later in Launcher Settings, then Setup.
 4. Open Launcher Settings (BB7 menu, BB10 gear, or type "Launcher Settings" in Command) and pick the BlackBerry 10 or BlackBerry 7 card.
 5. **Notification or usage access on Android 13 or newer:** Android greys these switches out for apps
    installed outside a store until you open Settings > Apps > Tenseven, tap the top-right menu and choose
@@ -142,7 +123,8 @@ To add a device, capture its keys with the event viewer in Sable Keyboard (`KeyP
 
 | Guide | What it covers |
 |---|---|
-| [User guide](docs/USER_GUIDE.md) | Setting up, both layouts, keys and gestures, Command, Hub, widgets, extras, sound, grants over adb, troubleshooting |
+| [User guide](docs/USER_GUIDE.md) | Setting up, both layouts, icon grid, themes and wallpapers, keys and gestures, Command, Hub and peek, widgets, lock layer, extras, sound, grants over adb, troubleshooting |
+| [Screenshots](docs/SCREENSHOTS.md) | `tools/take-screenshots.sh`: captures the setup steps, Launcher Settings and the home screens from a connected phone |
 | [Roadmap](ROADMAP.md) | What is done, what is next, and what is not planned |
 | [Architecture](docs/ARCHITECTURE.md) | Modules, how the imported sources are organised, platform-only features and their fallbacks, key profiles, the keyboard companion |
 | [Build](docs/BUILD.md) | Build and test locally, quality switch, lock files, SonarCloud setup, GitHub Actions |
@@ -175,9 +157,11 @@ app/                      the launcher (Gradle application module, io.github.aim
   src/main/java/io/github/aimindseye/tenseven/   Sable Start sources, imported (renamed from org.sableos.start), plus Tenseven's own code:
     conversations/ iconpacks/ onboarding/        ports from MinkLauncher
     extras/                                      Calc Plus, Notes, Sound Profiles, ten games (from SableOS)
-    LauncherSettingsActivity, BackupActivity     Tenseven's own screens
+    LauncherSettingsActivity, SettingsSections   Launcher Settings and the setting groups it shares with Setup
+    HubSettingsActivity, LockLayerActivity       Hub settings and the lock layer cover
+    BackupActivity, OnboardingActivity           Backup and Setup
   src/main/res/                    strings (18 draft translations for the imported text; Tenseven's own lines are English), theme, Tenseven launcher icon
-  src/test/                        46 unit-test files (Sable Start's, the ports', and Tenseven's own)
+  src/test/                        58 unit-test files (Sable Start's, the ports', and Tenseven's own)
 design/                   Sable design library (theme, tokens, shared components, 18 draft translations)
 config/                   detekt rules (byte-exact SableOS copy) and their provenance
 gradle/                   version catalog and wrapper
@@ -186,7 +170,7 @@ third_party/
   minklauncher/           read-only reference snapshot of the MinkLauncher pieces to port, with attribution
   titan-ai/               MIT notice for the status rings
 brand-assets/             catalog of messaging and AI provider logos (source, status, sha256)
-tools/                    tabler_icons.py, brand_assets.py, refresh-locks.sh
+tools/                    tabler_icons.py, brand_assets.py, refresh-locks.sh, take-screenshots.sh
 tests/run.sh              static checks: shellcheck, XML, generated icons, catalog, manifest permissions
 docs/                     guides
 .github/workflows/        GitHub Actions: checks, Android, Security, SonarCloud
@@ -234,3 +218,35 @@ BlackBerry is a trademark of its owner. Tenseven is not affiliated with or endor
 - **Notification, usage, Private Space, onboarding, icon pack, backup and command ideas and code to port:**
   [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch) by Katoa Apps (Apache-2.0).
 - **Status rings:** [Titan AI](https://github.com/andrehafner/aiassistant) by Andre Hafner (MIT).
+
+## Status
+
+**Working beta.** The launcher builds in CI (compile, 58 unit-test files, Lint, detekt, ktlint, security scans)
+and is installed and tried by hand on a Unihertz Titan 2. There is no published release; builds are the CI debug
+APK or one you sign yourself. The layouts were designed for the Zinwa Q25's 411 dp square screen, so other screens
+need checking. What is done and what is next: [`ROADMAP.md`](ROADMAP.md).
+
+| Area | State |
+|---|---|
+| Both home layouts, Command, Hub, All Apps, extra apps | Run on the Titan 2 |
+| Launcher Settings, Setup (first run and overview) | Run on the Titan 2 |
+| Themes, wallpapers (Home, Lock, BB10 see-through), lock layer and its preview | Run on the Titan 2 |
+| Widgets page and widget tiles, Hub peek, Hub settings, icon grid options, Edit Home bar | Written and in CI; not yet confirmed on a phone |
+| Other devices (Q25, Titan Pocket, KEY2, plain phones) | Not run |
+
+```text
+APP=Tenseven Launcher (io.github.aimindseye.tenseven)
+PHASE=beta: both layouts, Hub, Command, extras, Launcher Settings, Setup, themes, wallpapers and lock layer built
+BASE=Android 11+ (minSdk 30), compileSdk and targetSdk 36, ordinary install, no platform signature
+HOME_STYLES=BlackBerry 10 style, BlackBerry 7 style (chosen in Launcher Settings or Setup)
+ICONS=Tabler Icons outline 3.50.0 (MIT), generated into the app by tools/tabler_icons.py
+WALLPAPERS=eight, drawn in code by Tenseven; no image files, no BlackBerry artwork
+APPS_BUILD=GitHub Actions on every pull request (Gradle build, unit tests, Lint, detekt, ktlint, Kover)
+DEVICE_TESTED=Unihertz Titan 2, debug build, by hand; no other device
+QUALITY_GATES=report only until TENSEVEN_STRICT_QUALITY=true (docs/BUILD.md)
+BORROWED_FROM_MINK=Hub conversations, onboarding, usage recents, icon packs, backup, command prefixes, lock service (third_party/minklauncher/PORTING.md)
+EXTRAS=Calc Plus, Notes, Sound Profiles, ten games, ported from SableOS, off by default
+SABLE_KEYBOARD=separate companion app, not in this repository yet (docs/ARCHITECTURE.md)
+RELEASES=none published; release signing supported (docs/BUILD.md)
+INTERNET=none (no INTERNET permission)
+```

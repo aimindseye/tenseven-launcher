@@ -77,6 +77,9 @@ class LockLayerActivity : ComponentActivity() {
             ) = finish()
         }
 
+    /** Whether this is a preview from a settings screen (it closes itself rather than asking for the PIN). */
+    private val isPreview get() = intent?.hasExtra(EXTRA_RETURN_TO) == true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setShowWhenLocked(true)
@@ -102,6 +105,18 @@ class LockLayerActivity : ComponentActivity() {
         }
     }
 
+    /** A preview started from Setup or Launcher Settings goes back to that screen, not to Home. */
+    override fun finish() {
+        val back = intent?.getStringExtra(EXTRA_RETURN_TO)
+        if (back != null) {
+            intent?.removeExtra(EXTRA_RETURN_TO)
+            runCatching {
+                startActivity(Intent().setClassName(this, back).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+            }
+        }
+        super.finish()
+    }
+
     override fun onDestroy() {
         runCatching { unregisterReceiver(closer) }
         super.onDestroy()
@@ -122,6 +137,10 @@ class LockLayerActivity : ComponentActivity() {
     /** Asks Android to dismiss the real lock screen, then opens [then] (if any) and closes this cover. */
     private fun unlock(then: Intent?) {
         val keyguard = getSystemService(KeyguardManager::class.java)
+        if (isPreview) {
+            finish()
+            return
+        }
         if (keyguard == null || !keyguard.isKeyguardLocked) {
             then?.let { runCatching { startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
             finish()
@@ -146,6 +165,9 @@ class LockLayerActivity : ComponentActivity() {
         }
     }
 }
+
+/** Set on a preview: the class name of the screen to return to when the preview closes. */
+const val EXTRA_RETURN_TO = "io.github.aimindseye.tenseven.extra.LOCK_PREVIEW_RETURN_TO"
 
 @Composable
 private fun LockLayerScreen(

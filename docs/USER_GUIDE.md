@@ -63,7 +63,7 @@ On the BlackBerry 10 home, other apps' widgets can sit as full-width tiles under
 
 ## Lock layer
 
-Launcher Settings, **Lock screen**, switch on **Tenseven lock layer**. When the screen wakes onto your lock screen, Tenseven shows a BlackBerry-style cover: the time, the date, an icon with a count for each app with waiting notifications, and a camera shortcut. It is only a cover: swipe up, press Enter or Space, or tap an app, and Android asks for your PIN, pattern or fingerprint before anything opens. The camera opens the secure camera without unlocking.
+Launcher Settings, **Lock screen** (also a Setup step), switch on **Tenseven lock layer**. When the screen wakes onto your lock screen, Tenseven shows a BlackBerry-style cover: the time, the date, an icon with a count for each app with waiting notifications, and a camera shortcut. It is only a cover: swipe up, press Enter or Space, or tap an app, and Android asks for your PIN, pattern or fingerprint before anything opens. The camera opens the secure camera without unlocking.
 
 It needs two permissions, both explained in Settings: **Display over other apps** (so it can appear when the screen wakes) and **Notification access** (for the counts; message text only if Hub settings allow it). Some Android versions refuse to start a screen from the background; if the layer does not appear, switch it off.
 
@@ -99,9 +99,15 @@ Launcher Settings, then **Backup**, saves or restores your settings as a file th
 
 No network access, no analytics, no accounts. Optional permissions: notification access (Hub, Now Playing), usage access (recent apps), calendar (agenda), contacts (names), Do Not Disturb and system settings (sound). The accessibility service for double-tap to lock is optional and reads nothing.
 
+## Screenshots
+
+`tools/take-screenshots.sh` captures the setup steps, Launcher Settings and the home screens from a phone connected over adb. See [`SCREENSHOTS.md`](SCREENSHOTS.md).
+
 ## Troubleshooting
 
 - **A permission is greyed out**: use Allow restricted settings (above).
 - **Silent mode will not stick**: grant Do Not Disturb access.
+- **The lock layer does not appear on wake**: use **Preview the lock layer** (Launcher Settings or Setup) to check the screen itself, confirm both permissions show as allowed, and note that Android may block a screen from starting in the background. Switch it off if it does not work on your phone.
+- **Wallpaper not visible on the BlackBerry 10 home**: Launcher Settings, Wallpapers, **Show wallpaper behind the BlackBerry 10 home**.
 - **Wrong home after an update**: press Home and choose Tenseven, then **Always**.
 - Report problems with the device, Android version and steps on the GitHub issue tracker.

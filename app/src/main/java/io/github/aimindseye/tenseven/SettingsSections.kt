@@ -276,7 +276,12 @@ internal fun LockLayerSection(state: StartStateRepository) {
             }
         }
         Card(stringResource(R.string.ls_lock_preview), stringResource(R.string.ls_lock_preview_detail), false) {
-            runCatching { context.startActivity(Intent(context, LockLayerActivity::class.java)) }
+            val returnTo = activity?.javaClass?.name
+            runCatching {
+                context.startActivity(
+                    Intent(context, LockLayerActivity::class.java).apply { if (returnTo != null) putExtra(EXTRA_RETURN_TO, returnTo) },
+                )
+            }
         }
         if (overlayAllowed && accessAllowed) {
             Text(

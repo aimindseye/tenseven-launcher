@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: lets `tools/take-screenshots.sh` open Tenseven's own screens straight from adb. The release
+     manifest keeps these activities private. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <activity
+            android:name="io.github.aimindseye.tenseven.OnboardingActivity"
+            android:exported="true"
+            tools:replace="android:exported" />
+        <activity
+            android:name="io.github.aimindseye.tenseven.BackupActivity"
+            android:exported="true"
+            tools:replace="android:exported" />
+        <activity
+            android:name="io.github.aimindseye.tenseven.HubSettingsActivity"
+            android:exported="true"
+            tools:replace="android:exported" />
+        <activity
+            android:name="io.github.aimindseye.tenseven.LockLayerActivity"
+            android:exported="true"
+            tools:replace="android:exported" />
+    </application>
+</manifest>
