@@ -139,7 +139,7 @@ internal fun IconGridSection(state: StartStateRepository) {
     }
 }
 
-/** The seven themes. */
+/** The themes: BlackBerry (the default), Phone colours and six more. */
 @Composable
 internal fun ThemeSection(state: StartStateRepository) {
     var themeId by remember { mutableStateOf(ThemePresets.matching(state.loadAppearanceMode(), state.loadAppearanceAccent()).id) }
@@ -151,6 +151,8 @@ internal fun ThemeSection(state: StartStateRepository) {
                     detail =
                         if (preset.id == ThemePresets.DEFAULT_ID) {
                             stringResource(R.string.ls_theme_default_detail)
+                        } else if (preset.id == ThemePresets.PHONE_ID) {
+                            stringResource(R.string.ls_theme_phone_detail)
                         } else {
                             preset.mode.name + " · " + preset.accent.displayName
                         },
