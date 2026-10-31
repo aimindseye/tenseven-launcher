@@ -243,5 +243,5 @@ are required; the rest take the defaults of the mode.
 
 - `mode` is `dark`, `light` or `follow-system`. Colours are `#RRGGBB`. `seed` (0 to 9999) shapes the wallpaper ridges.
 - Tenseven refuses a file whose text, muted or accent colour would be hard to see: text needs a contrast of 4.5 on the
-  background, and muted, accent and `onAccent` (on the accent) 3.
+  background, muted and accent 3, and `onAccent` 2.5 on the accent.
 - Up to 12 imported themes are kept. They are saved with a backup. The peek always uses the phone's colours.
