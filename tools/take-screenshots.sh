@@ -66,11 +66,32 @@ hash_screen() {
   if command -v md5 >/dev/null; then "${ADB[@]}" exec-out screencap -p | md5; else "${ADB[@]}" exec-out screencap -p | md5sum; fi
 }
 
+# A PNG starts with the bytes 89 50 4E 47 0D 0A 1A 0A. Anything else is corrupt.
+is_png() {
+  [ -s "$1" ] && [ "$(head -c 8 "$1" | od -An -tx1 | tr -d ' \n')" = "89504e470d0a1a0a" ]
+}
+
 shot() { # shot <name>
   N=$((N + 1))
   local file; file="$OUT/$(printf '%02d' "$N")-$1.png"
-  "${ADB[@]}" exec-out screencap -p > "$file"
-  echo "  $file"
+  local try
+  for try in 1 2 3; do
+    if [ "$try" -lt 3 ]; then
+      "${ADB[@]}" exec-out screencap -p > "$file" 2>/dev/null || true
+    else
+      # Last resort: capture on the phone and pull the file, which never touches a text stream.
+      "${ADB[@]}" shell screencap -p /sdcard/tenseven-shot.png >/dev/null 2>&1 || true
+      "${ADB[@]}" pull /sdcard/tenseven-shot.png "$file" >/dev/null 2>&1 || true
+      "${ADB[@]}" shell rm -f /sdcard/tenseven-shot.png >/dev/null 2>&1 || true
+    fi
+    if is_png "$file"; then break; fi
+    sleep 0.7
+  done
+  if is_png "$file"; then
+    echo "  $file"
+  else
+    echo "  WARNING: $file is not a valid PNG (screen may be secure or off)"
+  fi
 }
 
 wake() {
