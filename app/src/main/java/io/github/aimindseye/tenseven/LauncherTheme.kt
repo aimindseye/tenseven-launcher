@@ -17,6 +17,7 @@ import io.github.aimindseye.tenseven.design.applySableSystemBars
 import io.github.aimindseye.tenseven.design.rememberGlobalSableAppearance
 import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.ui.Bb10Theme
 
 /**
  * The appearance the launcher draws with: the theme chosen in Launcher Settings, else the BlackBerry theme. Only the
@@ -62,5 +63,6 @@ fun LauncherTheme(
             applySableSystemBars(window = it, darkTheme = resolveSableDarkAppearance(context = context, appearance = appearance))
         }
     }
-    SableTheme(appearance = appearance, content = content)
+    // The same palette the Hub and the home pages use, so every screen Tenseven draws looks like one app.
+    SableTheme(appearance = appearance) { Bb10Theme(appearance, content) }
 }
