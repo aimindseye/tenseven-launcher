@@ -61,4 +61,69 @@ class GameKeymapTest {
         assertEquals(2, GameKeymap.slideDirection(GameCommand.Move(0, -1)))
         assertEquals(3, GameKeymap.slideDirection(GameCommand.Move(0, 1)))
     }
+
+    @Test
+    fun arcadeGamesStartWithPrimaryAndPauseWithP() {
+        listOf(GameKind.Bricks, GameKind.Snake, GameKind.Blocks).forEach { game ->
+            assertEquals(GameCommand.Primary, cmd(game, KeyEvent.KEYCODE_SPACE, ' '))
+            assertEquals(GameCommand.Primary, cmd(game, KeyEvent.KEYCODE_ENTER))
+            assertEquals(GameCommand.Primary, cmd(game, KeyEvent.KEYCODE_DPAD_CENTER))
+            assertEquals(GameCommand.Pause, cmd(game, KeyEvent.KEYCODE_P, 'p'))
+            assertEquals(GameCommand.NewGame, cmd(game, KeyEvent.KEYCODE_N, 'n'))
+            assertNull(cmd(game, KeyEvent.KEYCODE_P, 'p', alt = true))
+            assertNull(cmd(game, KeyEvent.KEYCODE_Q, 'q'))
+        }
+    }
+
+    @Test
+    fun reversiAndGame2048UseNewGameAndReversiPrimary() {
+        assertEquals(GameCommand.Primary, cmd(GameKind.Reversi, KeyEvent.KEYCODE_ENTER))
+        assertEquals(GameCommand.Primary, cmd(GameKind.Reversi, KeyEvent.KEYCODE_SPACE, ' '))
+        assertEquals(GameCommand.NewGame, cmd(GameKind.Reversi, KeyEvent.KEYCODE_N, 'n'))
+        assertNull(cmd(GameKind.Reversi, KeyEvent.KEYCODE_ENTER, alt = true))
+        assertEquals(GameCommand.NewGame, cmd(GameKind.Game2048, KeyEvent.KEYCODE_N, 'n'))
+        assertNull(cmd(GameKind.Game2048, KeyEvent.KEYCODE_ENTER))
+        assertNull(cmd(GameKind.Game2048, KeyEvent.KEYCODE_N, 'n', alt = true))
+    }
+
+    @Test
+    fun solitaireKeys() {
+        assertEquals(GameCommand.Draw, cmd(GameKind.Solitaire, KeyEvent.KEYCODE_SPACE, ' '))
+        assertEquals(GameCommand.Primary, cmd(GameKind.Solitaire, KeyEvent.KEYCODE_ENTER))
+        assertEquals(GameCommand.Primary, cmd(GameKind.Solitaire, KeyEvent.KEYCODE_DPAD_CENTER))
+        assertEquals(GameCommand.Auto, cmd(GameKind.Solitaire, KeyEvent.KEYCODE_A, 'a'))
+        assertEquals(GameCommand.Erase, cmd(GameKind.Solitaire, KeyEvent.KEYCODE_DEL))
+        assertEquals(GameCommand.Erase, cmd(GameKind.Solitaire, KeyEvent.KEYCODE_ESCAPE))
+        assertEquals(GameCommand.NewGame, cmd(GameKind.Solitaire, KeyEvent.KEYCODE_N, 'n'))
+        assertNull(cmd(GameKind.Solitaire, KeyEvent.KEYCODE_A, 'a', alt = true))
+    }
+
+    @Test
+    fun mahjongKeys() {
+        assertEquals(GameCommand.Primary, cmd(GameKind.Mahjong, KeyEvent.KEYCODE_ENTER))
+        assertEquals(GameCommand.Hint, cmd(GameKind.Mahjong, KeyEvent.KEYCODE_H, 'h'))
+        assertEquals(GameCommand.NewGame, cmd(GameKind.Mahjong, KeyEvent.KEYCODE_N, 'n'))
+        assertNull(cmd(GameKind.Mahjong, KeyEvent.KEYCODE_H, 'h', alt = true))
+    }
+
+    @Test
+    fun wordsTypeEveryLetterIncludingN() {
+        assertEquals(GameCommand.Letter('N'), cmd(GameKind.Words, KeyEvent.KEYCODE_N, 'n'))
+        assertEquals(GameCommand.Letter('Q'), cmd(GameKind.Words, KeyEvent.KEYCODE_Q, 'Q'))
+        assertEquals(GameCommand.Erase, cmd(GameKind.Words, KeyEvent.KEYCODE_DEL))
+        assertEquals(GameCommand.Primary, cmd(GameKind.Words, KeyEvent.KEYCODE_ENTER))
+        assertEquals(GameCommand.Primary, cmd(GameKind.Words, KeyEvent.KEYCODE_DPAD_CENTER))
+        assertNull(cmd(GameKind.Words, KeyEvent.KEYCODE_1, '1'))
+        assertNull(cmd(GameKind.Words, KeyEvent.KEYCODE_A, 'a', alt = true))
+        assertNull(cmd(GameKind.Words, KeyEvent.KEYCODE_SPACE, ' '))
+    }
+
+    @Test
+    fun sudokuZeroAndForwardDeleteErase() {
+        assertEquals(GameCommand.Erase, cmd(GameKind.Sudoku, KeyEvent.KEYCODE_0, '0'))
+        assertEquals(GameCommand.Erase, cmd(GameKind.Sudoku, KeyEvent.KEYCODE_FORWARD_DEL))
+        assertEquals(GameCommand.Flag, cmd(GameKind.Minesweeper, KeyEvent.KEYCODE_G, 'g'))
+        assertEquals(GameCommand.Primary, cmd(GameKind.Minesweeper, KeyEvent.KEYCODE_DPAD_CENTER))
+        assertNull(cmd(GameKind.Minesweeper, KeyEvent.KEYCODE_F, 'f', alt = true))
+    }
 }
