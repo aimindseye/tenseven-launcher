@@ -210,7 +210,7 @@ GitHub Actions runs on every pull request and on `main`, with the same pinned ac
 | `SonarCloud` | SonarCloud scan of the whole repository, waiting on the "Sonar way" quality gate; needs the `SONAR_TOKEN` repository secret |
 
 `Android` and `checks` skip documentation-only changes. SonarCloud runs as CI-based analysis, so
-Automatic Analysis must stay off in the SonarCloud project. Until the imported sources are clean,
+Automatic Analysis must stay off in the SonarCloud project, and a failing quality gate fails the job. Until the imported sources are clean,
 detekt, ktlint and Lint **report without failing**; compile errors and failing tests always fail. Set the
 repository variable `TENSEVEN_STRICT_QUALITY` to `true` to make them fail
 ([`docs/BUILD.md`](docs/BUILD.md#quality-gates)).

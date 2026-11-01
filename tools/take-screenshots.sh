@@ -66,7 +66,8 @@ RIGHT=$((W * 9 / 10))
 hash_screen() {
   # Capture on the phone: screencap prints a multi-display warning to stdout, which would corrupt a pipe.
   "${ADB[@]}" shell screencap -p /sdcard/tenseven-hash.png >/dev/null 2>&1 || true
-  if command -v md5 >/dev/null; then "${ADB[@]}" exec-out cat /sdcard/tenseven-hash.png | md5; else "${ADB[@]}" exec-out cat /sdcard/tenseven-hash.png | md5sum; fi
+  # Only used to tell whether the screen changed; SHA-256 keeps the check off weak hash algorithms.
+  if command -v sha256sum >/dev/null; then "${ADB[@]}" exec-out cat /sdcard/tenseven-hash.png | sha256sum; else "${ADB[@]}" exec-out cat /sdcard/tenseven-hash.png | shasum -a 256; fi
 }
 
 # A PNG starts with the bytes 89 50 4E 47 0D 0A 1A 0A. Anything else is corrupt.
