@@ -115,4 +115,30 @@ class Bb10HomeTest {
         assertEquals("Dual", AppProfiles.badge(AppProfiles.DUAL))
         assertEquals("Work", AppProfiles.badge(AppProfiles.WORK))
     }
+
+    @Test
+    fun appGridColumnsFollowTheSettingAndTheScreenWidth() {
+        // Auto keeps the five columns on the Q25's 411 dp and uses fewer, larger cells on a narrow screen.
+        assertEquals(5, AppGrid.columnsFor(GridColumns.AUTO, 403))
+        assertEquals(4, AppGrid.columnsFor(GridColumns.AUTO, 300))
+        assertEquals(3, AppGrid.columnsFor(GridColumns.AUTO, 200))
+        // A chosen number is kept while the cells stay wide enough.
+        assertEquals(3, AppGrid.columnsFor(3, 403))
+        assertEquals(6, AppGrid.columnsFor(6, 403))
+        assertEquals(2, AppGrid.columnsFor(6, 100))
+        assertEquals(15, AppGrid.perPage(3, 5))
+        assertEquals(12, AppGrid.perPage(4, 3))
+    }
+
+    @Test
+    fun appGridIconSizeScalesWithTheChosenSize() {
+        assertEquals(1f, AppGrid.iconScale(Bb7IconSize.Medium), 0f)
+        assertEquals(44, AppGrid.iconSizeFor(80, 78, 31))
+        assertEquals(44, AppGrid.iconSizeFor(80, 78, 31, AppGrid.iconScale(Bb7IconSize.Medium)))
+        assertEquals(35, AppGrid.iconSizeFor(80, 78, 31, AppGrid.iconScale(Bb7IconSize.Small)))
+        assertEquals(47, AppGrid.iconSizeFor(80, 78, 31, AppGrid.iconScale(Bb7IconSize.Large)))
+        // Never smaller than the minimum, and never taller than the cell leaves room for.
+        assertEquals(AppGrid.MIN_ICON_DP, AppGrid.iconSizeFor(20, 78, 31, AppGrid.iconScale(Bb7IconSize.Small)))
+        assertEquals(40, AppGrid.iconSizeFor(120, 71, 31, AppGrid.iconScale(Bb7IconSize.Large)))
+    }
 }

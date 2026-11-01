@@ -412,6 +412,8 @@ class SableStartActivity : ComponentActivity() {
                     wallpaperBehind = homeWallpaper.value,
                     widgetsGeneration = widgetsGeneration.value,
                     showIconLabels = gridLabels.value,
+                    gridColumnsSetting = gridColumns.value,
+                    gridIconSize = bb7IconSize.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
                     onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,

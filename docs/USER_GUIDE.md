@@ -73,7 +73,7 @@ You can change your mind any time. Settings are saved as you tap.
 - **Favorites** are separate: the tray's first panel. Use **Add to Favorites** / **Remove from Favorites** in an app's menu.
 - **Menu**: there is no Menu key on the Titan 2, so use **Alt+Enter**, the ⋮ button, or a long-press.
 - **No widgets on this home**: the built-in widgets and any widgets you add live on the Widgets page (menu, then Widgets).
-- **Icon size**: Small, Medium or Large in Launcher Settings.
+- **Icon size and columns**: Small, Medium or Large, and Auto or 3 to 6 columns, in Launcher Settings (the same settings size the BlackBerry 10 app grid).
 - **Command and Hub** open as BlackBerry 10 views and bring you back to BlackBerry 7 when you leave them.
 
 |  |  |  |  |
@@ -134,7 +134,7 @@ Swipe right past Hub (or Alt+Left twice from Home) to the Widgets page. The buil
 
 ## Icon grid, themes and wallpapers
 
-Launcher Settings, **Icon grid**: choose Auto or 3 to 6 columns, 1 to 3 rows, the icon size, and whether app names show under icons. The small preview above the buttons changes as you choose. Only the app names switch applies to the BlackBerry 10 home, so size, columns, rows and the preview appear only while **BlackBerry 7** is the home screen style, and the **wallpaper behind the home** switch appears only for BlackBerry 10. Columns and names apply to the BlackBerry 7 home and tray; names also apply to the BlackBerry 10 app grid, whose columns stay fixed. (Ripe's separate "tile width" is the same choice here: the number of columns sets the width.)
+Launcher Settings, **Icon grid**: choose Auto or 3 to 6 columns, the icon size (Small, Medium or Large), and whether app names show under icons. These apply to both home styles: the BlackBerry 10 app grid pages and the BlackBerry 7 home and tray. On a narrow or small screen such as the Titan 2 Slim, pick fewer columns or Small icons if the grid feels cramped; Auto already uses fewer columns when the screen is narrow, and the app grid fits the rows to the icon size. Rows (1 to 3) and the small preview that changes as you choose appear only while **BlackBerry 7** is the home screen style, and the **wallpaper behind the home** switch appears only for BlackBerry 10. (Ripe's separate "tile width" is the same choice here: the number of columns sets the width.)
 
 **Theme** has eight looks. **BlackBerry** is the default: pure black with the BlackBerry blue, on the launcher and on the built-in apps (Calc Plus, Notes, Sound Profiles, the games). **Phone colours** follows your wallpaper colours and the phone's light or dark setting (Android 12 or newer; older versions show the BlackBerry blue). The rest are Midnight, Daylight, Forest, Dusk, Amber and Slate. They work on an ordinary install and are saved with a backup. Android has no way to install other apps' themes into a launcher; you can import a theme file (see **Theme files** below). **Wallpapers** has eight pictures Tenseven draws itself, with no outside artwork: pick one, then choose **Home**, **Lock** or **Both**.
 

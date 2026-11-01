@@ -108,7 +108,31 @@ object AppGrid {
         cellDp: Int,
     ): Int = (heightDp / cellDp.coerceAtLeast(1)).coerceIn(MIN_ROWS, MAX_ROWS)
 
-    fun perPage(rows: Int): Int = COLUMNS * rows
+    fun perPage(
+        rows: Int,
+        columns: Int = COLUMNS,
+    ): Int = columns.coerceAtLeast(1) * rows
+
+    /** The narrowest cell Auto allows, so a narrow phone gets fewer, larger icons instead of cramped ones. */
+    const val AUTO_MIN_CELL_DP = 72
+
+    /**
+     * The columns for a grid [widthDp] wide. Auto is [COLUMNS] (as many as fit at [AUTO_MIN_CELL_DP] each on a
+     * narrow phone, at least 3); a number the user chose is kept unless the cells would get narrower than the
+     * smallest [GridColumns.resolve] allows.
+     */
+    fun columnsFor(
+        chosen: Int,
+        widthDp: Int,
+    ): Int = GridColumns.resolve(chosen, widthDp, (widthDp / AUTO_MIN_CELL_DP).coerceIn(3, COLUMNS))
+
+    /** How much the Small, Medium or Large icon-size choice scales the icons and the cells that hold them. */
+    fun iconScale(size: Bb7IconSize): Float =
+        when (size) {
+            Bb7IconSize.Small -> 0.8f
+            Bb7IconSize.Medium -> 1f
+            Bb7IconSize.Large -> 1.2f
+        }
 
     /**
      * The icon size for a cell of [cellWidthDp] x [cellHeightDp]: a share of
@@ -119,7 +143,10 @@ object AppGrid {
         cellWidthDp: Int,
         cellHeightDp: Int,
         labelDp: Int,
-    ): Int = minOf((cellWidthDp * ICON_WIDTH_SHARE).toInt(), cellHeightDp - labelDp).coerceIn(MIN_ICON_DP, MAX_ICON_DP)
+        scale: Float = 1f,
+    ): Int =
+        minOf((cellWidthDp * ICON_WIDTH_SHARE * scale).toInt(), cellHeightDp - labelDp)
+            .coerceIn(MIN_ICON_DP, (MAX_ICON_DP * scale).toInt().coerceAtLeast(MIN_ICON_DP))
 
     /**
      * The one-line grid label: "Sable Calculator" shows as "Calculator", as
