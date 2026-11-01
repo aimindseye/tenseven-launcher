@@ -18,6 +18,7 @@ SableOS builds the same sources with.
 ```bash
 ./gradlew :app:assembleDebug                         # app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk
 ./gradlew :app:assembleRelease                       # R8-minified: Tenseven-Launcher-release.apk when signed (section 2a), else -release-unsigned.apk
+./gradlew :app:assembleLite                          # the lite build: release without the accessibility service and notification listener (section 2b)
 ./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
 ./gradlew :design:lintDebug :app:lintDebug           # reports in build/reports/lint-results-debug.*
 ./gradlew detekt ktlintCheck                         # reports in build/reports/detekt, build/reports/ktlint
@@ -58,6 +59,16 @@ adb install -r app/build/outputs/apk/release/Tenseven-Launcher-release.apk
 Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
 for every release: Android refuses to update an app signed with a different one. The release app id is
 `io.github.aimindseye.tenseven` (no `.debug`), so it installs beside the debug build as a separate app.
+
+### 2b. The lite build
+
+Google Play Protect blocks a downloaded APK ("App blocked to protect your device") when it declares an accessibility
+service or a notification listener, and the full build declares both (double-tap lock, Hub conversations, Now playing).
+`./gradlew :app:assembleLite` builds the same release without those two services (`app/src/lite/AndroidManifest.xml`
+removes them) and writes `app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk` (`-lite-unsigned.apk` without a key).
+It has the same application id and the same signing key, so a lite install can later be updated to the full build.
+Screens that only switch those two features on check `platform/Capabilities.kt` and are hidden in lite. A release
+carries both APKs; sign and checksum each the same way.
 
 ## 3. Quality gates
 

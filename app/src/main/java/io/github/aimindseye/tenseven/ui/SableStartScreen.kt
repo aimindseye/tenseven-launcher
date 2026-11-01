@@ -153,6 +153,7 @@ import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.NextAlarm
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.iconpacks.IconPackLoader
 import io.github.aimindseye.tenseven.iconpacks.IconPacks
@@ -1864,7 +1865,9 @@ private fun LiveGlanceFrame(
             GlanceWidgets.HUB -> snapshot.messages to SableGreen
             else -> snapshot.mail to SableOrange
         }
-    val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED
+    // Calendar asks for a runtime permission; Now playing and the Hub need the notification listener, which the lite build lacks.
+    val listenerMissing = widget != GlanceWidgets.CALENDAR && !Capabilities.hasConversationService(context)
+    val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED && !listenerMissing
     val headline =
         when {
             widget == GlanceWidgets.CALENDAR && needsAccess -> context.getString(R.string.calendar_allow)
@@ -5468,6 +5471,8 @@ private fun AppearanceScreen(
 
         item {
             val context = LocalContext.current
+            // The lite build has no accessibility service, so the double-tap lock switch is not offered.
+            if (!Capabilities.hasLockService(context)) return@item
             Spacer(Modifier.height(14.dp))
             SectionLabel(stringResource(R.string.lock_label))
             Spacer(Modifier.height(4.dp))

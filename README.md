@@ -108,14 +108,25 @@ adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.con
 
 ## Install
 
-Tenseven is in alpha. Download the signed APK from the [latest GitHub release](https://github.com/aimindseye/tenseven-launcher/releases) (the `release` APK; the `debug` one installs beside it), build one yourself ([`docs/BUILD.md`](docs/BUILD.md)) or use a CI debug build. With an APK:
+Tenseven is in alpha. Download an APK from the [latest GitHub release](https://github.com/aimindseye/tenseven-launcher/releases),
+build one yourself ([`docs/BUILD.md`](docs/BUILD.md)) or use a CI debug build. Each release has two signed APKs:
 
-1. Download the APK from the GitHub release and open it; approve installing from that source if Android asks.
-   **If Google Play Protect blocks it** ("App blocked to protect your device", with no way to continue): Tenseven is
-   new and not on Google Play, so Play Protect does not know it. Either tap **More details** and **Install anyway**
-   when that is offered, or open Play Store > your profile > **Play Protect** > the gear and switch off **Scan apps
-   with Play Protect**, install, then switch it back on. From a computer, `adb install -r Tenseven-Launcher-release.apk`
-   also works. The APK is signed and its SHA-256 is on the release page; install only an APK you downloaded from there.
+- **Lite** (`Tenseven-Launcher-lite.apk`, start here): everything except double-tap lock and Hub conversations (with
+  Now playing). It installs on an ordinary phone.
+- **Full** (`Tenseven-Launcher-release.apk`): adds those two features. They need an accessibility service and a
+  notification listener, and Google Play Protect blocks a downloaded APK that declares either ("App blocked to protect
+  your device"; see below).
+
+With an APK:
+
+1. Download it from the GitHub release and open it; approve installing from that source if Android asks.
+   The two builds use the same app id and key, so the full build installs over lite (and the other way round needs an uninstall first).
+   **If Play Protect blocks the full build** ("This app can request access to sensitive data", with only a **Got it**
+   button): it is not about the signature ([Google's explanation](https://developers.google.com/android/play-protect/warning-dev-guidance)).
+   Install lite, or: if your phone has **Advanced Protection** (Settings > Security), switch it off; then in Play
+   Store > your profile > **Play Protect** > the gear, switch off **Scan apps with Play Protect**; install; switch both
+   back on. `adb install -r Tenseven-Launcher-release.apk` from a computer is not a download source. Updates need none of this.
+   Install only an APK from the release page, whose SHA-256 is listed there.
 2. Press Home and choose **Tenseven** as the home app (or Settings > Apps > Default apps > Home app).
 3. Follow the setup screens that open on first run: the home role first, then each optional permission with its reason, then your choices (home style, theme and wallpaper, icon grid, widgets, Hub, lock screen, extra apps). All of it can be changed later in Launcher Settings, then Setup.
 4. Open Launcher Settings (BB7 menu, BB10 gear, or type "Launcher Settings" in Command) and pick the BlackBerry 10 or BlackBerry 7 card.
