@@ -38,8 +38,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          # The quality gate only fails the job once TENSEVEN_STRICT_QUALITY is true (same switch as detekt,
-          # ktlint and Lint); until then the analysis is uploaded and the gate result is read on SonarCloud.
+          # The job waits for the SonarCloud quality gate and fails when the gate fails. This is independent of
+          # TENSEVEN_STRICT_QUALITY (which only governs detekt, ktlint and Lint).
           args: >
-            -Dsonar.qualitygate.wait=${{ vars.TENSEVEN_STRICT_QUALITY == 'true' }}
+            -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
