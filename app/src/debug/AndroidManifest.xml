@@ -3,7 +3,9 @@
      manifest keeps these activities private. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <application>
+    <application
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
         <activity
             android:name="io.github.aimindseye.tenseven.OnboardingActivity"
             android:exported="true"
