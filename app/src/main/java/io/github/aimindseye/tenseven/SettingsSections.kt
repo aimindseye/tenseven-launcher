@@ -116,8 +116,8 @@ internal fun HomeStyleSection(
 }
 
 /**
- * Columns, rows, icon size and app names, with a small live preview. Only the app names switch also applies to the
- * BlackBerry 10 home, so the rest shows only while BlackBerry 7 is the home screen style.
+ * Columns, icon size and app names for both home styles (BlackBerry 10: the app grid pages; BlackBerry 7: the home and
+ * tray), and, while BlackBerry 7 is the home screen style, rows and a small live preview.
  */
 @Composable
 internal fun IconGridSection(state: StartStateRepository) {
@@ -126,19 +126,9 @@ internal fun IconGridSection(state: StartStateRepository) {
     var gridColumns by remember { mutableStateOf(state.loadGridColumns()) }
     var rows by remember { mutableStateOf(state.loadBb7HomeRows()) }
     var labels by remember { mutableStateOf(state.loadGridLabels()) }
-    if (!bb7) {
-        SwitchRow(stringResource(R.string.ls_labels), stringResource(R.string.ls_labels_detail), labels) {
-            labels = it
-            state.saveGridLabels(it)
-        }
-        Text(
-            stringResource(R.string.ls_grid_bb7_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        return
+    if (bb7) {
+        IconGridPreview(columns = gridColumns, rows = rows, iconSize = iconSize, labels = labels)
     }
-    IconGridPreview(columns = gridColumns, rows = rows, iconSize = iconSize, labels = labels)
     Text(stringResource(R.string.ls_icon_size), style = MaterialTheme.typography.bodyLarge)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Bb7IconSize.entries.forEach { size ->
@@ -162,12 +152,14 @@ internal fun IconGridSection(state: StartStateRepository) {
             }
         }
     }
-    Text(stringResource(R.string.ls_rows), style = MaterialTheme.typography.bodyLarge)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        (Bb7Home.MIN_HOME_ROWS..Bb7Home.MAX_HOME_ROWS).forEach { option ->
-            Card(title = option.toString(), detail = "", active = option == rows, modifier = Modifier.weight(1f)) {
-                rows = option
-                state.saveBb7HomeRows(option)
+    if (bb7) {
+        Text(stringResource(R.string.ls_rows), style = MaterialTheme.typography.bodyLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            (Bb7Home.MIN_HOME_ROWS..Bb7Home.MAX_HOME_ROWS).forEach { option ->
+                Card(title = option.toString(), detail = "", active = option == rows, modifier = Modifier.weight(1f)) {
+                    rows = option
+                    state.saveBb7HomeRows(option)
+                }
             }
         }
     }

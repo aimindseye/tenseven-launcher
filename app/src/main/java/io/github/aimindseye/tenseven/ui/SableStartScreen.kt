@@ -121,6 +121,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.StartText.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -164,6 +165,7 @@ import io.github.aimindseye.tenseven.model.AssignCommand
 import io.github.aimindseye.tenseven.model.AssignRequest
 import io.github.aimindseye.tenseven.model.AppGlyphs
 import io.github.aimindseye.tenseven.model.AppGrid
+import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.AppProfiles
 import io.github.aimindseye.tenseven.model.CommandBestMatch
 import io.github.aimindseye.tenseven.model.CommandGroups
@@ -433,6 +435,8 @@ fun SableStartScreen(
     wallpaperBehind: Boolean = false,
     widgetsGeneration: Int = 0,
     showIconLabels: Boolean = true,
+    gridColumnsSetting: Int = GridColumns.AUTO,
+    gridIconSize: Bb7IconSize = Bb7IconSize.DEFAULT,
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
     initialHiddenHomeSections: Set<String>? = null,
     onHiddenHomeSectionsChanged: (Set<String>?) -> Unit = {},
@@ -535,8 +539,10 @@ fun SableStartScreen(
         quickBarTokens.mapNotNull { token ->
             resolveQuickSlot(token, apps, appByKey)
         }
-    val gridRows = AppGrid.rowsFor(startGridHeightDp(), GRID_CELL_MIN_DP)
-    val gridPerPage = AppGrid.perPage(gridRows)
+    val gridColumns = AppGrid.columnsFor(gridColumnsSetting, startGridWidthDp())
+    val gridIconScale = AppGrid.iconScale(gridIconSize)
+    val gridRows = AppGrid.rowsFor(startGridHeightDp(), (GRID_CELL_MIN_DP * gridIconScale).toInt())
+    val gridPerPage = AppGrid.perPage(gridRows, gridColumns)
     val gridPages = AppGrid.pageCount(gridApps.size, gridPerPage)
     // The Widgets page, when kept on, is one page left of Hub: every pager index is the page's own number plus lead.
     val lead = if (widgetsPage) 1 else 0
@@ -809,6 +815,8 @@ fun SableStartScreen(
                                         AppGridPage(
                                             apps = AppGrid.page(gridApps, index, gridPerPage),
                                             rows = gridRows,
+                                            columns = gridColumns,
+                                            iconScale = gridIconScale,
                                             gridLabels = gridLabels,
                                             active = settledPage == page,
                                             onLaunchApp = ::launchApp,
@@ -1076,6 +1084,10 @@ internal fun Bb10Theme(
         )
     }
 }
+
+/** The width in dp the app grid has: the screen width less the grid's padding on both sides. */
+@Composable
+private fun startGridWidthDp(): Int = LocalConfiguration.current.screenWidthDp - (GRID_PADDING.value * 2).toInt()
 
 /**
  * The app grid's height in dp: the window (LocalWindowInfo, so the Q25's
@@ -1966,6 +1978,8 @@ private fun GlanceFrameCard(
 private fun AppGridPage(
     apps: List<AppEntry>,
     rows: Int,
+    columns: Int,
+    iconScale: Float,
     /** Every grid app's name, so a shortened name never repeats another ([AppGrid.gridLabel]). */
     gridLabels: Set<String>,
     active: Boolean,
@@ -1991,15 +2005,16 @@ private fun AppGridPage(
     ) {
         val iconDp =
             AppGrid.iconSizeFor(
-                cellWidthDp = (maxWidth / AppGrid.COLUMNS).value.toInt(),
+                cellWidthDp = (maxWidth / columns).value.toInt(),
                 cellHeightDp = (maxHeight / rows).value.toInt(),
                 labelDp = if (showLabels) GRID_LABEL_LINE_DP + GRID_CELL_CHROME_DP else GRID_CELL_CHROME_DP,
+                scale = iconScale,
             )
         Column(modifier = Modifier.fillMaxSize()) {
             for (row in 0 until rows) {
                 Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    for (column in 0 until AppGrid.COLUMNS) {
-                        val app = apps.getOrNull(row * AppGrid.COLUMNS + column)
+                    for (column in 0 until columns) {
+                        val app = apps.getOrNull(row * columns + column)
                         if (app == null) {
                             Spacer(Modifier.weight(1f))
                         } else {
