@@ -1,0 +1,73 @@
+name: CodeQL
+
+# GitHub code scanning for Kotlin. Results appear under Security > Code scanning. Needs no secrets.
+# Documentation-only changes are skipped on pull requests; the weekly run catches new queries.
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'design/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/codeql.yml'
+      - '!**/*.md'
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (java-kotlin)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK 36
+        run: |
+          set -euo pipefail
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          test -n "$sdkmanager"
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-read-only: true
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          queries: security-and-quality
+      # CodeQL traces the compiler processes this step starts, so nothing may be skipped or run elsewhere:
+      # no Gradle build cache or up-to-date skips (--rerun-tasks), no Gradle daemon, and the Kotlin compiler in
+      # the Gradle process instead of the separate Kotlin daemon, which CodeQL cannot trace.
+      - name: Build for CodeQL
+        run: >-
+          ./gradlew clean :design:compileDebugKotlin :app:compileDebugKotlin
+          --no-daemon --no-build-cache --no-configuration-cache --rerun-tasks --console=plain
+          -Pkotlin.compiler.execution.strategy=in-process
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        with:
+          category: /language:java-kotlin

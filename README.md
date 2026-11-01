@@ -193,7 +193,7 @@ brand-assets/             catalog of messaging and AI provider logos (source, st
 tools/                    tabler_icons.py, brand_assets.py, refresh-locks.sh, take-screenshots.sh
 tests/run.sh              static checks: shellcheck, XML, generated icons, catalog, manifest permissions
 docs/                     guides
-.github/workflows/        GitHub Actions: checks, Android, Security, SonarCloud
+.github/workflows/        GitHub Actions: checks, Android, Security, CodeQL, SonarCloud
 sonar-project.properties  SonarCloud analysis scope
 ```
 
@@ -206,6 +206,7 @@ GitHub Actions runs on every pull request and on `main`, with the same pinned ac
 | `checks` | `tests/run.sh`: shellcheck, XML well-formedness, Tabler icon manifest and generated files, brand catalog, detekt config provenance, licences and provenance of `third_party/`, no signature permissions in the manifest, no keys or APKs tracked, Gradle wrapper checksum |
 | `Android` | Gradle build of the debug APK, unit tests, Android Lint, detekt, ktlint and Kover coverage (a baseline, no threshold); uploads the APK and the reports |
 | `Security` | Gitleaks history scan and MobSF source scan (also weekly) |
+| `CodeQL` | GitHub code scanning for Kotlin (security-and-quality queries; also weekly); results under Security > Code scanning |
 | `SonarCloud` | SonarCloud scan of the whole repository, waiting on the "Sonar way" quality gate; needs the `SONAR_TOKEN` repository secret |
 
 `Android` and `checks` skip documentation-only changes. SonarCloud runs as CI-based analysis, so

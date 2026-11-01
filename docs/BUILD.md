@@ -107,6 +107,7 @@ See `third_party/tabler-icons/PROVENANCE.md` and [`BRAND_ASSETS.md`](BRAND_ASSET
 | `checks` | `.github/workflows/checks.yml` | PR and `main`, except docs-only | nothing |
 | `Android` | `.github/workflows/android.yml` | PR and `main` when `app/`, `design/`, `config/`, `gradle/` or the Gradle files change | optional variable `TENSEVEN_STRICT_QUALITY` |
 | `Security` | `.github/workflows/security.yml` | every PR, `main`, and Mondays | nothing |
+| `CodeQL` | `.github/workflows/codeql.yml` | PR (code changes), `main`, and Mondays | nothing; code scanning must be enabled for the repository |
 | `SonarCloud` | `.github/workflows/sonar.yml` | PR and `main` | secret `SONAR_TOKEN`; project `aimindseye_tenseven-launcher` in organisation `aimindseye` with Automatic Analysis **off** |
 
 Actions are pinned by commit, as in SableOS; Dependabot proposes updates weekly. Pull requests from forks do
