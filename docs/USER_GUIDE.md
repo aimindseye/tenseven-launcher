@@ -4,7 +4,7 @@ Tenseven is a launcher for phones with a physical keyboard. Screenshots are from
 
 ## First run
 
-1. Install the APK and press Home. Choose **Tenseven** and **Always**. If Google Play Protect blocks the install, see the install steps in the [README](../README.md#install): choose **Install anyway**, or switch off Play Protect's app scanning for the install and back on afterwards.
+1. Install the APK and press Home. Choose **Tenseven** and **Always**. If Google Play Protect blocks the install ("App blocked to protect your device"), see the install steps in the [README](../README.md#install): the block is about the accessibility and notification-listener services the app declares, and the steps there switch Play Protect scanning off for the install.
 2. The setup screens ask for each optional permission and say why, and offer every choice Launcher Settings has: home screen style, theme and wallpaper, icon grid, widgets, Hub, lock screen and the extra apps. Every step can be skipped; the launcher works without them. The choice steps use the same controls as Launcher Settings and save as you tap.
 3. If Android greys out a permission after a sideload, open Android's app info for Tenseven, tap the three dots, and choose **Allow restricted settings**. Setup explains this when it matters.
 
