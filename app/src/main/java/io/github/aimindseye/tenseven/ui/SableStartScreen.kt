@@ -2301,7 +2301,8 @@ private fun HubPage(
         }
     }
 
-    val conversationsUi = rememberHubConversationsUi(context, refreshGeneration, ::openMessages)
+    val conversationsUi =
+        rememberHubConversationsUi(context, refreshGeneration, ::openMessages, onOpenHubSettings)
 
     fun openBarItem(item: HubBar.Item) {
         when (val target = HubBar.target(item.packageName, messagesPackage, dialerPackage, contactsPackage)) {
