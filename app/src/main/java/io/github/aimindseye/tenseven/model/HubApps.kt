@@ -1,20 +1,21 @@
 package io.github.aimindseye.tenseven.model
 
 /**
- * Which apps feed the Hub. The user's list holds the apps they turned off, so a newly installed app is in the Hub by
- * default and the stored set stays small.
+ * Explicitly selected notification-source apps. Android's notification-listener grant does not
+ * imply consent to display any installed app in Hub. Empty/missing selection is intentionally
+ * fail-closed, including on upgrades from the former "excluded apps" denylist.
  */
 object HubApps {
     fun isIncluded(
-        excluded: Set<String>,
+        enabled: Set<String>,
         packageName: String,
-    ): Boolean = packageName !in excluded
+    ): Boolean = packageName in enabled
 
-    /** The list after turning [packageName] on or off. */
+    /** Explicitly enable or disable one package; new installed packages stay off. */
     fun toggle(
-        excluded: Set<String>,
+        enabled: Set<String>,
         packageName: String,
-    ): Set<String> = if (packageName in excluded) excluded - packageName else excluded + packageName
+    ): Set<String> = if (packageName in enabled) enabled - packageName else enabled + packageName
 
     /** One row per package, sorted by name, so an app with two launcher entries or two profiles is listed once. */
     fun rows(apps: List<Pair<String, String>>): List<Pair<String, String>> =

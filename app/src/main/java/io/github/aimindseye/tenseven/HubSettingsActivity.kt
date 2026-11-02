@@ -37,6 +37,7 @@ import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HubApps
 import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.platform.LauncherAppsRepository
+import io.github.aimindseye.tenseven.platform.LockLayerState
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,7 +63,7 @@ class HubSettingsActivity : ComponentActivity() {
         val repository = LauncherAppsRepository(this)
         setContent {
             LauncherTheme(window = window) {
-                var excluded by remember { mutableStateOf(state.loadHubExcludedApps()) }
+                var enabled by remember { mutableStateOf(state.loadHubEnabledApps()) }
                 var showText by remember { mutableStateOf(state.loadHubPeekText()) }
                 var cleared by remember { mutableStateOf(false) }
                 var rows by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
@@ -78,7 +79,7 @@ class HubSettingsActivity : ComponentActivity() {
                     showText = showText,
                     cleared = cleared,
                     rows = rows,
-                    excluded = excluded,
+                    enabled = enabled,
                     onAccess = { runCatching { startActivity(ConversationAccess.settingsIntent()) } },
                     onShowText = {
                         showText = it
@@ -89,10 +90,15 @@ class HubSettingsActivity : ComponentActivity() {
                         cleared = true
                     },
                     onToggle = { pkg ->
-                        excluded = HubApps.toggle(excluded, pkg)
-                        state.saveHubExcludedApps(excluded)
-                        ConversationHub.dropPackages(excluded)
-                        if (HubApps.isIncluded(excluded, pkg)) ConversationAccess.requestReconnect(this)
+                        enabled = HubApps.toggle(enabled, pkg)
+                        state.saveHubEnabledApps(enabled)
+                        if (HubApps.isIncluded(enabled, pkg)) {
+                            ConversationAccess.requestReconnect(this)
+                        } else {
+                            // Drop newly excluded content and badges without waiting for another notification.
+                            ConversationHub.dropPackages(setOf(pkg))
+                            LockLayerState.update(LockLayerState.counts.filterKeys { it in enabled })
+                        }
                     },
                 )
             }
@@ -107,7 +113,7 @@ private fun HubSettings(
     showText: Boolean,
     cleared: Boolean,
     rows: List<Pair<String, String>>,
-    excluded: Set<String>,
+    enabled: Set<String>,
     onAccess: () -> Unit,
     onShowText: (Boolean) -> Unit,
     onClear: () -> Unit,
@@ -146,12 +152,17 @@ private fun HubSettings(
             HubSwitch(stringResource(R.string.hub_show_text), stringResource(R.string.hub_show_text_detail), showText, onShowText)
             Text(stringResource(R.string.hub_apps), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
             Text(
+                stringResource(R.string.hub_apps_enabled_count, enabled.size),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
                 stringResource(R.string.hub_apps_detail),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             rows.forEach { (pkg, label) ->
-                HubSwitch(label, "", HubApps.isIncluded(excluded, pkg)) { onToggle(pkg) }
+                HubSwitch(label, "", HubApps.isIncluded(enabled, pkg)) { onToggle(pkg) }
             }
         }
     }

@@ -72,8 +72,9 @@ class ConversationListenerService : NotificationListenerService() {
 
     /** Counts per app for the lock layer: how many notifications wait, nothing of what they say. */
     private fun refreshLockCounts() {
+        val enabled = startState.loadHubEnabledApps()
         val waiting =
-            activeNotifications.orEmpty().map {
+            activeNotifications.orEmpty().filter { it.packageName in enabled }.map {
                 val flags = it.notification?.flags ?: 0
                 Triple(
                     it.packageName,
@@ -85,9 +86,10 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     private fun toHubNotification(sbn: StatusBarNotification): HubNotification? {
+        // Enforce per-app consent before reading notification message extras or recovering styles.
+        if (!HubApps.isIncluded(startState.loadHubEnabledApps(), sbn.packageName)) return null
         val notification = sbn.notification ?: return null
         if (sbn.packageName == packageName || notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return null
-        if (!HubApps.isIncluded(startState.loadHubExcludedApps(), sbn.packageName)) return null
         val style = messagingStyleOf(notification)
         val extracted = style?.let(::extractMessages).orEmpty()
         if (!isConversationNotification(notification.category, extracted.isNotEmpty())) return null

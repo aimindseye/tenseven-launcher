@@ -129,6 +129,7 @@
     <string name="recent_calls_in_phone">recent calls in Phone</string>
     <string name="sable_hub_not_installed">Hub not set up</string>
     <string name="hub_settings">Hub settings</string>
+    <string name="hub_apps_enabled_count">%1$d apps explicitly enabled — others remain off</string>
     <string name="allow_contacts">Allow contacts</string>
     <string name="start_shows_names_here_nothing">Start shows names here; nothing leaves the phone</string>
     <string name="no_contacts_yet">No contacts yet.</string>
