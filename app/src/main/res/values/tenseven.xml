@@ -73,8 +73,8 @@
     <string name="setup_extras_tools">Tools</string>
     <string name="setup_extras_games">Games</string>
     <string name="extras_command_hint">Choose the bundled Calc Plus, Notes and games</string>
-    <string name="setup_restricted_title">Before Notification or Usage access</string>
-    <string name="setup_restricted_reason">Android 13 and newer may restrict special access for sideloaded apps. First open App info below; if the three-dot menu offers Allow restricted settings, select it and confirm. Return here to enable Notification or Usage access. Android does not permit Tenseven to grant this for you. Only do this for an APK you trust.</string>
+    <string name="setup_restricted_title">First: allow restricted settings (if offered)</string>
+    <string name="setup_restricted_reason">For a downloaded Full APK, open Settings → Apps → TenSeven Launcher → the three-dot menu (⋮) → Allow restricted settings, if this option is available. Confirm, return here, then enable Notification or Usage access. Android does not let TenSeven do this automatically. Only allow an APK you trust.</string>
     <string name="setup_restricted_action">Open App info</string>
 
     <!-- Hub conversations -->
