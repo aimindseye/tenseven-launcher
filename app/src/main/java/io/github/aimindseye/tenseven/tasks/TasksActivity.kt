@@ -65,6 +65,7 @@ class TasksActivity : ComponentActivity() {
         const val EXTRA_SOURCE_PACKAGE = "source_package"
         const val EXTRA_SOURCE_KEY = "source_key"
         const val EXTRA_SOURCE_APP = "source_app"
+        const val EXTRA_NOTE_ID = "note_id"
     }
 }
 
@@ -79,19 +80,22 @@ private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
     val sourcePackage = intent.getStringExtra(TasksActivity.EXTRA_SOURCE_PACKAGE)
     val sourceKey = intent.getStringExtra(TasksActivity.EXTRA_SOURCE_KEY)
     val sourceApp = intent.getStringExtra(TasksActivity.EXTRA_SOURCE_APP)
-    val draft = remember(sourcePackage, sourceKey) {
+    val linkedNoteId = intent.getStringExtra(TasksActivity.EXTRA_NOTE_ID)
+    val draft = remember(sourcePackage, sourceKey, linkedNoteId) {
         if (sourcePackage != null && sourceKey != null && sourceApp != null) {
             val digest = MessageDigest.getInstance("SHA-256")
                 .digest((sourcePackage + "\n" + sourceKey).toByteArray(Charsets.UTF_8))
                 .joinToString("") { "%02x".format(it.toInt() and 255) }
             TaskRecord(title = "Follow up in " + sourceApp.take(100), originPackage = sourcePackage, originToken = digest)
+        } else if (linkedNoteId != null) {
+            TaskRecord(title = "New task", linkedNoteId = linkedNoteId)
         } else null
     }
     var consumedDraft by remember { mutableStateOf(false) }
     if (!consumedDraft && draft != null && editing == null) {
         // Draft is NOT saved to disk until the user presses Save in the editor.
         editing = draft
-        newDraft = false
+        newDraft = draft.originPackage == null
         consumedDraft = true
     }
     val records = remember(revision, resumeRevision) { repo.list() }
@@ -125,6 +129,14 @@ private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
                     OutlinedButton(onClick = { tab = "tasks" }) { Text("Tasks") }
                     OutlinedButton(onClick = { tab = "remind" }) { Text("Remind") }
                     Button(onClick = { editing = TaskRecord(title = "New task"); newDraft = true }) { Text("New") }
+                }
+                if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                    context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                        android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    OutlinedButton(onClick = {
+                        (context as? android.app.Activity)?.requestPermissions(
+                            arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 7302)
+                    }) { Text("Enable Android reminder alerts (optional)") }
                 }
                 Text(
                     "Local on-device tasks. Reminders stay available here even without Android notification permission.",
