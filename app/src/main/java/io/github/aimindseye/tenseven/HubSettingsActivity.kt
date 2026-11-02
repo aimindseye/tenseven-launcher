@@ -241,7 +241,7 @@ private fun HubSettings(
                     detail = when {
                         !listenerAvailable -> "Listener service unavailable in this APK."
                         !accessGranted -> "Android notification access is off. Open Notification access above."
-                        else -> "Access granted, listener disconnected. Tap here to reconnect.",
+                        else -> "Access granted, listener disconnected. Tap here to reconnect."
                     },
                     onClick = { if (accessGranted) onRetryListener() else onAccess() },
                 )
