@@ -1,6 +1,6 @@
 # Lite / Full Play Protect device qualification
 
-**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; LITE GOOGLE DRIVE INSTALL AND PLAY PROTECT SCAN PASS ON ONE DEVICE; FULL/VARIANT QUALIFICATION PENDING.** An older Lite APK was also previously installed. The on-device APK hash has not been independently matched to the final signed Lite APK, so the final artifact binding remains provisional.
+**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; BOTH LITE AND FULL GOOGLE DRIVE INSTALL AND PLAY PROTECT SCAN PASS REPORTED ON ONE DEVICE; SENSITIVE ACCESS/FEATURE QUALIFICATION INCOMPLETE.** The installed APK hashes have not been independently matched to the locally verified final artifacts. Usage Access and Notification Access were denied on the tested device, so both variants' features remain only partially qualified.
 
 ## Prerequisites
 
@@ -47,7 +47,13 @@ User also reports Launcher Settings shows BB7 icon configuration while BB10 Home
 
 **Qualification:** Evidence proves a successful Play Protect scan and permitted install on this device. It does not identify the device model / Android version, confirm the scanner's global coverage, or independently hash the installed/downloaded file. This is **not** Full acceptance, independent fresh Full sideload, or cross-variant replacement acceptance. Photos have not been committed to the public repository.
 
-## Matrix (every result starts NOT RUN)
+## Additional Full Play Protect / restricted-access observation (user report, 2026-11-01)
+
+After the successful Lite scan/install, the user downloaded and installed the **Full build** through Google Drive. The user reports that Full received the **same Play Protect scan recommendation**, the scan **completed successfully**, and Android **allowed installation**. Subsequently, **Notification Access and App Usage Access were both blocked** in system Settings. BBOS10 Home retains the Lite-like incomplete Active Frames behavior. The Full Hub's notification-derived functionality and notification-dependent automatic lock layer are correspondingly limited. Full's optional Accessibility service, overlay permission and other feature behavior were not independently tested or confirmed.
+
+**Classification:** `Full downloaded APK scan/install: PASS (user-reported, one device)`; `Notification Access: DENIED`; `Usage Access: DENIED`; `Hub/Active Frames/lock layer: DEGRADED`; `Full fresh-install vs Lite→Full replacement: NOT YET DISTINGUISHED`; `final APK hash on device: NOT YET CAPTURED`. This is neither proof of a narrow Android permission grant nor a reason to disable Play Protect. Product follow-up is [issue #78](https://github.com/aimindseye/tenseven-launcher/issues/78).
+
+## Matrix (remaining scenarios require qualification)
 
 | ID | Install source | Variant | What to record |
 |---|---|---|---|
