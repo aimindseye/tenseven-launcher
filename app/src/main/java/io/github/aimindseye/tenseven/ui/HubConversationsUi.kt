@@ -49,6 +49,7 @@ import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.model.HubStreamSelection
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -58,6 +59,8 @@ internal class HubConversationsUi(
     val accessGranted: Boolean,
     /** False in the lite build: there is no notification listener to ask for. */
     val canAllowAccess: Boolean = true,
+    val enabledAppCount: Int,
+    val onChooseApps: () -> Unit,
     val deviceLocked: Boolean,
     val conversations: List<HubConversation>,
     val filter: ConversationFilter,
@@ -95,12 +98,20 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
     }
     if (ui.conversations.isEmpty()) {
         item(key = "conversations-empty") {
-            Text(
-                text = stringResource(R.string.hub_conversations_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
+            if (ui.enabledAppCount == 0) {
+                ConversationCard(
+                    title = "No apps selected for Hub",
+                    detail = "Choose which apps may contribute notifications and conversations",
+                    onClick = ui.onChooseApps,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.hub_conversations_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
         }
         return
     }
@@ -394,6 +405,7 @@ internal fun rememberHubConversationsUi(
     context: android.content.Context,
     refreshGeneration: Int,
     onOpenFallback: () -> Unit,
+    onChooseApps: () -> Unit,
 ): HubConversationsUi {
     val accessGranted = remember(refreshGeneration) {
         Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context)
@@ -409,12 +421,15 @@ internal fun rememberHubConversationsUi(
         }
     var filter by remember { mutableStateOf(ConversationFilter()) }
     var sourcePackage by remember { mutableStateOf<String?>(null) }
+    val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
     val state = remember(refreshGeneration, accessGranted) { ConversationHub.state() }
     val now = remember(refreshGeneration, filter) { System.currentTimeMillis() }
-    return remember(accessGranted, locked, conversations, filter, sourcePackage, state, now) {
+    return remember(accessGranted, locked, conversations, filter, sourcePackage, enabledAppCount, state, now) {
         HubConversationsUi(
             accessGranted = accessGranted,
             canAllowAccess = Capabilities.hasConversationService(context),
+            enabledAppCount = enabledAppCount,
+            onChooseApps = onChooseApps,
             deviceLocked = locked,
             conversations = conversations,
             filter = filter,
