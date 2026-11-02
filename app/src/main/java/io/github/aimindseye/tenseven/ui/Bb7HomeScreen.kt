@@ -72,11 +72,13 @@ import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.HomeApps
+import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
@@ -129,6 +131,11 @@ fun Bb7HomeScreen(
     showLabels: Boolean = true,
 ) {
     val context = LocalContext.current
+    val displayState = remember(context) { StartStateRepository(context) }
+    val enabledDials = remember(refreshGeneration) { displayState.loadHomeDials(HomeStyle.Bb7) }
+    val showStrip = remember(refreshGeneration) { displayState.loadHomeNotificationStrip(HomeStyle.Bb7) }
+    val stripExpanded = remember(refreshGeneration) { displayState.loadHomeNotificationExpanded(HomeStyle.Bb7) }
+    val hubSources = remember(refreshGeneration) { displayState.loadHubEnabledApps() }
     val usage = remember(apps, refreshGeneration, homeGeneration) { AppUsageRepository(context).load() }
     var panel by remember { mutableStateOf(Bb7Panel.Favorites) }
     // A panel the user hid can no longer be the one shown.
@@ -446,7 +453,12 @@ fun Bb7HomeScreen(
                 ) {
                     Bb7Banner(
                         dateText = DateFormat.getDateInstance(DateFormat.FULL).format(Date(today)),
-                        unread = live.hubApps.sumOf { it.count },
+                        unread = live.hubApps.filter { it.packageName in hubSources }.sumOf { it.count },
+                        notificationCounts = live.hubApps,
+                        hubSources = hubSources,
+                        enabledDials = enabledDials,
+                        showStrip = showStrip,
+                        stripExpanded = stripExpanded,
                         compact = open || searching,
                         scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
                         onOpenHub = onOpenHub,
@@ -523,6 +535,11 @@ fun Bb7HomeScreen(
 private fun Bb7Banner(
     dateText: String,
     unread: Int,
+    notificationCounts: List<io.github.aimindseye.tenseven.live.AppUnreadCount>,
+    hubSources: Set<String>,
+    enabledDials: Set<String>,
+    showStrip: Boolean,
+    stripExpanded: Boolean,
     compact: Boolean,
     scrim: Color,
     onOpenHub: () -> Unit,
@@ -534,7 +551,7 @@ private fun Bb7Banner(
                 .background(scrim)
                 .padding(horizontal = 12.dp, vertical = if (compact) 4.dp else 8.dp),
     ) {
-        if (!compact) SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp)
+        if (!compact && enabledDials.isNotEmpty()) SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp, visible = enabledDials)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f).padding(top = if (compact) 0.dp else 6.dp)) {
                 Text(
@@ -547,8 +564,12 @@ private fun Bb7Banner(
             }
             SoundProfileButton()
             Spacer(Modifier.width(6.dp))
-            UnreadBadge(unread, onOpenHub)
+            if (!showStrip) UnreadBadge(unread, onOpenHub)
         }
+        if (showStrip && !compact) HomeNotificationStrip(
+            counts = notificationCounts, enabledPackages = hubSources,
+            expanded = stripExpanded, onOpenHub = onOpenHub,
+        )
     }
 }
 
