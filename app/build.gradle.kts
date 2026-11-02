@@ -49,8 +49,8 @@ android {
         minSdk = 30
         targetSdk = 36
         // Test qualification build; distinguish it from the prior v1 Full/Lite APKs.
-        versionCode = 2
-        versionName = "0.1.1-hub2-test.1"
+        versionCode = 3
+        versionName = "0.1.2-p1-full-test.1"
     }
 
     signingConfigs {
@@ -74,13 +74,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (releaseSigned) signingConfig = signingConfigs.getByName("release")
-        }
-        // Release without the two services Play Protect blocks (src/lite/AndroidManifest.xml). The same application id
-        // and key, so a lite install can be updated to the full release.
-        create("lite") {
-            initWith(getByName("release"))
-            matchingFallbacks += "release"
             if (releaseSigned) signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -163,7 +156,7 @@ if (releaseSigned) {
             println("Registered Tenseven signing certificate verified: $actual")
         }
     }
-    tasks.matching { it.name in setOf("packageRelease", "packageLite") }.configureEach {
+    tasks.matching { it.name in setOf("packageRelease") }.configureEach {
         dependsOn(verifyRegisteredReleaseKey)
     }
 }
