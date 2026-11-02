@@ -90,8 +90,12 @@ class HubSettingsActivity : ComponentActivity() {
                         }
                 }
                 HubSettings(
-                    accessGranted = resumeTick >= 0 && Capabilities.hasConversationService(this) && ConversationAccess.isGranted(this),
-                    listenerAvailable = Capabilities.hasConversationService(this),
+                    accessGranted = resumeTick >= 0 && 
+                        io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(this).hubNotifications ==
+                            io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+                    listenerAvailable =
+                        io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(this).hubNotifications !=
+                            io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
                     showText = showText,
                     calendarPeek = calendarPeek,
                     calendarPermitted = calendarPermitted,
