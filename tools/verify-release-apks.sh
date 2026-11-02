@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify compiled Full and Lite APK identities. No keystore, passwords or secrets are needed.
+# Verify the single compiled Full APK identity. No keystore, passwords or secrets are needed.
 # Default: require signed APKs using the cert registered in Android Developer Console.
 # --ci-unsigned: verify build outputs/manifests, explicitly without claiming release signatures.
 set -euo pipefail
@@ -11,12 +11,11 @@ BUILD_TOOLS_VERSION=36.0.0
 
 mode=signed
 if [[ "${1:-}" == "--ci-unsigned" ]]; then mode=ci-unsigned; shift; fi
-if [[ $# -ne 2 || ! -f "$1" || ! -f "$2" ]]; then
-  echo "Usage: $0 [--ci-unsigned] FULL_APK LITE_APK (both files must exist)" >&2
+if [[ $# -ne 1 || ! -f "$1" ]]; then
+  echo "Usage: $0 [--ci-unsigned] FULL_APK" >&2
   exit 2
 fi
 full="$1"
-lite="$2"
 
 # apkanalyzer can be installed in a different SDK than its required aapt build-tools,
 # producing 'Cannot locate latest build tools'. Use aapt2 from one explicit SDK instead.
@@ -57,17 +56,8 @@ check_apk() {
   [[ "$min" == "$EXPECTED_MIN_SDK" ]] || { echo "ERROR: $kind wrong minSdk: $min" >&2; exit 1; }
   [[ "$code" =~ ^[0-9]+$ ]] || { echo "ERROR: $kind missing/invalid versionCode: $code" >&2; exit 1; }
 
-  if [[ "$kind" == "full" ]]; then
-    grep -Fq LockScreenAccessibilityService <<< "$xml" || { echo "ERROR: Full missing Accessibility service" >&2; exit 1; }
-    grep -Fq ConversationListenerService <<< "$xml" || { echo "ERROR: Full missing notification listener service" >&2; exit 1; }
-  else
-    if grep -Fq LockScreenAccessibilityService <<< "$xml" || grep -Fq ConversationListenerService <<< "$xml"; then
-      echo "ERROR: Lite declares a sensitive service" >&2; exit 1
-    fi
-    if grep -Fq android.permission.SYSTEM_ALERT_WINDOW <<< "$xml"; then
-      echo "ERROR: Lite declares lock-layer overlay permission" >&2; exit 1
-    fi
-  fi
+  grep -Fq LockScreenAccessibilityService <<< "$xml" || { echo "ERROR: Full missing Accessibility service" >&2; exit 1; }
+  grep -Fq ConversationListenerService <<< "$xml" || { echo "ERROR: Full missing notification listener service" >&2; exit 1; }
 
   if [[ "$mode" == "signed" ]]; then
     [[ "$apk" != *-unsigned.apk ]] || { echo "ERROR: $kind unsigned artifact rejected in release mode" >&2; exit 1; }
@@ -96,17 +86,9 @@ check_apk() {
 }
 
 full_badging="$("$AAPT2" dump badging "$full")"
-lite_badging="$("$AAPT2" dump badging "$lite")"
 full_xml="$("$AAPT2" dump xmltree "$full" --file AndroidManifest.xml)"
-lite_xml="$("$AAPT2" dump xmltree "$lite" --file AndroidManifest.xml)"
-
 check_apk full "$full" "$full_badging" "$full_xml"
-check_apk lite "$lite" "$lite_badging" "$lite_xml"
-full_code="$(extract_badging_field versionCode "$full_badging")"
-lite_code="$(extract_badging_field versionCode "$lite_badging")"
-[[ "$full_code" == "$lite_code" ]] || { echo "ERROR: Full/Lite versionCodes differ: $full_code vs $lite_code" >&2; exit 1; }
-echo "PASS Full/Lite matching versionCode=$full_code"
 if [[ "$mode" == "signed" ]]; then
-  echo "PASS both APKs signed with registered SHA-256 certificate $EXPECTED_CERT"
-  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$full" "$lite"; else sha256sum "$full" "$lite"; fi
+  echo "PASS Full APK signed with registered SHA-256 certificate $EXPECTED_CERT"
+  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$full"; else sha256sum "$full"; fi
 fi
