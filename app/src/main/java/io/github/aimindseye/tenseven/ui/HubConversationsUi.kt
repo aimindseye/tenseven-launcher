@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
@@ -55,6 +57,7 @@ import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubConversation
+import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.model.HubStreamSelection
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.platform.StartStateRepository
@@ -218,25 +221,25 @@ internal fun HubUnifiedNavigation(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            FilterButton(
-                "All",
+            IconHubFilterButton(
+                "Hub", "folder",
                 currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null,
                 modifier = Modifier.focusRequester(firstTab),
             ) { select(HubFilter.All) }
-            FilterButton("Unread", currentTab == HubFilter.All && ui.filter.unreadOnly) {
+            IconHubFilterButton("Unread", "list-check", currentTab == HubFilter.All && ui.filter.unreadOnly) {
                 select(HubFilter.All, ConversationFilter(unreadOnly = true))
             }
-            FilterButton("Messages", currentTab == HubFilter.Messages) {
+            IconHubFilterButton("Messages", "message-dots", currentTab == HubFilter.Messages) {
                 select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
             }
-            FilterButton("Email", currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email) {
+            IconHubFilterButton("Email", "mail", currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email) {
                 select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
             }
-            FilterButton("Calls", currentTab == HubFilter.Calls) { select(HubFilter.Calls) }
-            FilterButton("Contacts", currentTab == HubFilter.Contacts) { select(HubFilter.Contacts) }
+            IconHubFilterButton("Calls", "phone-call", currentTab == HubFilter.Calls) { select(HubFilter.Calls) }
+            IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) { select(HubFilter.Contacts) }
             val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
             if (snoozedCount > 0 || ui.filter.snoozed) {
-                FilterButton("Snoozed ($snoozedCount)", currentTab == HubFilter.All && ui.filter.snoozed) {
+                IconHubFilterButton("Snoozed ($snoozedCount)", "clock", currentTab == HubFilter.All && ui.filter.snoozed) {
                     select(HubFilter.All, ConversationFilter(snoozed = true))
                 }
             }
@@ -245,7 +248,7 @@ internal fun HubUnifiedNavigation(
                     select(HubFilter.All, pkg = pkg)
                 }
             }
-            FilterButton("⌕", searchOpen) { searchOpen = !searchOpen }
+            IconHubFilterButton("Search", "settings", searchOpen) { searchOpen = !searchOpen }
         }
         if (searchOpen && currentTab != HubFilter.Calls && currentTab != HubFilter.Contacts) {
             OutlinedTextField(
@@ -256,6 +259,31 @@ internal fun HubUnifiedNavigation(
                 singleLine = true,
             )
         }
+    }
+}
+
+/** Icon-first BB10 navigation; text stays visible at compact size and TalkBack has a full label. */
+@Composable
+private fun IconHubFilterButton(
+    label: String,
+    iconName: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = modifier.clip(RoundedCornerShape(7.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+            .sableFocusRing()
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label }
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LineIcon(paths = TablerGlyphPaths.BY_NAME[iconName].orEmpty(), modifier = Modifier.size(20.dp), tint = color)
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = color, maxLines = 1)
     }
 }
 
