@@ -17,7 +17,10 @@ object LockLayerLauncher {
 
     /** Called on screen on. Does nothing unless the setting is on, the overlay permission is granted and the keyguard is up. */
     fun showIfLocked(context: Context) {
-        if (!StartStateRepository(context).loadLockLayer() || !canDrawOverlays(context)) return
+        if (!Capabilities.hasConversationService(context) ||
+            !StartStateRepository(context).loadLockLayer() ||
+            !canDrawOverlays(context)
+        ) return
         val keyguard = context.getSystemService(KeyguardManager::class.java) ?: return
         if (!keyguard.isKeyguardLocked) return
         // Android 14 and later only let an app start a screen from the background while it has a visible window, so a

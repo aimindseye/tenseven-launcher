@@ -19,7 +19,7 @@ object SetupStatus {
             homeRoleHeld = isHomeRoleHeld(context),
             contactsGranted = granted(context, Manifest.permission.READ_CONTACTS),
             photosGranted = granted(context, photosPermission()),
-            notificationAccess = ConversationAccess.isGranted(context),
+            notificationAccess = Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context),
             usageAccess = hasUsageAccess(context),
             extrasChosen = ExtraAppsControl.enabledIds(context).isNotEmpty(),
             notificationListenerAvailable = Capabilities.hasConversationService(context),

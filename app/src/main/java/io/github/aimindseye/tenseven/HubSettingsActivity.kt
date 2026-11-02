@@ -73,7 +73,7 @@ class HubSettingsActivity : ComponentActivity() {
                         }
                 }
                 HubSettings(
-                    accessGranted = resumeTick >= 0 && ConversationAccess.isGranted(this),
+                    accessGranted = resumeTick >= 0 && Capabilities.hasConversationService(this) && ConversationAccess.isGranted(this),
                     listenerAvailable = Capabilities.hasConversationService(this),
                     showText = showText,
                     cleared = cleared,
