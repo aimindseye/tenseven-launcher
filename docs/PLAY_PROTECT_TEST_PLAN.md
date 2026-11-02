@@ -1,6 +1,6 @@
 # Lite / Full Play Protect device qualification
 
-**STATUS: NOT RUN.** Build success and a registered APK signing certificate do not prove that a downloaded app will be accepted by Google Play Protect.
+**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; FINAL DEVICE QUALIFICATION PENDING.** An earlier Lite APK was installed through Google Drive on one device, but that is preliminary evidence, not final-artifact Play Protect qualification.
 
 ## Prerequisites
 
@@ -18,6 +18,21 @@
 - Both report `versionCode=1`, `minSdk=30`, and certificate SHA-256 `9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
 
 This is user-supplied local validation output. The signed APK binaries have **not** been uploaded to CI and this is **not** physical-device or Play Protect evidence.
+
+## Final locally signed artifacts (2026-11-01; supplied local build log)
+
+Rebuilt from PR #76 source commit `5fb5a33e273d38a2932023ca5fe8e8f9f74226c5` after Lite manifest security fixes; Gradle `:app:verifyRegisteredReleaseKey :app:testDebugUnitTest :app:assembleRelease :app:assembleLite :app:lintLite` returned `BUILD SUCCESSFUL`. The user ran 15 release-verifier tests (all PASS) followed by `tools/verify-release-apks.sh`; both signed APKs returned PASS for package, minSdk, compiled manifest, matching `versionCode=1`, v2 signature and registered certificate SHA-256 `9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
+
+| Variant | Locally recorded APK file SHA-256 |
+|---|---|
+| Full (`Tenseven-Launcher-release.apk`) | `a218e49ead1bce588c3037ff4a9e9fe894d9bda3cbf5351dedac5e213e81b2ad` |
+| Lite (`Tenseven-Launcher-lite.apk`) | `a1c9a43bc676446c1a22ceedfe44652014b26cbbf8c8ea9ad9311df3d4ed03e3` |
+
+User copied files to `~/Downloads/tenseven-pr76-final/` and generated `SHA256SUMS.txt`, matching both output hashes. These local files have **not** been uploaded to CI or independently retrieved by the repository workflow. The prior hashes above describe historical builds and must **not** be used for final release publication.
+
+## Preliminary Google Drive installation evidence (older Lite build)
+
+The user previously installed an earlier Lite APK downloaded via Google Drive and shared device photos showing BB10-style Home rendering. Android denied **App usage data** special access, and Active Frames did not show all apps opened outside the launcher. This establishes a preliminary downloadable-APK installation and Home-launch success, with a Usage Access/Active Frames limitation. The exact installed file hash, device build details and Play Protect scan state were not captured; do not count it as a final-artifact Play Protect PASS. Retest the final Lite hash above before publication.
 
 ## Matrix (every result starts NOT RUN)
 
