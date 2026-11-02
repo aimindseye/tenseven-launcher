@@ -2260,6 +2260,12 @@ private fun HubPage(
         snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
+    val selectedSources =
+        remember(enabledHubApps, personalApps) {
+            enabledHubApps.mapNotNull { pkg ->
+                personalApps[pkg]?.let { pkg to it.label }
+            }.sortedWith(compareBy({ it.second.lowercase() }, { it.first }))
+        }
     val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
     val barItems =
         remember(snapshot.hubApps, personalApps, enabledHubApps) {
@@ -2355,7 +2361,13 @@ private fun HubPage(
                 modifier = Modifier.semantics { heading() },
             )
             Spacer(Modifier.height(6.dp))
-            HubTabs(filter = filter, firstTab = tabFocus, onFilter = onFilter)
+            HubUnifiedNavigation(
+                ui = conversationsUi,
+                currentTab = filter,
+                onTabChange = onFilter,
+                firstTab = tabFocus,
+                sources = selectedSources,
+            )
         }
         // Calendar data requires a second, explicit opt-in (separate from notification sources).
         if (filter == HubFilter.All && calendarPeekEnabled) {
@@ -2545,36 +2557,6 @@ private class HubActions(
     val onOpenHubSettings: () -> Unit,
     val onRequestContactsPermission: () -> Unit,
 )
-
-/** The Hub page tabs: All · Messages · Calls · Contacts; All takes focus when the page opens. */
-@Composable
-private fun HubTabs(
-    filter: HubFilter,
-    firstTab: FocusRequester,
-    onFilter: (HubFilter) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        HubFilter.entries.forEach { tab ->
-            val selected = tab == filter
-            Text(
-                text = tab.label,
-                modifier =
-                    Modifier
-                        .then(if (tab == HubFilter.All) Modifier.focusRequester(firstTab) else Modifier)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                        ).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp))
-                        .sableFocusRing()
-                        .clickable { onFilter(tab) }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-            )
-        }
-    }
-}
 
 /**
  * The All, Messages and Calls tabs: Messages and Mail, Missed calls, and on All the notification
