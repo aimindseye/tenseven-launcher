@@ -73,8 +73,11 @@
     <string name="setup_extras_tools">Tools</string>
     <string name="setup_extras_games">Games</string>
     <string name="extras_command_hint">Choose the bundled Calc Plus, Notes and games</string>
-    <string name="setup_restricted_title">Before Notification or Usage access</string>
-    <string name="setup_restricted_reason">Android 13 and newer may restrict special access for sideloaded apps. First open App info below; if the three-dot menu offers Allow restricted settings, select it and confirm. Return here to enable Notification or Usage access. Android does not permit Tenseven to grant this for you. Only do this for an APK you trust.</string>
+    <string name="setup_restricted_title">If Android blocked Notification or Usage access</string>
+    <string name="setup_restricted_reason">If the first Notification or Usage access request was blocked, Android may now offer Allow restricted settings. Open App info, tap the three-dot menu, and select Allow restricted settings if it appears. Return to TenSeven and retry the access request. Only do this for an APK you trust; TenSeven cannot grant access itself.</string>
+    <string name="setup_restricted_first_request">First try opening Notification or Usage access. If Android blocks it, return here. On some devices, Allow restricted settings appears in TenSeven App info only after that first blocked attempt.</string>
+    <string name="setup_notifications_connected_missing">Allowed in Android Settings, but notification listener not connected. Open Hub Settings for diagnostics.</string>
+    <string name="hub_access_disconnected">Allowed by Android, but notification listener disconnected. See diagnostics below.</string>
     <string name="setup_restricted_action">Open App info</string>
 
     <!-- Hub conversations -->
