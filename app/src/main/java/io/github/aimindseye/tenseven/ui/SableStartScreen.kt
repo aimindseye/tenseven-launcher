@@ -2300,7 +2300,8 @@ private fun HubPage(
         }
     }
 
-    val conversationsUi = rememberHubConversationsUi(context, refreshGeneration, ::openMessages)
+    val conversationsUi =
+        rememberHubConversationsUi(context, refreshGeneration, ::openMessages, onOpenHubSettings)
 
     fun openBarItem(item: HubBar.Item) {
         when (val target = HubBar.target(item.packageName, messagesPackage, dialerPackage, contactsPackage)) {
@@ -2353,12 +2354,6 @@ private fun HubPage(
                 modifier = Modifier.semantics { heading() },
             )
             Spacer(Modifier.height(6.dp))
-            HubUnreadBar(
-                items = barItems,
-                appFor = { personalApps[it] },
-                onOpen = ::openBarItem,
-            )
-            Spacer(Modifier.height(8.dp))
             HubTabs(filter = filter, firstTab = tabFocus, onFilter = onFilter)
         }
         if (contactsTab) {
@@ -2576,60 +2571,20 @@ private fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
     actions: HubActions,
     conversations: HubConversationsUi,
 ) {
-    val showMessages = filter != HubFilter.Calls
-    val showCalls = filter != HubFilter.Messages
-    if (showMessages) {
+    if (filter != HubFilter.Calls) {
         hubConversationItems(conversations)
-        item(key = "messages") {
-            GlanceCard(
-                title = t("messages"),
-                detail = liveDetail(snapshot.messages, messagesApp, stringResource(R.string.hub_open_default_app)),
-                accent = SableBlue,
-                onClick = actions.onOpenMessages,
-            )
-        }
-        item(key = "mail") {
-            GlanceCard(
-                title = t("mail"),
-                detail = liveDetail(snapshot.mail, mailApp, stringResource(R.string.hub_open_default_app)),
-                accent = Color(0xFFE5484D),
-                onClick = {
-                    if (mailApp != null) {
-                        actions.onLaunchApp(mailApp)
-                    } else {
-                        actions.onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_EMAIL))
-                    }
-                },
-            )
+    }
+    if (filter == HubFilter.Calls) {
+        item(key = "calls-shortcut") {
+            // Tenseven has no call log permission; the system Phone app owns the full log.
+            MetroLink(text = t("missed_calls"), onClick = {
+                actions.onStartIntent(Intent(Intent.ACTION_VIEW, CallLog.Calls.CONTENT_URI))
+            })
         }
     }
-    if (showCalls) {
-        item(key = "calls") {
-            // Start holds no call-log permission: the Phone app shows the missed calls.
-            GlanceCard(
-                title = t("missed_calls"),
-                detail = t("recent_calls_in_phone"),
-                accent = SableGreen,
-                onClick = { actions.onStartIntent(Intent(Intent.ACTION_VIEW, CallLog.Calls.CONTENT_URI)) },
-            )
-        }
-    }
-    if (filter == HubFilter.All) {
-        item(key = "notifications") {
-            // Android owns the notifications; its history lists what was dismissed too.
-            GlanceCard(
-                title = t("notifications"),
-                detail = summary ?: stringResource(R.string.hub_notifications_open),
-                accent = SableSun,
-                onClick = { actions.onStartIntent(Intent(ACTION_NOTIFICATION_HISTORY)) },
-            )
-        }
-    }
-    if (summary != null) {
-        item(key = "settings") {
-            Spacer(Modifier.height(4.dp))
-            MetroLink(text = t("hub_settings"), onClick = actions.onOpenHubSettings)
-        }
+    item(key = "hub-settings-link") {
+        Spacer(Modifier.height(8.dp))
+        MetroLink(text = t("hub_settings"), onClick = actions.onOpenHubSettings)
     }
 }
 

@@ -4,11 +4,16 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -43,6 +48,8 @@ import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubConversation
+import io.github.aimindseye.tenseven.model.HubStreamSelection
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -52,9 +59,13 @@ internal class HubConversationsUi(
     val accessGranted: Boolean,
     /** False in the lite build: there is no notification listener to ask for. */
     val canAllowAccess: Boolean = true,
+    val enabledAppCount: Int,
+    val onChooseApps: () -> Unit,
     val deviceLocked: Boolean,
     val conversations: List<HubConversation>,
     val filter: ConversationFilter,
+    val sourcePackage: String?,
+    val onSourceChange: (String?) -> Unit,
     val state: ConversationState,
     val now: Long,
     val onOpen: (HubConversation) -> Unit,
@@ -87,21 +98,38 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
     }
     if (ui.conversations.isEmpty()) {
         item(key = "conversations-empty") {
-            Text(
-                text = stringResource(R.string.hub_conversations_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
+            if (ui.enabledAppCount == 0) {
+                ConversationCard(
+                    title = "No apps selected for Hub",
+                    detail = "Choose which apps may contribute notifications and conversations",
+                    onClick = ui.onChooseApps,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.hub_conversations_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
         }
         return
     }
-    val visible = ConversationView.apply(ui.conversations, ui.filter, ui.state, ui.now)
+    val visible =
+        ConversationView.apply(ui.conversations, ui.filter, ui.state, ui.now)
+            .let { HubStreamSelection.apply(it, ui.sourcePackage) { row -> row.sourcePackages } }
     item(key = "conversations-filter") {
-        FilterBar(
+        HubStreamToolbar(
             filter = ui.filter,
+            sourcePackage = ui.sourcePackage,
+            sources =
+                ui.conversations.flatMap { it.notifications }
+                    .distinctBy { it.packageName }
+                    .sortedBy { it.appName.lowercase() }
+                    .map { it.packageName to it.appName },
             snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now),
             onChange = ui.onFilterChange,
+            onSourceChange = ui.onSourceChange,
         )
     }
     if (visible.isEmpty()) {
@@ -163,52 +191,73 @@ private fun ConversationCard(
 }
 
 @Composable
-private fun FilterBar(
+private fun HubStreamToolbar(
     filter: ConversationFilter,
+    sourcePackage: String?,
+    sources: List<Pair<String, String>>,
     snoozedCount: Int,
     onChange: (ConversationFilter) -> Unit,
+    onSourceChange: (String?) -> Unit,
 ) {
+    var showSearch by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-            FilterButton(stringResource(R.string.hub_filter_all), !filter.unreadOnly && filter.kind == ConversationKind.All && !filter.snoozed) {
-                onChange(filter.copy(unreadOnly = false, kind = ConversationKind.All, snoozed = false))
+        // One horizontally scrollable filter/source line; no nested filter cards or second tab bar.
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilterButton(stringResource(R.string.hub_filter_all),
+                sourcePackage == null && !filter.unreadOnly && filter.kind == ConversationKind.All && !filter.snoozed) {
+                onSourceChange(null)
+                onChange(filter.copy(unreadOnly = false, kind = ConversationKind.All, snoozed = false, person = ""))
             }
             FilterButton(stringResource(R.string.hub_filter_unread), filter.unreadOnly) {
                 onChange(filter.copy(unreadOnly = !filter.unreadOnly, snoozed = false))
             }
-            FilterButton(stringResource(R.string.hub_filter_messages), filter.kind == ConversationKind.Messages) {
-                onChange(filter.copy(kind = if (filter.kind == ConversationKind.Messages) ConversationKind.All else ConversationKind.Messages))
-            }
             FilterButton(stringResource(R.string.hub_filter_email), filter.kind == ConversationKind.Email) {
                 onChange(filter.copy(kind = if (filter.kind == ConversationKind.Email) ConversationKind.All else ConversationKind.Email))
             }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = filter.person,
-                onValueChange = { onChange(filter.copy(person = it)) },
-                modifier = Modifier.weight(1f).sableFocusRing(),
-                placeholder = { Text(stringResource(R.string.hub_filter_person_hint)) },
-                singleLine = true,
-            )
             if (snoozedCount > 0 || filter.snoozed) {
                 FilterButton(stringResource(R.string.hub_filter_snoozed, snoozedCount), filter.snoozed) {
                     onChange(filter.copy(snoozed = !filter.snoozed))
                 }
             }
+            sources.forEach { (pkg, name) ->
+                FilterButton(name, sourcePackage == pkg) {
+                    onSourceChange(if (sourcePackage == pkg) null else pkg)
+                }
+            }
+            FilterButton("⌕", showSearch) { showSearch = !showSearch }
+        }
+        if (showSearch) {
+            OutlinedTextField(
+                value = filter.person,
+                onValueChange = { onChange(filter.copy(person = it)) },
+                modifier = Modifier.fillMaxWidth().sableFocusRing(),
+                placeholder = { Text(stringResource(R.string.hub_filter_person_hint)) },
+                singleLine = true,
+            )
         }
     }
 }
 
 @Composable
-private fun FilterButton(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    OutlinedButton(onClick = onClick, modifier = Modifier.sableFocusRing()) {
-        Text(if (selected) "✓ $label" else label, maxLines = 1)
-    }
+private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(6.dp)
+    Text(
+        text = label,
+        modifier =
+            Modifier
+                .clip(shape)
+                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                .sableFocusRing()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+        style = MaterialTheme.typography.labelMedium,
+        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+        maxLines = 1,
+    )
 }
 
 @Composable
@@ -223,46 +272,33 @@ private fun ConversationRow(
     onSnooze: (Long) -> Unit,
     onWake: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(8.dp)
-    var replying by remember { mutableStateOf(false) }
-    var draft by remember { mutableStateOf("") }
+    var expanded by remember(conversation.id) { mutableStateOf(false) }
+    var replying by remember(conversation.id) { mutableStateOf(false) }
+    var draft by remember(conversation.id) { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
     val preview = conversationPreview(conversation, locked, you = stringResource(R.string.hub_you))
     val canReply = !locked && conversation.replyTarget != null
     val latestAt = conversation.latestMessage?.timestamp ?: conversation.latestNotification.postedAt
     val whenText = DateUtils.getRelativeTimeSpanString(latestAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
-    val apps = conversation.notifications.map { it.appName }.distinct().joinToString(", ")
+    val source = conversation.latestNotification.appName
 
     fun send() {
         if (draft.isBlank()) return
         failed = !onReply(draft)
-        if (!failed) {
-            draft = ""
-            replying = false
-        }
+        if (!failed) { draft = ""; replying = false }
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
-    ) {
-        Column(
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    // M marks read, S snoozes for an hour, on the focused conversation.
+                Modifier.fillMaxWidth()
                     .onKeyEvent { event ->
                         if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                         val plain = !event.nativeKeyEvent.isAltPressed && !event.nativeKeyEvent.isCtrlPressed
                         when {
                             !plain -> false
                             event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_M && unread > 0 -> {
-                                onMarkRead()
-                                true
+                                onMarkRead(); true
                             }
                             event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_S -> {
                                 if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
@@ -270,34 +306,56 @@ private fun ConversationRow(
                             }
                             else -> false
                         }
-                    }.sableFocusRing()
-                    .clickable(onClick = onOpen)
-                    .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                if (unread > 0) conversation.name + "  ·  " + stringResource(R.string.hub_unread_count, unread) else conversation.name,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = preview ?: stringResource(R.string.hub_locked_preview),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text("$apps · $whenText", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Row(
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    }
+                    .sableFocusRing()
+                    .clickable { expanded = !expanded }
+                    .padding(horizontal = 4.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (!replying) {
+            // Flat source mark: visual distinction without surrounding every notification in a card.
+            Text(
+                text = source.take(1).uppercase(),
+                modifier =
+                    Modifier.clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = conversation.name,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(whenText, style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    if (unread > 0) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(unread.toString(), color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                Text(preview ?: stringResource(R.string.hub_locked_preview),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        if (expanded) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                    .padding(start = 40.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                OutlinedButton(onClick = onOpen, modifier = Modifier.sableFocusRing()) {
+                    Text("Open")
+                }
                 if (canReply) {
-                    OutlinedButton(onClick = { replying = true }, modifier = Modifier.sableFocusRing()) {
+                    OutlinedButton(onClick = { replying = !replying }, modifier = Modifier.sableFocusRing()) {
                         Text(stringResource(R.string.hub_reply))
                     }
                 }
@@ -306,50 +364,35 @@ private fun ConversationRow(
                         Text(stringResource(R.string.hub_mark_read))
                     }
                 }
-                if (snoozed) {
-                    OutlinedButton(onClick = onWake, modifier = Modifier.sableFocusRing()) {
-                        Text(stringResource(R.string.hub_wake))
-                    }
-                } else {
-                    OutlinedButton(
-                        onClick = { onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS) },
-                        modifier = Modifier.sableFocusRing(),
-                    ) {
-                        Text(stringResource(R.string.hub_snooze_hour))
-                    }
-                    OutlinedButton(
-                        onClick = { onSnooze(Snooze.nextMorning(System.currentTimeMillis())) },
-                        modifier = Modifier.sableFocusRing(),
-                    ) {
-                        Text(stringResource(R.string.hub_snooze_tomorrow))
-                    }
-                }
-            } else {
-                if (canReply) {
+                OutlinedButton(
+                    onClick = {
+                        if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+                    },
+                    modifier = Modifier.sableFocusRing(),
+                ) { Text(if (snoozed) stringResource(R.string.hub_wake) else stringResource(R.string.hub_snooze_hour)) }
+            }
+            if (replying && canReply) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     OutlinedTextField(
-                        value = draft,
-                        onValueChange = {
-                            draft = it
-                            failed = false
-                        },
+                        value = draft, onValueChange = { draft = it; failed = false },
                         modifier = Modifier.weight(1f).sableFocusRing(),
+                        singleLine = true, isError = failed,
                         placeholder = { Text(stringResource(R.string.hub_reply_hint)) },
-                        singleLine = true,
-                        isError = failed,
-                        supportingText = { if (failed) Text(stringResource(R.string.hub_reply_failed)) },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                         keyboardActions = KeyboardActions(onSend = { send() }),
                     )
-                    OutlinedButton(
-                        onClick = ::send,
-                        enabled = draft.isNotBlank(),
-                        modifier = Modifier.padding(start = 8.dp).sableFocusRing(),
-                    ) {
+                    OutlinedButton(onClick = ::send, enabled = draft.isNotBlank(),
+                        modifier = Modifier.sableFocusRing()) {
                         Text(stringResource(R.string.hub_send))
                     }
                 }
+                if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)
             }
         }
+        Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
     }
 }
 
@@ -362,6 +405,7 @@ internal fun rememberHubConversationsUi(
     context: android.content.Context,
     refreshGeneration: Int,
     onOpenFallback: () -> Unit,
+    onChooseApps: () -> Unit,
 ): HubConversationsUi {
     val accessGranted = remember(refreshGeneration) {
         Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context)
@@ -376,15 +420,21 @@ internal fun rememberHubConversationsUi(
             if (accessGranted) ConversationHub.conversations() else emptyList()
         }
     var filter by remember { mutableStateOf(ConversationFilter()) }
+    var sourcePackage by remember { mutableStateOf<String?>(null) }
+    val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
     val state = remember(refreshGeneration, accessGranted) { ConversationHub.state() }
     val now = remember(refreshGeneration, filter) { System.currentTimeMillis() }
-    return remember(accessGranted, locked, conversations, filter, state, now) {
+    return remember(accessGranted, locked, conversations, filter, sourcePackage, enabledAppCount, state, now) {
         HubConversationsUi(
             accessGranted = accessGranted,
             canAllowAccess = Capabilities.hasConversationService(context),
+            enabledAppCount = enabledAppCount,
+            onChooseApps = onChooseApps,
             deviceLocked = locked,
             conversations = conversations,
             filter = filter,
+            sourcePackage = sourcePackage,
+            onSourceChange = { sourcePackage = it },
             state = state,
             now = now,
             onFilterChange = { filter = it },
