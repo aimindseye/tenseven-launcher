@@ -294,8 +294,7 @@ private fun SetupOverview(
     )
     // Reopened setup defaults to overview: guidance must be visible here too,
     // not only in the initial wizard's Notification or Usage step.
-    if (listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
-            .any { !state.isDone(it) && showRestrictedHelp(it) }) {
+    if (OnboardingPlan.needsRestrictedSettingsOverviewHelp(state, showRestrictedHelp)) {
         RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
     }
     SetupStep.entries.forEachIndexed { position, step ->
