@@ -142,7 +142,8 @@ fun Bb7HomeScreen(
     LaunchedEffect(panels) { if (panel !in panels) panel = panels.first() }
     var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    var selected by remember { mutableIntStateOf(0) }
+    // Nothing is highlighted until the user actually navigates the tray with a key.
+    var selected by remember { mutableIntStateOf(-1) }
     var moving by remember { mutableStateOf(false) }
     // Which list the arrow keys move in: the tray (false) or the icons in the empty space above it.
     var inDesktopZone by remember { mutableStateOf(false) }
@@ -156,7 +157,7 @@ fun Bb7HomeScreen(
     LaunchedEffect(homeGeneration) {
         open = false
         query = ""
-        selected = 0
+        selected = -1
         moving = false
         inDesktopZone = false
     }
@@ -184,7 +185,7 @@ fun Bb7HomeScreen(
         if (searching) Bb7Home.search(apps, query) else Bb7Home.panelApps(panel, apps, favoriteKeys, usage, defaultPackages)
     val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, favoriteKeys, defaultPackages = defaultPackages).map { it.stableKey() }
     val appsByKey = remember(apps) { apps.associateBy { it.stableKey() } }
-    val desktopApps = desktopKeys.mapNotNull { appsByKey[it] }
+    val desktopApps = Bb7Home.desktopShortcuts(desktopKeys).mapNotNull { appsByKey[it] }
     val inDesktop = inDesktopZone && !open && !searching && desktopApps.isNotEmpty()
     val deskIndex = deskSelected.coerceIn(0, (desktopApps.size - 1).coerceAtLeast(0))
     val trayTitle =
@@ -233,8 +234,13 @@ fun Bb7HomeScreen(
                 } else {
                     add(
                         context.getString(R.string.bb7_add_home) to {
-                            onDesktopChanged(desktopKeys + key)
-                            Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
+                            val next = Bb7Home.addDesktopShortcut(desktopKeys, key)
+                            if (key !in next) {
+                                Toast.makeText(context, "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts", Toast.LENGTH_LONG).show()
+                            } else {
+                                onDesktopChanged(next)
+                                Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
+                            }
                         },
                     )
                 }
@@ -361,9 +367,9 @@ fun Bb7HomeScreen(
                                         openApps()
                                     }
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ->
-                                    selected = Bb7Home.move(selected, visible, columns, -1, 0)
+                                    selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, -1, 0)
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ->
-                                    selected = Bb7Home.move(selected, visible, columns, 1, 0)
+                                    selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 1, 0)
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_UP ->
                                     if (open || searching || selected >= columns) {
                                         selected = Bb7Home.move(selected, visible, columns, 0, -1)
@@ -378,9 +384,9 @@ fun Bb7HomeScreen(
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ->
                                     if (open && selected + columns >= visible) {
                                         open = false
-                                        selected = selected.coerceAtMost(columns - 1)
+                                        selected = -1
                                     } else {
-                                        selected = Bb7Home.move(selected, visible, columns, 0, 1)
+                                        selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 0, 1)
                                     }
                                 native.keyCode == KeyEvent.KEYCODE_ENTER && native.isAltPressed ->
                                     onOpenMenu(menuFor(shown.getOrNull(selected), false))
@@ -473,6 +479,14 @@ fun Bb7HomeScreen(
                             moving = moving,
                             modifier = Modifier.weight(1f),
                             onLaunch = { onLaunchApp(it) },
+                            onEmptyTap = {
+                                // An empty wallpaper tap is a discoverable route to All Apps;
+                                // long-press an app there and choose Add to home screen.
+                                selected = -1
+                                inDesktopZone = false
+                                openApps()
+                                Toast.makeText(context, "Long-press an app → Add to home screen", Toast.LENGTH_SHORT).show()
+                            },
                             onLongPress = { app ->
                                 inDesktopZone = true
                                 deskSelected = desktopApps.indexOf(app).coerceAtLeast(0)
@@ -503,6 +517,7 @@ fun Bb7HomeScreen(
                         onToggle = {
                             open = !open
                             query = ""
+                            selected = if (open) 0 else -1
                         },
                         onStep = { step ->
                             query = ""
@@ -747,9 +762,14 @@ private fun Bb7Desktop(
     modifier: Modifier,
     onLaunch: (AppEntry) -> Unit,
     onLongPress: (AppEntry) -> Unit,
+    onEmptyTap: () -> Unit,
 ) {
     if (apps.isEmpty()) {
-        Spacer(modifier)
+        Box(modifier.fillMaxWidth().clickable(onClick = onEmptyTap),
+            contentAlignment = Alignment.Center) {
+            Text("+ Add shortcuts", color = Color.White.copy(alpha = 0.65f),
+                style = MaterialTheme.typography.labelLarge)
+        }
         return
     }
     val grid = rememberLazyGridState()
@@ -759,7 +779,9 @@ private fun Bb7Desktop(
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         state = grid,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onEmptyTap)
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        userScrollEnabled = false,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
