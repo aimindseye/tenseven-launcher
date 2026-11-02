@@ -48,8 +48,11 @@ class ConversationListenerService : NotificationListenerService() {
         ConversationHub.replace(active.mapNotNull(::safeHubNotification))
         refreshLockCounts()
         if (!screenOnRegistered) {
-            ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
-            screenOnRegistered = true
+            // Receiver registration failure must not disable Hub, Peek and lock-screen counts.
+            screenOnRegistered = runCatching {
+                ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
+                true
+            }.getOrDefault(false)
         }
     }
 
