@@ -45,9 +45,10 @@ android {
         applicationId = "io.github.aimindseye.tenseven"
         minSdk = 30
         targetSdk = 36
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Full-only P1 qualification build; update code and name for every distributed test APK.
-        versionCode = 8
-        versionName = "0.2.0-p2a-tasks.1"
+        versionCode = 9
+        versionName = "0.2.0-p2b-frames.1"
     }
 
     signingConfigs {
@@ -127,6 +128,11 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 /** The SHA-256 certificate registered for this app in Android Developer Console. */

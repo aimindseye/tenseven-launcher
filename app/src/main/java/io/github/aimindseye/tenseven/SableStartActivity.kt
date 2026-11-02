@@ -70,18 +70,10 @@ class SableStartActivity : ComponentActivity() {
     private val letterShortcutRepository by lazy { LetterShortcutRepository(this) }
     private val speedDialRepository by lazy { SpeedDialRepository(this, letterShortcutRepository) }
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
-    private lateinit var usageRecentsRepository: UsageRecentsRepository
     private lateinit var startStateRepository: StartStateRepository
-    private lateinit var recentTasksRepository: RecentTasksRepository
+    private lateinit var activeFrames: io.github.aimindseye.tenseven.platform.ActiveFramesHost
 
     private val appsState = mutableStateOf<List<AppEntry>>(emptyList())
-
-    /** Active Frames: recent tasks, refreshed whenever Start comes back. */
-    private val framesState = mutableStateOf<List<ActiveFrame>>(emptyList())
-    private val framesGeneration = mutableStateOf(0)
-    private val recentAppsState = mutableStateOf<List<String>>(emptyList())
-    private val usageAccessState = mutableStateOf(false)
-    private val framesExecutor = Executors.newSingleThreadExecutor()
 
     /** null: no private space; true: locked; false: unlocked. */
     private val privateSpaceLockedState = mutableStateOf<Boolean?>(null)
@@ -247,8 +239,7 @@ class SableStartActivity : ComponentActivity() {
         homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
         homeWallpaper.value = startStateRepository.loadHomeWallpaper()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
-        recentTasksRepository = RecentTasksRepository(this)
-        usageRecentsRepository = UsageRecentsRepository(this)
+        activeFrames = io.github.aimindseye.tenseven.platform.ActiveFramesHost(this)
         homeStyle.value = startStateRepository.loadHomeStyle()
         opaqueWindowBackground = window.decorView.background
 
@@ -417,13 +408,10 @@ class SableStartActivity : ComponentActivity() {
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
                     onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
-                    frames = framesState.value,
-                    framesGeneration = framesGeneration.value,
-                    frameSnapshot = { frame -> recentTasksRepository.snapshot(frame.taskId) },
-                    onResumeFrame = ::resumeFrame,
-                    onCloseFrame = ::closeFrame,
-                    recentApps = recentAppsState.value,
-                    usageAccess = usageAccessState.value,
+                    framesState = activeFrames.state.value,
+                    frameSnapshot = activeFrames::snapshot,
+                    onResumeFrame = activeFrames.coordinator::open,
+                    onCloseFrame = activeFrames.coordinator::close,
                     onAllowUsageAccess = {
                         runCatching {
                             startActivity(
@@ -507,7 +495,7 @@ class SableStartActivity : ComponentActivity() {
         homeWallpaper.value = startStateRepository.loadHomeWallpaper()
         homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         scheduleInventoryRefresh()
-        refreshFrames()
+        activeFrames.coordinator.onResume()
         liveRefreshGeneration.value += 1
     }
 
@@ -539,7 +527,7 @@ class SableStartActivity : ComponentActivity() {
             // over the pages and show Active Frames.
             Intent.ACTION_MAIN, ACTION_SHOW_ACTIVE_FRAMES -> {
                 homeGeneration.value += 1
-                refreshFrames()
+                activeFrames.coordinator.onResume()
                 // On the BlackBerry 7 home, Home goes back to it; Recents shows the Active Frames.
                 if (intent.action == ACTION_SHOW_ACTIVE_FRAMES) {
                     startBb10Detour(returnOnHome = false)
@@ -563,6 +551,7 @@ class SableStartActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        activeFrames.coordinator.onStop()
         widgetController.stopListening()
         if (callbackRegistered) {
             launcherAppsRepository.unregisterCallback(launcherCallback)
@@ -586,7 +575,7 @@ class SableStartActivity : ComponentActivity() {
         unregisterPrivacySignals()
         inventoryGeneration.incrementAndGet()
         inventoryExecutor.shutdownNow()
-        framesExecutor.shutdownNow()
+        activeFrames.destroy()
         super.onDestroy()
     }
 
@@ -602,6 +591,7 @@ class SableStartActivity : ComponentActivity() {
     }
 
     private fun scheduleInventoryRefresh() {
+        if (::activeFrames.isInitialized) activeFrames.coordinator.refresh()
         val generation = inventoryGeneration.incrementAndGet()
         runCatching {
             inventoryExecutor.execute {
@@ -619,55 +609,6 @@ class SableStartActivity : ComponentActivity() {
                         workPausedState.value = workPaused
                     }
                 }
-            }
-        }
-    }
-
-    /** Private Space never shows as an Active Frame, locked or not. */
-    private fun privateUsers(): Set<Int> =
-        runCatching { setOfNotNull(launcherAppsRepository.privateSpace()?.identifier) }.getOrDefault(emptySet())
-
-    /** Reads the recent tasks off the main thread; the snapshots repaint with them. */
-    private fun refreshFrames() {
-        runCatching {
-            framesExecutor.execute {
-                val frames = recentTasksRepository.loadFrames(privateUsers())
-                // A nonempty getRecentTasks() result can be incomplete on downloaded installs.
-                val usageAccess = usageRecentsRepository.hasAccess()
-                val recents = usageRecentsRepository.recentPackages()
-                runOnUiThread {
-                    if (!isDestroyed) {
-                        framesState.value = frames
-                        recentAppsState.value = recents
-                        usageAccessState.value = usageAccess
-                        framesGeneration.value += 1
-                    }
-                }
-            }
-        }
-    }
-
-    /** Enter on a frame: the task as it was; if Android refuses, the app starts fresh. */
-    private fun resumeFrame(frame: ActiveFrame) {
-        runCatching {
-            framesExecutor.execute {
-                if (!recentTasksRepository.resume(frame.taskId)) {
-                    recentTasksRepository.launchIntent(frame)?.let { intent ->
-                        runOnUiThread { runCatching { startActivity(intent) } }
-                    }
-                }
-            }
-        }
-    }
-
-    /** X or Backspace on a frame: gone from Start at once, then removed from Recents. */
-    private fun closeFrame(frame: ActiveFrame) {
-        framesState.value = framesState.value.filterNot { it.taskId == frame.taskId }
-        runCatching {
-            framesExecutor.execute {
-                recentTasksRepository.close(frame.taskId)
-                val frames = recentTasksRepository.loadFrames(privateUsers())
-                runOnUiThread { if (!isDestroyed) framesState.value = frames }
             }
         }
     }

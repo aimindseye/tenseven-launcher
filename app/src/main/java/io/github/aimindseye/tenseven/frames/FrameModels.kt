@@ -1,0 +1,82 @@
+package io.github.aimindseye.tenseven.frames
+
+import io.github.aimindseye.tenseven.model.ActiveFrame
+import io.github.aimindseye.tenseven.model.ForegroundEvent
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
+import io.github.aimindseye.tenseven.platform.PlatformCapabilities
+
+/** Stable identity always includes the Android profile; never fall back to another user's app. */
+data class FrameApp(val packageName: String, val userId: Int) {
+    val key: String get() = "$userId:$packageName"
+}
+
+data class FrameSettings(
+    val liveSummaries: Boolean = true,
+    val newMessages: Boolean = true,
+    val snapshots: Boolean = true,
+    val openApps: Boolean = true,
+    val rememberReturnedApps: Boolean = true,
+    val maximum: Int = 8,
+) {
+    fun normalized(): FrameSettings = copy(maximum = if (maximum in LIMITS) maximum else 8)
+    companion object { val LIMITS = listOf(4, 8, 12) }
+}
+
+data class FrameItem(val app: FrameApp, val task: ActiveFrame? = null) {
+    val key: String get() = task?.let { "${app.key}:task:${it.taskId}" } ?: "${app.key}:recent"
+}
+
+data class FrameInput(
+    val native: List<ActiveFrame>,
+    val recent: List<ForegroundEvent>,
+    val availableApps: Set<FrameApp>,
+    val personalUserId: Int,
+    val capabilities: PlatformCapabilities,
+    val settings: FrameSettings,
+)
+
+data class FramesState(
+    val items: List<FrameItem> = emptyList(),
+    val generation: Long = 0,
+    val settings: FrameSettings = FrameSettings(),
+    val usageAllowed: Boolean = false,
+    val snapshotsAllowed: Boolean = false,
+    val fallbackReason: String = "Recent apps use launcher history. Usage access adds apps opened elsewhere.",
+)
+
+/** Merge partial native results with recents. A dismissed native task cannot sneak back in. */
+object FramePolicy {
+    fun state(input: FrameInput, dismissals: Map<String, Long>, generation: Long): FramesState {
+        val settings = input.settings.normalized()
+        val recent = if (settings.rememberReturnedApps) input.recent.sortedByDescending { it.timeMs }
+            .distinctBy { it.packageName } else emptyList()
+        val opened = recent.associate { FrameApp(it.packageName, input.personalUserId).key to it.timeMs }
+        val native = input.native.filter { FrameApp(it.packageName, it.userId) in input.availableApps }
+        val items = recent.map { event ->
+            val app = FrameApp(event.packageName, input.personalUserId)
+            FrameItem(app, native.firstOrNull { it.packageName == app.packageName && it.userId == app.userId })
+        } + native.map { FrameItem(FrameApp(it.packageName, it.userId), it) }
+        val shown = items.filter { item ->
+            item.app in input.availableApps &&
+                (dismissals[item.app.key]?.let { closed -> (opened[item.app.key] ?: 0L) > closed } ?: true)
+        }.distinctBy { it.key }.take(settings.maximum)
+        return FramesState(shown, generation, settings,
+            usageAllowed = input.capabilities.usageRecents == CapabilityStatus.Ready,
+            snapshotsAllowed = settings.snapshots && input.capabilities.thirdPartySnapshots == CapabilityStatus.Ready,
+            fallbackReason = input.capabilities.frameFallbackReason,
+        )
+    }
+}
+
+/** Bounded persistent metadata only; contains no captured app content. */
+object FrameDismissals {
+    const val MAX = 96
+    fun decode(value: String?): Map<String, Long> = value.orEmpty().lineSequence().mapNotNull { line ->
+        val parts = line.split('\t')
+        val at = parts.getOrNull(1)?.toLongOrNull()
+        if (parts.size != 2 || at == null || at < 0 || !parts[0].matches(Regex("[0-9]+:[a-zA-Z0-9_.]+"))) null
+        else parts[0] to at
+    }.take(MAX).toMap()
+    fun encode(entries: Map<String, Long>): String = entries.entries.sortedByDescending { it.value }
+        .take(MAX).joinToString("\n") { "${it.key}\t${it.value}" }
+}

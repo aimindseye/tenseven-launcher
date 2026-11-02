@@ -391,6 +391,7 @@ private fun ChoiceSection(
         SetupStep.STYLE -> {
             HomeStyleSection(state)
             HomeDisplaySection(state)
+            FrameSettingsSection(state)
         }
         SetupStep.LOOK -> {
             ThemeSection(state)

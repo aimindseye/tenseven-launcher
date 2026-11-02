@@ -35,8 +35,10 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  * Device and Privacy. Every change is saved at once; the home screens read it when they come forward.
  */
 class LauncherSettingsActivity : ComponentActivity() {
+    private val resumeGeneration = mutableStateOf(0)
     override fun onResume() {
         super.onResume()
+        resumeGeneration.value += 1
         io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
     }
 
@@ -47,7 +49,7 @@ class LauncherSettingsActivity : ComponentActivity() {
         val state = StartStateRepository(this)
         setContent {
             LauncherTheme(window = window) {
-                LauncherSettings(
+                androidx.compose.runtime.key(resumeGeneration.value) { LauncherSettings(
                     state = state,
                     onLanguage = {
                         val intent =
@@ -61,7 +63,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                     onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },
                     onSetup = { runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) } },
                     onAndroidSettings = { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } },
-                )
+                ) }
             }
         }
     }
@@ -88,6 +90,7 @@ private fun LauncherSettings(
             Section(stringResource(R.string.ls_section_style))
             HomeStyleSection(state, first)
             HomeDisplaySection(state)
+            FrameSettingsSection(state)
 
             Section(stringResource(R.string.ls_section_home))
             SwitchRow(stringResource(R.string.ls_type_to_search), stringResource(R.string.ls_type_to_search_detail), typeToSearch) {

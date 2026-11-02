@@ -32,13 +32,21 @@ class UsageRecentsRepository(
         limit: Int = RecentApps.MAX,
         windowMs: Long = WINDOW_MS,
     ): List<String> {
+        return recentEvents(excluded, limit, windowMs).map(ForegroundEvent::packageName)
+    }
+
+    fun recentEvents(
+        excluded: Set<String> = emptySet(),
+        limit: Int = RecentApps.MAX,
+        windowMs: Long = WINDOW_MS,
+    ): List<ForegroundEvent> {
         // Nothing from before the phone last started, or before the look-back window, counts as open.
         val bootMs = System.currentTimeMillis() - SystemClock.elapsedRealtime()
         val since = maxOf(System.currentTimeMillis() - windowMs, bootMs)
         val started = RecentApps.since(launches.load(), since)
         val manager =
             appContext.getSystemService(UsageStatsManager::class.java).takeIf { hasAccess() }
-                ?: return RecentApps.select(started, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit)
+                ?: return selectEvents(started, excluded, limit)
         val now = System.currentTimeMillis()
         val events =
             runCatching {
@@ -57,7 +65,13 @@ class UsageRecentsRepository(
                 // Only apps that stayed in front: a permission prompt or picker another app flashes up is not "opened".
                 RecentApps.opened(samples)
             }.getOrDefault(emptyList())
-        return RecentApps.select(started + events, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit)
+        return selectEvents(started + events, excluded, limit)
+    }
+
+    private fun selectEvents(events: List<ForegroundEvent>, excluded: Set<String>, limit: Int): List<ForegroundEvent> {
+        val ordered = events.sortedByDescending(ForegroundEvent::timeMs).distinctBy(ForegroundEvent::packageName)
+        val packages = RecentApps.select(ordered, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit).toSet()
+        return ordered.filter { it.packageName in packages }
     }
 
     companion object {

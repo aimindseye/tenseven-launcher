@@ -378,25 +378,25 @@ internal fun phonePalette(scheme: androidx.compose.material3.ColorScheme): Start
 
 private val LocalStartPalette = staticCompositionLocalOf { startPalette(dark = true, accent = AccentPreset.Blue) }
 
-private val Bb10Blue: Color
+internal val Bb10Blue: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.accent
-private val Bb10OnBlue: Color
+internal val Bb10OnBlue: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.onAccent
-private val Bb10Background: Color
+internal val Bb10Background: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.background
-private val Bb10Card: Color
+internal val Bb10Card: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.card
 private val Bb10Tile: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.tile
-private val Bb10Line: Color
+internal val Bb10Line: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.line
-private val Bb10BarTop: Color
+internal val Bb10BarTop: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.barTop
 private val Bb10BarBottom: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.barBottom
-private val Bb10Text: Color
+internal val Bb10Text: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.text
-private val Bb10Muted: Color
+internal val Bb10Muted: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.muted
 private val Bb10Dim: Color
     @Composable @ReadOnlyComposable get() = LocalStartPalette.current.dim
@@ -447,18 +447,10 @@ fun SableStartScreen(
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
     initialHiddenHomeSections: Set<String>? = null,
     onHiddenHomeSectionsChanged: (Set<String>?) -> Unit = {},
-    /** Recent tasks, most recent first ([ActiveFrames.select]). */
-    frames: List<ActiveFrame> = emptyList(),
-    /** Changes whenever the frames should repaint their snapshots. */
-    framesGeneration: Int = 0,
-    /** The frame's live picture; called off the main thread. */
-    frameSnapshot: (ActiveFrame) -> Bitmap? = { null },
-    onResumeFrame: (ActiveFrame) -> Unit = {},
-    onCloseFrame: (ActiveFrame) -> Unit = {},
-    /** Package names of recently used apps, most recent first; shown when [frames] is empty (ordinary install). */
-    recentApps: List<String> = emptyList(),
-    /** Whether usage access is granted; without it the recent-apps row offers to turn it on. */
-    usageAccess: Boolean = false,
+    framesState: io.github.aimindseye.tenseven.frames.FramesState = io.github.aimindseye.tenseven.frames.FramesState(),
+    frameSnapshot: (io.github.aimindseye.tenseven.frames.FrameItem, Long) -> Bitmap? = { _, _ -> null },
+    onResumeFrame: (io.github.aimindseye.tenseven.frames.FrameItem) -> Unit = {},
+    onCloseFrame: (io.github.aimindseye.tenseven.frames.FrameItem) -> Unit = {},
     onAllowUsageAccess: () -> Unit = {},
     onAppearanceChanged: (SableAppearance) -> Unit = {},
     onResetAppearance: () -> Unit = {},
@@ -646,7 +638,7 @@ fun SableStartScreen(
         }
     }
 
-    fun resumeFrame(frame: ActiveFrame) {
+    fun resumeFrame(frame: io.github.aimindseye.tenseven.frames.FrameItem) {
         onResumeFrame(frame)
     }
 
@@ -794,7 +786,7 @@ fun SableStartScreen(
                                     page == StartPages.HOME && blankHomePage -> Spacer(Modifier.fillMaxSize())
                                     page == StartPages.HOME ->
                                         ActiveFramesPage(
-                                            frames = frames,
+                                            state = framesState,
                                             apps = apps,
                                             hiddenSections = hiddenSections,
                                             onOpenSettings = {
@@ -804,17 +796,11 @@ fun SableStartScreen(
                                             snapshot = liveSnapshot,
                                             widgets = glanceWidgets,
                                             refreshGeneration = refreshGeneration,
-                                            framesGeneration = framesGeneration,
                                             frameSnapshot = frameSnapshot,
                                             active = settledPage == StartPages.HOME,
                                             onResume = ::resumeFrame,
                                             onClose = onCloseFrame,
-                                            onLaunchApp = ::launchApp,
-                                            onStartIntent = onStartIntent,
-                                            onRequestPermissions = onRequestLivePermissions,
                                             onShowHub = { showHub(HubFilter.All) },
-                                            recentApps = recentApps,
-                                            usageAccess = usageAccess,
                                             onAllowUsageAccess = onAllowUsageAccess,
                                         )
                                     else -> {
@@ -1336,145 +1322,9 @@ private fun pageDescription(
         else -> t("app_grid_page", page - StartPages.FIRST_GRID + 1)
     }
 
-/**
- * Active Frames (BB10 Home). On top, the status dials and Settings gear, then
- * the location's weather with the date under it (no clock: the status bar
- * keeps the only one; no greeting). Below, up to eight recent apps as live
- * cards, two by two, scrolling down for more. Each card shows the app's
- * last picture (else its icon and live summary) and its name.
- *
- * Keys: arrows move between frames, Enter resumes, X or Backspace closes the
- * focused frame (the next one takes focus). With no frames the Glance widgets
- * (Weather, Calendar, Battery, Media; set in Edit Home) fill the frames.
- */
-@Composable
-private fun ActiveFramesPage(
-    frames: List<ActiveFrame>,
-    apps: List<AppEntry>,
-    hiddenSections: Set<String>,
-    onOpenSettings: () -> Unit,
-    onSearch: () -> Unit,
-    snapshot: LiveSurfaceSnapshot,
-    widgets: List<String>,
-    refreshGeneration: Int,
-    framesGeneration: Int,
-    frameSnapshot: (ActiveFrame) -> Bitmap?,
-    active: Boolean,
-    onResume: (ActiveFrame) -> Unit,
-    onClose: (ActiveFrame) -> Unit,
-    onLaunchApp: (AppEntry) -> Unit,
-    onStartIntent: (Intent) -> Unit,
-    onRequestPermissions: () -> Unit,
-    onShowHub: () -> Unit,
-    recentApps: List<String>,
-    usageAccess: Boolean,
-    onAllowUsageAccess: () -> Unit,
-) {
-    val context = LocalContext.current
-    val requesters = remember { mutableMapOf<Int, FocusRequester>() }
-    val firstWidgetFocus = remember { FocusRequester() }
-    // The frame to focus once the list changes (after a close), else the first one.
-    var focusTask by remember { mutableStateOf<Int?>(null) }
-
-    fun requesterFor(taskId: Int) = requesters.getOrPut(taskId) { FocusRequester() }
-
-    // The platform can return a partial nonempty task list. Always merge its real tasks
-    // with launcher history and recent usage; a synthesized card is not a real Android task.
-    var dismissed by remember { mutableStateOf(emptySet<String>()) }
-    val byPackage = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
-    val personalUserId = android.os.Process.myUserHandle().hashCode()
-    val mergedFrames =
-        remember(frames, recentApps, byPackage, dismissed, personalUserId) {
-            ActiveFrames.mergeForDisplay(frames, recentApps, byPackage.keys, personalUserId, dismissed)
-        }
-    val shownFrames = mergedFrames.frames
-    val recentMode = mergedFrames.syntheticTaskIds.isNotEmpty()
-
-    LaunchedEffect(active, shownFrames.map { it.taskId }) {
-        if (!active) return@LaunchedEffect
-        withFrameNanos { }
-        val target = focusTask?.takeIf { id -> shownFrames.any { it.taskId == id } } ?: shownFrames.firstOrNull()?.taskId
-        focusTask = null
-        if (target != null) {
-            runCatching { requesterFor(target).requestFocus() }
-        } else {
-            runCatching { firstWidgetFocus.requestFocus() }
-        }
-    }
-
-    val displayState = remember(context) { StartStateRepository(context) }
-    val enabledDials = remember(refreshGeneration) { displayState.loadHomeDials(HomeStyle.Bb10) }
-    val showStrip = remember(refreshGeneration) { displayState.loadHomeNotificationStrip(HomeStyle.Bb10) }
-    val stripExpanded = remember(refreshGeneration) { displayState.loadHomeNotificationExpanded(HomeStyle.Bb10) }
-    val enabledHubApps = remember(refreshGeneration) { displayState.loadHubEnabledApps() }
-
-    fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        if (shown(HomeLayout.STATUS_RINGS) && enabledDials.isNotEmpty()) {
-            StatusDialsRow(onOpenSettings = onOpenSettings, visible = enabledDials)
-        }
-        if (shown(HomeLayout.WEATHER)) {
-            DateHeader(
-                refreshGeneration = refreshGeneration,
-                unread = snapshot.hubApps.filter { it.packageName in enabledHubApps }.sumOf { it.count },
-                onShowHub = onShowHub,
-                showLegacyBadge = !showStrip,
-                onOpenSettings = if (enabledDials.isEmpty()) onOpenSettings else null,
-            )
-            if (showStrip) HomeNotificationStrip(
-                counts = snapshot.hubApps,
-                enabledPackages = enabledHubApps,
-                expanded = stripExpanded,
-                onOpenHub = onShowHub,
-            )
-        }
-        if (shown(HomeLayout.SEARCH_ROW)) {
-            Box(Modifier.padding(horizontal = FRAME_PADDING)) { SearchLaunchButton(onClick = onSearch) }
-        }
-        ActiveFramesGrid(
-            frames = shownFrames,
-            recentMode = recentMode,
-            apps = apps,
-            snapshot = snapshot,
-            widgets = widgets,
-            refreshGeneration = refreshGeneration,
-            framesGeneration = framesGeneration,
-            frameSnapshot = { frame ->
-                if (frame.taskId in mergedFrames.syntheticTaskIds) null else frameSnapshot(frame)
-            },
-            requesterFor = ::requesterFor,
-            firstWidgetFocus = firstWidgetFocus,
-            onResume = { frame ->
-                if (frame.taskId in mergedFrames.syntheticTaskIds) {
-                    byPackage[frame.packageName]?.let(onLaunchApp)
-                } else {
-                    onResume(frame)
-                }
-            },
-            onClose = { frame ->
-                val index = shownFrames.indexOf(frame)
-                focusTask =
-                    ActiveFrames.focusAfterClose(index, shownFrames.size)?.let { next ->
-                        shownFrames.filterNot { it == frame }.getOrNull(next)?.taskId
-                    }
-                dismissed = dismissed + frame.packageName
-                if (frame.taskId !in mergedFrames.syntheticTaskIds) onClose(frame)
-            },
-            onLaunchApp = onLaunchApp,
-            onStartIntent = onStartIntent,
-            onRequestPermissions = onRequestPermissions,
-            onShowHub = onShowHub,
-            recentApps = recentApps,
-            usageAccess = usageAccess,
-            onAllowUsageAccess = onAllowUsageAccess,
-        )
-    }
-}
-
 /** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) and the Settings gear. */
 @Composable
-private fun StatusDialsRow(onOpenSettings: () -> Unit, visible: Set<String>) {
+internal fun StatusDialsRow(onOpenSettings: () -> Unit, visible: Set<String>) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = FRAME_PADDING, end = 2.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1502,7 +1352,7 @@ private fun StatusDialsRow(onOpenSettings: () -> Unit, visible: Set<String>) {
  * locale and turns over at midnight; there is no clock here.
  */
 @Composable
-private fun DateHeader(
+internal fun DateHeader(
     refreshGeneration: Int,
     unread: Int,
     onShowHub: () -> Unit,
@@ -1562,190 +1412,6 @@ private fun DateHeader(
         }
         }
         SoundProfileButton()
-    }
-}
-
-/** The frames themselves (or the Glance widgets as frames), two rows to the remaining height. */
-@Composable
-private fun ColumnScope.ActiveFramesGrid(
-    frames: List<ActiveFrame>,
-    recentMode: Boolean,
-    apps: List<AppEntry>,
-    snapshot: LiveSurfaceSnapshot,
-    widgets: List<String>,
-    refreshGeneration: Int,
-    framesGeneration: Int,
-    frameSnapshot: (ActiveFrame) -> Bitmap?,
-    requesterFor: (Int) -> FocusRequester,
-    firstWidgetFocus: FocusRequester,
-    onResume: (ActiveFrame) -> Unit,
-    onClose: (ActiveFrame) -> Unit,
-    onLaunchApp: (AppEntry) -> Unit,
-    onStartIntent: (Intent) -> Unit,
-    onRequestPermissions: () -> Unit,
-    onShowHub: () -> Unit,
-    recentApps: List<String>,
-    usageAccess: Boolean,
-    onAllowUsageAccess: () -> Unit,
-) {
-    BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-        val cardHeight =
-            ((maxHeight - FRAME_PADDING * 2 - FRAME_GAP) / ActiveFrames.ROWS_PER_SCREEN).coerceAtLeast(FRAME_MIN_HEIGHT)
-        if (frames.isEmpty()) {
-            // Nothing recent: the home is empty. Only the usage access offer shows, while that access is off.
-            Column(modifier = Modifier.fillMaxSize().focusRequester(firstWidgetFocus).focusable()) {
-                if (!usageAccess) UsageAccessHint(onClick = onAllowUsageAccess, modifier = Modifier.padding(top = 8.dp))
-            }
-            return@BoxWithConstraints
-        }
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(FRAME_PADDING),
-            verticalArrangement = Arrangement.spacedBy(FRAME_GAP),
-        ) {
-            if (recentMode && !usageAccess) {
-                item(key = "usage-hint") { UsageAccessHint(onClick = onAllowUsageAccess) }
-            }
-            items(frames.chunked(ActiveFrames.COLUMNS), key = { row -> row.first().taskId }) { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(FRAME_GAP)) {
-                    row.forEach { frame ->
-                        FrameCard(
-                            frame = frame,
-                            app = appForFrame(frame, apps),
-                            live = appForFrame(frame, apps)?.let { liveDatumForApp(it, snapshot) },
-                            framesGeneration = framesGeneration,
-                            frameSnapshot = frameSnapshot,
-                            onResume = { onResume(frame) },
-                            onClose = { onClose(frame) },
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .height(cardHeight)
-                                    .focusRequester(requesterFor(frame.taskId)),
-                        )
-                    }
-                    repeat(ActiveFrames.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
-        }
-    }
-}
-
-/** The installed app a frame belongs to (same package, same user), else any copy of the package. */
-private fun appForFrame(
-    frame: ActiveFrame,
-    apps: List<AppEntry>,
-): AppEntry? {
-    val samePackage = apps.filter { it.component.packageName == frame.packageName }
-    // UserHandle.hashCode() is the user id, as in stableKey().
-    return samePackage.firstOrNull { it.user.hashCode() == frame.userId } ?: samePackage.firstOrNull()
-}
-
-/**
- * One Active Frame: the app's live picture above a title strip (app mark, name, close), so the
- * strip never covers the app. The picture is the full-resolution snapshot, scaled to the card's
- * width from the top. Focus is an accent outline and an accent strip.
- */
-@Composable
-private fun FrameCard(
-    frame: ActiveFrame,
-    app: AppEntry?,
-    live: LiveDatum?,
-    framesGeneration: Int,
-    frameSnapshot: (ActiveFrame) -> Bitmap?,
-    onResume: () -> Unit,
-    onClose: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var focused by remember { mutableStateOf(false) }
-    val label = app?.label ?: frame.packageName.substringAfterLast('.')
-    val picture by
-        produceState<Bitmap?>(initialValue = null, frame.taskId, framesGeneration) {
-            value = withContext(Dispatchers.IO) { runCatching { frameSnapshot(frame) }.getOrNull() }
-        }
-    val shape = RoundedCornerShape(FRAME_CORNER)
-    Column(
-        modifier =
-            modifier
-                .onFocusChanged { focused = it.isFocused }
-                .clip(shape)
-                .background(Bb10Card)
-                .border(if (focused) 2.dp else 1.dp, if (focused) Bb10Blue else Bb10Line, shape)
-                .onPreviewKeyEvent { event ->
-                    val native = event.nativeKeyEvent
-                    if (!ActiveFrames.isCloseKey(native.keyCode, native.metaState)) return@onPreviewKeyEvent false
-                    if (event.type == KeyEventType.KeyDown && native.repeatCount == 0) onClose()
-                    true
-                }.combinedClickable(onClick = onResume, onLongClick = onClose)
-                .semantics { contentDescription = t("active_frame_enter_resumes_x", label) },
-    ) {
-        Box(modifier = Modifier.weight(1f).fillMaxWidth().background(Bb10Background)) {
-            val bitmap = picture
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillWidth,
-                    alignment = Alignment.TopCenter,
-                )
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    if (app != null) AppMark(app = app, size = FRAME_ICON_DP)
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text =
-                            live?.takeIf { it.availability == LiveAvailability.LIVE }?.detail
-                                ?: if (frame.running) "running" else t("enter_opens"),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Bb10Muted,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                    )
-                }
-            }
-        }
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(FRAME_LABEL_HEIGHT)
-                    .background(if (focused) Bb10Blue else Bb10BarTop)
-                    .padding(start = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (app != null) {
-                AppMark(app = app, size = FRAME_STRIP_ICON_DP)
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.labelLarge,
-                color = if (focused) Bb10OnBlue else Bb10Text,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .size(FRAME_LABEL_HEIGHT)
-                        .clickable(onClick = onClose)
-                        .semantics { contentDescription = t("close_2", label) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "×",
-                    fontSize = 18.sp,
-                    color = if (focused) Bb10OnBlue else Bb10Muted,
-                )
-            }
-        }
     }
 }
 
@@ -3791,7 +3457,7 @@ private fun quickSlotFallbackLabel(token: String): String =
     }
 
 @Composable
-private fun SearchLaunchButton(
+internal fun SearchLaunchButton(
     accent: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit,
 ) {
@@ -5806,20 +5472,6 @@ private fun appColor(app: AppEntry): Color {
         )
     return SableTilePalette[index]
 }
-
-/** The live line for an app's Active Frame, by package only (a "Calendar" label is not Sable Calendar). */
-private fun liveDatumForApp(
-    app: AppEntry,
-    snapshot: LiveSurfaceSnapshot,
-): LiveDatum? =
-    when (CoreAppIdentity.canonicalPackage(app.component.packageName)) {
-        CALENDAR_PACKAGE -> snapshot.calendar
-        HUB_PACKAGE, MESSAGES_PACKAGE -> snapshot.messages
-        MAIL_PACKAGE -> snapshot.mail
-        MEDIA_PACKAGE -> snapshot.music
-        CoreAppIdentity.PHOTOS -> snapshot.photos
-        else -> null
-    }
 
 private data class PreferredStartAppGroup(
     /** Canonical packages for this tile, best first. */

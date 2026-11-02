@@ -37,6 +37,32 @@ class StartStateRepository(
             Context.MODE_PRIVATE,
         )
 
+    fun loadFrameSettings(): io.github.aimindseye.tenseven.frames.FrameSettings =
+        io.github.aimindseye.tenseven.frames.FrameSettings(
+            liveSummaries = preferences.getBoolean("frames_live", true),
+            newMessages = preferences.getBoolean("frames_messages", true),
+            snapshots = preferences.getBoolean("frames_snapshots", true),
+            openApps = preferences.getBoolean("frames_open", true),
+            rememberReturnedApps = preferences.getBoolean("frames_recents", true),
+            maximum = preferences.getInt("frames_maximum", 8),
+        ).normalized()
+
+    fun saveFrameSettings(value: io.github.aimindseye.tenseven.frames.FrameSettings) {
+        val settings = value.normalized()
+        preferences.edit().putBoolean("frames_live", settings.liveSummaries)
+            .putBoolean("frames_messages", settings.newMessages).putBoolean("frames_snapshots", settings.snapshots)
+            .putBoolean("frames_open", settings.openApps).putBoolean("frames_recents", settings.rememberReturnedApps)
+            .putInt("frames_maximum", settings.maximum).apply()
+    }
+
+    fun loadFrameDismissals(): Map<String, Long> = io.github.aimindseye.tenseven.frames.FrameDismissals.decode(
+        preferences.getString("frames_dismissed", null),
+    )
+
+    fun saveFrameDismissals(value: Map<String, Long>) {
+        preferences.edit().putString("frames_dismissed", io.github.aimindseye.tenseven.frames.FrameDismissals.encode(value)).apply()
+    }
+
     fun loadFavoriteKeys(): Set<String> {
         val explicit =
             preferences.getStringSet(
