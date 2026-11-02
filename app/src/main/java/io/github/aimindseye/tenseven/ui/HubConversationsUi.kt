@@ -241,7 +241,7 @@ internal fun HubUnifiedNavigation(
                 }
             }
             sources.forEach { (pkg, name) ->
-                FilterButton(name, currentTab == HubFilter.All && ui.sourcePackage == pkg) {
+                AppSourceFilterButton(pkg, name, currentTab == HubFilter.All && ui.sourcePackage == pkg) {
                     select(HubFilter.All, pkg = pkg)
                 }
             }
@@ -256,6 +256,33 @@ internal fun HubUnifiedNavigation(
                 singleLine = true,
             )
         }
+    }
+}
+
+/** Actual source icon disambiguates clients with similar names, including multiple mail apps. */
+@Composable
+private fun AppSourceFilterButton(
+    packageName: String,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val context = LocalContext.current
+    val appIcon = remember(packageName) {
+        runCatching { context.packageManager.getApplicationIcon(packageName).toBitmap(72, 72).asImageBitmap() }.getOrNull()
+    }
+    Row(
+        modifier = Modifier.clip(RoundedCornerShape(6.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+            .sableFocusRing().clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (appIcon != null) Image(appIcon, contentDescription = label,
+            modifier = Modifier.size(21.dp).clip(RoundedCornerShape(4.dp)))
+        Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
     }
 }
 
