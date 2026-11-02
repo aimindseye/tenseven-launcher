@@ -36,6 +36,31 @@ candidates; only local signed output can qualify for Google Drive distribution t
   `hub_enabled_apps`.
 - Lite: absent notification listener; no fake request to enable it or promise Hub messages.
 
+## B0. Hub navigation identity regression (PR #93)
+
+This is the regression that made the previous signed Hub2 APK *look unchanged*.
+Test **before** granting notifications or selecting any apps:
+
+- Hub must show a single horizontally scrollable nav row: **All / Unread / Messages /
+  Email / Calls / Contacts**, plus only explicitly selected app sources; **no legacy
+  `All / Messages / Calls / Contacts` row above a second filter row**.
+- Full, with zero opted-in Hub sources: title remains Hub, new nav is visible,
+  and the empty feed shows **No apps selected for Hub** with a settings action.
+- Lite, with no notification listener: same new nav remains visible, and a clear
+  Lite capability explanation appears instead of pretending conversation access works.
+- Once WhatsApp and Signal are enabled, a notification from either gives a flat
+  conversation row; selecting the app source filters the stream without opening
+  the external app. **Email** filters notification-derived mail from any opted-in
+  mail client; calls and contacts still navigate appropriately.
+- On a physical keyboard, initial focus starts on **All**; moving to hidden
+  source chips scrolls horizontally. No second, redundant filter bar remains.
+- Compare the SHA-256 of the *on-device installed* base APK with the newly
+  verified signed release/lite artifact using `adb shell pm path` then `adb pull`.
+  A local build hash alone does **not** establish what was installed.
+- After the user's local dev test, verify the source branch and commit match
+  the PR #93 head. Old PR #89 build hashes are **not** acceptance evidence for
+  the new navigation fix.
+
 ## B. Hub 2.0 conversation feed
 
 - At least two enabled mail apps (e.g. Gmail and Outlook), with notifications posted from
