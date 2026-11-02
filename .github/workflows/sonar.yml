@@ -20,6 +20,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prior_gate_diagnostics:
+    name: Prior Sonar analysis (diagnostic only)
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action != 'edited' || github.event.changes.base != null)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Report the previous completed analysis while the new build runs
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: python3 tools/sonar_gate_report.py
+
   analyze:
     name: Analyze
     # Pull requests from forks get no secrets, so they can't be analyzed here.
