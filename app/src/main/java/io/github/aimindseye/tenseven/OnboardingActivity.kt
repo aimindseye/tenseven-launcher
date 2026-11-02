@@ -52,6 +52,7 @@ import io.github.aimindseye.tenseven.onboarding.OnboardingPlan
 import io.github.aimindseye.tenseven.onboarding.SetupState
 import io.github.aimindseye.tenseven.onboarding.SetupStatus
 import io.github.aimindseye.tenseven.onboarding.SetupStep
+import io.github.aimindseye.tenseven.onboarding.SpecialAccessAttemptStore
 import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
@@ -74,9 +75,7 @@ class OnboardingActivity : ComponentActivity() {
         StartText.t.bindTo(this)
         DesignText.t.bindTo(this)
         startState = StartStateRepository(this)
-        val accessPrefs = getSharedPreferences("tenseven_special_access_flow", MODE_PRIVATE)
-        attemptedSpecialAccess.value = listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
-            .filter { accessPrefs.getBoolean(it.name, false) }.toSet()
+        attemptedSpecialAccess.value = SpecialAccessAttemptStore.attempted(this)
         val state = SetupStatus.read(this)
         setup.value = state
         val only = intent?.getStringExtra(EXTRA_STEP)?.let { name ->
@@ -133,8 +132,7 @@ class OnboardingActivity : ComponentActivity() {
     private fun perform(step: SetupStep) {
         if (step.isSpecialAccess) {
             attemptedSpecialAccess.value = attemptedSpecialAccess.value + step
-            getSharedPreferences("tenseven_special_access_flow", MODE_PRIVATE)
-                .edit().putBoolean(step.name, true).apply()
+            SpecialAccessAttemptStore.markAttempted(this, step)
         }
         when (step) {
             SetupStep.HOME -> requestHomeRole()
