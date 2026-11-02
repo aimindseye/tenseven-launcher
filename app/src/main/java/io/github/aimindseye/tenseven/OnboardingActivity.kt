@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -83,9 +84,9 @@ class OnboardingActivity : ComponentActivity() {
         }?.takeUnless {
             !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
         }
-        steps = if (only != null) listOf(only) else OnboardingPlan.pending(state)
-        // Opened again after the first run (Launcher Settings, the BlackBerry 7 menu): show every choice to change, not a wizard.
-        val overview = only == null && startState.loadOnboardingDone()
+        steps = if (only != null) listOf(only) else OnboardingPlan.steps(state)
+        // Reopening Setup follows the same choices, retaining the existing selections.
+        val overview = false
         val installer = SetupStatus.installer(this)
         setContent {
             LauncherTheme(window = window) {
@@ -203,6 +204,7 @@ private fun SetupScreen(
     var overview by rememberSaveable { mutableStateOf(startOnOverview) }
     val firstButton = remember { FocusRequester() }
     var picked by remember { mutableStateOf(enabledExtras) }
+    BackHandler(enabled = !overview && index > 0) { index -= 1 }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier =
@@ -263,11 +265,10 @@ private fun SetupScreen(
                     ChoiceSection(step, settings)
                 } else {
                     Button(
-                        onClick = { onAction(step) },
-                        enabled = !done,
+                        onClick = { if (done) onManage(step) else onAction(step) },
                         modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
                     ) {
-                        Text(if (done) stringResource(R.string.setup_allowed) else stepAction(step))
+                        Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
                     }
                 }
                 OutlinedButton(
@@ -395,7 +396,10 @@ private fun ChoiceSection(
             ThemeSection(state)
             WallpaperSection(state)
         }
-        SetupStep.GRID -> IconGridSection(state)
+        SetupStep.GRID -> {
+            IconPresentationSection(state)
+            IconGridSection(state)
+        }
         SetupStep.WIDGETS -> WidgetsSection(state)
         SetupStep.HUB -> HubSection()
         SetupStep.LOCK -> LockLayerSection(state)

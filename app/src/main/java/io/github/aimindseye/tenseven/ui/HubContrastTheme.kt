@@ -1,7 +1,9 @@
 package io.github.aimindseye.tenseven.ui
 
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -38,6 +40,10 @@ internal fun HubContrastTheme(content: @Composable () -> Unit) {
         colorScheme = HubContrast.colorScheme(original),
         typography = MaterialTheme.typography,
         shapes = MaterialTheme.shapes,
-        content = content,
-    )
+    ) {
+        // MaterialTheme changes the palette, but does not replace a parent's LocalContentColor.
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+            content()
+        }
+    }
 }

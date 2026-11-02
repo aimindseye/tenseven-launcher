@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
 import android.text.format.DateUtils
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +29,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import io.github.aimindseye.tenseven.tasks.TaskRecord
+import io.github.aimindseye.tenseven.tasks.TaskRepository
+import io.github.aimindseye.tenseven.tasks.ReminderPolicy
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,6 +101,9 @@ internal class HubConversationsUi(
     val onWake: (HubConversation) -> Unit,
     val onRemind: (HubConversation, Long?) -> Unit,
     val onCustomRemind: (HubConversation) -> Unit,
+    val reminders: List<TaskRecord>,
+    val remindersSelected: Boolean,
+    val onShowReminders: () -> Unit,
 )
 
 private const val MAX_CONVERSATIONS = 30
@@ -101,6 +113,10 @@ private const val MAX_CONVERSATIONS = 30
  * Without notification access it offers to turn it on; the text stays hidden while the device is locked.
  */
 internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
+    if (ui.remindersSelected) {
+        item(key = "hub-reminders") { HubRemindersPanel(ui.reminders) }
+        return
+    }
     if (!ui.accessGranted) {
         // Avoid offering an impossible permission when the listener service is unavailable.
         if (!ui.canAllowAccess) {
@@ -228,6 +244,7 @@ internal fun HubUnifiedNavigation(
         ui.onSourceChange(pkg)
         moreOpen = false
     }
+    BackHandler(enabled = ui.remindersSelected) { select(HubFilter.All) }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -236,7 +253,7 @@ internal fun HubUnifiedNavigation(
         ) {
             IconHubFilterButton(
                 "Hub", "folder",
-                currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null,
+                currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null && !ui.remindersSelected,
                 modifier = Modifier.focusRequester(firstTab),
             ) { select(HubFilter.All) }
             IconHubFilterButton("Messages", "message-dots", currentTab == HubFilter.Messages,
@@ -248,7 +265,7 @@ internal fun HubUnifiedNavigation(
                 count = emailCount) {
                 select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
             }
-            IconHubFilterButton("Unread", "list-check", currentTab == HubFilter.All && ui.filter.unreadOnly) {
+            IconHubFilterButton("Unread", "list-check", currentTab == HubFilter.All && ui.filter.unreadOnly && !ui.remindersSelected) {
                 select(HubFilter.All, ConversationFilter(unreadOnly = true))
             }
             IconHubFilterButton("Search", "search", searchOpen) { searchOpen = !searchOpen }
@@ -266,10 +283,10 @@ internal fun HubUnifiedNavigation(
                 IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) {
                     select(HubFilter.Contacts)
                 }
-                IconHubFilterButton("Remind", "clock", false, showLabel = true) {
-                    context.startActivity(android.content.Intent(context,
-                        io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
-                        .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_MODE, "remind"))
+                IconHubFilterButton("Remind", "clock", ui.remindersSelected,
+                    count = ReminderPolicy.pendingCount(ui.reminders), showLabel = true) {
+                    onTabChange(HubFilter.All)
+                    ui.onShowReminders()
                 }
                 val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
                 if (snoozedCount > 0 || ui.filter.snoozed) {
@@ -310,35 +327,36 @@ private fun IconHubFilterButton(
     onClick: () -> Unit,
 ) {
     val color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-    Box(
+    Column(
         modifier = modifier.clip(RoundedCornerShape(7.dp))
             .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
             .sableFocusRing()
             .clickable(onClick = onClick)
             .semantics {
-                contentDescription = if (count > 0) "$label, $count notifications" else label
+                contentDescription = if (showLabel) "$label, $count items" else if (count > 0) "$label, $count notifications" else label
                 stateDescription = if (selected) "Selected" else "Not selected"
             }
-            .size(48.dp),
-        contentAlignment = Alignment.Center,
+            .widthIn(min = if (showLabel) 88.dp else 48.dp)
+            .heightIn(min = if (showLabel) 60.dp else 48.dp)
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             LineIcon(
                 paths = if (iconName == "search") LineIconPaths.SEARCH
                     else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
-                modifier = Modifier.size(if (showLabel) 18.dp else 22.dp),
+                modifier = Modifier.size(22.dp),
                 tint = color,
             )
-            if (showLabel) Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+            if (count > 0 || showLabel) {
+                Text(if (count > 99) "99+" else count.toString(),
+                    style = MaterialTheme.typography.labelSmall, color = color,
+                    maxLines = 1)
+            }
         }
-        if (count > 0) {
-            Text(
-                text = if (count > 99) "99+" else count.toString(),
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 2.dp, top = 1.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-            )
-        }
+        if (showLabel) Text(label, style = MaterialTheme.typography.labelSmall, color = color,
+            maxLines = 1, softWrap = false)
     }
 }
 
@@ -481,6 +499,7 @@ private fun ConversationRow(
                         text = conversation.name,
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                     Text(whenText, style = MaterialTheme.typography.labelSmall,
@@ -590,11 +609,22 @@ internal fun rememberHubConversationsUi(
             if (accessGranted) ConversationHub.conversations() else emptyList()
         }
     var filter by remember { mutableStateOf(ConversationFilter()) }
+    var remindersSelected by remember { mutableStateOf(false) }
+    val taskRevision = TaskRepository.revision
+    val reminders = remember(taskRevision) { ReminderPolicy.reminders(TaskRepository(context).list()) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var sourcePackage by remember { mutableStateOf<String?>(null) }
     val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
     val state = remember(refreshGeneration, accessGranted) { ConversationHub.state() }
-    val now = remember(refreshGeneration, filter) { System.currentTimeMillis() }
-    return remember(accessGranted, locked, conversations, filter, sourcePackage, enabledAppCount, state, now) {
+    LaunchedEffect(state, conversations) {
+        while (true) {
+            now = System.currentTimeMillis()
+            val nextWake = conversations.mapNotNull { state.snoozedUntilOf(it.id) }
+                .filter { it > now }.minOrNull()
+            delay(nextWake?.let { (it - now).coerceIn(1L, 60_000L) } ?: 60_000L)
+        }
+    }
+    return remember(accessGranted, locked, conversations, filter, sourcePackage, enabledAppCount, state, now, remindersSelected, reminders) {
         HubConversationsUi(
             accessGranted = accessGranted,
             canAllowAccess = Capabilities.hasConversationService(context),
@@ -604,10 +634,13 @@ internal fun rememberHubConversationsUi(
             conversations = conversations,
             filter = filter,
             sourcePackage = sourcePackage,
-            onSourceChange = { sourcePackage = it },
+            onSourceChange = { sourcePackage = it; remindersSelected = false },
             state = state,
             now = now,
-            onFilterChange = { filter = it },
+            onFilterChange = { filter = it; remindersSelected = false },
+            reminders = reminders,
+            remindersSelected = remindersSelected,
+            onShowReminders = { remindersSelected = true; filter = ConversationFilter(); sourcePackage = null },
             onMarkRead = { ConversationHub.markRead(context, it) },
             onSnooze = { conversation, until -> ConversationHub.snooze(context, conversation, until) },
             onWake = { ConversationHub.wake(context, it) },
@@ -617,12 +650,11 @@ internal fun rememberHubConversationsUi(
                 android.widget.Toast.makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT).show()
             },
             onCustomRemind = { conversation ->
-                val n = conversation.latestNotification
-                context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
-                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_MODE, "remind")
-                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_SOURCE_PACKAGE, n.packageName)
-                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_SOURCE_KEY, n.key)
-                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_SOURCE_APP, n.appName))
+                chooseHubReminderTime(context) { due ->
+                    val n = conversation.latestNotification
+                    TaskRepository(context).followUp(n.packageName, n.key, n.appName, due)
+                    android.widget.Toast.makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT).show()
+                }
             },
             onOpen = { conversation ->
                 if (!ConversationHub.open(context, conversation.openTarget)) onOpenFallback()

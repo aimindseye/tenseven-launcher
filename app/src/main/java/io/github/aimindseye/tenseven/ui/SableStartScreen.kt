@@ -2406,7 +2406,7 @@ private fun HubPage(
             )
         }
         // Calendar data requires a second, explicit opt-in (separate from notification sources).
-        if (filter == HubFilter.All && calendarPeekEnabled) {
+        if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
             item(key = "hub-upcoming-calendar") {
                 HubCalendarPeek(
                     refreshGeneration = refreshGeneration,

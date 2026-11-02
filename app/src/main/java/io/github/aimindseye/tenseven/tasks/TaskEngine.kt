@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.tasks
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.Manifest
 import android.app.AlarmManager
 import android.app.Notification
@@ -20,17 +22,24 @@ import java.time.ZonedDateTime
 
 /** One repository for Hub follow-ups, stand-alone Tasks and Notes links. Never dependent on UI activity state. */
 class TaskRepository(private val context: Context) {
+    companion object {
+        var revision by androidx.compose.runtime.mutableIntStateOf(0)
+            private set
+    }
+
     private val store = TaskStore(context.filesDir.resolve("tasks-v1"))
     fun list(): List<TaskRecord> = store.list()
     fun save(task: TaskRecord) {
         // Commit to disk first; a failed write must not cancel a previously scheduled reminder.
         store.save(task)
+        revision++
         TaskAlarms.cancel(context, task.id)
         TaskAlarms.schedule(context, task)
     }
     fun delete(id: String) {
         TaskAlarms.cancel(context, id)
         store.delete(id)
+        revision++
     }
     fun complete(task: TaskRecord) {
         val next = if (!task.completed && task.repeat != TaskRepeat.Never &&

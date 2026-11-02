@@ -268,7 +268,7 @@
     <string name="ls_home_wallpaper_detail">The wallpaper shows through, dimmed so text stays readable. The BlackBerry 7 home always shows it.</string>
     <string name="setup_label_style">Home screen style</string>
     <string name="setup_label_look">Theme and wallpaper</string>
-    <string name="setup_label_grid">Icon grid</string>
+    <string name="setup_label_grid">Icons and grid</string>
     <string name="setup_label_widgets">Widgets</string>
     <string name="setup_label_hub">Hub</string>
     <string name="setup_label_lock">Lock screen</string>
@@ -276,8 +276,8 @@
     <string name="setup_style_reason">BlackBerry 7 is a tray of icons; BlackBerry 10 is tiles with a Hub. You can switch any time.</string>
     <string name="setup_look_title">Theme and wallpaper</string>
     <string name="setup_look_reason">Pick a theme, then one of Tenseven\'s own wallpapers for Home, Lock or both.</string>
-    <string name="setup_grid_title">Icon grid</string>
-    <string name="setup_grid_reason">How many columns and rows of icons, the icon size, and whether app names show.</string>
+    <string name="setup_grid_title">Icons and grid</string>
+    <string name="setup_grid_reason">Choose original or TenSeven icons for either home style, grid columns, icon size, and app labels. BB OS 7 also has home rows.</string>
     <string name="setup_widgets_title">Widgets</string>
     <string name="setup_widgets_reason">A Widgets page beside Home and the Hub, and the Calendar, Alarm and Now Playing strip.</string>
     <string name="setup_hub_title">Hub</string>

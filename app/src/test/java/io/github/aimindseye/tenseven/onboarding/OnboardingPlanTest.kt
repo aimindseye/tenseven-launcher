@@ -10,6 +10,16 @@ class OnboardingPlanTest {
     private val everything = SetupState(true, true, true, true, true, true)
 
     @Test
+    fun reopeningSetupKeepsAllChoicesEvenWhenPermissionsAndExtrasAreAlreadySet() {
+        assertEquals(OnboardingPlan.steps(nothing), OnboardingPlan.steps(everything))
+        assertEquals(SetupStep.entries, OnboardingPlan.steps(everything))
+        val unavailable = OnboardingPlan.steps(everything.copy(notificationListenerAvailable = false))
+        assertFalse(SetupStep.NOTIFICATIONS in unavailable)
+        assertFalse(SetupStep.LOCK in unavailable)
+        assertTrue(SetupStep.GRID in unavailable && SetupStep.EXTRAS in unavailable)
+    }
+
+    @Test
     fun stepsComeInTheOrderHomeFirst() {
         assertEquals(
             listOf(

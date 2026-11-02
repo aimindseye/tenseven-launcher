@@ -147,12 +147,12 @@ def vector(width_dp, body):
     ) % (width_dp, width_dp, CANVAS, CANVAS, body)
 
 
-def glyph_group(color):
+def glyph_group(color, glyph=ICON_GLYPH):
     paths = "".join(
         '        <path\n            android:pathData="%s"\n            android:strokeColor="%s"\n'
         '            android:strokeWidth="2"\n            android:strokeLineCap="round"\n'
         '            android:strokeLineJoin="round" />\n' % (d, color)
-        for d in icon_paths(ICON_GLYPH)
+        for d in icon_paths(glyph)
     )
     return (
         '    <group\n        android:scaleX="%g"\n        android:scaleY="%g"\n'
@@ -161,7 +161,7 @@ def glyph_group(color):
     )
 
 
-def launcher_files():
+def launcher_files(icon_name=ICON_NAME, glyph=ICON_GLYPH):
     accent = (
         '    <path\n        android:fillColor="%s"\n'
         '        android:pathData="M54,76m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />\n' % ICON_ACCENT
@@ -173,7 +173,7 @@ def launcher_files():
         '    <background android:drawable="@drawable/%(n)s_background" />\n'
         '    <foreground android:drawable="@drawable/%(n)s_foreground" />\n'
         '    <monochrome android:drawable="@drawable/%(n)s_monochrome" />\n'
-        '</adaptive-icon>\n' % {"n": ICON_NAME}
+        '</adaptive-icon>\n' % {"n": icon_name}
     )
     background = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
@@ -184,19 +184,20 @@ def launcher_files():
         '    <path\n        android:fillColor="%s"\n        android:pathData="M0,0h108v108h-108z" />\n</vector>\n' % ICON_BG
     )
     return {
-        "drawable/%s_background.xml" % ICON_NAME: background,
-        "drawable/%s_foreground.xml" % ICON_NAME: vector(108, glyph_group(ICON_FG) + accent),
-        "drawable/%s_monochrome.xml" % ICON_NAME: vector(108, glyph_group("#FF000000")),
-        "mipmap-anydpi-v26/%s.xml" % ICON_NAME: adaptive,
-        "mipmap-anydpi-v26/%s_round.xml" % ICON_NAME: adaptive,
+        "drawable/%s_background.xml" % icon_name: background,
+        "drawable/%s_foreground.xml" % icon_name: vector(108, glyph_group(ICON_FG, glyph) + accent),
+        "drawable/%s_monochrome.xml" % icon_name: vector(108, glyph_group("#FF000000", glyph)),
+        "mipmap-anydpi-v26/%s.xml" % icon_name: adaptive,
+        "mipmap-anydpi-v26/%s_round.xml" % icon_name: adaptive,
     }
 
 
 def generated():
     names = used_icons()
     files = {os.path.relpath(KOTLIN_OUT, ROOT): kotlin_table()}
-    for rel, text in launcher_files().items():
-        files[os.path.relpath(os.path.join(RES, rel), ROOT)] = text
+    for icon_name, glyph in ((ICON_NAME, ICON_GLYPH), ("ic_tenseven_tasks", "list-check")):
+        for rel, text in launcher_files(icon_name, glyph).items():
+            files[os.path.relpath(os.path.join(RES, rel), ROOT)] = text
     files[os.path.relpath(MANIFEST, ROOT)] = manifest_rows(names)
     return files
 

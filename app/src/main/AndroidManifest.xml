@@ -117,11 +117,12 @@
             </intent-filter>
         </receiver>
         <activity android:name=".tasks.TasksActivity" android:exported="false"
+            android:taskAffinity="io.github.aimindseye.tenseven.tasks"
             android:label="TenSeven Tasks" android:theme="@android:style/Theme.Material.NoActionBar" />
         <activity-alias android:name=".tasks.TasksLauncherActivity"
             android:targetActivity=".tasks.TasksActivity"
             android:exported="true" android:enabled="false"
-            android:icon="@mipmap/ic_tenseven" android:label="TenSeven Tasks">
+            android:icon="@mipmap/ic_tenseven_tasks" android:label="TenSeven Tasks">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

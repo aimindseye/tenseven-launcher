@@ -101,7 +101,7 @@ private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
         newDraft = draft.originPackage == null
         consumedDraft = true
     }
-    val records = remember(revision, resumeRevision) { repo.list() }
+    val records = remember(revision, resumeRevision, TaskRepository.revision) { repo.list() }
     fun refresh() { revision++ }
     // Keep the in-app overdue list live even when the optional Android notification grant is denied.
     LaunchedEffect(Unit) { while (true) { delay(60_000L); refresh() } }
@@ -193,7 +193,7 @@ private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
 }
 
 @Composable
-private fun TaskItem(
+internal fun TaskItem(
     task: TaskRecord,
     onOpen: () -> Unit,
     onComplete: () -> Unit,
@@ -209,7 +209,11 @@ private fun TaskItem(
                 Text(
                     listOfNotNull(task.dueAtEpochMs?.let { "Due " + whenFormatted(it) },
                         task.remindAtEpochMs?.let { "Remind " + whenFormatted(it) },
-                        task.originPackage?.let { "From " + it }).joinToString(" · ").ifBlank { "No date" },
+                        task.originPackage?.let { pkg ->
+                            "From " + runCatching {
+                                context.packageManager.getApplicationLabel(context.packageManager.getApplicationInfo(pkg, 0)).toString()
+                            }.getOrDefault("Unavailable app")
+                        }).joinToString(" · ").ifBlank { "No date" },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -231,12 +235,13 @@ private fun TaskItem(
 }
 
 @Composable
-private fun TaskEditor(
+internal fun TaskEditor(
     task: TaskRecord,
     isNew: Boolean,
     onCancel: () -> Unit,
     onSave: (TaskRecord) -> Unit,
     onDelete: (TaskRecord) -> Unit,
+    modifier: Modifier = Modifier.fillMaxSize(),
 ) {
     val context = LocalContext.current
     var title by remember(task.id) { mutableStateOf(if (isNew) "" else task.title) }
@@ -257,7 +262,7 @@ private fun TaskEditor(
         }, at.year, at.monthValue - 1, at.dayOfMonth).show()
     }
     Column(
-        modifier = Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(12.dp),
+        modifier = modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(if (isNew) "New task" else "Task details", style = MaterialTheme.typography.titleLarge)
