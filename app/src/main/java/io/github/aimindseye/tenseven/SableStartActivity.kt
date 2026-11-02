@@ -805,11 +805,12 @@ class SableStartActivity : ComponentActivity() {
             isFillViewport = false
             addView(layout)
         }
-        dialog = AlertDialog.Builder(this).setView(scroll).create()
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.argb(225, 22, 31, 47)))
-        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(),
+        val menuDialog = AlertDialog.Builder(this).setView(scroll).create()
+        dialog = menuDialog
+        menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        menuDialog.show()
+        menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.argb(225, 22, 31, 47)))
+        menuDialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(),
             WindowManager.LayoutParams.WRAP_CONTENT)
         layout.getChildAt(0)?.requestFocus()
     }
