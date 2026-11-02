@@ -63,6 +63,7 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  */
 class OnboardingActivity : ComponentActivity() {
     private val setup = mutableStateOf<SetupState?>(null)
+    private val attemptedSpecialAccess = mutableStateOf<Set<SetupStep>>(emptySet())
     private lateinit var startState: StartStateRepository
     private lateinit var steps: List<SetupStep>
     private val homeRoleResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { refresh() }
@@ -73,6 +74,9 @@ class OnboardingActivity : ComponentActivity() {
         StartText.t.bindTo(this)
         DesignText.t.bindTo(this)
         startState = StartStateRepository(this)
+        val accessPrefs = getSharedPreferences("tenseven_special_access_flow", MODE_PRIVATE)
+        attemptedSpecialAccess.value = listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
+            .filter { accessPrefs.getBoolean(it.name, false) }.toSet()
         val state = SetupStatus.read(this)
         setup.value = state
         val only = intent?.getStringExtra(EXTRA_STEP)?.let { name ->
@@ -92,6 +96,7 @@ class OnboardingActivity : ComponentActivity() {
                     startOnOverview = overview,
                     state = setup.value ?: state,
                     showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
+                    attemptedSpecialAccess = attemptedSpecialAccess.value,
                     onAction = ::perform,
                     enabledExtras = ExtraAppsControl.enabledIds(this),
                     onApplyExtras = ::applyExtras,
@@ -120,10 +125,17 @@ class OnboardingActivity : ComponentActivity() {
     private fun refresh() {
         val state = SetupStatus.read(this)
         setup.value = state
-        if (state.notificationAccess) ConversationAccess.requestReconnect(this)
+        // Permission granted is not the same as listener connected. Never rebind an active listener
+        // merely because Setup resumed; doing so can briefly empty Hub, Peek and lock counts.
+        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.onLauncherResume(this)
     }
 
     private fun perform(step: SetupStep) {
+        if (step.isSpecialAccess) {
+            attemptedSpecialAccess.value = attemptedSpecialAccess.value + step
+            getSharedPreferences("tenseven_special_access_flow", MODE_PRIVATE)
+                .edit().putBoolean(step.name, true).apply()
+        }
         when (step) {
             SetupStep.HOME -> requestHomeRole()
             SetupStep.CONTACTS -> permissionResult.launch(Manifest.permission.READ_CONTACTS)
@@ -179,6 +191,7 @@ private fun SetupScreen(
     startOnOverview: Boolean,
     state: SetupState,
     showRestrictedHelp: (SetupStep) -> Boolean,
+    attemptedSpecialAccess: Set<SetupStep>,
     onAction: (SetupStep) -> Unit,
     enabledExtras: Set<String>,
     onApplyExtras: (Set<String>) -> Unit,
@@ -208,6 +221,7 @@ private fun SetupScreen(
                 SetupOverview(
                     state = state,
                     showRestrictedHelp = showRestrictedHelp,
+                    attemptedSpecialAccess = attemptedSpecialAccess,
                     onOpenAppInfo = onOpenAppInfo,
                     picked = picked,
                     onPickedChange = { picked = it },
@@ -229,7 +243,15 @@ private fun SetupScreen(
                 )
                 StepCard(step = step)
                 if (showRestrictedHelp(step) && !done) {
-                    RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+                    if (step in attemptedSpecialAccess) {
+                        RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+                    } else {
+                        Text(
+                            stringResource(R.string.setup_restricted_first_request),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 if (step == SetupStep.EXTRAS) {
                     ExtrasPicker(picked = picked, onChange = { picked = it })
@@ -276,6 +298,7 @@ private fun SetupScreen(
 private fun SetupOverview(
     state: SetupState,
     showRestrictedHelp: (SetupStep) -> Boolean,
+    attemptedSpecialAccess: Set<SetupStep>,
     onOpenAppInfo: () -> Unit,
     picked: Set<String>,
     onPickedChange: (Set<String>) -> Unit,
@@ -294,8 +317,17 @@ private fun SetupOverview(
     )
     // Reopened setup defaults to overview: guidance must be visible here too,
     // not only in the initial wizard's Notification or Usage step.
-    if (OnboardingPlan.needsRestrictedSettingsOverviewHelp(state, showRestrictedHelp)) {
+    if (OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            state, showRestrictedHelp, attemptedSpecialAccess,
+        )) {
         RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+    } else if (listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
+            .any { !state.isDone(it) && showRestrictedHelp(it) }) {
+        Text(
+            stringResource(R.string.setup_restricted_first_request),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
     SetupStep.entries.forEachIndexed { position, step ->
         val done = state.isDone(step)
