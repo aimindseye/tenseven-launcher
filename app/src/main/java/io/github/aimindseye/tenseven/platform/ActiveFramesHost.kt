@@ -9,12 +9,15 @@ import android.os.UserManager
 import androidx.compose.runtime.mutableStateOf
 import io.github.aimindseye.tenseven.frames.*
 import io.github.aimindseye.tenseven.model.AppEntry
-import java.util.concurrent.Executors
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /** Owns Android task I/O and releases all presentation references when the host stops. */
 class ActiveFramesHost(context: Context) {
     private val app = context.applicationContext
-    private val executor = Executors.newSingleThreadExecutor()
+    private val executor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+        ArrayBlockingQueue(1), ThreadPoolExecutor.DiscardOldestPolicy())
     private val main = Handler(Looper.getMainLooper())
     private val inventory = LauncherAppsRepository(app)
     private val native = RecentTasksRepository(app)
@@ -26,9 +29,11 @@ class ActiveFramesHost(context: Context) {
         override fun read(): FrameInput {
             val caps = PlatformCapabilityProbe.detect(app)
             entries = inventory.loadApps().filter(::available)
-            return FrameInput(native.loadFrames(), usage.recentEvents(),
+            val settings = store.loadFrameSettings()
+            val recents = if (settings.rememberReturnedApps) usage.recentEvents() else emptyList()
+            return FrameInput(native.loadFrames(), recents,
                 entries.map { FrameApp(it.component.packageName, it.user.hashCode()) }.toSet(),
-                Process.myUserHandle().hashCode(), caps, store.loadFrameSettings())
+                Process.myUserHandle().hashCode(), caps, settings)
         }
         override fun loadDismissals() = store.loadFrameDismissals()
         override fun saveDismissals(value: Map<String, Long>) = store.saveFrameDismissals(value)

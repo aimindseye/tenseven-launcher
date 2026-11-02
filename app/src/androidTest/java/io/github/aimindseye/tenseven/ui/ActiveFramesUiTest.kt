@@ -14,6 +14,7 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
 class ActiveFramesUiTest {
     @get:Rule val compose = createComposeRule()
     private val datum = LiveDatum("", "", LiveAvailability.EMPTY)

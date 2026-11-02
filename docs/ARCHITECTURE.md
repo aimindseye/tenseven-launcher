@@ -185,8 +185,8 @@ restore a card. Metadata is bounded to 96 dismissals. No snapshots are persisted
 An unavailable or paused/private profile cannot fall back to another user's copy.
 
 `ActiveFramesHost` binds a single background executor to Android repositories and
-publishes on the main dispatcher. Task resume is performed off the UI thread;
-normal app launch is dispatched to the host UI thread. Stop invalidates pending
+publishes on the main dispatcher. Its one-worker/one-pending-task queue drops obsolete pending reads during inventory bursts. Task resume is performed off the UI thread;
+normal app launch is dispatched to the host UI thread. Pause and stop invalidate pending
 work and clears frame/image presentation. Destroy shuts down the executor.
 Snapshots are loaded only for composed cards, only while active and authorized,
 with stale completion rejection, closed HardwareBuffers and a 512-pixel bound.
