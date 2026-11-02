@@ -777,7 +777,7 @@ class SableStartActivity : ComponentActivity() {
         val layout = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(dp(10), dp(8), dp(10), dp(8))
-            setBackgroundColor(Color.rgb(22, 31, 47))
+            setBackgroundColor(Color.argb(215, 22, 31, 47))
         }
         var dialog: AlertDialog? = null
         items.forEach { (title, action) ->
