@@ -94,6 +94,7 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_HOME_MODE,
                 StartStateRepository.KEY_HOME_STYLE,
                 StartStateRepository.KEY_ICON_PACK,
+                StartStateRepository.KEY_ICON_PRESENTATION,
                 StartStateRepository.KEY_BB7_HOME_ROWS,
                 StartStateRepository.KEY_BB7_PANELS,
                 StartStateRepository.KEY_BB7_SCRIM,
