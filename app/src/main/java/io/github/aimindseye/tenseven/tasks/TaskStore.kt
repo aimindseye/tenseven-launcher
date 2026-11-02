@@ -17,10 +17,11 @@ class TaskStore(private val directory: File) {
                 runCatching { decode(file.name.removeSuffix(SUFFIX), file.inputStream().use(::loadProperties)) }.getOrNull()
             }.sortedWith(compareBy<TaskRecord> { it.completed }.thenByDescending { it.updatedAtEpochMs })
 
+    @Synchronized
     fun save(task: TaskRecord) {
         directory.mkdirs()
         val destination = file(task.id)
-        val temporary = File(directory, task.id + ".tmp")
+        val temporary = File(directory, task.id + ".tmp-" + java.util.UUID.randomUUID())
         temporary.outputStream().use { properties(task).store(it, "TenSeven Tasks v1") }
         try {
             try {
