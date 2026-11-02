@@ -24,6 +24,60 @@ class Bb10HomeTest {
     }
 
     @Test
+    fun partialNativeTaskListDoesNotSuppressLauncherLaunches() {
+        val display =
+            ActiveFrames.mergeForDisplay(
+                native = listOf(frame(10, "mail")),
+                recentPackages = listOf("chat", "mail"),
+                personalPackages = setOf("mail", "chat"),
+                personalUserId = 0,
+            )
+        assertEquals(listOf("chat", "mail"), display.frames.map { it.packageName })
+        assertEquals(1, display.syntheticTaskIds.size)
+        assertTrue(display.frames.first().taskId in display.syntheticTaskIds)
+        assertEquals(10, display.frames.last().taskId)
+    }
+
+    @Test
+    fun fullNativeListStillIncludesMoreRecentlyLaunchedApp() {
+        val native = (1..ActiveFrames.MAX).map { frame(it, "native$it") }
+        val display =
+            ActiveFrames.mergeForDisplay(
+                native, listOf("openedFromTenseven"), setOf("openedFromTenseven"), personalUserId = 0,
+            )
+        assertEquals(ActiveFrames.MAX, display.frames.size)
+        assertEquals("openedFromTenseven", display.frames.first().packageName)
+        assertEquals("native1", display.frames[1].packageName)
+    }
+
+    @Test
+    fun matchingRealTaskIsReusedNotMadeSynthetic() {
+        val native = listOf(frame(10, "mail"), frame(11, "browser"))
+        val display =
+            ActiveFrames.mergeForDisplay(
+                native, listOf("browser", "browser", "mail"), setOf("browser", "mail"), personalUserId = 0,
+            )
+        assertEquals(listOf(11, 10), display.frames.map { it.taskId })
+        assertTrue(display.syntheticTaskIds.isEmpty())
+    }
+
+    @Test
+    fun hiddenAndOtherProfileRecentAppsAreNotSynthetic() {
+        val native = listOf(frame(10, "workchat").copy(userId = 11))
+        val display =
+            ActiveFrames.mergeForDisplay(
+                native, listOf("privatechat", "workchat", "personal", "hidden", "personal"),
+                setOf("workchat", "personal"),
+                personalUserId = 0,
+                dismissed = setOf("personal"),
+            )
+        // Work-profile task remains a true task; personal copy is synthesized separately.
+        assertEquals(listOf("workchat", "workchat"), display.frames.map { it.packageName })
+        assertEquals(setOf(11, 0), display.frames.map { it.userId }.toSet())
+        assertEquals(1, display.syntheticTaskIds.size)
+    }
+
+    @Test
     fun privateSpaceTasksNeverBecomeFrames() {
         val tasks = listOf(frame(1, "a"), frame(2, "b").copy(userId = 11), frame(3, "c"))
         assertEquals(listOf(1, 3), ActiveFrames.select(tasks, emptySet(), setOf(11)).map { it.taskId })

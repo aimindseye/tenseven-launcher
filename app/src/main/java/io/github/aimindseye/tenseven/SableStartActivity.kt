@@ -629,9 +629,10 @@ class SableStartActivity : ComponentActivity() {
         runCatching {
             framesExecutor.execute {
                 val frames = recentTasksRepository.loadFrames(privateUsers())
-                // An ordinary install sees no other app's tasks; usage access gives a row of recent apps instead.
+                // getRecentTasks() is restricted to a partial list on ordinary installs.
+                // Always retain Tenseven's own launch history and any granted usage events.
                 val usageAccess = usageRecentsRepository.hasAccess()
-                val recents = if (frames.isEmpty()) usageRecentsRepository.recentPackages() else emptyList()
+                val recents = usageRecentsRepository.recentPackages()
                 runOnUiThread {
                     if (!isDestroyed) {
                         framesState.value = frames
