@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -88,6 +90,8 @@ internal class HubConversationsUi(
     val onMarkRead: (HubConversation) -> Unit,
     val onSnooze: (HubConversation, Long) -> Unit,
     val onWake: (HubConversation) -> Unit,
+    val onRemind: (HubConversation, Long?) -> Unit,
+    val onCustomRemind: (HubConversation) -> Unit,
 )
 
 private const val MAX_CONVERSATIONS = 30
@@ -163,6 +167,8 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
             onMarkRead = { ui.onMarkRead(conversation) },
             onSnooze = { until -> ui.onSnooze(conversation, until) },
             onWake = { ui.onWake(conversation) },
+            onRemind = { whenAt -> ui.onRemind(conversation, whenAt) },
+            onCustomRemind = { ui.onCustomRemind(conversation) },
         )
     }
 }
@@ -215,6 +221,7 @@ internal fun HubUnifiedNavigation(
 ) {
     var searchOpen by remember { mutableStateOf(false) }
     var moreOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter(), pkg: String? = null) {
         onTabChange(tab)
         ui.onFilterChange(next)
@@ -258,6 +265,11 @@ internal fun HubUnifiedNavigation(
                 }
                 IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) {
                     select(HubFilter.Contacts)
+                }
+                IconHubFilterButton("Remind", "clock", false) {
+                    context.startActivity(android.content.Intent(context,
+                        io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
+                        .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_MODE, "remind"))
                 }
                 val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
                 if (snoozedCount > 0 || ui.filter.snoozed) {
@@ -381,11 +393,14 @@ private fun ConversationRow(
     onMarkRead: () -> Unit,
     onSnooze: (Long) -> Unit,
     onWake: () -> Unit,
+    onRemind: (Long?) -> Unit,
+    onCustomRemind: () -> Unit,
 ) {
     var expanded by remember(conversation.id) { mutableStateOf(false) }
     var replying by remember(conversation.id) { mutableStateOf(false) }
     var draft by remember(conversation.id) { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
+    var remindMenu by remember(conversation.id) { mutableStateOf(false) }
     val preview = conversationPreview(conversation, locked, you = stringResource(R.string.hub_you))
     val canReply = !locked && conversation.replyTarget != null
     val latestAt = conversation.latestMessage?.timestamp ?: conversation.latestNotification.postedAt
@@ -486,6 +501,7 @@ private fun ConversationRow(
                 if (unread > 0) {
                     HubActionIcon("Mark read", LineIconPaths.CHECK, onMarkRead)
                 }
+                HubActionIcon("Save follow-up", TablerGlyphPaths.BY_NAME["clock"].orEmpty()) { remindMenu = true }
                 HubActionIcon(
                     if (snoozed) "Show again now" else "Snooze for one hour",
                     TablerGlyphPaths.BY_NAME["clock"].orEmpty(),
@@ -513,6 +529,27 @@ private fun ConversationRow(
                 }
                 if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)
             }
+        }
+        if (remindMenu) {
+            val zone = java.time.ZoneId.systemDefault()
+            AlertDialog(
+                onDismissRequest = { remindMenu = false },
+                title = { Text("TenSeven Remind") },
+                text = { Text("Save a local follow-up. Only app identity is retained; message text is not copied.") },
+                confirmButton = {
+                    Column {
+                        listOf("Later today", "This evening", "Tomorrow morning", "Until complete").forEach { choice ->
+                            TextButton(onClick = {
+                                onRemind(io.github.aimindseye.tenseven.tasks.TaskSchedule.preset(
+                                    choice, java.time.Instant.now(), zone))
+                                remindMenu = false
+                            }) { Text(choice) }
+                        }
+                        TextButton(onClick = { remindMenu = false; onCustomRemind() }) { Text("Choose date and time…") }
+                    }
+                },
+                dismissButton = { TextButton(onClick = { remindMenu = false }) { Text("Cancel") } },
+            )
         }
         Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
     }
@@ -564,6 +601,19 @@ internal fun rememberHubConversationsUi(
             onMarkRead = { ConversationHub.markRead(context, it) },
             onSnooze = { conversation, until -> ConversationHub.snooze(context, conversation, until) },
             onWake = { ConversationHub.wake(context, it) },
+            onRemind = { conversation, due ->
+                val n = conversation.latestNotification
+                io.github.aimindseye.tenseven.tasks.TaskRepository(context).followUp(n.packageName, n.key, n.appName, due)
+                android.widget.Toast.makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT).show()
+            },
+            onCustomRemind = { conversation ->
+                val n = conversation.latestNotification
+                context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
+                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_MODE, "remind")
+                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_SOURCE_PACKAGE, n.packageName)
+                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_SOURCE_KEY, n.key)
+                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_SOURCE_APP, n.appName))
+            },
             onOpen = { conversation ->
                 if (!ConversationHub.open(context, conversation.openTarget)) onOpenFallback()
             },
