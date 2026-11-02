@@ -182,6 +182,8 @@ import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeHeader
 import io.github.aimindseye.tenseven.model.HomeLayout
 import io.github.aimindseye.tenseven.model.HubBar
+import io.github.aimindseye.tenseven.model.HubSourceGroups
+import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.model.HubPeople
 import io.github.aimindseye.tenseven.model.HubPerson
@@ -2276,12 +2278,24 @@ private fun HubPage(
         snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
-    val selectedSources =
-        remember(enabledHubApps, personalApps) {
-            enabledHubApps.mapNotNull { pkg ->
-                personalApps[pkg]?.let { pkg to it.label }
-            }.sortedWith(compareBy({ it.second.lowercase() }, { it.first }))
+    // The listener tells us which notifications are conversations (including email).
+    // The counts-only snapshot supplies totals; disabled and zero-count apps never get a chip.
+    val conversationSources = remember(refreshGeneration) { ConversationHub.notifications() }
+    val sourceGroups = remember(snapshot.hubApps, enabledHubApps, conversationSources) {
+        HubSourceGroups.summarize(
+            counts = snapshot.hubApps,
+            enabledPackages = enabledHubApps,
+            emailSources = conversationSources.filter { it.isEmail }.map { it.packageName }.toSet(),
+            messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
+        )
+    }
+    val selectedSources = remember(sourceGroups, personalApps) {
+        sourceGroups.otherApps.mapNotNull { source ->
+            personalApps[source.packageName]?.let { app ->
+                Triple(source.packageName, app.label, source.count)
+            }
         }
+    }
     val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
     val barItems =
         remember(snapshot.hubApps, personalApps, enabledHubApps) {
@@ -2383,6 +2397,8 @@ private fun HubPage(
                 onTabChange = onFilter,
                 firstTab = tabFocus,
                 sources = selectedSources,
+                messageCount = sourceGroups.messages,
+                emailCount = sourceGroups.email,
             )
         }
         // Calendar data requires a second, explicit opt-in (separate from notification sources).
