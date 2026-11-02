@@ -74,6 +74,21 @@ class OnboardingPlanTest {
     }
 
     @Test
+    fun reopenedOverviewShowsHelpWhenNotificationOrUsageStillBlocked() {
+        val eligible = { step: SetupStep ->
+            OnboardingPlan.needsRestrictedSettingsHelp(step, 35, null)
+        }
+        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(nothing, eligible))
+        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            everything.copy(notificationAccess = false), eligible))
+        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            everything.copy(usageAccess = false), eligible))
+        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(everything, eligible))
+        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            nothing, { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, 32, null) }))
+    }
+
+    @Test
     fun theLiteBuildHasNoNotificationStep() {
         val lite = nothing.copy(notificationListenerAvailable = false)
         val pending = OnboardingPlan.pending(lite)
