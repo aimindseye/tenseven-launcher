@@ -1,6 +1,6 @@
 # Lite / Full Play Protect device qualification
 
-**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; BOTH LITE AND FULL GOOGLE DRIVE INSTALL AND PLAY PROTECT SCAN PASS REPORTED ON ONE DEVICE; SENSITIVE ACCESS/FEATURE QUALIFICATION INCOMPLETE.** The installed APK hashes have not been independently matched to the locally verified final artifacts. Usage Access and Notification Access were denied on the tested device, so both variants' features remain only partially qualified.
+**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; BOTH LITE AND FULL GOOGLE DRIVE INSTALL AND PLAY PROTECT SCAN PASS REPORTED ON ONE DEVICE; FULL SENSITIVE ACCESS ENABLED AFTER USER-APPROVED RESTRICTED SETTINGS; FEATURE QUALIFICATION INCOMPLETE.** The installed APK hashes have not been independently matched to the locally verified final artifacts. The initial Access denial was subsequently resolved for Full by user-approved Android restricted settings, not by a limited-scope permission grant.
 
 ## Prerequisites
 
@@ -52,6 +52,12 @@ User also reports Launcher Settings shows BB7 icon configuration while BB10 Home
 After the successful Lite scan/install, the user downloaded and installed the **Full build** through Google Drive. The user reports that Full received the **same Play Protect scan recommendation**, the scan **completed successfully**, and Android **allowed installation**. Subsequently, **Notification Access and App Usage Access were both blocked** in system Settings. BBOS10 Home retains the Lite-like incomplete Active Frames behavior. The Full Hub's notification-derived functionality and notification-dependent automatic lock layer are correspondingly limited. Full's optional Accessibility service, overlay permission and other feature behavior were not independently tested or confirmed.
 
 **Classification:** `Full downloaded APK scan/install: PASS (user-reported, one device)`; `Notification Access: DENIED`; `Usage Access: DENIED`; `Hub/Active Frames/lock layer: DEGRADED`; `Full fresh-install vs Lite→Full replacement: NOT YET DISTINGUISHED`; `final APK hash on device: NOT YET CAPTURED`. This is neither proof of a narrow Android permission grant nor a reason to disable Play Protect. Product follow-up is [issue #78](https://github.com/aimindseye/tenseven-launcher/issues/78).
+
+## Follow-up: restricted-settings approval worked (user report, 2026-11-01)
+
+The user opened **Settings → Apps → Tenseven → three-dot menu → Allow restricted settings** and then successfully enabled **Notification Access** and **Usage Access** on the same device. This qualifies the official Android user-approval path for these full permissions on that device; it does **not** prove narrow-scope grants or independently demonstrate every Hub / lock-layer feature. Record post-grant Hub conversations, BBOS10 Active Frames (including apps launched externally), and lock layer behavior separately.
+
+The user also reported selected wallpapers reset on reopening Launcher Settings; [issue #79](https://github.com/aimindseye/tenseven-launcher/issues/79) and independent draft [PR #80](https://github.com/aimindseye/tenseven-launcher/pull/80) track the separate UI persistence fix. The existing PR #76 signed binaries are unaffected.
 
 ## Matrix (remaining scenarios require qualification)
 
