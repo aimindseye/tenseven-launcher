@@ -63,12 +63,12 @@ class OnboardingPlanTest {
     }
 
     @Test
-    fun restrictedSettingsHelpIsForSpecialAccessOnAndroid13PlusOutsideThePlayStore() {
+    fun restrictedSettingsHelpIsAlwaysVisibleForSpecialAccessOnAndroid13Plus() {
         val help = { step: SetupStep, sdk: Int, installer: String? -> OnboardingPlan.needsRestrictedSettingsHelp(step, sdk, installer) }
         assertTrue(help(SetupStep.NOTIFICATIONS, 33, null))
         assertTrue(help(SetupStep.USAGE, 35, "com.google.android.packageinstaller"))
         assertFalse(help(SetupStep.NOTIFICATIONS, 32, null))
-        assertFalse(help(SetupStep.NOTIFICATIONS, 34, "com.android.vending"))
+        assertTrue(help(SetupStep.NOTIFICATIONS, 34, "com.android.vending"))
         assertFalse(help(SetupStep.CONTACTS, 34, null))
         assertFalse(help(SetupStep.HOME, 34, null))
     }
