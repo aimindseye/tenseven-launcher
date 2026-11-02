@@ -4,7 +4,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" tools:node="remove" />
-    <application>
+    <!-- Match the explicitly restrictive main-manifest security defaults. Keeping
+         them here also makes the variant overlay secure when scanned standalone. -->
+    <application
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
         <service android:name=".platform.LockScreenAccessibilityService" tools:node="remove" />
         <service android:name=".conversations.ConversationListenerService" tools:node="remove" />
     </application>
