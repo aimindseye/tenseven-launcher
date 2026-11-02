@@ -39,7 +39,7 @@ internal fun HubCalendarPeek(
     var expanded by remember { mutableStateOf(false) }
     var events by remember { mutableStateOf(emptyList<HubCalendarEvent>()) }
 
-    LaunchedEffect(expanded, permitted, refreshGeneration) {
+    LaunchedEffect(expanded, permitted, deviceLocked, refreshGeneration) {
         if (expanded && permitted && !deviceLocked) {
             events = withContext(Dispatchers.IO) { repository.upcoming() }
         } else {
