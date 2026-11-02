@@ -19,6 +19,14 @@ data class ActiveFrame(
     val running: Boolean,
 )
 
+/** Display-level merge of native task cards and user-visible usage/launcher recents.
+ * syntheticTaskIds are never sent to ActivityTaskManager.
+ */
+data class ActiveFrameDisplay(
+    val frames: List<ActiveFrame>,
+    val syntheticTaskIds: Set<Int>,
+)
+
 object ActiveFrames {
     /** "Up to 8 recent/running apps." */
     const val MAX = 8
@@ -45,6 +53,46 @@ object ActiveFrames {
             .filterNot { it.packageName in excludedPackages || it.packageName.isEmpty() || it.userId in hiddenUsers }
             .distinctBy { it.taskId }
             .take(MAX)
+
+    /**
+     * Android may expose a nonempty but incomplete recent-task list to an ordinary launcher.
+     * Never treat that as proof that the launch/usage history can be discarded.
+     *
+     * Prefer the real task when the package AND Android user match; otherwise synthesize a
+     * launcher card (not a task). Recent packages are freshest first. Preserve remaining
+     * platform tasks and cap the output to eight. No new permissions or historical storage.
+     */
+    fun mergeForDisplay(
+        native: List<ActiveFrame>,
+        recentPackages: List<String>,
+        personalPackages: Set<String>,
+        personalUserId: Int,
+        dismissed: Set<String> = emptySet(),
+    ): ActiveFrameDisplay {
+        val ordered = mutableListOf<ActiveFrame>()
+        val synthetic = mutableSetOf<Int>()
+        val reservedTaskIds = native.mapTo(mutableSetOf()) { it.taskId }
+        var syntheticId = Int.MIN_VALUE
+        for (pkg in recentPackages.distinct()) {
+            if (ordered.size >= MAX) break
+            if (pkg !in personalPackages || pkg in dismissed) continue
+            val real = native.firstOrNull { it.packageName == pkg && it.userId == personalUserId }
+            if (real != null) {
+                ordered.add(real)
+            } else {
+                while (syntheticId in reservedTaskIds) syntheticId++
+                ordered.add(ActiveFrame(syntheticId, pkg, null, personalUserId, running = false))
+                synthetic.add(syntheticId)
+                reservedTaskIds.add(syntheticId)
+                syntheticId++
+            }
+        }
+        for (task in native) {
+            if (ordered.size >= MAX) break
+            if (ordered.none { it.taskId == task.taskId }) ordered.add(task)
+        }
+        return ActiveFrameDisplay(ordered.distinctBy(ActiveFrame::taskId), synthetic)
+    }
 
     /** X or Backspace with no Alt, Fn, Ctrl or Meta closes the focused frame. */
     fun isCloseKey(

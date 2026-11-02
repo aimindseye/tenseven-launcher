@@ -1372,32 +1372,17 @@ private fun ActiveFramesPage(
 
     fun requesterFor(taskId: Int) = requesters.getOrPut(taskId) { FocusRequester() }
 
-    // An ordinary install sees no other app's tasks, so the apps you opened recently become the frames instead:
-    // one card per app, newest first, the way Active Frames list running apps. The x hides a card until you open it again.
+    // The platform can return a partial nonempty task list. Always merge its real tasks
+    // with launcher history and recent usage; a synthesized card is not a real Android task.
     var dismissed by remember { mutableStateOf(emptySet<String>()) }
     val byPackage = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
-    val recentFrames =
-        remember(frames, recentApps, byPackage, dismissed) {
-            if (frames.isNotEmpty()) {
-                emptyList()
-            } else {
-                recentApps
-                    .filter { it !in dismissed }
-                    .mapNotNull(byPackage::get)
-                    .take(ActiveFrames.MAX)
-                    .map { app ->
-                        ActiveFrame(
-                            taskId = app.component.packageName.hashCode(),
-                            packageName = app.component.packageName,
-                            className = null,
-                            userId = app.user.hashCode(),
-                            running = false,
-                        )
-                    }
-            }
+    val personalUserId = android.os.Process.myUserHandle().hashCode()
+    val mergedFrames =
+        remember(frames, recentApps, byPackage, dismissed, personalUserId) {
+            ActiveFrames.mergeForDisplay(frames, recentApps, byPackage.keys, personalUserId, dismissed)
         }
-    val recentMode = frames.isEmpty() && recentFrames.isNotEmpty()
-    val shownFrames = if (frames.isNotEmpty()) frames else recentFrames
+    val shownFrames = mergedFrames.frames
+    val recentMode = mergedFrames.syntheticTaskIds.isNotEmpty()
 
     LaunchedEffect(active, shownFrames.map { it.taskId }) {
         if (!active) return@LaunchedEffect
@@ -1435,11 +1420,17 @@ private fun ActiveFramesPage(
             widgets = widgets,
             refreshGeneration = refreshGeneration,
             framesGeneration = framesGeneration,
-            frameSnapshot = frameSnapshot,
+            frameSnapshot = { frame ->
+                if (frame.taskId in mergedFrames.syntheticTaskIds) null else frameSnapshot(frame)
+            },
             requesterFor = ::requesterFor,
             firstWidgetFocus = firstWidgetFocus,
             onResume = { frame ->
-                if (recentMode) byPackage[frame.packageName]?.let(onLaunchApp) else onResume(frame)
+                if (frame.taskId in mergedFrames.syntheticTaskIds) {
+                    byPackage[frame.packageName]?.let(onLaunchApp)
+                } else {
+                    onResume(frame)
+                }
             },
             onClose = { frame ->
                 val index = shownFrames.indexOf(frame)
@@ -1447,7 +1438,8 @@ private fun ActiveFramesPage(
                     ActiveFrames.focusAfterClose(index, shownFrames.size)?.let { next ->
                         shownFrames.filterNot { it == frame }.getOrNull(next)?.taskId
                     }
-                if (recentMode) dismissed = dismissed + frame.packageName else onClose(frame)
+                dismissed = dismissed + frame.packageName
+                if (frame.taskId !in mergedFrames.syntheticTaskIds) onClose(frame)
             },
             onLaunchApp = onLaunchApp,
             onStartIntent = onStartIntent,
