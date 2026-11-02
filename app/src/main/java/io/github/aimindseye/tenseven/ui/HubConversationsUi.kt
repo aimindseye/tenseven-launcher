@@ -248,7 +248,7 @@ internal fun HubUnifiedNavigation(
                     select(HubFilter.All, pkg = pkg)
                 }
             }
-            IconHubFilterButton("Search", "settings", searchOpen) { searchOpen = !searchOpen }
+            IconHubFilterButton("Search", "search", searchOpen) { searchOpen = !searchOpen }
         }
         if (searchOpen && currentTab != HubFilter.Calls && currentTab != HubFilter.Contacts) {
             OutlinedTextField(
@@ -282,7 +282,8 @@ private fun IconHubFilterButton(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LineIcon(paths = TablerGlyphPaths.BY_NAME[iconName].orEmpty(), modifier = Modifier.size(20.dp), tint = color)
+        LineIcon(paths = if (iconName == "search") LineIconPaths.SEARCH else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
+            modifier = Modifier.size(20.dp), tint = color)
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = color, maxLines = 1)
     }
 }
