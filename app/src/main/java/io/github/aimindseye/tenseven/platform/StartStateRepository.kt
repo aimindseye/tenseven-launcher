@@ -266,6 +266,13 @@ class StartStateRepository(
         preferences.edit().putStringSet(KEY_HUB_ENABLED, packages.toSet()).apply()
     }
 
+    /** Calendar Peek is optional: never read CalendarProvider until the user enables this. */
+    fun loadHubCalendarPeek(): Boolean = preferences.getInt(KEY_HUB_CALENDAR_PEEK, 0) != 0
+
+    fun saveHubCalendarPeek(enabled: Boolean) {
+        preferences.edit().putInt(KEY_HUB_CALENDAR_PEEK, if (enabled) 1 else 0).apply()
+    }
+
     /** Whether the Hub peek on the home screen shows message text (off: names and counts only). */
     fun loadHubPeekText(): Boolean = preferences.getInt(KEY_HUB_PEEK_TEXT, 0) != 0
 
@@ -402,6 +409,7 @@ class StartStateRepository(
         const val KEY_HUB_EXCLUDED = "hub_excluded_apps" // legacy backup compatibility; never used as consent
         const val KEY_HUB_ENABLED = "hub_enabled_apps"
         const val KEY_HUB_PEEK_TEXT = "hub_peek_text"
+        const val KEY_HUB_CALENDAR_PEEK = "hub_calendar_peek"
         const val KEY_HOME_WIDGET_IDS = "home_widget_ids"
         const val KEY_APPEARANCE_MODE = "appearance_mode"
         const val KEY_APPEARANCE_ACCENT = "appearance_accent"

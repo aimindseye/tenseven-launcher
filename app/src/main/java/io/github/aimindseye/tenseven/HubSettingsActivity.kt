@@ -65,6 +65,7 @@ class HubSettingsActivity : ComponentActivity() {
             LauncherTheme(window = window) {
                 var enabled by remember { mutableStateOf(state.loadHubEnabledApps()) }
                 var showText by remember { mutableStateOf(state.loadHubPeekText()) }
+                var calendarPeek by remember { mutableStateOf(state.loadHubCalendarPeek()) }
                 var cleared by remember { mutableStateOf(false) }
                 var rows by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
                 LaunchedEffect(Unit) {
@@ -77,6 +78,7 @@ class HubSettingsActivity : ComponentActivity() {
                     accessGranted = resumeTick >= 0 && Capabilities.hasConversationService(this) && ConversationAccess.isGranted(this),
                     listenerAvailable = Capabilities.hasConversationService(this),
                     showText = showText,
+                    calendarPeek = calendarPeek,
                     cleared = cleared,
                     rows = rows,
                     enabled = enabled,
@@ -84,6 +86,10 @@ class HubSettingsActivity : ComponentActivity() {
                     onShowText = {
                         showText = it
                         state.saveHubPeekText(it)
+                    },
+                    onCalendarPeek = {
+                        calendarPeek = it
+                        state.saveHubCalendarPeek(it)
                     },
                     onClear = {
                         ConversationHub.clearNow()
@@ -111,11 +117,13 @@ private fun HubSettings(
     accessGranted: Boolean,
     listenerAvailable: Boolean,
     showText: Boolean,
+    calendarPeek: Boolean,
     cleared: Boolean,
     rows: List<Pair<String, String>>,
     enabled: Set<String>,
     onAccess: () -> Unit,
     onShowText: (Boolean) -> Unit,
+    onCalendarPeek: (Boolean) -> Unit,
     onClear: () -> Unit,
     onToggle: (String) -> Unit,
 ) {
@@ -150,6 +158,7 @@ private fun HubSettings(
                 onClick = onClear,
             )
             HubSwitch(stringResource(R.string.hub_show_text), stringResource(R.string.hub_show_text_detail), showText, onShowText)
+            HubSwitch(stringResource(R.string.hub_calendar_peek), stringResource(R.string.hub_calendar_peek_detail), calendarPeek, onCalendarPeek)
             Text(stringResource(R.string.hub_apps), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
             Text(
                 stringResource(R.string.hub_apps_enabled_count, enabled.size),
