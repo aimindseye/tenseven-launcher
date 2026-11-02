@@ -18,7 +18,6 @@ SableOS builds the same sources with.
 ```bash
 ./gradlew :app:assembleDebug                         # app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk
 ./gradlew :app:assembleRelease                       # R8-minified: Tenseven-Launcher-release.apk when signed (section 2a), else -release-unsigned.apk
-./gradlew :app:assembleLite                          # the lite build: release without the accessibility service and notification listener (section 2b)
 ./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
 ./gradlew :design:lintDebug :app:lintDebug           # reports in build/reports/lint-results-debug.*
 ./gradlew detekt ktlintCheck                         # reports in build/reports/detekt, build/reports/ktlint
@@ -59,33 +58,27 @@ With signing credentials present, Gradle verifies the keystore certificate again
 for every release: Android refuses to update an app signed with a different one. The release app id is
 `io.github.aimindseye.tenseven` (no `.debug`), so it installs beside the debug build as a separate app.
 
-### 2b. The lite build
+### 2b. Mandatory Full-only signing and APK verification
 
-Google Play Protect blocks a downloaded APK ("App blocked to protect your device") when it declares an accessibility
-service or a notification listener, and the full build declares both (double-tap lock, Hub conversations, Now playing).
-`./gradlew :app:assembleLite` builds the same release without those two services (`app/src/lite/AndroidManifest.xml`
-removes them) and writes `app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk` (`-lite-unsigned.apk` without a key).
-Both builds use the same application id, versionCode and release signing certificate. Do not assume cross-variant replacement succeeds until tested on devices.
-Screens that only switch those features on check `platform/Capabilities.kt` and are hidden in Lite, including the automatic lock layer. Lite also omits the unused lock-layer overlay permission.
-
-### 2c. Mandatory signed-release verification
-
-The Android Developer Console registered certificate SHA-256 for `io.github.aimindseye.tenseven` is:
-
-`9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`
-
-After configuring the **existing** protected release keystore, run:
+The Lite variant is retired. A local Mac build with the *existing* registered keystore
+produces one signed `Tenseven-Launcher-release.apk`; CI intentionally produces an unsigned
+candidate and never receives signing secrets.
 
 ```bash
-./gradlew :app:assembleRelease :app:assembleLite
-bash tools/verify-release-apks.sh \
-  app/build/outputs/apk/release/Tenseven-Launcher-release.apk \
-  app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk
+./gradlew :app:assembleRelease :app:testDebugUnitTest :app:lintRelease
+python3 tests/test_release_verifier.py
+bash tools/verify-release-apks.sh app/build/outputs/apk/release/Tenseven-Launcher-release.apk
 ```
 
-This rejects an unsigned APK, wrong package/minSdk, unexpected signing certificate, absent Full services, leaked Lite services or overlay permission, and mismatched versionCodes. It prints file SHA-256 hashes for publication. CI intentionally has **no private key**, and calls the checker with `--ci-unsigned` solely for compiled-manifest consistency.
+For a complete local verified build and copied test package, use:
+`bash tools/build-full-consolidated-test.sh`. The helper checks the release certificate and
+writes one APK plus its SHA-256 to `~/Downloads/tenseven-full-combined-test/`.
 
-Do not publish the CI Lite artifact as a signed release. Play Protect acceptance must also pass the [manual device plan](PLAY_PROTECT_TEST_PLAN.md).
+The registered release certificate SHA-256 is
+`9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
+Never generate a replacement certificate or commit a signing key.
+Android's sideload/restricted-settings checks still apply; no manifest can auto-approve
+these privileged user choices.
 
 ## 3. Quality gates
 
