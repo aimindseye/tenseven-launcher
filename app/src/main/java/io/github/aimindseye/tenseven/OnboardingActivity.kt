@@ -346,6 +346,9 @@ private fun SetupOverview(
                 Text(
                     when {
                         step == SetupStep.EXTRAS -> stringResource(R.string.setup_extras_status, picked.size)
+                        step == SetupStep.NOTIFICATIONS && done &&
+                            !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected ->
+                            stringResource(R.string.setup_notifications_connected_missing)
                         done -> stringResource(R.string.setup_allowed)
                         else -> stringResource(R.string.setup_not_set)
                     },
