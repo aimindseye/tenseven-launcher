@@ -2260,6 +2260,7 @@ private fun HubPage(
         snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
+    val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
     val barItems =
         remember(snapshot.hubApps, personalApps, enabledHubApps) {
             // Sable Hub can expose a separate notification source; opt-in still applies here.
@@ -2354,6 +2355,23 @@ private fun HubPage(
             )
             Spacer(Modifier.height(6.dp))
             HubTabs(filter = filter, firstTab = tabFocus, onFilter = onFilter)
+        }
+        // Calendar data requires a second, explicit opt-in (separate from notification sources).
+        if (filter == HubFilter.All && calendarPeekEnabled) {
+            item(key = "hub-upcoming-calendar") {
+                HubCalendarPeek(
+                    refreshGeneration = refreshGeneration,
+                    onRequestCalendarPermission = {
+                        context.findActivity()?.requestPermissions(
+                            arrayOf(Manifest.permission.READ_CALENDAR),
+                            SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
+                        )
+                    },
+                    onOpenCalendar = {
+                        onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
+                    },
+                )
+            }
         }
         if (contactsTab) {
             hubContactsItems(
