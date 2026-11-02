@@ -41,7 +41,7 @@ print('Verified using v3 scheme (APK Signature Scheme v3): ' + str(scheme == 'v3
 print('Number of signers: ' + os.getenv('TEST_SIGNERS', '1'))
 label = os.getenv('TEST_SIGNER_LABEL') or ('V3.0 Signer' if scheme == 'v3' else 'V2 Signer')
 cert = os.getenv('TEST_CERT', '9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292')
-print(label + ': certificate SHA-256 digest: ' + cert)
+print(label + os.getenv('TEST_SIGNER_PUNCTUATION', ':') + ' certificate SHA-256 digest: ' + cert)
 '''
 
 class VerifyApkReleaseTest(unittest.TestCase):
@@ -83,6 +83,13 @@ class VerifyApkReleaseTest(unittest.TestCase):
 
     def test_signer_number_label(self):
         self.gate(TEST_SIGNER_LABEL="Signer #1")
+
+    def test_signer_number_label_without_colon(self):
+        # Exact Build Tools 36 signer format captured from signed Tenseven APK on macOS.
+        self.assertIn(
+            "verified v2 signature",
+            self.gate(TEST_SIGNER_LABEL="Signer #1", TEST_SIGNER_PUNCTUATION=""),
+        )
 
     def test_wrong_certificate(self):
         self.gate(False, TEST_CERT="a" * 64)
