@@ -1,6 +1,6 @@
 # Lite / Full Play Protect device qualification
 
-**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; FINAL DEVICE QUALIFICATION PENDING.** An earlier Lite APK was installed through Google Drive on one device, but that is preliminary evidence, not final-artifact Play Protect qualification.
+**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; LITE GOOGLE DRIVE INSTALL AND PLAY PROTECT SCAN PASS ON ONE DEVICE; FULL/VARIANT QUALIFICATION PENDING.** An older Lite APK was also previously installed. The on-device APK hash has not been independently matched to the final signed Lite APK, so the final artifact binding remains provisional.
 
 ## Prerequisites
 
@@ -33,6 +33,19 @@ User copied files to `~/Downloads/tenseven-pr76-final/` and generated `SHA256SUM
 ## Preliminary Google Drive installation evidence (older Lite build)
 
 The user previously installed an earlier Lite APK downloaded via Google Drive and shared device photos showing BB10-style Home rendering. Android denied **App usage data** special access, and Active Frames did not show all apps opened outside the launcher. This establishes a preliminary downloadable-APK installation and Home-launch success, with a Usage Access/Active Frames limitation. The exact installed file hash, device build details and Play Protect scan state were not captured; do not count it as a final-artifact Play Protect PASS. Retest the final Lite hash above before publication.
+
+## Additional Google Drive Lite scan / install evidence (user-observed, 2026-11-01)
+
+After rebuilding Lite/Full from `5fb5a33e273d38a2932023ca5fe8e8f9f74226c5`, user retested Lite via Google Drive. Two privately supplied device photos show:
+
+1. **Google Play Protect:** `App scan recommended`; explanation that Google has not seen Tenseven before, with the **Scan app** option.
+2. **Google Play Protect:** `This app looks safe` and `You can continue to install it` after the scan.
+
+User confirmed Lite **installed successfully** and BBOS10 Home works. **App usage data** special access remains denied; Active Frames is incomplete (user describes launcher-launched apps appearing, while other recently opened apps do not). This is a separate permission/functionality issue, not a Play Protect install block.
+
+User also reports Launcher Settings shows BB7 icon configuration while BB10 Home style is selected; tracked in [issue #77](https://github.com/aimindseye/tenseven-launcher/issues/77). Hub notification-derived conversations are intentionally absent in Lite because its listener is omitted; product utility of the remaining Hub warrants evaluation.
+
+**Qualification:** Evidence proves a successful Play Protect scan and permitted install on this device. It does not identify the device model / Android version, confirm the scanner's global coverage, or independently hash the installed/downloaded file. This is **not** Full acceptance, independent fresh Full sideload, or cross-variant replacement acceptance. Photos have not been committed to the public repository.
 
 ## Matrix (every result starts NOT RUN)
 
