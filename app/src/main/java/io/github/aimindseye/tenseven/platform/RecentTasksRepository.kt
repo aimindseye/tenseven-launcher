@@ -116,6 +116,11 @@ class RecentTasksRepository(
             }
         }.getOrNull()
 
+    /** Capability probing shares this bridge; no second hidden-API entry point in the UI probe. */
+    internal fun hasTaskMethod(name: String): Boolean = runCatching {
+        taskService()?.javaClass?.methods?.any { it.name == name } == true
+    }.getOrDefault(false)
+
     private fun taskService(): Any? =
         runCatching {
             Class.forName("android.app.ActivityTaskManager").getMethod("getService").invoke(null)

@@ -39,7 +39,7 @@ class LauncherSettingsActivity : ComponentActivity() {
     private val resumeGeneration = androidx.compose.runtime.mutableIntStateOf(0)
     override fun onResume() {
         super.onResume()
-        resumeGeneration.value += 1
+        resumeGeneration.intValue += 1
         io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
     }
 
@@ -50,7 +50,7 @@ class LauncherSettingsActivity : ComponentActivity() {
         val state = StartStateRepository(this)
         setContent {
             LauncherTheme(window = window) {
-                androidx.compose.runtime.key(resumeGeneration.value) { LauncherSettings(
+                androidx.compose.runtime.key(resumeGeneration.intValue) { LauncherSettings(
                     state = state,
                     onLanguage = {
                         val intent =

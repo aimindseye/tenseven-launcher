@@ -17,11 +17,11 @@ object PlatformCapabilityProbe {
             PackageManager.PERMISSION_GRANTED,
         overlayAllowed = Settings.canDrawOverlays(context),
         // A normal Full APK has no privileged task-snapshot bridge. Never fake live frames.
-        trustedSnapshotBridge = permission(context, "READ_FRAME_BUFFER") && permission(context, "REAL_GET_TASKS") && taskMethod("getTaskSnapshot"),
+        trustedSnapshotBridge = permission(context, "READ_FRAME_BUFFER") && permission(context, "REAL_GET_TASKS") && taskMethod(context, "getTaskSnapshot"),
         frameAccess = FramePlatformAccess(
             tasks = permission(context, "REAL_GET_TASKS"),
-            resume = permission(context, "START_TASKS_FROM_RECENTS") && taskMethod("startActivityFromRecents"),
-            removal = permission(context, "REMOVE_TASKS") && taskMethod("removeTask"),
+            resume = permission(context, "START_TASKS_FROM_RECENTS") && taskMethod(context, "startActivityFromRecents"),
+            removal = permission(context, "REMOVE_TASKS") && taskMethod(context, "removeTask"),
             keyboard = context.resources.configuration.keyboard != android.content.res.Configuration.KEYBOARD_NOKEYS,
             lock = when {
                 !Capabilities.hasLockService(context) -> CapabilityStatus.Unavailable
@@ -37,8 +37,5 @@ object PlatformCapabilityProbe {
     private fun permission(context: Context, name: String): Boolean =
         context.checkSelfPermission("android.permission.$name") == PackageManager.PERMISSION_GRANTED
 
-    private fun taskMethod(name: String): Boolean = runCatching {
-        val service = Class.forName("android.app.ActivityTaskManager").getMethod("getService").invoke(null)
-        service?.javaClass?.methods?.any { it.name == name } == true
-    }.getOrDefault(false)
+    private fun taskMethod(context: Context, name: String): Boolean = RecentTasksRepository(context).hasTaskMethod(name)
 }
