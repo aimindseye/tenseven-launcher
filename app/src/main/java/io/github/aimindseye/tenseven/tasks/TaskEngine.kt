@@ -72,7 +72,7 @@ object TaskSchedule {
         var next = epochMs ?: return null
         if (repeat == TaskRepeat.Never) return next
         // Bounded to resist corrupt/imported years-old records and avoid infinite loops.
-        repeat(4000) {
+        kotlin.repeat(4000) {
             if (next > nowMs) return next
             next = nextOccurrence(next, repeat, zoneName) ?: return null
         }
