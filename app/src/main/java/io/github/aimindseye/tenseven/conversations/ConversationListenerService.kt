@@ -42,7 +42,10 @@ class ConversationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        ConversationHub.replace(activeNotifications.orEmpty().mapNotNull(::toHubNotification))
+        // A single malformed third-party notification must not crash the entire listener.
+        val active = readActiveNotifications()
+        NotificationConnection.onConnected(active.size)
+        ConversationHub.replace(active.mapNotNull(::safeHubNotification))
         refreshLockCounts()
         if (!screenOnRegistered) {
             ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
@@ -51,6 +54,7 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     override fun onListenerDisconnected() {
+        NotificationConnection.onDisconnected()
         ConversationHub.clear()
         LockLayerState.update(emptyMap())
         if (screenOnRegistered) {
@@ -61,7 +65,7 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        toHubNotification(sbn)?.let(ConversationHub::upsert)
+        safeHubNotification(sbn)?.let(ConversationHub::upsert)
         refreshLockCounts()
     }
 
@@ -70,11 +74,19 @@ class ConversationListenerService : NotificationListenerService() {
         refreshLockCounts()
     }
 
+    private fun readActiveNotifications(): List<StatusBarNotification> =
+        runCatching { activeNotifications.orEmpty().toList() }.getOrDefault(emptyList())
+
+    private fun safeHubNotification(sbn: StatusBarNotification): HubNotification? =
+        runCatching { toHubNotification(sbn) }.getOrNull()
+
     /** Counts per app for the lock layer: how many notifications wait, nothing of what they say. */
     private fun refreshLockCounts() {
         val enabled = startState.loadHubEnabledApps()
+        val current = readActiveNotifications()
+        NotificationConnection.onSnapshot(current.size)
         val waiting =
-            activeNotifications.orEmpty().filter { it.packageName in enabled }.map {
+            current.filter { it.packageName in enabled }.map {
                 val flags = it.notification?.flags ?: 0
                 Triple(
                     it.packageName,
