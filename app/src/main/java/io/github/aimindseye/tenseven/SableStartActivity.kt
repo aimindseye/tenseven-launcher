@@ -483,6 +483,9 @@ class SableStartActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Android may leave a sideloaded listener disconnected after an update even if access
+        // remains granted. Recover without prompting or changing the user's source choices.
+        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.onLauncherResume(this)
         doubleTapLockState.value = startStateRepository.loadDoubleTapLock()
         val style = startStateRepository.loadHomeStyle()
         if (style != homeStyle.value) {
