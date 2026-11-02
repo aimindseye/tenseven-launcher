@@ -158,6 +158,10 @@ import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.iconpacks.IconPackLoader
 import io.github.aimindseye.tenseven.iconpacks.IconPacks
+import io.github.aimindseye.tenseven.iconpacks.IconPresentationState
+import io.github.aimindseye.tenseven.model.IconPresentation
+import io.github.aimindseye.tenseven.model.IconPresentationPolicy
+import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.ActiveFrames
 import io.github.aimindseye.tenseven.model.AppEntry
@@ -5007,17 +5011,24 @@ internal fun AppMark(
     app: AppEntry,
     size: Int,
 ) {
-    val glyph = AppGlyphs.forComponent(app.component.packageName, app.component.className)
+    val context = LocalContext.current
+    IconPacks.init(context)
+    IconPresentationState.init(context)
+    val iconPack = IconPacks.selected
+    val iconStyle = IconPresentationState.selected
+    val isOwnExtra = app.component.packageName == context.packageName &&
+        ExtraApps.byClassName(app.component.className) != null
+    val glyph = if (IconPresentationPolicy.useGlyph(iconStyle, isOwnExtra, iconPack != null)) {
+        AppGlyphs.forComponent(app.component.packageName, app.component.className)
+    } else null
     if (glyph != null) {
         SableGlyphIcon(glyph = glyph, modifier = Modifier.size(size.dp))
         return
     }
 
-    val context = LocalContext.current
+    val themedMonochrome = IconPresentationPolicy.useMonochrome(iconStyle, iconPack != null)
     val densityDpi = context.resources.displayMetrics.densityDpi
-    IconPacks.init(context)
-    val iconPack = IconPacks.selected
-    val iconKey = "${app.stableKey()}@$size@$densityDpi@${iconPack.orEmpty()}"
+    val iconKey = "${app.stableKey()}@$size@$densityDpi@${iconPack.orEmpty()}@${iconStyle.key}"
     // Loaded off the main thread and cached for the process: binding a row never
     // waits on LauncherApps (ROW_BIND_BLOCKING_QUERY=NO).
     val icon by
@@ -5025,7 +5036,7 @@ internal fun AppMark(
             if (value == null) {
                 value =
                     withContext(Dispatchers.IO) {
-                        loadLauncherIcon(context = context, app = app, sizeDp = size)
+                        loadLauncherIcon(context = context, app = app, sizeDp = size, themedMonochrome = themedMonochrome)
                     }?.also { LauncherIconCache.put(iconKey, it) }
             }
         }
@@ -5077,6 +5088,7 @@ private fun loadLauncherIcon(
     context: Context,
     app: AppEntry,
     sizeDp: Int,
+    themedMonochrome: Boolean,
 ): LauncherIcon? =
     runCatching {
         val launcherApps = context.getSystemService(LauncherApps::class.java)
@@ -5103,7 +5115,8 @@ private fun loadLauncherIcon(
         val canvas = Canvas(bitmap)
         val drawable = packDrawable ?: activityInfo.getIcon(densityDpi)
         val monochrome =
-            if (packDrawable == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
+            if (themedMonochrome && packDrawable == null &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
                 drawable.monochrome
             } else {
                 null
