@@ -227,7 +227,13 @@ class LauncherAppsRepository(
                 null,
             )
             runCatching { usage.record(entry.stableKey()) }
-            runCatching { launches.record(entry.component.packageName) }
+            runCatching {
+                val state = StartStateRepository(appContext)
+                if (state.loadFrameSettings().rememberReturnedApps) {
+                    state.saveFrameDismissals(state.loadFrameDismissals() - "${entry.user.hashCode()}:${entry.component.packageName}")
+                    if (entry.user == android.os.Process.myUserHandle()) launches.record(entry.component.packageName)
+                }
+            }
             true
         } catch (_: ActivityNotFoundException) {
             false

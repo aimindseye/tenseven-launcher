@@ -32,17 +32,18 @@ jobs:
           sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           test -n "$sdkmanager"
           yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' emulator 'system-images;android-35;default;x86_64'
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-35;default;x86_64'
           avdmanager="$(dirname "$sdkmanager")/avdmanager"
           echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-35;default;x86_64' --force
-          sudo chmod 666 /dev/kvm
+          sudo chown "$(id -u)" /dev/kvm
       - name: Run frame layout, keyboard and persistence tests
         run: |
           set -euo pipefail
           "$ANDROID_HOME/emulator/emulator" -avd frames-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/frames-emulator.log 2>&1 &
           emulator_pid=$!
           trap 'kill "$emulator_pid" || true' EXIT
-          adb wait-for-device
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          timeout 120 adb wait-for-device
           timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == 1 ]]; do sleep 2; done'
           adb shell wm size 720x720
           adb shell wm density 280

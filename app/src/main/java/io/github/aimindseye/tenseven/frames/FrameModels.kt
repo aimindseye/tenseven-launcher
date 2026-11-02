@@ -41,6 +41,8 @@ data class FramesState(
     val settings: FrameSettings = FrameSettings(),
     val usageAllowed: Boolean = false,
     val snapshotsAllowed: Boolean = false,
+    val notificationsAllowed: Boolean = false,
+    val calendarAllowed: Boolean = false,
     val fallbackReason: String = "Recent apps use launcher history. Usage access adds apps opened elsewhere.",
 )
 
@@ -63,6 +65,8 @@ object FramePolicy {
         return FramesState(shown, generation, settings,
             usageAllowed = input.capabilities.usageRecents == CapabilityStatus.Ready,
             snapshotsAllowed = settings.snapshots && input.capabilities.thirdPartySnapshots == CapabilityStatus.Ready,
+            notificationsAllowed = input.capabilities.hubNotifications == CapabilityStatus.Ready,
+            calendarAllowed = input.capabilities.calendarEvents == CapabilityStatus.Ready,
             fallbackReason = input.capabilities.frameFallbackReason,
         )
     }
@@ -79,4 +83,13 @@ object FrameDismissals {
     }.take(MAX).toMap()
     fun encode(entries: Map<String, Long>): String = entries.entries.sortedByDescending { it.value }
         .take(MAX).joinToString("\n") { "${it.key}\t${it.value}" }
+}
+
+
+/** Counts never cross profiles or opt-in/permission boundaries, even while a live snapshot is refreshing. */
+object FrameMessages {
+    fun count(state: FramesState, item: FrameItem, counts: List<io.github.aimindseye.tenseven.live.AppUnreadCount>,
+        enabled: Set<String>, personalUser: Int): Int =
+        if (state.settings.newMessages && state.notificationsAllowed && item.app.userId == personalUser && item.app.packageName in enabled)
+            counts.firstOrNull { it.packageName == item.app.packageName }?.count ?: 0 else 0
 }

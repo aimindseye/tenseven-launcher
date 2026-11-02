@@ -41,7 +41,7 @@ Tenseven-only files worth knowing: `model/GridColumns`, `model/HubApps`, `model/
 
 ### Widgets: the page, and nothing on the home
 
-One `WidgetHostController` (one `AppWidgetHost` id) serves the Widgets page (`WidgetTarget.PAGE`). The `HOME` target and `home_widget_ids` are kept for old saves but nothing draws them: the BlackBerry 10 home holds only recent-app Active Frames (empty when there are none). The built-in widgets (`GlanceWidgets`: Calendar, Alarm, Battery, Now playing; none on by default, switched in Launcher Settings) are drawn by `BuiltInWidgets` as the top of the Widgets page, passed into `WidgetsPage` as its `builtIn` slot. Edit mode dims an added widget and puts Up, Down, Remove in a row under it. Edit Home ends in a bar that stays on screen (`EditBar`: Reset, Cancel, Done).
+One `WidgetHostController` (one `AppWidgetHost` id) serves the Widgets page (`WidgetTarget.PAGE`). The `HOME` target and `home_widget_ids` are kept for old saves. BB10 Active Frames can show available TenSeven-owned Calendar/Now playing summaries, but do not embed arbitrary third-party widgets. The built-in widgets (`GlanceWidgets`: Calendar, Alarm, Battery, Now playing; none on by default, switched in Launcher Settings) are drawn by `BuiltInWidgets` as the top of the Widgets page, passed into `WidgetsPage` as its `builtIn` slot. Edit mode dims an added widget and puts Up, Down, Remove in a row under it. Edit Home ends in a bar that stays on screen (`EditBar`: Reset, Cancel, Done).
 
 ### Settings groups shared with Setup
 
@@ -83,7 +83,7 @@ replaces the missing data.
 | Feature | On SableOS | Ordinary install today | Plan |
 |---|---|---|---|
 | Active Frames: list and live pictures of recent apps | `ActivityManager` recents plus hidden `IActivityTaskManager` calls (`READ_FRAME_BUFFER`, `REAL_GET_TASKS`) | Recent apps from launches and usage stats as icon cards in the same frame grid (usage access adds apps opened elsewhere) | Done |
-| Close a frame (X / Backspace) | `removeTask` | Hides it from the list | Same |
+| Close a frame (X / Backspace) | Dismiss TenSeven card only | Dismiss TenSeven card only, persisted | Safe default in P2-B |
 | Recents key opens Active Frames | The system's Recents is redirected to `SHOW_ACTIVE_FRAMES` | Android keeps its own Recents; SableOS's key notes report the system opens its Overview even when an accessibility service consumes the key | A home key or letter opens Active Frames |
 | Runtime-permission changes refresh the privacy rows | `OnPermissionsChangedListener` (system API) | `PermissionChangeSignal.register()` returns false; rows refresh on package events only | Refresh when returning to Home |
 | Privacy row for work and private profile apps | `createContextAsUser` for that profile | `UserContexts.forUser` returns null; the row says "permissions · unavailable" | Accept; document |
@@ -167,3 +167,51 @@ These Android adapters follow the existing platform coverage policy. The task do
 controller remain in the measured sources and have regression tests; no new coverage exclusions or
 quality-gate thresholds were introduced. CI now reports Sonar gate conditions and source findings using
 the existing Sonar credential, without exporting it, while the scanner continues to enforce the gate.
+
+## P2-B Active Frames boundary
+
+`ui/ActiveFramesPage.kt` owns the frame page, two-column grid, focus recovery,
+card rendering and explicit Recent app / Preview / Live tile presentation. It
+receives `FramesState` and callbacks; no binder task query or dismissal store is
+owned by a composable. `SableStartScreen` routes the page; `SableStartActivity`
+forwards lifecycle and app/profile invalidation to `platform/ActiveFramesHost`.
+
+`frames/FramesCoordinator` owns resume/stop/destroy epochs, stale-result rejection,
+immediate dismissal, and safe open decisions. `FramePolicy` merges incomplete
+native tasks with launcher/Usage history, using exact package/profile identities
+and stable keys. Persisted dismissal timestamps survive process recreation; a
+newer personal foreground event or explicit exact-profile launcher launch can
+restore a card. Metadata is bounded to 96 dismissals. No snapshots are persisted.
+An unavailable or paused/private profile cannot fall back to another user's copy.
+
+`ActiveFramesHost` binds a single background executor to Android repositories and
+publishes on the main dispatcher. Task resume is performed off the UI thread;
+normal app launch is dispatched to the host UI thread. Stop invalidates pending
+work and clears frame/image presentation. Destroy shuts down the executor.
+Snapshots are loaded only for composed cards, only while active and authorized,
+with stale completion rejection, closed HardwareBuffers and a 512-pixel bound.
+Android's non-real theme snapshots are not labelled Preview. The OS retains its
+secure-content restrictions; no MediaProjection or background capture is used.
+
+The pure `PlatformCapabilities` contract and Android `PlatformCapabilityProbe`
+are shared by frame settings and `RecentTasksRepository` operations. Native task
+queries, resume and snapshots require detected grants (and bridge methods where
+needed), not device models or a nonempty partial task result. The normal Full APK
+requests no signature permissions. Close always dismisses the TenSeven card; it
+never invokes removeTask or force-stop. The underlying app remains intact.
+
+`FrameSettingsSection` is shared by Launcher Settings and initial/reopened setup,
+and appears for BB10. Supported persisted controls: actual TenSeven Calendar and
+Now playing summaries; opted-in personal-profile Hub counts; authorized snapshots;
+opening an app from a card; recording returned apps; and limits of 4/8/12. Live
+summaries are read-only tiles, not embedded app surfaces. They use enabled existing
+Glance sources when those sources report LIVE, and consume remaining frame slots.
+Unsupported snapshot/new-message choices show the needed capability explanation;
+force-stop is always disabled. Existing Widgets page binding remains separate.
+
+Domain tests cover merge/identity/limits, store codec, lifecycle races, revocation,
+recreation and safe open/close. The Active Frames UI workflow runs instrumented
+keyboard, layout, lifecycle and persistence tests on an Android 35 emulator with a
+720×720 display at density 280. This is emulator evidence, not Titan 2 or privileged
+SableOS qualification. Outstanding combined architecture acceptance in #100 and
+physical-device acceptance in #99 remain tracked separately.

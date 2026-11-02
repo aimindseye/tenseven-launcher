@@ -1,9 +1,7 @@
 package io.github.aimindseye.tenseven.platform
 
-import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.ColorSpace
 import android.hardware.HardwareBuffer
@@ -52,7 +50,6 @@ class RecentTasksRepository(
      * Brings the task back as it was; false when Android refused (the caller then launches the app).
      * SableLauncher's manifest declares REORDER_TASKS; the presentation check module has no manifest for it.
      */
-    @SuppressLint("MissingPermission")
     fun resume(taskId: Int): Boolean {
         if (PlatformCapabilityProbe.detect(appContext).taskResume != CapabilityStatus.Ready) return false
         val fromRecents =
@@ -128,10 +125,6 @@ class RecentTasksRepository(
     private fun userIdOf(info: ActivityManager.RecentTaskInfo): Int =
         runCatching { info.javaClass.getField("userId").getInt(info) }
             .getOrElse { android.os.Process.myUserHandle().hashCode() }
-
-    /** The app a frame stands for, when the task cannot be resumed any more. */
-    fun launchIntent(frame: ActiveFrame): Intent? =
-        appContext.packageManager.getLaunchIntentForPackage(frame.packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     companion object {
         /** More than [ActiveFrames.MAX], since some recent tasks are filtered out. */

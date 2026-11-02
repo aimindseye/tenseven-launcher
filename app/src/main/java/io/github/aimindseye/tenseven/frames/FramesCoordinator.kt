@@ -33,6 +33,7 @@ class FramesCoordinator(
 
     fun refresh() {
         if (!active || destroyed) return
+        dismissed = source.loadDismissals()
         val ticket = ++epoch
         publish(state.copy(items = emptyList(), generation = ticket, snapshotsAllowed = false))
         background {

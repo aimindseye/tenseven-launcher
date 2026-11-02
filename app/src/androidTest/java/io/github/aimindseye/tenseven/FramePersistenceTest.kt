@@ -8,6 +8,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FramePersistenceTest {
+    @Test fun launcherSurvivesStopResumeAndActivityRecreation() {
+        val scenario = androidx.test.core.app.ActivityScenario.launch(SableStartActivity::class.java)
+        try {
+            scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+            scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+            scenario.recreate()
+            scenario.onActivity { activity ->
+                assertFalse(activity.isDestroyed)
+                val caps = io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(activity)
+                assertEquals(io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable, caps.thirdPartySnapshots)
+            }
+        } finally { scenario.close() }
+    }
+
     @Test fun settingsAndDismissalsSurviveRepositoryRecreation() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val first = StartStateRepository(context)

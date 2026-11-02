@@ -65,9 +65,9 @@ internal fun ActiveFramesPage(
     val enabledApps = remember(refreshGeneration) { display.loadHubEnabledApps() }
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
     val owned = if (state.settings.liveSummaries) buildList {
-        if (GlanceWidgets.CALENDAR in widgets && snapshot.calendar.availability == LiveAvailability.LIVE)
+        if (state.calendarAllowed && GlanceWidgets.CALENDAR in widgets && snapshot.calendar.availability == LiveAvailability.LIVE)
             add(FrameTileView("tile:calendar", "Calendar", snapshot.calendar.detail))
-        if (GlanceWidgets.MEDIA in widgets && snapshot.music.availability == LiveAvailability.LIVE)
+        if (state.notificationsAllowed && GlanceWidgets.MEDIA in widgets && snapshot.music.availability == LiveAvailability.LIVE)
             add(FrameTileView("tile:media", "Now playing", snapshot.music.detail))
     } else emptyList()
     Column(Modifier.fillMaxSize()) {
@@ -137,8 +137,8 @@ internal fun ActiveFramesGrid(
                                 value = null
                                 if (active && state.snapshotsAllowed) value = withContext(Dispatchers.IO) { frameSnapshot(item, state.generation) }
                             }
-                            val count = if (state.settings.newMessages && item.app.userId == android.os.Process.myUserHandle().hashCode() &&
-                                item.app.packageName in enabledApps) snapshot.hubApps.firstOrNull { it.packageName == item.app.packageName }?.count ?: 0 else 0
+                            val count = FrameMessages.count(state, item, snapshot.hubApps, enabledApps,
+                                android.os.Process.myUserHandle().hashCode())
                             FrameTile(key, label, if (picture == null) "Recent app" else "Preview",
                                 if (count > 0) "$count new" else "", true,
                                 { if (state.settings.openApps) onResume(item) },

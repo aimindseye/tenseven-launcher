@@ -69,6 +69,18 @@ class FramesTest {
         assertFalse(restored.containsKey("0:app0"))
     }
 
+    @Test fun newMessageCountsRequireAccessOptInAndExactProfile() {
+        val state = FramesState(settings = FrameSettings(), notificationsAllowed = true)
+        val item = FrameItem(personal)
+        val counts = listOf(io.github.aimindseye.tenseven.live.AppUnreadCount("mail", 3))
+        assertEquals(3, FrameMessages.count(state, item, counts, setOf("mail"), 0))
+        assertEquals(0, FrameMessages.count(state, item, counts, emptySet(), 0))
+        assertEquals(0, FrameMessages.count(state, FrameItem(work), counts, setOf("mail"), 0))
+        assertEquals(0, FrameMessages.count(state.copy(notificationsAllowed = false), item, counts, setOf("mail"), 0))
+        assertEquals(0, FrameMessages.count(state.copy(settings = FrameSettings(newMessages = false)), item, counts, setOf("mail"), 0))
+        assertEquals(0, FrameMessages.count(state, item, emptyList(), setOf("mail"), 0))
+    }
+
     private inner class Harness {
         var data = input()
         var saved = emptyMap<String, Long>()

@@ -32,7 +32,10 @@ class ActiveFramesHost(context: Context) {
         }
         override fun loadDismissals() = store.loadFrameDismissals()
         override fun saveDismissals(value: Map<String, Long>) = store.saveFrameDismissals(value)
-        override fun resume(item: FrameItem) = item.task?.let { native.resume(it.taskId) } ?: false
+        override fun resume(item: FrameItem): Boolean {
+            if (entries.none { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId && available(it) }) return false
+            return item.task?.let { task -> native.loadFrames().any { it == task } && native.resume(task.taskId) } ?: false
+        }
         override fun launch(app: FrameApp) {
             entries.firstOrNull { it.component.packageName == app.packageName && it.user.hashCode() == app.userId && available(it) }
                 ?.let(inventory::launch)
