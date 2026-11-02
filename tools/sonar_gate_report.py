@@ -2,7 +2,6 @@
 """Read-only SonarCloud diagnostics; never changes a gate or an issue's status."""
 import json
 import os
-from pathlib import Path
 import sys
 import urllib.error
 import urllib.parse
@@ -74,17 +73,12 @@ def main():
     try:
         data = report(token, os.environ.get("SONAR_PULL_REQUEST"), os.environ.get("SONAR_BRANCH"))
         output = render(data)
-        destination = Path("build/reports/sonar-gate")
-        destination.mkdir(parents=True, exist_ok=True)
-        (destination / "report.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
-        (destination / "report.txt").write_text(output, encoding="utf-8")
+        os.makedirs("build/reports/sonar-gate", exist_ok=True)
+        with open("build/reports/sonar-gate/report.json", "w", encoding="utf-8") as stream:
+            json.dump(data, stream, indent=2)
+        with open("build/reports/sonar-gate/report.txt", "w", encoding="utf-8") as stream:
+            stream.write(output)
         print(output, end="")
-        summary = os.environ.get("GITHUB_STEP_SUMMARY")
-        if summary:
-            with open(summary, "a", encoding="utf-8") as stream:
-                stream.write("\n### Sonar gate diagnostics\n\nGate: **" +
-                             data["projectStatus"].get("status", "UNKNOWN") +
-                             "**. Full read-only findings: `sonar-reports` artifact, `sonar-gate/report.txt`.\n")
         return 0  # Diagnostic result only; the preceding scanner step owns gate failure.
     except urllib.error.HTTPError as error:
         print("Sonar diagnostic HTTP status: " + str(error.code), file=sys.stderr)
