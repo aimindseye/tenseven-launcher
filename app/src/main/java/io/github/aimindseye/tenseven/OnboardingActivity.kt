@@ -212,6 +212,8 @@ private fun SetupScreen(
                     firstButton = firstButton,
                     onAction = onAction,
                     onManage = onManage,
+                    showRestrictedHelp = showRestrictedHelp,
+                    onOpenAppInfo = onOpenAppInfo,
                     onApplyExtras = { onApplyExtras(picked) },
                     onOpenLauncherSettings = onOpenLauncherSettings,
                     onFinish = onFinish,
@@ -226,7 +228,7 @@ private fun SetupScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 StepCard(step = step)
-                if (showRestrictedHelp(step) && !done) {
+                if (showRestrictedHelp(step)) {
                     RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
                 }
                 if (step == SetupStep.EXTRAS) {
@@ -278,6 +280,8 @@ private fun SetupOverview(
     firstButton: FocusRequester,
     onAction: (SetupStep) -> Unit,
     onManage: (SetupStep) -> Unit,
+    showRestrictedHelp: (SetupStep) -> Boolean,
+    onOpenAppInfo: () -> Unit,
     onApplyExtras: () -> Unit,
     onOpenLauncherSettings: () -> Unit,
     onFinish: () -> Unit,
@@ -311,6 +315,9 @@ private fun SetupOverview(
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (showRestrictedHelp(step)) {
+                    RestrictedSettingsCard(onOpenAppInfo)
+                }
                 if (step == SetupStep.EXTRAS) {
                     ExtrasPicker(picked = picked, onChange = onPickedChange)
                     Button(
