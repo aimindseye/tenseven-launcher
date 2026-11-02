@@ -345,7 +345,10 @@ private fun ChoiceSection(
     state: StartStateRepository,
 ) {
     when (step) {
-        SetupStep.STYLE -> HomeStyleSection(state)
+        SetupStep.STYLE -> {
+            HomeStyleSection(state)
+            HomeDisplaySection(state)
+        }
         SetupStep.LOOK -> {
             ThemeSection(state)
             WallpaperSection(state)
