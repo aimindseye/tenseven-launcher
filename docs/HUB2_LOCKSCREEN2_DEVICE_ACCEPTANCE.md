@@ -1,3 +1,21 @@
+## P1.2 acceptance — grouped Hub navigation + BBOS 7 desktop (2026-11-02)
+
+Branch: `fix/p1-2-hub-groups-bb7-shortcuts-20261102`; Full-only local Mac signing.
+Expected **versionCode 5**, **versionName 0.1.2-p1.2-test.1**. Retain all P1.1 onboarding and lockscreen/wallpaper tests.
+
+1. **Hub message rollup:** opt into WhatsApp, Signal, Google Messages/Discord; post notifications from two message clients. One Messages icon should show the **sum of their active notification counts**, rather than separate client chips. Confirm source apps still identifiable via real icons in each conversation.
+2. **Hub email rollup:** Gmail + Outlook notifications, both opted-in. One Email icon shows their combined unread *notification* count (not the actual email providers' full mailbox unread totals). Confirm Email tab filters messages correctly.
+3. **Active-only other apps:** enable Calendar, Meet, Clock and an app with no current notification; inactive apps must **not** appear in the More category. Active non-message apps appear only when they have a current notification and disappear when cleared, without changing opt-in status. The primary Hub row should not horizontally scroll on the Q25.
+4. **More:** keyboard focus/Enter opens; Calls, Contacts, Snoozed and active other app sources remain reachable. App-specific filters still open the correct source; source icon and count remain visible.
+5. **BBOS 7 resting state:** after Home or returning to BB7, no Favorites/tray app should appear selected until the user intentionally navigates with the keyboard. D-pad still selects/opens the first app; Alt+Enter/Menu still opens general options without a focus target.
+6. **BBOS 7 wallpaper desktop:** tap empty area between banner and tray → All Apps; long-press an app → Add to home screen. Add two apps not present in Favorites, verify both appear above the tray after returning to Home; opening and removing works.
+7. **Capacity:** add eight distinct desktop shortcuts; the ninth must not replace or scroll existing eight. Add duplicate must not create a second. Device restart and app upgrade must preserve the bounded order.
+8. **Regressions:** favorites can still expand/collapse; app panel, notification count strip, wallpaper translucency and permission onboarding unchanged. Confirm one Full-only signed APK with original registered certificate.
+
+**Acceptance evidence:** Android/CodeQL/Security/checks for exact PR commit, Mac release verifier, installed APK version, Q25 screenshots and tests, no unverified claims of Sonar completion on a stacked PR.
+
+---
+
 # P1 Full-only device acceptance — Hub 2.0, Peek and BBOS 7/10
 
 Canonical scope: [issue #95](https://github.com/aimindseye/tenseven-launcher/issues/95).
