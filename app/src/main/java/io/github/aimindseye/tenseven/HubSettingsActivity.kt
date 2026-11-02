@@ -183,7 +183,7 @@ private fun HubSettings(
                 val context = androidx.compose.ui.platform.LocalContext.current
                 HubRow(
                     title = "Before enabling notification access",
-                    detail = "For a downloaded APK, open Settings → Apps → Tenseven → ⋮ (three dots) → Allow restricted settings, if Android offers it. Return here and enable Notification access. Tenseven cannot grant this automatically.",
+                    detail = "First try Notification access above. If Android blocks it, return here, open App info, then ⋮ → Allow restricted settings if Android offers it. On Titan 2 this menu may only appear after the first denied request. Retry Notification access afterward. Tenseven cannot grant it automatically.",
                     onClick = {
                         runCatching {
                             context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -198,6 +198,8 @@ private fun HubSettings(
                     stringResource(
                         when {
                             !listenerAvailable -> R.string.hub_access_lite
+                            accessGranted && !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected ->
+                                R.string.hub_access_disconnected
                             accessGranted -> R.string.hub_access_on
                             else -> R.string.hub_access_off
                         },
