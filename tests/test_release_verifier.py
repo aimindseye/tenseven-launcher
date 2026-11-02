@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline regression tests for the Full/Lite APK release gate.
+"""Offline regression tests for the Full-only APK release gate.
 
 Uses simulated Android SDK CLI output. These checks do not replace verification
 of final signed APKs or physical-device Play Protect testing.
@@ -15,10 +15,10 @@ CERT = "9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292"
 
 AAPT2 = r'''#!/usr/bin/env python3
 import os, sys
-kind = 'lite' if 'lite' in sys.argv[3] else 'full'
+kind = 'full'
 if sys.argv[2] == 'badging':
     pkg = os.getenv('TEST_PACKAGE', 'io.github.aimindseye.tenseven')
-    code = os.getenv('TEST_LITE_CODE' if kind == 'lite' else 'TEST_FULL_CODE', '1')
+    code = os.getenv('TEST_FULL_CODE', '3')
     print(f"package: name='{pkg}' versionCode='{code}' versionName='0.1.0'")
     print("sdkVersion:'30'")
 elif kind == 'full':
@@ -56,9 +56,7 @@ class VerifyApkReleaseTest(unittest.TestCase):
             executable.write_text(source)
             executable.chmod(0o755)
         self.full = self.root / "full.apk"
-        self.lite = self.root / "lite.apk"
-        self.full.write_bytes(b"fake full")
-        self.lite.write_bytes(b"fake lite")
+                self.full.write_bytes(b"fake full")
 
     def gate(self, expected_success=True, ci_unsigned=False, **overrides):
         env = dict(os.environ, ANDROID_HOME=str(self.root), **overrides)
@@ -66,10 +64,8 @@ class VerifyApkReleaseTest(unittest.TestCase):
         if ci_unsigned:
             args.append("--ci-unsigned")
             self.full = self.root / "full-unsigned.apk"
-            self.lite = self.root / "lite-unsigned.apk"
             self.full.write_bytes(b"fake full unsigned")
-            self.lite.write_bytes(b"fake lite unsigned")
-        completed = subprocess.run(args + [str(self.full), str(self.lite)],
+        completed = subprocess.run(args + [str(self.full)],
                                    capture_output=True, text=True, env=env, timeout=20)
         self.assertEqual(completed.returncode == 0, expected_success,
                          completed.stdout + "\n" + completed.stderr)
@@ -109,14 +105,11 @@ class VerifyApkReleaseTest(unittest.TestCase):
     def test_package_mismatch(self):
         self.gate(False, TEST_PACKAGE="org.invalid")
 
-    def test_version_mismatch(self):
-        self.gate(False, TEST_LITE_CODE="2")
+    def test_invalid_version(self):
+        self.gate(False, TEST_FULL_CODE="invalid")
 
     def test_full_missing_service(self):
         self.gate(False, TEST_MISSING_ACCESS="1")
-
-    def test_lite_service_leak(self):
-        self.gate(False, TEST_LITE_LEAK="1")
 
     def test_ci_unsigned(self):
         self.assertIn("mode=ci-unsigned", self.gate(ci_unsigned=True))
