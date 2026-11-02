@@ -5,14 +5,14 @@ Expected **versionCode 5**, **versionName 0.1.2-p1.2-test.1**. Retain all P1.1 o
 
 1. **Hub message rollup:** opt into WhatsApp, Signal, Google Messages/Discord; post notifications from two message clients. One Messages icon should show the **sum of their active notification counts**, rather than separate client chips. Confirm source apps still identifiable via real icons in each conversation.
 2. **Hub email rollup:** Gmail + Outlook notifications, both opted-in. One Email icon shows their combined unread *notification* count (not the actual email providers' full mailbox unread totals). Confirm Email tab filters messages correctly.
-3. **Active-only other apps:** enable Calendar, Meet, Clock and an app with no current notification; inactive apps must **not** appear in the More category. Active non-message apps appear only when they have a current notification and disappear when cleared, without changing opt-in status. The primary Hub row should not horizontally scroll on the Q25.
+3. **Active-only other apps:** enable Calendar, Meet, Clock and an app with no current notification; inactive apps must **not** appear in the More category. Active non-message apps appear only when they have a current notification and disappear when cleared, without changing opt-in status. The primary Hub row should not horizontally scroll on the Titan 2.
 4. **More:** keyboard focus/Enter opens; Calls, Contacts, Snoozed and active other app sources remain reachable. App-specific filters still open the correct source; source icon and count remain visible.
 5. **BBOS 7 resting state:** after Home or returning to BB7, no Favorites/tray app should appear selected until the user intentionally navigates with the keyboard. D-pad still selects/opens the first app; Alt+Enter/Menu still opens general options without a focus target.
 6. **BBOS 7 wallpaper desktop:** tap empty area between banner and tray → All Apps picker; tap an app to add it in one further tap. Long-press → Add to home screen remains an alternative. Add two apps not present in Favorites, verify both appear above the tray after returning to Home; opening and removing works.
 7. **Capacity:** add eight distinct desktop shortcuts; the ninth must not replace or scroll existing eight. Add duplicate must not create a second. Device restart and app upgrade must preserve the bounded order.
 8. **Regressions:** favorites can still expand/collapse; app panel, notification count strip, wallpaper translucency and permission onboarding unchanged. Confirm one Full-only signed APK with original registered certificate.
 
-**Acceptance evidence:** Android/CodeQL/Security/checks for exact PR commit, Mac release verifier, installed APK version, Q25 screenshots and tests, no unverified claims of Sonar completion on a stacked PR.
+**Acceptance evidence:** Android/CodeQL/Security/checks for exact PR commit, Mac release verifier, installed APK version, Titan 2 screenshots and tests, no unverified claims of Sonar completion on a stacked PR.
 
 ---
 
@@ -45,7 +45,7 @@ Registered certificate SHA-256:
 ## P1.1 focus: permissions and Hub navigation (PR #97)
 
 1. Install the **Mac-signed** Full APK and verify Android App Info reflects **0.1.2-p1.1-test.1** (versionCode 4). Confirm existing wallpaper/home preferences survive an update from versionCode 3.
-2. On the Q25 where the APK was sideloaded, with Notification and Usage access not yet granted, reopen TenSeven **Setup and permissions** (overview). Verify the visible **Before Notification or Usage access** guidance directs you to Settings → Apps → Tenseven → three-dot menu → Allow restricted settings **when available**.
+2. On the Titan 2 where the APK was sideloaded, with Notification and Usage access not yet granted, reopen TenSeven **Setup and permissions** (overview). First request Notification or Usage access. If Android blocks the request, verify **If Android blocked Notification or Usage access** guidance directs you to Settings → Apps → TenSeven → three-dot menu → Allow restricted settings **if Android then offers it**.
 3. Tap **App info** from the guidance. Manually approve restricted settings, return to TenSeven, enable Notification and Usage access, then confirm the Setup overview updates. TenSeven must not claim to grant these switches itself.
 4. With Notification access still absent, also open **Hub Settings**; verify the instruction is visible there and App Info can be opened. Test on an Android variant without this menu: the app must not trap the user.
 5. In Hub: confirm icon-bearing navigation for Hub, Unread, Messages, Email, Calls, Contacts, Snoozed, Search; source-app icons; hardware keyboard focus, Enter activation, Back, horizontal scrolling on 720×720.
