@@ -82,8 +82,8 @@ object Bb7Scrim {
     const val MAX = 3
     const val DEFAULT = 2
 
-    private val BANNER = floatArrayOf(0f, 0.35f, 0.6f, 0.8f)
-    private val TRAY = floatArrayOf(0.25f, 0.6f, 0.9f, 0.97f)
+    private val BANNER = floatArrayOf(0f, 0.26f, 0.46f, 0.68f)
+    private val TRAY = floatArrayOf(0.15f, 0.32f, 0.55f, 0.75f)
 
     fun clamp(level: Int): Int = level.coerceIn(MIN, MAX)
 
