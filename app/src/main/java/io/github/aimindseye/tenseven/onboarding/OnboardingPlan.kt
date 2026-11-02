@@ -65,8 +65,6 @@ object OnboardingPlan {
     /** Android 13 added "restricted settings" for apps that were not installed from a store. */
     const val RESTRICTED_SETTINGS_SDK = 33
 
-    private const val PLAY_STORE = "com.android.vending"
-
     /** The steps still to do, in order. Empty when everything is set up. */
     fun pending(state: SetupState): List<SetupStep> =
         SetupStep.entries
@@ -76,11 +74,11 @@ object OnboardingPlan {
     /**
      * Whether to explain "Allow restricted settings". On Android 13 or newer, the switch for notification or
      * usage access can be greyed out for an app installed from a downloaded APK; the way round it is in App info.
-     * Shown as a hint, not as a certainty, since Android also lifts the restriction for some other installers.
+     * Show informational help for any installer because device/OEM policy varies. Do not claim the toggle always exists.
      */
     fun needsRestrictedSettingsHelp(
         step: SetupStep,
         sdkInt: Int,
         installer: String?,
-    ): Boolean = step.isSpecialAccess && sdkInt >= RESTRICTED_SETTINGS_SDK && installer != PLAY_STORE
+    ): Boolean = step.isSpecialAccess && sdkInt >= RESTRICTED_SETTINGS_SDK
 }
