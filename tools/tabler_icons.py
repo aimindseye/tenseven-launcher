@@ -195,7 +195,7 @@ def launcher_files(icon_name=ICON_NAME, glyph=ICON_GLYPH):
 def generated():
     names = used_icons()
     files = {os.path.relpath(KOTLIN_OUT, ROOT): kotlin_table()}
-    for icon_name, glyph in ((ICON_NAME, ICON_GLYPH), ("ic_tenseven_tasks", "list-check")):
+    for icon_name, glyph in ((ICON_NAME, ICON_GLYPH), ("ic_tenseven_tasks", "clipboard-check")):
         for rel, text in launcher_files(icon_name, glyph).items():
             files[os.path.relpath(os.path.join(RES, rel), ROOT)] = text
     files[os.path.relpath(MANIFEST, ROOT)] = manifest_rows(names)

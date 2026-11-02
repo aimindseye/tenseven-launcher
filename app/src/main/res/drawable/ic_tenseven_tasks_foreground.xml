@@ -11,37 +11,19 @@
         android:translateX="34"
         android:translateY="34">
         <path
-            android:pathData="M3.5 5.5l1.5 1.5l2.5 -2.5"
+            android:pathData="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"
             android:strokeColor="#F4F6FA"
             android:strokeWidth="2"
             android:strokeLineCap="round"
             android:strokeLineJoin="round" />
         <path
-            android:pathData="M3.5 11.5l1.5 1.5l2.5 -2.5"
+            android:pathData="M9 5a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2"
             android:strokeColor="#F4F6FA"
             android:strokeWidth="2"
             android:strokeLineCap="round"
             android:strokeLineJoin="round" />
         <path
-            android:pathData="M3.5 17.5l1.5 1.5l2.5 -2.5"
-            android:strokeColor="#F4F6FA"
-            android:strokeWidth="2"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:pathData="M11 6l9 0"
-            android:strokeColor="#F4F6FA"
-            android:strokeWidth="2"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:pathData="M11 12l9 0"
-            android:strokeColor="#F4F6FA"
-            android:strokeWidth="2"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:pathData="M11 18l9 0"
+            android:pathData="M9 14l2 2l4 -4"
             android:strokeColor="#F4F6FA"
             android:strokeWidth="2"
             android:strokeLineCap="round"
