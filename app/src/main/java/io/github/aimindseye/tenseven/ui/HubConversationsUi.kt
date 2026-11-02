@@ -406,7 +406,11 @@ private fun ConversationRow(
         if (!failed) { draft = ""; replying = false }
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    HubContrastTheme {
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)),
+    ) {
         Row(
             modifier =
                 Modifier.fillMaxWidth()
@@ -511,6 +515,7 @@ private fun ConversationRow(
             }
         }
         Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
+    }
     }
 }
 
