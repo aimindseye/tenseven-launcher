@@ -8,7 +8,7 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
   workflow_dispatch:
 
 permissions:
@@ -23,7 +23,9 @@ jobs:
   analyze:
     name: Analyze
     # Pull requests from forks get no secrets, so they can't be analyzed here.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -67,6 +69,14 @@ jobs:
             -Dsonar.qualitygate.timeout=300
             -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/kover/reportDebug.xml,design/build/reports/kover/reportDebug.xml
             -Dsonar.androidLint.reportPaths=app/build/reports/lint-results-debug.xml
+
+      - name: Report quality gate findings
+        if: always()
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PULL_REQUEST: ${{ github.event.pull_request.number }}
+          SONAR_BRANCH: ${{ github.ref_name }}
+        run: python3 tools/sonar_gate_report.py
 
       - name: Upload reports on failure
         if: failure()
