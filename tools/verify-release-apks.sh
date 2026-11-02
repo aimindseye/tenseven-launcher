@@ -49,7 +49,7 @@ extract_badging_field() {
 }
 
 check_apk() {
-  local kind="$1" apk="$2" badging="$3" xml="$4" app min cert output code
+  local kind="$1" apk="$2" badging="$3" xml="$4" app min cert certs output code scheme
   app="$(extract_badging_field package "$badging")"
   min="$(extract_badging_field minSdk "$badging")"
   code="$(extract_badging_field versionCode "$badging")"
@@ -73,10 +73,22 @@ check_apk() {
     [[ "$apk" != *-unsigned.apk ]] || { echo "ERROR: $kind unsigned artifact rejected in release mode" >&2; exit 1; }
     output="$("$APKSIGNER" verify --min-sdk-version "$EXPECTED_MIN_SDK" --verbose --print-certs "$apk")"
     grep -qx 'Verifies' <<< "$output" || { echo "ERROR: $kind signature not verified" >&2; exit 1; }
-    grep -qx 'Verified using v3 scheme (APK Signature Scheme v3): true' <<< "$output" || { echo "ERROR: $kind missing v3 signature" >&2; exit 1; }
+    if grep -Fxq 'Verified using v3 scheme (APK Signature Scheme v3): true' <<< "$output"; then
+      scheme=v3
+    elif grep -Fxq 'Verified using v2 scheme (APK Signature Scheme v2): true' <<< "$output"; then
+      scheme=v2
+    else
+      echo "ERROR: $kind has no verified v2/v3 APK signature" >&2; exit 1
+    fi
     grep -qx 'Number of signers: 1' <<< "$output" || { echo "ERROR: $kind has unexpected signer count" >&2; exit 1; }
-    cert="$(sed -nE 's/^V3[.]0 Signer: certificate SHA-256 digest: ([0-9a-fA-F]+)$/\1/p' <<< "$output" | tr A-F a-f)"
-    [[ "$cert" == "$EXPECTED_CERT" ]] || { echo "ERROR: $kind signing certificate does not match the registered key ($cert)" >&2; exit 1; }
+    # Build Tools may print 'V2 Signer', 'V3.0 Signer' or 'Signer #1'.
+    # Validate every reported signing-certificate SHA-256, never only the first.
+    certs="$(sed -nE 's/^(V[0-9.]+ Signer|Signer #[0-9]+): certificate SHA-256 digest: ([[:xdigit:]]{64})$/\2/p' <<< "$output" | tr 'A-F' 'a-f')"
+    [[ -n "$certs" ]] || { echo "ERROR: $kind missing signing certificate SHA-256 in apksigner output" >&2; exit 1; }
+    while IFS= read -r cert; do
+      [[ "$cert" == "$EXPECTED_CERT" ]] || { echo "ERROR: $kind signing certificate does not match registered key ($cert)" >&2; exit 1; }
+    done <<< "$certs"
+    echo "PASS $kind: verified $scheme signature and registered signing certificate"
   else
     [[ "$apk" == *-unsigned.apk ]] || { echo "ERROR: $kind CI mode expects an unsigned build candidate" >&2; exit 1; }
   fi
