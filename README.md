@@ -106,22 +106,30 @@ adb shell appops set --user 0 <id> GET_USAGE_STATS allow
 adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.conversations.ConversationListenerService
 ```
 
-## Install
+## Install — Full only
 
-Tenseven is in alpha. The currently published alpha release is **Full only** and predates the newly registered signing certificate; moving to new signed builds may require uninstalling the old installation (after backing up settings). Once the Lite/Full builds pass CI and device qualification, future [GitHub releases](https://github.com/aimindseye/tenseven-launcher/releases) can publish two signed APKs:
+The only distributed variant is **Full** (`Tenseven-Launcher-release.apk`); the Lite
+option and its Gradle build type are retired. Tenseven remains a normal Android Home app,
+without signature permissions or Play Protect workarounds.
 
-- **Lite** (`Tenseven-Launcher-lite.apk`): no Accessibility service, notification listener, or lock-layer overlay permission; Hub notification conversations, Now Playing notification data, double-tap lock and automatic lock layer are unavailable.
-- **Full** (`Tenseven-Launcher-release.apk`): includes those optional services. Downloaded APKs that declare them can trigger Google Play Protect's internet-sideloading sensitive-permission block.
+On the signing Mac, with the existing registered release keystore configured, run:
 
-The variants have the same package name, versionCode and registered signing key. Back up settings and check device-specific test results before switching between variants. Debug is a separate app (`io.github.aimindseye.tenseven.debug`).
+```bash
+bash tools/build-full-consolidated-test.sh
+```
 
-1. Get a published APK from the official GitHub release. Check its release file SHA-256. For **new releases built with the registered key**, also verify the signing-certificate fingerprint against [docs/BUILD.md](docs/BUILD.md); do not assume older alpha APKs use that key.
-2. Leave Play Protect enabled. If a downloaded Full APK is blocked for sensitive access, use Lite instead. Disabling Play Protect or Advanced Protection is **not** a recommended installation step. Google's [Play Protect guidance](https://developers.google.com/android/play-protect/warning-dev-guidance) explains the restriction and how to appeal an incorrect classification.
-3. Press Home and set Tenseven as the default Home app. Complete optional setup as needed; Android may separately restrict sideloaded-app permissions.
+This checks unit tests, builds one signed Full APK, verifies its package/manifest/signing
+identity and writes the APK plus SHA-256 to
+`~/Downloads/tenseven-full-combined-test/`. The package ID is
+`io.github.aimindseye.tenseven`. See [docs/BUILD.md](docs/BUILD.md).
 
-See [Build and release checks](docs/BUILD.md) and the [physical-device test plan](docs/PLAY_PROTECT_TEST_PLAN.md). Valid signing and developer registration do not themselves guarantee Play Protect approval.
-
-To try a debug build, download `tenseven-debug-apk` from a successful [Android workflow](https://github.com/aimindseye/tenseven-launcher/actions/workflows/android.yml) run. It is not a substitute for testing public signed APKs.
+Install the verified APK through the intended source with Play Protect enabled.
+If Android restricts Notification or Usage access for a downloaded APK, open
+**Settings → Apps → Tenseven → three-dot menu → Allow restricted settings**
+when that option exists. Return to Setup and grant access explicitly.
+This cannot be enabled through a manifest. Opt into Hub apps individually;
+Calendar access and calendar source selection are separate optional choices.
+The lock-layer Peek never replaces Android's secure keyguard.
 
 ## Supported devices
 
