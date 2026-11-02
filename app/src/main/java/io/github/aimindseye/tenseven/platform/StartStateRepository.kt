@@ -228,9 +228,9 @@ class StartStateRepository(
     }
 
     /** Apps placed in the empty space of the BlackBerry 7 home screen, in order (stable keys). */
-    fun loadBb7Desktop(): List<String> = loadOrdered(KEY_BB7_DESKTOP).orEmpty()
+    fun loadBb7Desktop(): List<String> = Bb7Home.desktopShortcuts(loadOrdered(KEY_BB7_DESKTOP).orEmpty())
 
-    fun saveBb7Desktop(keys: List<String>) = saveOrdered(KEY_BB7_DESKTOP, keys)
+    fun saveBb7Desktop(keys: List<String>) = saveOrdered(KEY_BB7_DESKTOP, Bb7Home.desktopShortcuts(keys))
 
     /** Icon grid: columns (0 = as many as fit) and whether icons carry their names. */
     fun loadGridColumns(): Int = GridColumns.normalize(preferences.getInt(KEY_GRID_COLUMNS, GridColumns.AUTO))
