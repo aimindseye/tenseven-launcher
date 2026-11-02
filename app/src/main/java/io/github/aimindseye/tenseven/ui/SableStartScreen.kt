@@ -159,7 +159,6 @@ import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.iconpacks.IconPackLoader
 import io.github.aimindseye.tenseven.iconpacks.IconPacks
 import io.github.aimindseye.tenseven.iconpacks.IconPresentationState
-import io.github.aimindseye.tenseven.model.IconPresentation
 import io.github.aimindseye.tenseven.model.IconPresentationPolicy
 import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.ActiveFrame
