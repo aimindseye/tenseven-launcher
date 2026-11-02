@@ -25,6 +25,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -178,6 +180,11 @@ internal fun EditorScreen(
             FindBar(model.query, model.miss, model::changeQuery, onEnter = { model.findNext() })
         }
         EditorField(model)
+        val context = LocalContext.current
+        TextButton(onClick = {
+            context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
+                .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_NOTE_ID, note.id))
+        }) { Text("Create linked task / Remind") }
         Hint(NotesKeys.EDITOR_HINT)
     }
     if (model.menuOpen) EditorMenuDialog(onDismiss = { model.menuOpen = false }, onAction = model::run)
