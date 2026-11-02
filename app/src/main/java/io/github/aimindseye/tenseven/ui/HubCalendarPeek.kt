@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.platform.HubCalendarEvent
 import io.github.aimindseye.tenseven.platform.HubCalendarRepository
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -35,13 +36,14 @@ internal fun HubCalendarPeek(
     val context = LocalContext.current
     val repository = remember(context) { HubCalendarRepository(context) }
     val permitted = repository.hasPermission()
+    val selectedIds = remember(refreshGeneration) { StartStateRepository(context).loadHubSelectedCalendarIds() }
     val deviceLocked = context.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
     var expanded by remember { mutableStateOf(false) }
     var events by remember { mutableStateOf(emptyList<HubCalendarEvent>()) }
 
-    LaunchedEffect(expanded, permitted, deviceLocked, refreshGeneration) {
+    LaunchedEffect(expanded, permitted, deviceLocked, refreshGeneration, selectedIds) {
         if (expanded && permitted && !deviceLocked) {
-            events = withContext(Dispatchers.IO) { repository.upcoming() }
+            events = withContext(Dispatchers.IO) { repository.upcoming(selectedIds = selectedIds) }
         } else {
             events = emptyList()
         }
