@@ -28,6 +28,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.KeyEventType
@@ -49,6 +51,7 @@ import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.model.HubStreamSelection
+import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
@@ -86,7 +89,17 @@ private const val MAX_CONVERSATIONS = 30
 internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
     if (!ui.accessGranted) {
         // The lite build has no notification listener to allow, so it shows no conversations section at all.
-        if (!ui.canAllowAccess) return
+        if (!ui.canAllowAccess) {
+            item(key = "hub-lite-summary") {
+                Text(
+                    "Lite Hub has shortcuts and contacts. Notification conversations require Full.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 12.dp),
+                )
+            }
+            return
+        }
         item(key = "conversations-allow") {
             ConversationCard(
                 title = stringResource(R.string.hub_allow_title),
@@ -118,20 +131,6 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
     val visible =
         ConversationView.apply(ui.conversations, ui.filter, ui.state, ui.now)
             .let { HubStreamSelection.apply(it, ui.sourcePackage) { row -> row.sourcePackages } }
-    item(key = "conversations-filter") {
-        HubStreamToolbar(
-            filter = ui.filter,
-            sourcePackage = ui.sourcePackage,
-            sources =
-                ui.conversations.flatMap { it.notifications }
-                    .distinctBy { it.packageName }
-                    .sortedBy { it.appName.lowercase() }
-                    .map { it.packageName to it.appName },
-            snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now),
-            onChange = ui.onFilterChange,
-            onSourceChange = ui.onSourceChange,
-        )
-    }
     if (visible.isEmpty()) {
         item(key = "conversations-nomatch") {
             Text(
@@ -190,50 +189,63 @@ private fun ConversationCard(
     }
 }
 
+/**
+ * The single BBOS10 Hub navigation strip: visible even with zero notification sources
+ * or an empty inbox. Calls and Contacts remain available when the listener is absent.
+ */
 @Composable
-private fun HubStreamToolbar(
-    filter: ConversationFilter,
-    sourcePackage: String?,
+internal fun HubUnifiedNavigation(
+    ui: HubConversationsUi,
+    currentTab: HubFilter,
+    onTabChange: (HubFilter) -> Unit,
+    firstTab: FocusRequester,
     sources: List<Pair<String, String>>,
-    snoozedCount: Int,
-    onChange: (ConversationFilter) -> Unit,
-    onSourceChange: (String?) -> Unit,
 ) {
-    var showSearch by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        // One horizontally scrollable filter/source line; no nested filter cards or second tab bar.
+    var searchOpen by remember { mutableStateOf(false) }
+    fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter(), pkg: String? = null) {
+        onTabChange(tab)
+        ui.onFilterChange(next)
+        ui.onSourceChange(pkg)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            FilterButton(stringResource(R.string.hub_filter_all),
-                sourcePackage == null && !filter.unreadOnly && filter.kind == ConversationKind.All && !filter.snoozed) {
-                onSourceChange(null)
-                onChange(filter.copy(unreadOnly = false, kind = ConversationKind.All, snoozed = false, person = ""))
+            FilterButton(
+                "All",
+                currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null,
+                modifier = Modifier.focusRequester(firstTab),
+            ) { select(HubFilter.All) }
+            FilterButton("Unread", currentTab == HubFilter.All && ui.filter.unreadOnly) {
+                select(HubFilter.All, ConversationFilter(unreadOnly = true))
             }
-            FilterButton(stringResource(R.string.hub_filter_unread), filter.unreadOnly) {
-                onChange(filter.copy(unreadOnly = !filter.unreadOnly, snoozed = false))
+            FilterButton("Messages", currentTab == HubFilter.Messages) {
+                select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
             }
-            FilterButton(stringResource(R.string.hub_filter_email), filter.kind == ConversationKind.Email) {
-                onChange(filter.copy(kind = if (filter.kind == ConversationKind.Email) ConversationKind.All else ConversationKind.Email))
+            FilterButton("Email", currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email) {
+                select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
             }
-            if (snoozedCount > 0 || filter.snoozed) {
-                FilterButton(stringResource(R.string.hub_filter_snoozed, snoozedCount), filter.snoozed) {
-                    onChange(filter.copy(snoozed = !filter.snoozed))
+            FilterButton("Calls", currentTab == HubFilter.Calls) { select(HubFilter.Calls) }
+            FilterButton("Contacts", currentTab == HubFilter.Contacts) { select(HubFilter.Contacts) }
+            val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
+            if (snoozedCount > 0 || ui.filter.snoozed) {
+                FilterButton("Snoozed ($snoozedCount)", currentTab == HubFilter.All && ui.filter.snoozed) {
+                    select(HubFilter.All, ConversationFilter(snoozed = true))
                 }
             }
             sources.forEach { (pkg, name) ->
-                FilterButton(name, sourcePackage == pkg) {
-                    onSourceChange(if (sourcePackage == pkg) null else pkg)
+                FilterButton(name, currentTab == HubFilter.All && ui.sourcePackage == pkg) {
+                    select(HubFilter.All, pkg = pkg)
                 }
             }
-            FilterButton("⌕", showSearch) { showSearch = !showSearch }
+            FilterButton("⌕", searchOpen) { searchOpen = !searchOpen }
         }
-        if (showSearch) {
+        if (searchOpen && currentTab != HubFilter.Calls && currentTab != HubFilter.Contacts) {
             OutlinedTextField(
-                value = filter.person,
-                onValueChange = { onChange(filter.copy(person = it)) },
+                value = ui.filter.person,
+                onValueChange = { ui.onFilterChange(ui.filter.copy(person = it)) },
                 modifier = Modifier.fillMaxWidth().sableFocusRing(),
                 placeholder = { Text(stringResource(R.string.hub_filter_person_hint)) },
                 singleLine = true,
@@ -243,12 +255,17 @@ private fun HubStreamToolbar(
 }
 
 @Composable
-private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun FilterButton(
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     val shape = RoundedCornerShape(6.dp)
     Text(
         text = label,
         modifier =
-            Modifier
+            modifier
                 .clip(shape)
                 .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                 .sableFocusRing()
