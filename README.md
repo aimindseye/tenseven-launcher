@@ -108,14 +108,14 @@ adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.con
 
 ## Install
 
-Tenseven is in alpha. The currently published alpha release is **Full only**. Once the Lite/Full builds pass CI and device qualification, future [GitHub releases](https://github.com/aimindseye/tenseven-launcher/releases) can publish two signed APKs:
+Tenseven is in alpha. The currently published alpha release is **Full only** and predates the newly registered signing certificate; moving to new signed builds may require uninstalling the old installation (after backing up settings). Once the Lite/Full builds pass CI and device qualification, future [GitHub releases](https://github.com/aimindseye/tenseven-launcher/releases) can publish two signed APKs:
 
 - **Lite** (`Tenseven-Launcher-lite.apk`): no Accessibility service, notification listener, or lock-layer overlay permission; Hub notification conversations, Now Playing notification data, double-tap lock and automatic lock layer are unavailable.
 - **Full** (`Tenseven-Launcher-release.apk`): includes those optional services. Downloaded APKs that declare them can trigger Google Play Protect's internet-sideloading sensitive-permission block.
 
 The variants have the same package name, versionCode and registered signing key. Back up settings and check device-specific test results before switching between variants. Debug is a separate app (`io.github.aimindseye.tenseven.debug`).
 
-1. Get a published APK from the official GitHub release. Verify its release file SHA-256 and registered signing-certificate fingerprint against [docs/BUILD.md](docs/BUILD.md).
+1. Get a published APK from the official GitHub release. Check its release file SHA-256. For **new releases built with the registered key**, also verify the signing-certificate fingerprint against [docs/BUILD.md](docs/BUILD.md); do not assume older alpha APKs use that key.
 2. Leave Play Protect enabled. If a downloaded Full APK is blocked for sensitive access, use Lite instead. Disabling Play Protect or Advanced Protection is **not** a recommended installation step. Google's [Play Protect guidance](https://developers.google.com/android/play-protect/warning-dev-guidance) explains the restriction and how to appeal an incorrect classification.
 3. Press Home and set Tenseven as the default Home app. Complete optional setup as needed; Android may separately restrict sideloaded-app permissions.
 

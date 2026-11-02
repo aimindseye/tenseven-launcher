@@ -7,7 +7,7 @@
 - A certified physical Android phone with Google Play services, Play Protect scanning **enabled**, and a reliable alternate Home app.
 - Final **signed** Full and Lite APKs from one commit, with the same versionCode, package name and registered certificate.
 - Run `bash tools/verify-release-apks.sh <full.apk> <lite.apk>` before device installation. Record its complete output and the individual APK SHA-256 file hashes.
-- Obtain consent before erasing any installation or its launcher preferences. Back up settings.
+- Obtain consent before erasing any installation or its launcher preferences. Back up settings. Older published alpha builds may have a different signing certificate, in which case an in-place APK update is not possible.
 
 ## Matrix (every result starts NOT RUN)
 

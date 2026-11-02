@@ -55,7 +55,7 @@ Then give the build the key, in either of two ways:
 adb install -r app/build/outputs/apk/release/Tenseven-Launcher-release.apk
 ```
 
-With signing credentials present, Gradle verifies the keystore certificate against the registered fingerprint before packaging. A different key fails closed. Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
+With signing credentials present, Gradle verifies the keystore certificate against the registered fingerprint before packaging. Older alpha APKs built before this certificate was created may not update in place; back up settings and reinstall if the signing identities differ. A different key fails closed. Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
 for every release: Android refuses to update an app signed with a different one. The release app id is
 `io.github.aimindseye.tenseven` (no `.debug`), so it installs beside the debug build as a separate app.
 
