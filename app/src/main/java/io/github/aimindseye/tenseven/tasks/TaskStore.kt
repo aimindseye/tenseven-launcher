@@ -61,6 +61,8 @@ class TaskStore(private val directory: File) {
             repeat = TaskRepeat.valueOf(props.getProperty("repeat", TaskRepeat.Never.name)),
             tags = (0 until tagsCount).map { props.getProperty("tags.$it") ?: error("Missing tag") }.toSet(),
             linkedNoteId = props.getProperty("linkedNote")?.takeIf(String::isNotBlank),
+            originPackage = props.getProperty("originPackage")?.takeIf(String::isNotBlank),
+            originToken = props.getProperty("originToken")?.takeIf(String::isNotBlank),
             updatedAtEpochMs = props.getProperty("updatedAt", "0").toLong(),
         )
     }
@@ -78,6 +80,8 @@ class TaskStore(private val directory: File) {
         setProperty("repeat", task.repeat.name)
         setProperty("updatedAt", task.updatedAtEpochMs.toString())
         setProperty("linkedNote", task.linkedNoteId.orEmpty())
+        setProperty("originPackage", task.originPackage.orEmpty())
+        setProperty("originToken", task.originToken.orEmpty())
         val ordered = task.tags.sorted()
         setProperty("tags.count", ordered.size.toString())
         ordered.forEachIndexed { index, tag -> setProperty("tags.$index", tag) }
