@@ -247,4 +247,8 @@
     <string name="letter_shortcut">دیر تک دبانے کا شارٹ کٹ</string>
     <string name="letter_shortcut_current">دیر تک دبانے کا شارٹ کٹ: %1$s</string>
     <string name="letter_shortcut_press">ہوم پر وہ حرف دبائیں جسے دبائے رکھنے سے یہ ایپ کھلے۔ Backspace اسے ہٹاتا ہے۔ یہ اسی حرف پر اسپیڈ ڈائل کی جگہ لے لیتا ہے۔</string>
+
+    <string name="hub_calendar_peek">Hub میں آنے والے واقعات</string>
+    <string name="hub_calendar_peek_detail">پہلے سے بند ہے۔ فعال کرنے پر Android کے ساتھ ہم وقت کیے گئے کیلنڈروں سے آنے والے واقعات پڑھنے کی اجازت مانگتا ہے۔</string>
+    <string name="hub_apps_enabled_count">فعال ایپس: %1$d۔ باقی بند رہتی ہیں۔</string>
 </resources>

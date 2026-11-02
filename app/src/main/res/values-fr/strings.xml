@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Raccourci par appui long</string>
     <string name="letter_shortcut_current">Raccourci par appui long : %1$s</string>
     <string name="letter_shortcut_press">Appuyez sur la lettre à maintenir sur l\'accueil pour ouvrir cette appli. Retour arrière la supprime. Elle remplace une numérotation rapide sur la même lettre.</string>
+
+    <string name="hub_calendar_peek">Événements à venir dans Hub</string>
+    <string name="hub_calendar_peek_detail">Désactivé par défaut. Une fois activé, demande l’autorisation de lire les événements à venir des agendas synchronisés avec Android.</string>
+    <string name="hub_apps_enabled_count">Applications activées : %1$d. Les autres restent désactivées.</string>
 </resources>

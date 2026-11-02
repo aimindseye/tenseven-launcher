@@ -247,4 +247,8 @@
     <string name="letter_shortcut">اختصار الضغط المطوّل</string>
     <string name="letter_shortcut_current">اختصار الضغط المطوّل: %1$s</string>
     <string name="letter_shortcut_press">اضغط الحرف الذي ستضغط عليه مطوّلًا في الشاشة الرئيسية لفتح هذا التطبيق. مفتاح الحذف يزيله. يحلّ محلّ الاتصال السريع على الحرف نفسه.</string>
+
+    <string name="hub_calendar_peek">الأحداث القادمة في Hub</string>
+    <string name="hub_calendar_peek_detail">معطّل افتراضيًا. عند تفعيله، يطلب إذن قراءة الأحداث القادمة من التقاويم المتزامنة مع Android.</string>
+    <string name="hub_apps_enabled_count">التطبيقات المفعّلة: %1$d. تبقى التطبيقات الأخرى معطّلة.</string>
 </resources>

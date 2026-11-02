@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Ярлык по удержанию клавиши</string>
     <string name="letter_shortcut_current">Ярлык по удержанию клавиши: %1$s</string>
     <string name="letter_shortcut_press">Нажмите букву, удержание которой на главном экране откроет это приложение. Backspace удаляет её. Заменяет быстрый набор на той же букве.</string>
+
+    <string name="hub_calendar_peek">Предстоящие события в Hub</string>
+    <string name="hub_calendar_peek_detail">По умолчанию выключено. При включении запрашивает разрешение на чтение предстоящих событий из календарей, синхронизированных с Android.</string>
+    <string name="hub_apps_enabled_count">Включённые приложения: %1$d. Остальные остаются выключенными.</string>
 </resources>

@@ -75,7 +75,7 @@ class TasksActivity : ComponentActivity() {
 @Composable
 private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
     val context = LocalContext.current
-    val repo = remember(context) { TaskRepository(context) }
+    val repo = remember(context) { io.github.aimindseye.tenseven.platform.taskRepository(context) }
     var revision by remember { mutableIntStateOf(0) }
     var tab by remember { mutableStateOf(intent.getStringExtra(TasksActivity.EXTRA_MODE) ?: "tasks") }
     var editing by remember { mutableStateOf<TaskRecord?>(null) }

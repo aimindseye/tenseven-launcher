@@ -247,4 +247,8 @@
     <string name="letter_shortcut">קיצור בלחיצה ארוכה</string>
     <string name="letter_shortcut_current">קיצור בלחיצה ארוכה: %1$s</string>
     <string name="letter_shortcut_press">הקש את האות שתחזיק במסך הבית כדי לפתוח את האפליקציה הזו. מקש המחיקה מסיר אותה. היא מחליפה חיוג מהיר על אותה אות.</string>
+
+    <string name="hub_calendar_peek">אירועים קרובים ב-Hub</string>
+    <string name="hub_calendar_peek_detail">כבוי כברירת מחדל. בהפעלה, מבקש הרשאה לקריאת אירועים קרובים מיומנים המסונכרנים עם Android.</string>
+    <string name="hub_apps_enabled_count">יישומים פעילים: %1$d. השאר נשארים כבויים.</string>
 </resources>

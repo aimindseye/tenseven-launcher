@@ -60,7 +60,7 @@ class HubSettingsActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.onLauncherResume(this)
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
         resumeTick++
     }
 
@@ -122,7 +122,7 @@ class HubSettingsActivity : ComponentActivity() {
                         runCatching { startActivity(ConversationAccess.settingsIntent()) }
                     },
                     onRetryListener = {
-                        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.retryFromSettings(this)
+                        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.retryFromSettings(this)
                     },
                     onShowText = {
                         showText = it
@@ -141,7 +141,7 @@ class HubSettingsActivity : ComponentActivity() {
                         state.saveHubEnabledApps(enabled)
                         if (HubApps.isIncluded(enabled, pkg)) {
                             if (!io.github.aimindseye.tenseven.conversations.ConversationListenerService.refreshConnected()) {
-                                io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.retryFromSettings(this)
+                                io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.retryFromSettings(this)
                             }
                         } else {
                             // Drop newly excluded content and badges without waiting for another notification.

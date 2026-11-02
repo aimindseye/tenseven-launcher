@@ -37,7 +37,7 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
 class LauncherSettingsActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
-        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.onLauncherResume(this)
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

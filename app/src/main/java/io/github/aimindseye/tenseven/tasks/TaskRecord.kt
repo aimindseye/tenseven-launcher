@@ -1,7 +1,6 @@
 package io.github.aimindseye.tenseven.tasks
 
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -51,7 +50,7 @@ data class TaskRecord(
 /** Pure calendar-free, timezone-aware scheduling policy, not an OS exact-alarm guarantee. */
 object TaskReminderTimes {
     fun tomorrowAt(hour: Int, minute: Int, zone: ZoneId, now: Instant): Instant =
-        LocalDate.ofInstant(now, zone).plusDays(1).atTime(hour, minute).atZone(zone).toInstant()
+        now.atZone(zone).toLocalDate().plusDays(1).atTime(hour, minute).atZone(zone).toInstant()
 
     fun eveningAt(hour: Int = 18, zone: ZoneId, now: Instant): Instant {
         require(hour in 16..22)

@@ -34,7 +34,7 @@ import java.time.ZonedDateTime
 @Composable
 internal fun HubRemindersPanel(records: List<TaskRecord>) {
     val context = LocalContext.current
-    val repository = remember(context) { TaskRepository(context) }
+    val repository = remember(context) { io.github.aimindseye.tenseven.platform.taskRepository(context) }
     var editing by remember { mutableStateOf<TaskRecord?>(null) }
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Remind", style = MaterialTheme.typography.titleLarge)

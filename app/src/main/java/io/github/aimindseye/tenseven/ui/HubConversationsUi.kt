@@ -617,7 +617,7 @@ internal fun rememberHubConversationsUi(
     var filter by remember { mutableStateOf(ConversationFilter()) }
     var remindersSelected by remember { mutableStateOf(false) }
     val taskRevision = TaskRepository.revision
-    val reminders = remember(taskRevision) { ReminderPolicy.reminders(TaskRepository(context).list()) }
+    val reminders = remember(taskRevision) { ReminderPolicy.reminders(io.github.aimindseye.tenseven.platform.taskRepository(context).list()) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var sourcePackage by remember { mutableStateOf<String?>(null) }
     val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
@@ -652,13 +652,13 @@ internal fun rememberHubConversationsUi(
             onWake = { ConversationHub.wake(context, it) },
             onRemind = { conversation, due ->
                 val n = conversation.latestNotification
-                io.github.aimindseye.tenseven.tasks.TaskRepository(context).followUp(n.packageName, n.key, n.appName, due)
+                io.github.aimindseye.tenseven.platform.taskRepository(context).followUp(n.packageName, n.key, n.appName, due)
                 android.widget.Toast.makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT).show()
             },
             onCustomRemind = { conversation ->
                 chooseHubReminderTime(context) { due ->
                     val n = conversation.latestNotification
-                    TaskRepository(context).followUp(n.packageName, n.key, n.appName, due)
+                    io.github.aimindseye.tenseven.platform.taskRepository(context).followUp(n.packageName, n.key, n.appName, due)
                     android.widget.Toast.makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT).show()
                 }
             },

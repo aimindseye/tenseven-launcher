@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Atajo al mantener una tecla</string>
     <string name="letter_shortcut_current">Atajo al mantener una tecla: %1$s</string>
     <string name="letter_shortcut_press">Pulsa la letra que mantendrás pulsada en Inicio para abrir esta app. Retroceso la quita. Sustituye a una marcación rápida en la misma letra.</string>
+
+    <string name="hub_calendar_peek">Próximos eventos en Hub</string>
+    <string name="hub_calendar_peek_detail">Desactivado de forma predeterminada. Al activarlo, se solicita permiso para leer próximos eventos de los calendarios sincronizados con Android.</string>
+    <string name="hub_apps_enabled_count">Aplicaciones habilitadas: %1$d. Las demás permanecen desactivadas.</string>
 </resources>

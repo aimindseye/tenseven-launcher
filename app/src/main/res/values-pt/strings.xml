@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Atalho por tecla pressionada</string>
     <string name="letter_shortcut_current">Atalho por tecla pressionada: %1$s</string>
     <string name="letter_shortcut_press">Pressione a letra que você vai manter pressionada no início para abrir este app. Backspace remove. Ela substitui uma discagem rápida na mesma letra.</string>
+
+    <string name="hub_calendar_peek">Próximos eventos no Hub</string>
+    <string name="hub_calendar_peek_detail">Desativado por padrão. Ao ativar, solicita permissão para ler os próximos eventos dos calendários sincronizados com o Android.</string>
+    <string name="hub_apps_enabled_count">Aplicativos ativados: %1$d. Os demais permanecem desativados.</string>
 </resources>

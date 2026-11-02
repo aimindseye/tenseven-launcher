@@ -31,7 +31,7 @@ class TaskStore(private val directory: File) {
                 Files.move(temporary.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
             }
         } finally {
-            temporary.delete()
+            if (temporary.exists()) Files.delete(temporary.toPath())
         }
     }
 

@@ -127,7 +127,7 @@ class OnboardingActivity : ComponentActivity() {
         setup.value = state
         // Permission granted is not the same as listener connected. Never rebind an active listener
         // merely because Setup resumed; doing so can briefly empty Hub, Peek and lock counts.
-        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.onLauncherResume(this)
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
     }
 
     private fun perform(step: SetupStep) {

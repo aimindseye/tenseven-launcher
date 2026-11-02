@@ -39,6 +39,18 @@ class TaskStoreTest {
         } finally { dir.deleteRecursively() }
     }
 
+    @Test fun failedAtomicReplacementCleansTemporaryFileAndKeepsExistingData() {
+        val dir = Files.createTempDirectory("task-atomic-failure-").toFile()
+        try {
+            val task = TaskRecord(title = "Must not erase data")
+            val destination = java.io.File(dir, task.id + ".task").apply { mkdir() }
+            val existing = java.io.File(destination, "existing").apply { writeText("retain") }
+            assertTrue(runCatching { TaskStore(dir).save(task) }.isFailure)
+            assertEquals("retain", existing.readText())
+            assertTrue(dir.listFiles()!!.none { it.name.contains(".tmp-") })
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun reminderTimesUseLocalZoneAcrossDst() {
         val zone = ZoneId.of("America/New_York")
         val now = Instant.parse("2026-03-07T21:00:00Z")

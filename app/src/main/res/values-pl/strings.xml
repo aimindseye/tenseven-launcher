@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Skrót przez przytrzymanie</string>
     <string name="letter_shortcut_current">Skrót przez przytrzymanie: %1$s</string>
     <string name="letter_shortcut_press">Naciśnij literę, którą przytrzymasz na ekranie głównym, aby otworzyć tę aplikację. Backspace ją usuwa. Zastępuje szybkie wybieranie na tej samej literze.</string>
+
+    <string name="hub_calendar_peek">Nadchodzące wydarzenia w Hub</string>
+    <string name="hub_calendar_peek_detail">Domyślnie wyłączone. Po włączeniu prosi o dostęp do nadchodzących wydarzeń z kalendarzy zsynchronizowanych z Androidem.</string>
+    <string name="hub_apps_enabled_count">Włączone aplikacje: %1$d. Pozostałe pozostają wyłączone.</string>
 </resources>
