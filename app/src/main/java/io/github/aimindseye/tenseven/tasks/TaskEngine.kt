@@ -23,8 +23,9 @@ class TaskRepository(private val context: Context) {
     private val store = TaskStore(context.filesDir.resolve("tasks-v1"))
     fun list(): List<TaskRecord> = store.list()
     fun save(task: TaskRecord) {
-        TaskAlarms.cancel(context, task.id)
+        // Commit to disk first; a failed write must not cancel a previously scheduled reminder.
         store.save(task)
+        TaskAlarms.cancel(context, task.id)
         TaskAlarms.schedule(context, task)
     }
     fun delete(id: String) {
@@ -69,8 +70,10 @@ object TaskSchedule {
         return shifted.toInstant().toEpochMilli()
     }
     fun advanceAfter(epochMs: Long?, repeat: TaskRepeat, zoneName: String, nowMs: Long): Long? {
-        var next = epochMs ?: return null
-        if (repeat == TaskRepeat.Never) return next
+        val previous = epochMs ?: return null
+        if (repeat == TaskRepeat.Never) return previous
+        // Completing a future occurrence still advances to the NEXT one.
+        var next = nextOccurrence(previous, repeat, zoneName) ?: return null
         // Bounded to resist corrupt/imported years-old records and avoid infinite loops.
         kotlin.repeat(4000) {
             if (next > nowMs) return next
