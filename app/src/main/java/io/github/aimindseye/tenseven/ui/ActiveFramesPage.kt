@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.asImageBitmap
@@ -109,7 +110,7 @@ internal fun ActiveFramesGrid(
     LaunchedEffect(active, keys) {
         requesters.keys.retainAll(keys.toSet())
         if (active) {
-            withFrameNanos { }
+            repeat(2) { withFrameNanos { } }
             val key = nextFocus?.takeIf { it in keys } ?: keys.firstOrNull()
             nextFocus = null
             runCatching { if (key == null) first.requestFocus() else requester(key).requestFocus() }
@@ -183,8 +184,11 @@ internal fun FrameTile(
                 if (close) onClose() else if (open) onOpen()
             }
             close || open
-        }.combinedClickable(enabled = openEnabled, onClick = onOpen, onLongClick = if (closable) onClose else null)
-        .focusable().semantics { contentDescription = "$title, $badge" }) {
+        }.then(
+            if (closable || openEnabled) Modifier.focusProperties { canFocus = true }
+                .combinedClickable(onClick = { if (openEnabled) onOpen() }, onLongClick = if (closable) onClose else null)
+            else Modifier.focusable()
+        ).semantics { contentDescription = "$title, $badge" }) {
         Box(Modifier.weight(1f).fillMaxWidth().background(Bb10Background), contentAlignment = Alignment.Center) {
             if (picture != null) {
                 Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)

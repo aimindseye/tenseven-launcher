@@ -179,7 +179,7 @@ forwards lifecycle and app/profile invalidation to `platform/ActiveFramesHost`.
 `frames/FramesCoordinator` owns resume/stop/destroy epochs, stale-result rejection,
 immediate dismissal, and safe open decisions. `FramePolicy` merges incomplete
 native tasks with launcher/Usage history, using exact package/profile identities
-and stable keys. Persisted dismissal timestamps survive process recreation; a
+and stable keys. Per-card dismissal timestamps survive process recreation without hiding another task for the same app; a
 newer personal foreground event or explicit exact-profile launcher launch can
 restore a card. Metadata is bounded to 96 dismissals. No snapshots are persisted.
 An unavailable or paused/private profile cannot fall back to another user's copy.

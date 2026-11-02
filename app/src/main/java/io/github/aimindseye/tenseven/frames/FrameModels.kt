@@ -60,7 +60,7 @@ object FramePolicy {
         } + native.map { FrameItem(FrameApp(it.packageName, it.userId), it) }
         val shown = items.filter { item ->
             item.app in input.availableApps &&
-                (dismissals[item.app.key]?.let { closed -> (opened[item.app.key] ?: 0L) > closed } ?: true)
+                ((dismissals[item.key] ?: dismissals[item.app.key])?.let { closed -> (opened[item.app.key] ?: 0L) > closed } ?: true)
         }.distinctBy { it.key }.take(settings.maximum)
         return FramesState(shown, generation, settings,
             usageAllowed = input.capabilities.usageRecents == CapabilityStatus.Ready,
@@ -78,7 +78,7 @@ object FrameDismissals {
     fun decode(value: String?): Map<String, Long> = value.orEmpty().lineSequence().mapNotNull { line ->
         val parts = line.split('\t')
         val at = parts.getOrNull(1)?.toLongOrNull()
-        if (parts.size != 2 || at == null || at < 0 || !parts[0].matches(Regex("[0-9]+:[a-zA-Z0-9_.]+"))) null
+        if (parts.size != 2 || at == null || at < 0 || !parts[0].matches(Regex("[0-9]+:[a-zA-Z0-9_.]+(?::recent|:task:[0-9]+)?"))) null
         else parts[0] to at
     }.take(MAX).toMap()
     fun encode(entries: Map<String, Long>): String = entries.entries.sortedByDescending { it.value }

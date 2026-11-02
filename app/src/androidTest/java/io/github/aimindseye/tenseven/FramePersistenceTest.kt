@@ -9,6 +9,8 @@ import org.junit.Test
 
 class FramePersistenceTest {
     @Test fun launcherSurvivesStopResumeAndActivityRecreation() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        StartStateRepository(context).saveOnboardingDone()
         val scenario = androidx.test.core.app.ActivityScenario.launch(SableStartActivity::class.java)
         try {
             scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)

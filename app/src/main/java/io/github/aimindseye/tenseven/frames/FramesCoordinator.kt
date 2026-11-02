@@ -57,12 +57,12 @@ class FramesCoordinator(
 
     fun close(item: FrameItem) {
         if (!active || item !in state.items) return
-        dismissed = (dismissed + (item.app.key to now())).entries.sortedByDescending { it.value }
+        dismissed = (dismissed + (item.key to now())).entries.sortedByDescending { it.value }
             .take(FrameDismissals.MAX).associate { it.toPair() }
         source.saveDismissals(dismissed)
         // Closing a launcher card never force-stops an app or removes someone else's task.
         ++epoch
-        publish(state.copy(items = state.items.filterNot { it.app == item.app }, generation = epoch))
+        publish(state.copy(items = state.items.filterNot { it.key == item.key }, generation = epoch))
     }
 
     fun open(item: FrameItem) {

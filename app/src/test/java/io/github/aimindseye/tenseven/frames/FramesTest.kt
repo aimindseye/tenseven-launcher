@@ -127,7 +127,7 @@ class FramesTest {
         val item = c.state.items.single()
         assertTrue(c.acceptsSnapshot(item, c.state.generation))
         c.close(item); assertTrue(c.state.items.isEmpty()); c.close(item)
-        assertEquals(mapOf(personal.key to 150L), h.saved)
+        assertEquals(mapOf(item.key to 150L), h.saved)
         c.destroy()
         val recreated = h.coordinator(); recreated.close(item); recreated.onResume(); h.drain()
         assertTrue(recreated.state.items.isEmpty())
@@ -136,6 +136,19 @@ class FramesTest {
         val current = recreated.state.items.single()
         assertFalse(recreated.acceptsSnapshot(item, 1))
         recreated.onStop(); assertFalse(recreated.acceptsSnapshot(current, recreated.state.generation))
+    }
+
+    @Test fun closingOneNativeTaskKeepsOtherTaskForTheSameApp() {
+        val h = Harness()
+        h.data = input(native = listOf(task, task.copy(taskId = 8)))
+        val c = h.coordinator(); c.onResume(); h.drain()
+        val first = c.state.items.first()
+        c.close(first)
+        assertEquals(listOf(8), c.state.items.map { it.task?.taskId })
+        c.refresh(); h.drain()
+        assertEquals(listOf(8), c.state.items.map { it.task?.taskId })
+        val restored = FrameDismissals.decode(FrameDismissals.encode(h.saved))
+        assertEquals(h.saved, restored)
     }
 
     @Test fun resumeUsesActualNativeTaskOnlyAndFallsBackToExactLaunch() {
