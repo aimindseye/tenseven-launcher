@@ -8,7 +8,7 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
@@ -24,8 +24,7 @@ jobs:
     name: Prior Sonar analysis (diagnostic only)
     if: >-
       github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      (github.event.action != 'edited' || github.event.changes.base != null)
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -41,9 +40,7 @@ jobs:
   analyze:
     name: Analyze
     # Pull requests from forks get no secrets, so they can't be analyzed here.
-    if: >-
-      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
-      (github.event.action != 'edited' || github.event.changes.base != null)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

@@ -147,3 +147,23 @@ it its own package and signature. Its layouts for Titan 2 and Q25 are marked unv
 - `model/QuickActions` parses `-` (to-do), `/` (note) and `+` (event) in Command and recognises web addresses. To-dos and notes go to an app the user picks through the share sheet; events open the calendar's own new-event screen. Tenseven keeps nothing.
 - `LockScreenAccessibilityService` is declared with no event types, no window content and no gestures. Double-tap detection sits on empty Home space only (tiles and rows consume their own taps). **Google Play:** an accessibility service that is not an accessibility tool must be declared and justified in Play Console; review that policy before any Play release. GitHub and F-Droid builds are not affected.
 
+
+## Reminder and notification recovery boundaries
+
+`tasks/TaskRepository` owns durable task changes, deduplication and repeat completion. It takes a
+`TaskStore`, `TaskScheduler` and clock so these policies can be exercised with real temporary storage
+and a recording scheduler in JVM tests. `tasks/TaskSchedule` owns timezone calculations, including
+Android-11-compatible local-date conversion. `platform/TaskPlatform` wires the repository to Android
+alarm and notification APIs. The registered `tasks.TaskAlarmReceiver` component delegates to that
+adapter, preserving existing alarm identity and stored task files.
+
+`conversations/NotificationRecoveryController` owns permission transitions, throttling, retry generations
+and the bounded recovery sequence. Its tests simulate delayed grants, permission loss, stale callbacks
+and already-connected listeners. `platform/NotificationConnectionRecovery` only supplies the Android
+handler, elapsed clock and application context. `NotificationConnection` keeps the observable counts-only
+status used by the UI. No Activity context is retained by recovery timers.
+
+These Android adapters follow the existing platform coverage policy. The task domain and recovery
+controller remain in the measured sources and have regression tests; no new coverage exclusions or
+quality-gate thresholds were introduced. CI now reports Sonar gate conditions and source findings using
+the existing Sonar credential, without exporting it, while the scanner continues to enforce the gate.
