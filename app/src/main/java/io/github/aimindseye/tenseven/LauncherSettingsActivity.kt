@@ -35,6 +35,11 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  * Device and Privacy. Every change is saved at once; the home screens read it when they come forward.
  */
 class LauncherSettingsActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         StartText.t.bindTo(this)
@@ -82,6 +87,7 @@ private fun LauncherSettings(
             ProvideHomeStyle(state) {
             Section(stringResource(R.string.ls_section_style))
             HomeStyleSection(state, first)
+            HomeDisplaySection(state)
 
             Section(stringResource(R.string.ls_section_home))
             SwitchRow(stringResource(R.string.ls_type_to_search), stringResource(R.string.ls_type_to_search_detail), typeToSearch) {
@@ -91,6 +97,7 @@ private fun LauncherSettings(
 
             Section(stringResource(R.string.ls_section_grid))
             IconGridSection(state)
+            IconPresentationSection(state)
 
             Section(stringResource(R.string.ls_section_theme))
             ThemeSection(state)

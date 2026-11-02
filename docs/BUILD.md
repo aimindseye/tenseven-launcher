@@ -32,9 +32,8 @@ Install the debug build next to anything else: its id is `io.github.aimindseye.t
 Android installs only signed APKs. The build signs the release when it finds a key; the key stays on your computer.
 
 ```bash
-# Once: make a key. Keep the .jks file and both passwords safe, and out of this repository.
-keytool -genkeypair -v -keystore ~/tenseven-release.jks -alias tenseven \
-  -keyalg RSA -keysize 2048 -validity 10000
+# Official release keystore: ~/tenseven-release-2.jks (PKCS12), alias tenseven.
+# It is already registered in Android Developer Console. Never regenerate or commit it.
 ```
 
 Then give the build the key, in either of two ways:
@@ -42,7 +41,7 @@ Then give the build the key, in either of two ways:
 - a file `keystore.properties` at the repository root (git-ignored), with absolute paths:
 
   ```properties
-  storeFile=/Users/you/tenseven-release.jks
+  storeFile=/Users/you/tenseven-release-2.jks
   storePassword=...
   keyAlias=tenseven
   keyPassword=...
@@ -55,9 +54,31 @@ Then give the build the key, in either of two ways:
 adb install -r app/build/outputs/apk/release/Tenseven-Launcher-release.apk
 ```
 
-Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
+With signing credentials present, Gradle verifies the keystore certificate against the registered fingerprint before packaging. Older alpha APKs built before this certificate was created may not update in place; back up settings and reinstall if the signing identities differ. A different key fails closed. Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
 for every release: Android refuses to update an app signed with a different one. The release app id is
 `io.github.aimindseye.tenseven` (no `.debug`), so it installs beside the debug build as a separate app.
+
+### 2b. Mandatory Full-only signing and APK verification
+
+The Lite variant is retired. A local Mac build with the *existing* registered keystore
+produces one signed `Tenseven-Launcher-release.apk`; CI intentionally produces an unsigned
+candidate and never receives signing secrets.
+
+```bash
+./gradlew :app:assembleRelease :app:testDebugUnitTest :app:lintRelease
+python3 tests/test_release_verifier.py
+bash tools/verify-release-apks.sh app/build/outputs/apk/release/Tenseven-Launcher-release.apk
+```
+
+For a complete local verified build and copied test package, use:
+`bash tools/build-full-consolidated-test.sh`. The helper checks the release certificate and
+writes one APK plus its SHA-256 to `~/Downloads/tenseven-full-combined-test/`.
+
+The registered release certificate SHA-256 is
+`9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
+Never generate a replacement certificate or commit a signing key.
+Android's sideload/restricted-settings checks still apply; no manifest can auto-approve
+these privileged user choices.
 
 ## 3. Quality gates
 

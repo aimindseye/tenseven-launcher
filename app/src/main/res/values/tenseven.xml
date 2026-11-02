@@ -73,8 +73,11 @@
     <string name="setup_extras_tools">Tools</string>
     <string name="setup_extras_games">Games</string>
     <string name="extras_command_hint">Choose the bundled Calc Plus, Notes and games</string>
-    <string name="setup_restricted_title">If the switch is greyed out</string>
-    <string name="setup_restricted_reason">Android 13 and newer restricts this setting for apps installed from a downloaded file. To allow it: open App info below, tap the menu at the top right, choose Allow restricted settings and confirm, then come back and open the setting again. Only do this for an APK you trust.</string>
+    <string name="setup_restricted_title">If Android blocked Notification or Usage access</string>
+    <string name="setup_restricted_reason">If the first Notification or Usage access request was blocked, Android may now offer Allow restricted settings. Open App info, tap the three-dot menu, and select Allow restricted settings if it appears. Return to TenSeven and retry the access request. Only do this for an APK you trust; TenSeven cannot grant access itself.</string>
+    <string name="setup_restricted_first_request">First try opening Notification or Usage access. If Android blocks it, return here. On some devices, Allow restricted settings appears in TenSeven App info only after that first blocked attempt.</string>
+    <string name="setup_notifications_connected_missing">Allowed in Android Settings, but notification listener not connected. Open Hub Settings for diagnostics.</string>
+    <string name="hub_access_disconnected">Allowed by Android, but notification listener disconnected. See diagnostics below.</string>
     <string name="setup_restricted_action">Open App info</string>
 
     <!-- Hub conversations -->
@@ -227,6 +230,8 @@
     <string name="hub_settings_intro">The Hub keeps conversations in memory only. Nothing is saved or sent.</string>
     <string name="hub_access">Notification access</string>
     <string name="hub_access_on">On. Tap to change it in Android settings.</string>
+    <string name="hub_access_lite">Not in this build. The full build can group messages and email into conversations.</string>
+    <string name="lock_layer_full_only">Automatic lock layer is available only in the Full build, which includes the notification listener.</string>
     <string name="hub_access_off">Off. Tap to allow it so the Hub can fill.</string>
     <string name="hub_clear">Clear the Hub now</string>
     <string name="hub_clear_detail">Forget everything the Hub holds. Notifications in your shade stay where they are.</string>
@@ -263,7 +268,7 @@
     <string name="ls_home_wallpaper_detail">The wallpaper shows through, dimmed so text stays readable. The BlackBerry 7 home always shows it.</string>
     <string name="setup_label_style">Home screen style</string>
     <string name="setup_label_look">Theme and wallpaper</string>
-    <string name="setup_label_grid">Icon grid</string>
+    <string name="setup_label_grid">Icons and grid</string>
     <string name="setup_label_widgets">Widgets</string>
     <string name="setup_label_hub">Hub</string>
     <string name="setup_label_lock">Lock screen</string>
@@ -271,8 +276,8 @@
     <string name="setup_style_reason">BlackBerry 7 is a tray of icons; BlackBerry 10 is tiles with a Hub. You can switch any time.</string>
     <string name="setup_look_title">Theme and wallpaper</string>
     <string name="setup_look_reason">Pick a theme, then one of Tenseven\'s own wallpapers for Home, Lock or both.</string>
-    <string name="setup_grid_title">Icon grid</string>
-    <string name="setup_grid_reason">How many columns and rows of icons, the icon size, and whether app names show.</string>
+    <string name="setup_grid_title">Icons and grid</string>
+    <string name="setup_grid_reason">Choose original or TenSeven icons for either home style, grid columns, icon size, and app labels. BB OS 7 also has home rows.</string>
     <string name="setup_widgets_title">Widgets</string>
     <string name="setup_widgets_reason">A Widgets page beside Home and the Hub, and the Calendar, Alarm and Now Playing strip.</string>
     <string name="setup_hub_title">Hub</string>

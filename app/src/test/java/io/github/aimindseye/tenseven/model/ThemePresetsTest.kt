@@ -48,6 +48,24 @@ class ThemePresetsTest {
     }
 
     @Test
+    fun missingWallpaperSelectionUsesActiveTheme() {
+        val themeWallpaper = ThemePresets.byId("forest").wallpaperId
+        assertEquals("forest", WallpaperSets.selectedId(null, themeWallpaper))
+    }
+
+    @Test
+    fun explicitWallpaperSelectionWinsAcrossThemeChanges() {
+        assertEquals("aurora", WallpaperSets.selectedId("aurora", "sky"))
+        assertEquals("aurora", WallpaperSets.selectedId("aurora", "midnight"))
+    }
+
+    @Test
+    fun invalidSavedWallpaperFallsBackToThemeAndUnknownThemeDefaultsToSky() {
+        assertEquals("forest", WallpaperSets.selectedId("unknown", "forest"))
+        assertEquals("sky", WallpaperSets.selectedId("unknown", "unknown"))
+    }
+
+    @Test
     fun wallpaperCountIsAtLeastEight() {
         assertTrue(WallpaperSets.ALL.size >= 8)
     }

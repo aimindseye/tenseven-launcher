@@ -483,6 +483,9 @@ class SableStartActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Android may leave a sideloaded listener disconnected after an update even if access
+        // remains granted. Recover without prompting or changing the user's source choices.
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
         doubleTapLockState.value = startStateRepository.loadDoubleTapLock()
         val style = startStateRepository.loadHomeStyle()
         if (style != homeStyle.value) {
@@ -629,9 +632,9 @@ class SableStartActivity : ComponentActivity() {
         runCatching {
             framesExecutor.execute {
                 val frames = recentTasksRepository.loadFrames(privateUsers())
-                // An ordinary install sees no other app's tasks; usage access gives a row of recent apps instead.
+                // A nonempty getRecentTasks() result can be incomplete on downloaded installs.
                 val usageAccess = usageRecentsRepository.hasAccess()
-                val recents = if (frames.isEmpty()) usageRecentsRepository.recentPackages() else emptyList()
+                val recents = usageRecentsRepository.recentPackages()
                 runOnUiThread {
                     if (!isDestroyed) {
                         framesState.value = frames
@@ -770,9 +773,49 @@ class SableStartActivity : ComponentActivity() {
                 t("close") to {},
             )
         val items = contextual + global
-        AlertDialog.Builder(this)
-            .setItems(items.map { it.first }.toTypedArray()) { _, which -> items[which].second() }
-            .show()
+        // BB7 menu is a translucent on-wallpaper surface, never a system-white dialog.
+        // Views retain native D-pad/trackpad focus and accessibility click actions.
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+        val layout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            setBackgroundColor(Color.argb(215, 22, 31, 47))
+        }
+        var dialog: AlertDialog? = null
+        items.forEach { (title, action) ->
+            layout.addView(android.widget.TextView(this).apply {
+                text = title
+                setTextColor(Color.WHITE)
+                textSize = 16f
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(11), dp(12), dp(11))
+                isFocusable = true
+                isClickable = true
+                background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+                setOnClickListener { dialog?.dismiss(); action() }
+                setOnKeyListener { _, keyCode, event ->
+                    if (event.action == android.view.KeyEvent.ACTION_DOWN &&
+                        (keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+                            keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER)) {
+                        performClick()
+                        true
+                    } else false
+                }
+            })
+        }
+        val scroll = android.widget.ScrollView(this).apply {
+            isFillViewport = false
+            addView(layout)
+        }
+        val menuDialog = AlertDialog.Builder(this).setView(scroll).create()
+        dialog = menuDialog
+        menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        menuDialog.show()
+        menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.argb(225, 22, 31, 47)))
+        menuDialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(),
+            WindowManager.LayoutParams.WRAP_CONTENT)
+        layout.getChildAt(0)?.requestFocus()
     }
 
     private fun openSystemSettings() {

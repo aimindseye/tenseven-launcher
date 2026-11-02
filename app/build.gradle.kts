@@ -1,3 +1,5 @@
+import java.security.KeyStore
+import java.security.MessageDigest
 import java.util.Properties
 
 plugins {
@@ -7,8 +9,7 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-// The APK files are named Tenseven-Launcher-debug.apk, Tenseven-Launcher-release.apk (signed, see below) or
-// Tenseven-Launcher-release-unsigned.apk (no signing key configured).
+// One Full release APK (signed on the owner's Mac) and a separate debug build.
 base {
     archivesName.set("Tenseven-Launcher")
 }
@@ -44,8 +45,9 @@ android {
         applicationId = "io.github.aimindseye.tenseven"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // Full-only P1 qualification build; update code and name for every distributed test APK.
+        versionCode = 8
+        versionName = "0.2.0-p2a-tasks.1"
     }
 
     signingConfigs {
@@ -125,4 +127,33 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     testImplementation(libs.junit)
+}
+
+/** The SHA-256 certificate registered for this app in Android Developer Console. */
+val registeredTensevenCertificateSha256 =
+    "9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292"
+
+// CI intentionally assembles unsigned candidates. When real signing credentials are supplied,
+// fail before packaging if they do not belong to the registered Tenseven release key.
+if (releaseSigned) {
+    val verifyRegisteredReleaseKey by tasks.registering {
+        group = "verification"
+        description = "Verify the signing keystore matches the registered Tenseven certificate"
+        doLast {
+            val file = rootProject.file(releaseStoreFile!!)
+            check(file.isFile) { "Signing keystore is missing" }
+            val keystore = KeyStore.getInstance(file, releaseStorePassword!!.toCharArray())
+            val certificate = keystore.getCertificate(releaseKeyAlias!!)
+                ?: error("Release key alias was not found")
+            val actual = MessageDigest.getInstance("SHA-256").digest(certificate.encoded)
+                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+            check(actual == registeredTensevenCertificateSha256) {
+                "Wrong release signing certificate: expected registered SHA-256; got $actual"
+            }
+            println("Registered Tenseven signing certificate verified: $actual")
+        }
+    }
+    tasks.matching { it.name in setOf("packageRelease") }.configureEach {
+        dependsOn(verifyRegisteredReleaseKey)
+    }
 }

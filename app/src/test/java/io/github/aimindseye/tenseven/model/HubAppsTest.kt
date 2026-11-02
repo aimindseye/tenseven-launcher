@@ -7,15 +7,23 @@ import org.junit.Test
 
 class HubAppsTest {
     @Test
-    fun everyAppIsInByDefault() {
-        assertTrue(HubApps.isIncluded(emptySet(), "chat"))
+    fun everyAppIsOffByDefault() {
+        assertFalse(HubApps.isIncluded(emptySet(), "chat"))
+        assertFalse(HubApps.isIncluded(emptySet(), "newly.installed.app"))
     }
 
     @Test
-    fun toggleTurnsAnAppOffAndBackOn() {
-        val off = HubApps.toggle(emptySet(), "chat")
-        assertFalse(HubApps.isIncluded(off, "chat"))
-        assertEquals(emptySet<String>(), HubApps.toggle(off, "chat"))
+    fun toggleEnablesOnlyOneAppAndCanDisableAgain() {
+        val enabled = HubApps.toggle(emptySet(), "chat")
+        assertTrue(HubApps.isIncluded(enabled, "chat"))
+        assertFalse(HubApps.isIncluded(enabled, "other"))
+        assertEquals(emptySet<String>(), HubApps.toggle(enabled, "chat"))
+    }
+
+    @Test
+    fun newAppRemainsOffAfterChoosingAnother() {
+        val enabled = HubApps.toggle(emptySet(), "com.whatsapp")
+        assertFalse(HubApps.isIncluded(enabled, "com.signal"))
     }
 
     @Test

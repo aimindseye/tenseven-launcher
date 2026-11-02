@@ -39,9 +39,16 @@ object LauncherBackup {
             "home_mode" to Type.TEXT,
             "home_style" to Type.TEXT,
             "icon_pack" to Type.TEXT,
+            "icon_presentation" to Type.TEXT,
             "bb7_home_rows" to Type.NUMBER,
             "bb7_panels" to Type.TEXT,
             "bb7_scrim" to Type.NUMBER,
+            "home_dials_bb7" to Type.ITEMS,
+            "home_dials_bb10" to Type.ITEMS,
+            "home_notification_strip_bb7" to Type.NUMBER,
+            "home_notification_strip_bb10" to Type.NUMBER,
+            "home_notification_expanded_bb7" to Type.NUMBER,
+            "home_notification_expanded_bb10" to Type.NUMBER,
             "type_to_search" to Type.NUMBER,
             "bb7_icon_size" to Type.NUMBER,
             "widgets_page" to Type.NUMBER,
@@ -50,8 +57,11 @@ object LauncherBackup {
             "grid_labels" to Type.NUMBER,
             "lock_layer" to Type.NUMBER,
             "home_wallpaper" to Type.NUMBER,
-            "hub_excluded_apps" to Type.ITEMS,
+            "wallpaper_set" to Type.TEXT,
+            "hub_excluded_apps" to Type.ITEMS, // legacy backup decode only; never imply opt-in
+            "hub_enabled_apps" to Type.ITEMS,
             "hub_peek_text" to Type.NUMBER,
+            "hub_calendar_peek" to Type.NUMBER,
             "appearance_mode" to Type.TEXT,
             "appearance_accent" to Type.TEXT,
             "appearance_custom" to Type.TEXT,
@@ -64,6 +74,8 @@ object LauncherBackup {
     fun select(all: Map<String, Any?>): Map<String, BackupValue> =
         buildMap {
             for ((key, raw) in all) {
+                // Do not re-export the old implicit-all denylist after switching to explicit opt-in.
+                if (key == "hub_excluded_apps") continue
                 val value = convert(key, raw) ?: continue
                 put(key, value)
             }

@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Basılı tutma kısayolu</string>
     <string name="letter_shortcut_current">Basılı tutma kısayolu: %1$s</string>
     <string name="letter_shortcut_press">Ana ekranda basılı tutunca bu uygulamayı açacak harfe basın. Backspace kaldırır. Aynı harfteki hızlı aramanın yerini alır.</string>
+
+    <string name="hub_calendar_peek">Hub içindeki yaklaşan etkinlikler</string>
+    <string name="hub_calendar_peek_detail">Varsayılan olarak kapalıdır. Etkinleştirildiğinde Android ile eşitlenen takvimlerdeki yaklaşan etkinlikleri okumak için izin ister.</string>
+    <string name="hub_apps_enabled_count">Etkin uygulamalar: %1$d. Diğerleri kapalı kalır.</string>
 </resources>

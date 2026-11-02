@@ -10,10 +10,20 @@ import org.junit.Test
 class ExtraAppsTest {
     @Test
     fun catalogueHasToolsAndTenGames() {
-        assertEquals(3, ExtraApps.ofGroup(ExtraGroup.Tools).size)
+        assertEquals(4, ExtraApps.ofGroup(ExtraGroup.Tools).size)
         assertEquals(10, ExtraApps.ofGroup(ExtraGroup.Games).size)
         assertEquals(ExtraApps.ALL.size, ExtraApps.ALL.map { it.id }.toSet().size)
         assertEquals(ExtraApps.ALL.size, ExtraApps.ALL.map { it.className }.toSet().size)
+    }
+
+    @Test
+    fun tasksIsIndependentlySelectableAlongsideNotes() {
+        val tasks = ExtraApps.ALL.single { it.id == "tasks" }
+        val notes = ExtraApps.ALL.single { it.id == "notes" }
+        assertEquals(AppGlyph.TASKS, tasks.glyph)
+        assertFalse(tasks.className == notes.className)
+        assertEquals(setOf("tasks", "notes"), ExtraApps.normalize(listOf("tasks", "notes")))
+        assertEquals(setOf("tasks") to emptySet<String>(), ExtraApps.changes(setOf("notes"), setOf("notes", "tasks")))
     }
 
     @Test

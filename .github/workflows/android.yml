@@ -16,6 +16,7 @@ on:
       - 'gradle.properties'
       - '.editorconfig'
       - '.github/workflows/android.yml'
+      - 'tools/verify-release-apks.sh'
       - '!**/*.md'
   push:
     branches: [main]
@@ -29,6 +30,7 @@ on:
       - 'gradle.properties'
       - '.editorconfig'
       - '.github/workflows/android.yml'
+      - 'tools/verify-release-apks.sh'
       - '!**/*.md'
   workflow_dispatch:
 
@@ -70,6 +72,10 @@ jobs:
           :design:lintDebug :app:lintDebug
           detekt ktlintCheck
           :design:koverXmlReportDebug :app:koverXmlReportDebug
+      - name: Verify compiled Full APK manifest
+        run: |
+          bash tools/verify-release-apks.sh --ci-unsigned \
+            app/build/outputs/apk/release/Tenseven-Launcher-release-unsigned.apk
       - name: Kover line coverage (baseline, no threshold)
         run: |
           python3 - <<'PY'

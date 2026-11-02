@@ -112,6 +112,20 @@ class ConversationStateTest {
     }
 
     @Test
+    fun snoozedBadgeMatchesVisibleRowsAfterWakeExpiryAndNotificationRemoval() {
+        val ann = conversation("a", "Ann", message("a", "hi", 100))
+        val bo = conversation("b", "Bo", message("b", "hello", 100))
+        val rows = listOf(ann, bo)
+        val state = ConversationState.EMPTY.snooze("a", 1000).snooze("b", 2000)
+        for (now in listOf(500L, 1000L, 2000L)) {
+            assertEquals(ConversationView.apply(rows, ConversationFilter(snoozed = true), state, now).size,
+                ConversationView.snoozedCount(rows, state, now))
+        }
+        assertEquals(1, ConversationView.snoozedCount(rows, state.wake("a"), 500L))
+        assertEquals(1, ConversationView.snoozedCount(listOf(ann), state, 500L))
+    }
+
+    @Test
     fun tomorrowMorningIsTheNextEightAm() {
         val zone = ZoneId.of("America/New_York")
         fun at(h: Int) = ZonedDateTime.of(2026, 10, 30, h, 15, 0, 0, zone).toInstant().toEpochMilli()

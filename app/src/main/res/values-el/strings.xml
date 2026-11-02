@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Συντόμευση παρατεταμένου πλήκτρου</string>
     <string name="letter_shortcut_current">Συντόμευση παρατεταμένου πλήκτρου: %1$s</string>
     <string name="letter_shortcut_press">Πάτησε το γράμμα που θα κρατάς πατημένο στην Αρχική για να ανοίγει αυτή η εφαρμογή. Το Backspace το αφαιρεί. Αντικαθιστά τη γρήγορη κλήση στο ίδιο γράμμα.</string>
+
+    <string name="hub_calendar_peek">Προσεχείς εκδηλώσεις στο Hub</string>
+    <string name="hub_calendar_peek_detail">Ανενεργό από προεπιλογή. Όταν ενεργοποιηθεί, ζητά άδεια για την ανάγνωση προσεχών εκδηλώσεων από ημερολόγια συγχρονισμένα με το Android.</string>
+    <string name="hub_apps_enabled_count">Ενεργοποιημένες εφαρμογές: %1$d. Οι υπόλοιπες παραμένουν ανενεργές.</string>
 </resources>

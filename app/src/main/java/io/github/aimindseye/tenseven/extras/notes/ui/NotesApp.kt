@@ -32,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -111,6 +112,10 @@ private fun ListScreen(
             action = t("new_label"),
             onAction = actions.newNote,
         )
+        val context = LocalContext.current
+        TextButton(onClick = {
+            context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.tasks.TasksActivity::class.java))
+        }) { Text("TenSeven Tasks / Remind") }
         if (state.searching || state.query.isNotEmpty()) SearchField(state, hits, actions)
         if (state.loaded && hits.isEmpty()) {
             Text(

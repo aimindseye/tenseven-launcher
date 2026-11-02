@@ -247,4 +247,8 @@
     <string name="letter_shortcut">長押しショートカット</string>
     <string name="letter_shortcut_current">長押しショートカット: %1$s</string>
     <string name="letter_shortcut_press">ホームで長押しするとこのアプリを開く文字キーを押してください。Backspaceで解除します。同じ文字のクイックダイヤルは置き換えられます。</string>
+
+    <string name="hub_calendar_peek">Hub のこれからのよてい</string>
+    <string name="hub_calendar_peek_detail">はじめはオフです。オンにすると、Android とどうきしたカレンダーのこれからのよていをよむきょかをもとめます。</string>
+    <string name="hub_apps_enabled_count">オンのアプリ: %1$d。ほかのアプリはオフのままです。</string>
 </resources>

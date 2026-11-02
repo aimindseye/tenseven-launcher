@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Genväg med nedhållen tangent</string>
     <string name="letter_shortcut_current">Genväg med nedhållen tangent: %1$s</string>
     <string name="letter_shortcut_press">Tryck på bokstaven som du håller nere på startskärmen för att öppna den här appen. Backsteg tar bort den. Den ersätter en snabbuppringning på samma bokstav.</string>
+
+    <string name="hub_calendar_peek">Kommande händelser i Hub</string>
+    <string name="hub_calendar_peek_detail">Av som standard. När funktionen aktiveras begär den åtkomst till kommande händelser från kalendrar som synkroniseras med Android.</string>
+    <string name="hub_apps_enabled_count">Aktiverade appar: %1$d. Övriga förblir avstängda.</string>
 </resources>

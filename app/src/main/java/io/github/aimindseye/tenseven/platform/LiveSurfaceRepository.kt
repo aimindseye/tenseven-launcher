@@ -201,7 +201,18 @@ class LiveSurfaceRepository(
      */
     private fun hubAppCounts(): List<AppUnreadCount> {
         ConversationHub.ensureStateLoaded(appContext)
-        return providerHubAppCounts().ifEmpty { ConversationHub.unreadCounts(MAX_HUB_APPS) }
+        // One listener-backed count source for BB7, BB10, Hub badges and the lock layer.
+        // On a platform with no listener, retain Sable Hub's existing provider fallback.
+        if (ConversationAccess.isGranted(appContext)) {
+            val lockCounts = LockLayerState.counts.entries
+                .filter { it.value > 0 }
+                .map { AppUnreadCount(it.key, it.value) }
+                .sortedWith(compareByDescending<AppUnreadCount> { it.count }.thenBy { it.packageName })
+                .take(MAX_HUB_APPS)
+            if (lockCounts.isNotEmpty()) return lockCounts
+            return ConversationHub.unreadCounts(MAX_HUB_APPS)
+        }
+        return providerHubAppCounts()
     }
 
     /**

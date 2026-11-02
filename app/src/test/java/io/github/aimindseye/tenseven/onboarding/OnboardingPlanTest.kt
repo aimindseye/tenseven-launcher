@@ -10,6 +10,16 @@ class OnboardingPlanTest {
     private val everything = SetupState(true, true, true, true, true, true)
 
     @Test
+    fun reopeningSetupKeepsAllChoicesEvenWhenPermissionsAndExtrasAreAlreadySet() {
+        assertEquals(OnboardingPlan.steps(nothing), OnboardingPlan.steps(everything))
+        assertEquals(SetupStep.entries, OnboardingPlan.steps(everything))
+        val unavailable = OnboardingPlan.steps(everything.copy(notificationListenerAvailable = false))
+        assertFalse(SetupStep.NOTIFICATIONS in unavailable)
+        assertFalse(SetupStep.LOCK in unavailable)
+        assertTrue(SetupStep.GRID in unavailable && SetupStep.EXTRAS in unavailable)
+    }
+
+    @Test
     fun stepsComeInTheOrderHomeFirst() {
         assertEquals(
             listOf(
@@ -71,5 +81,36 @@ class OnboardingPlanTest {
         assertFalse(help(SetupStep.NOTIFICATIONS, 34, "com.android.vending"))
         assertFalse(help(SetupStep.CONTACTS, 34, null))
         assertFalse(help(SetupStep.HOME, 34, null))
+    }
+
+    @Test
+    fun overviewOnlyShowsRestrictedAppInfoAfterFirstBlockedAccessAttempt() {
+        val eligible = { step: SetupStep ->
+            OnboardingPlan.needsRestrictedSettingsHelp(step, 35, null)
+        }
+        // App info overflow may not offer "Allow restricted settings" before the first request.
+        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(nothing, eligible, emptySet()))
+        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            nothing, eligible, setOf(SetupStep.NOTIFICATIONS)))
+        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            everything.copy(notificationAccess = false), eligible, setOf(SetupStep.NOTIFICATIONS)))
+        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            everything.copy(usageAccess = false), eligible, setOf(SetupStep.USAGE)))
+        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            everything, eligible, setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)))
+        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            nothing,
+            { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, 32, null) },
+            setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)))
+    }
+
+    @Test
+    fun theLiteBuildHasNoNotificationStep() {
+        val lite = nothing.copy(notificationListenerAvailable = false)
+        val pending = OnboardingPlan.pending(lite)
+        assertFalse(SetupStep.NOTIFICATIONS in pending)
+        assertFalse(SetupStep.LOCK in pending)
+        assertTrue(SetupStep.USAGE in pending && SetupStep.CONTACTS in pending)
+        assertEquals(OnboardingPlan.pending(nothing).size - 2, pending.size)
     }
 }

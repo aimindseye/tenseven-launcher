@@ -1,12 +1,10 @@
 package io.github.aimindseye.tenseven.ui
 
 import android.graphics.Rect
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,10 +29,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -129,7 +123,7 @@ internal fun HubPeekHost(
     ) {
         content()
         if (peekOpen) {
-            PhoneColors {
+            HubContrastTheme {
                 HubPeekPanel(onClose = { onPeekChange(false) }, onOpenHub = {
                     onPeekChange(false)
                     onOpenHub()
@@ -139,24 +133,7 @@ internal fun HubPeekHost(
     }
 }
 
-/**
- * The peek is drawn in the phone's own colours, not the launcher's theme: Material You colours from the wallpaper on
- * Android 12 and newer, and the plain system light or dark colours before that.
- */
-@Composable
-private fun PhoneColors(content: @Composable () -> Unit) {
-    val context = LocalContext.current
-    val dark = isSystemInDarkTheme()
-    val scheme =
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(context)
-            dark -> darkColorScheme()
-            else -> lightColorScheme()
-        }
-    MaterialTheme(colorScheme = scheme, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
-}
-
+/** Peek inherits the same user-selected Launcher/Phone appearance as Hub. */
 @Composable
 private fun HubPeekPanel(
     onClose: () -> Unit,
@@ -164,7 +141,8 @@ private fun HubPeekPanel(
 ) {
     val context = LocalContext.current
     val showText = remember { StartStateRepository(context).loadHubPeekText() }
-    val conversations = remember { ConversationHub.conversations().take(MAX_ROWS) }
+    val deviceLocked = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
+    val conversations = ConversationHub.conversations().take(MAX_ROWS)
     val focus = remember { FocusRequester() }
     // The panel slides in from the left edge while the rest of Home dims.
     val slide = remember { Animatable(0f) }
@@ -195,11 +173,11 @@ private fun HubPeekPanel(
                     .graphicsLayer { translationX = (slide.value - 1f) * size.width }
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
-            shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 18.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = PANEL_ALPHA),
+            shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 0.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,
-            shadowElevation = 12.dp,
+            shadowElevation = 0.dp,
         ) {
             Column {
                 Box(Modifier.fillMaxWidth().height(3.dp).background(accent))
@@ -227,7 +205,7 @@ private fun HubPeekPanel(
                     }
                     Column(
                         modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp),
                     ) {
                         if (conversations.isEmpty()) {
                             Column(
@@ -247,7 +225,7 @@ private fun HubPeekPanel(
                             PeekRow(
                                 name = conversation.name,
                                 detail =
-                                    if (showText) {
+                                    if (showText && !deviceLocked) {
                                         conversation.latestMessage?.text.orEmpty()
                                     } else {
                                         stringResource(R.string.peek_count, conversation.notifications.size)
@@ -286,13 +264,12 @@ private fun PeekRow(
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
-        shape = RoundedCornerShape(12.dp),
-        color = if (focused) accent.copy(alpha = 0.22f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+        shape = RoundedCornerShape(0.dp),
+        color = if (focused) accent.copy(alpha = 0.16f) else Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(if (focused) 2.dp else 1.dp, if (focused) accent else MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -337,21 +314,20 @@ private fun PeekButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).sableFocusRing(),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.heightIn(min = 48.dp).sableFocusRing(),
+        shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.primary,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 label,
-                modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
             )
-            Text("\u203A", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.headlineSmall)
+            Text("  \u203A", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -363,4 +339,3 @@ private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
 /** How opaque the peek panel is; the rest lets Home show through. */
-private const val PANEL_ALPHA = 0.9f

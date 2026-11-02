@@ -75,4 +75,8 @@ object WallpaperSets {
         )
 
     fun byId(id: String?): WallpaperSet = ALL.firstOrNull { it.id == id } ?: ALL.first()
+
+    /** A saved explicit choice wins; old installations still use the theme's wallpaper. */
+    fun selectedId(savedId: String?, themeDefaultId: String): String =
+        ALL.firstOrNull { it.id == savedId }?.id ?: byId(themeDefaultId).id
 }

@@ -13,6 +13,8 @@ class LauncherBackupTest {
             "quick_bar" to BackupValue.Text("one\ntwo\\three\ttab ünï"),
             "bb7_home_rows" to BackupValue.Number(3),
             "home_style" to BackupValue.Text("bb7"),
+            "wallpaper_set" to BackupValue.Text("aurora"),
+            "hub_enabled_apps" to BackupValue.Items(setOf("com.signal")),
         )
 
     @Test
@@ -40,6 +42,21 @@ class LauncherBackupTest {
                 ),
             )
         assertEquals(setOf("home_style", "bb7_home_rows", "favorite_apps"), picked.keys)
+    }
+
+    @Test
+    fun oldDenylistBackupsStillDecodeButDoNotCreateAnAllowlist() {
+        val old = """{"format":"tenseven-backup","version":1,"settings":{"hub_excluded_apps":["a.app"]}}"""
+        val decoded = LauncherBackup.decode(old).getOrThrow()
+        assertEquals(setOf("a.app"), (decoded["hub_excluded_apps"] as BackupValue.Items).values)
+        assertFalse(decoded.containsKey("hub_enabled_apps"))
+        assertFalse(LauncherBackup.select(mapOf("hub_excluded_apps" to setOf("a.app"))).containsKey("hub_excluded_apps"))
+    }
+
+    @Test
+    fun oldBackupWithoutWallpaperSetStillDecodes() {
+        val previous = sample - "wallpaper_set"
+        assertEquals(previous, LauncherBackup.decode(LauncherBackup.encode(previous)).getOrThrow())
     }
 
     @Test
@@ -77,9 +94,16 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_HOME_MODE,
                 StartStateRepository.KEY_HOME_STYLE,
                 StartStateRepository.KEY_ICON_PACK,
+                StartStateRepository.KEY_ICON_PRESENTATION,
                 StartStateRepository.KEY_BB7_HOME_ROWS,
                 StartStateRepository.KEY_BB7_PANELS,
                 StartStateRepository.KEY_BB7_SCRIM,
+                StartStateRepository.KEY_HOME_DIALS_BB7,
+                StartStateRepository.KEY_HOME_DIALS_BB10,
+                StartStateRepository.KEY_HOME_NOTIFICATION_STRIP_BB7,
+                StartStateRepository.KEY_HOME_NOTIFICATION_STRIP_BB10,
+                StartStateRepository.KEY_HOME_NOTIFICATION_EXPANDED_BB7,
+                StartStateRepository.KEY_HOME_NOTIFICATION_EXPANDED_BB10,
                 StartStateRepository.KEY_TYPE_TO_SEARCH,
                 StartStateRepository.KEY_BB7_ICON_SIZE,
                 StartStateRepository.KEY_WIDGETS_PAGE,
@@ -88,8 +112,11 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_GRID_LABELS,
                 StartStateRepository.KEY_LOCK_LAYER,
                 StartStateRepository.KEY_HOME_WALLPAPER,
+                StartStateRepository.KEY_WALLPAPER_SET,
                 StartStateRepository.KEY_HUB_EXCLUDED,
+                StartStateRepository.KEY_HUB_ENABLED,
                 StartStateRepository.KEY_HUB_PEEK_TEXT,
+                StartStateRepository.KEY_HUB_CALENDAR_PEEK,
                 StartStateRepository.KEY_APPEARANCE_MODE,
                 StartStateRepository.KEY_APPEARANCE_ACCENT,
                 StartStateRepository.KEY_APPEARANCE_CUSTOM,

@@ -34,6 +34,7 @@ enum class AppGlyph(
     READER("book", 0xFF35C66B),
     TEXT_READER("align-left", 0xFF4D9CFF),
     NOTES("notes", 0xFFF5C542),
+    TASKS("clipboard-check", 0xFF2BB5A0),
     TERMINAL("terminal-2", 0xFF3FA37A),
     SUDOKU("grid-3x3", 0xFF4D9CFF),
     MINESWEEPER("bomb", 0xFFF28C45),

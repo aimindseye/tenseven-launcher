@@ -247,4 +247,8 @@
     <string name="letter_shortcut">Snelkoppeling bij ingedrukt houden</string>
     <string name="letter_shortcut_current">Snelkoppeling bij ingedrukt houden: %1$s</string>
     <string name="letter_shortcut_press">Druk op de letter die je op Start ingedrukt houdt om deze app te openen. Backspace verwijdert hem. Hij vervangt een snelkeuze op dezelfde letter.</string>
+
+    <string name="hub_calendar_peek">Komende afspraken in Hub</string>
+    <string name="hub_calendar_peek_detail">Standaard uit. Na inschakelen wordt toestemming gevraagd om komende afspraken te lezen uit agenda’s die met Android zijn gesynchroniseerd.</string>
+    <string name="hub_apps_enabled_count">Ingeschakelde apps: %1$d. Andere blijven uitgeschakeld.</string>
 </resources>

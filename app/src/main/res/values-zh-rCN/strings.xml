@@ -247,4 +247,8 @@
     <string name="letter_shortcut">长按快捷键</string>
     <string name="letter_shortcut_current">长按快捷键：%1$s</string>
     <string name="letter_shortcut_press">请按下要在主屏幕长按的字母，用来打开此应用。退格键可清除。它会取代同一字母上的快速拨号。</string>
+
+    <string name="hub_calendar_peek">Hub 中的即将到来事件</string>
+    <string name="hub_calendar_peek_detail">默认关闭。开启后，请求读取与 Android 同步的日历中的即将到来事件。</string>
+    <string name="hub_apps_enabled_count">已启用的应用：%1$d。其他应用保持关闭。</string>
 </resources>

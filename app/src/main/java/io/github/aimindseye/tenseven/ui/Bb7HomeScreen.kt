@@ -72,11 +72,13 @@ import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.HomeApps
+import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
@@ -129,14 +131,21 @@ fun Bb7HomeScreen(
     showLabels: Boolean = true,
 ) {
     val context = LocalContext.current
+    val displayState = remember(context) { StartStateRepository(context) }
+    val enabledDials = remember(refreshGeneration) { displayState.loadHomeDials(HomeStyle.Bb7) }
+    val showStrip = remember(refreshGeneration) { displayState.loadHomeNotificationStrip(HomeStyle.Bb7) }
+    val stripExpanded = remember(refreshGeneration) { displayState.loadHomeNotificationExpanded(HomeStyle.Bb7) }
+    val hubSources = remember(refreshGeneration) { displayState.loadHubEnabledApps() }
     val usage = remember(apps, refreshGeneration, homeGeneration) { AppUsageRepository(context).load() }
     var panel by remember { mutableStateOf(Bb7Panel.Favorites) }
     // A panel the user hid can no longer be the one shown.
     LaunchedEffect(panels) { if (panel !in panels) panel = panels.first() }
     var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    var selected by remember { mutableIntStateOf(0) }
+    // Nothing is highlighted until the user actually navigates the tray with a key.
+    var selected by remember { mutableIntStateOf(-1) }
     var moving by remember { mutableStateOf(false) }
+    var pickingDesktop by remember { mutableStateOf(false) }
     // Which list the arrow keys move in: the tray (false) or the icons in the empty space above it.
     var inDesktopZone by remember { mutableStateOf(false) }
     var deskSelected by remember { mutableIntStateOf(0) }
@@ -149,8 +158,9 @@ fun Bb7HomeScreen(
     LaunchedEffect(homeGeneration) {
         open = false
         query = ""
-        selected = 0
+        selected = -1
         moving = false
+        pickingDesktop = false
         inDesktopZone = false
     }
     val live by
@@ -177,12 +187,13 @@ fun Bb7HomeScreen(
         if (searching) Bb7Home.search(apps, query) else Bb7Home.panelApps(panel, apps, favoriteKeys, usage, defaultPackages)
     val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, favoriteKeys, defaultPackages = defaultPackages).map { it.stableKey() }
     val appsByKey = remember(apps) { apps.associateBy { it.stableKey() } }
-    val desktopApps = desktopKeys.mapNotNull { appsByKey[it] }
+    val desktopApps = Bb7Home.desktopShortcuts(desktopKeys).mapNotNull { appsByKey[it] }
     val inDesktop = inDesktopZone && !open && !searching && desktopApps.isNotEmpty()
     val deskIndex = deskSelected.coerceIn(0, (desktopApps.size - 1).coerceAtLeast(0))
     val trayTitle =
         when {
             moving -> t("move") + shown.getOrNull(selected)?.label.orEmpty() + t("enter_to_drop")
+            pickingDesktop -> "Tap an app to add to Home"
             searching -> t("search", query)
             else -> panel.title
         }
@@ -209,6 +220,26 @@ fun Bb7HomeScreen(
         val rows = Bb7Home.rowsFor(next.size, keyColumns)
         if (rows > homeRows) onHomeRowsChanged(rows)
     }
+    // Tap empty wallpaper, then tap an installed app to add its shortcut.
+    val addToDesktop: (AppEntry) -> Unit = { app ->
+        val key = app.stableKey()
+        val next = Bb7Home.addDesktopShortcut(desktopKeys, key)
+        when {
+            key in desktopKeys -> Toast.makeText(context, "Already on Home", Toast.LENGTH_SHORT).show()
+            key !in next -> Toast.makeText(
+                context, "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts", Toast.LENGTH_LONG,
+            ).show()
+            else -> {
+                onDesktopChanged(next)
+                open = false
+                query = ""
+                pickingDesktop = false
+                selected = -1
+                Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     // The Menu key: the highlighted icon's items first, then Start's own (added by the activity).
     val menuFor = { app: AppEntry?, fromDesktop: Boolean ->
         buildList<Pair<String, () -> Unit>> {
@@ -225,10 +256,7 @@ fun Bb7HomeScreen(
                     )
                 } else {
                     add(
-                        context.getString(R.string.bb7_add_home) to {
-                            onDesktopChanged(desktopKeys + key)
-                            Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
-                        },
+                        context.getString(R.string.bb7_add_home) to { addToDesktop(app) },
                     )
                 }
                 if (key in favorites) {
@@ -354,9 +382,9 @@ fun Bb7HomeScreen(
                                         openApps()
                                     }
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ->
-                                    selected = Bb7Home.move(selected, visible, columns, -1, 0)
+                                    selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, -1, 0)
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ->
-                                    selected = Bb7Home.move(selected, visible, columns, 1, 0)
+                                    selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 1, 0)
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_UP ->
                                     if (open || searching || selected >= columns) {
                                         selected = Bb7Home.move(selected, visible, columns, 0, -1)
@@ -371,9 +399,9 @@ fun Bb7HomeScreen(
                                 native.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ->
                                     if (open && selected + columns >= visible) {
                                         open = false
-                                        selected = selected.coerceAtMost(columns - 1)
+                                        selected = -1
                                     } else {
-                                        selected = Bb7Home.move(selected, visible, columns, 0, 1)
+                                        selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 0, 1)
                                     }
                                 native.keyCode == KeyEvent.KEYCODE_ENTER && native.isAltPressed ->
                                     onOpenMenu(menuFor(shown.getOrNull(selected), false))
@@ -446,7 +474,12 @@ fun Bb7HomeScreen(
                 ) {
                     Bb7Banner(
                         dateText = DateFormat.getDateInstance(DateFormat.FULL).format(Date(today)),
-                        unread = live.hubApps.sumOf { it.count },
+                        unread = live.hubApps.filter { it.packageName in hubSources }.sumOf { it.count },
+                        notificationCounts = live.hubApps,
+                        hubSources = hubSources,
+                        enabledDials = enabledDials,
+                        showStrip = showStrip,
+                        stripExpanded = stripExpanded,
                         compact = open || searching,
                         scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
                         onOpenHub = onOpenHub,
@@ -461,6 +494,15 @@ fun Bb7HomeScreen(
                             moving = moving,
                             modifier = Modifier.weight(1f),
                             onLaunch = { onLaunchApp(it) },
+                            onEmptyTap = {
+                                // An empty wallpaper tap is a discoverable route to All Apps;
+                                // long-press an app there and choose Add to home screen.
+                                selected = -1
+                                inDesktopZone = false
+                                openApps()
+                                pickingDesktop = true
+                                Toast.makeText(context, "Tap an app to add to Home", Toast.LENGTH_SHORT).show()
+                            },
                             onLongPress = { app ->
                                 inDesktopZone = true
                                 deskSelected = desktopApps.indexOf(app).coerceAtLeast(0)
@@ -491,13 +533,15 @@ fun Bb7HomeScreen(
                         onToggle = {
                             open = !open
                             query = ""
+                            selected = if (open) 0 else -1
+                            if (!open) pickingDesktop = false
                         },
                         onStep = { step ->
                             query = ""
                             panel = Bb7Home.step(panel, step, panels)
                             selected = 0
                         },
-                        onLaunch = { onLaunchApp(it) },
+                        onLaunch = { if (pickingDesktop) addToDesktop(it) else onLaunchApp(it) },
                         onMenu = {
                             // The ⋮ button: the menu for the highlighted icon.
                             onOpenMenu(menuFor(shown.getOrNull(selected), false))
@@ -523,6 +567,11 @@ fun Bb7HomeScreen(
 private fun Bb7Banner(
     dateText: String,
     unread: Int,
+    notificationCounts: List<io.github.aimindseye.tenseven.live.AppUnreadCount>,
+    hubSources: Set<String>,
+    enabledDials: Set<String>,
+    showStrip: Boolean,
+    stripExpanded: Boolean,
     compact: Boolean,
     scrim: Color,
     onOpenHub: () -> Unit,
@@ -534,7 +583,7 @@ private fun Bb7Banner(
                 .background(scrim)
                 .padding(horizontal = 12.dp, vertical = if (compact) 4.dp else 8.dp),
     ) {
-        if (!compact) SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp)
+        if (!compact && enabledDials.isNotEmpty()) SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp, visible = enabledDials)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f).padding(top = if (compact) 0.dp else 6.dp)) {
                 Text(
@@ -547,8 +596,12 @@ private fun Bb7Banner(
             }
             SoundProfileButton()
             Spacer(Modifier.width(6.dp))
-            UnreadBadge(unread, onOpenHub)
+            if (!showStrip) UnreadBadge(unread, onOpenHub)
         }
+        if (showStrip && !compact) HomeNotificationStrip(
+            counts = notificationCounts, enabledPackages = hubSources,
+            expanded = stripExpanded, onOpenHub = onOpenHub,
+        )
     }
 }
 
@@ -726,9 +779,14 @@ private fun Bb7Desktop(
     modifier: Modifier,
     onLaunch: (AppEntry) -> Unit,
     onLongPress: (AppEntry) -> Unit,
+    onEmptyTap: () -> Unit,
 ) {
     if (apps.isEmpty()) {
-        Spacer(modifier)
+        Box(modifier.fillMaxWidth().clickable(onClick = onEmptyTap),
+            contentAlignment = Alignment.Center) {
+            Text("+ Add shortcuts", color = Color.White.copy(alpha = 0.65f),
+                style = MaterialTheme.typography.labelLarge)
+        }
         return
     }
     val grid = rememberLazyGridState()
@@ -738,7 +796,9 @@ private fun Bb7Desktop(
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         state = grid,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onEmptyTap)
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        userScrollEnabled = false,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

@@ -23,6 +23,7 @@ object ExtraApps {
     val ALL: List<ExtraApp> =
         listOf(
             ExtraApp("calculator", "Calc Plus", "Exact arithmetic, scientific functions and unit conversion", ROOT + "calculator.MainActivity", AppGlyph.CALCULATOR, ExtraGroup.Tools),
+            ExtraApp("tasks", "Tasks", "To-dos, due dates, repeating tasks and reminders; a separate app alongside Notes", "io.github.aimindseye.tenseven.tasks.TasksLauncherActivity", AppGlyph.TASKS, ExtraGroup.Tools),
             ExtraApp("notes", "Notes", "Notes and checklists kept on the phone; share text into a new note", ROOT + "notes.MainActivity", AppGlyph.NOTES, ExtraGroup.Tools),
             ExtraApp("profiles", "Sound Profiles", "BlackBerry sound profiles: Normal, Loud, Vibrate only, Phone calls only, All alerts off", ROOT + "profiles.MainActivity", AppGlyph.MEDIA, ExtraGroup.Tools),
             ExtraApp("sudoku", "Sudoku", "Number puzzle", ROOT + "games.SudokuActivity", AppGlyph.SUDOKU, ExtraGroup.Games),

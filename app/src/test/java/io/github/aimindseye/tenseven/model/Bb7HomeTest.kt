@@ -6,6 +6,16 @@ import org.junit.Test
 /** BB7 home style: the saved choice, the tray grid and its panels. */
 class Bb7HomeTest {
     @Test
+    fun desktopShortcutsAreBoundedAndNeverReplaceTheLastIcon() {
+        val eight = (1..8).map { "app$it" }
+        assertEquals(eight, Bb7Home.desktopShortcuts(eight + "app9"))
+        assertEquals(eight, Bb7Home.addDesktopShortcut(eight, "app9"))
+        assertEquals(eight, Bb7Home.addDesktopShortcut(eight, "app3"))
+        assertEquals(listOf("a", "b"), Bb7Home.addDesktopShortcut(listOf("a"), "b"))
+        assertEquals(listOf("a"), Bb7Home.desktopShortcuts(listOf("a", "a")))
+    }
+
+    @Test
     fun homeStyleRoundTripsAndDefaultsToBb10() {
         HomeStyle.entries.forEach { assertEquals(it, HomeStyle.fromStableValue(it.stableValue)) }
         assertEquals(HomeStyle.Bb10, HomeStyle.fromStableValue(null))

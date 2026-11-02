@@ -46,6 +46,8 @@ data class SetupState(
     val usageAccess: Boolean,
     /** At least one bundled extra app (Calculator, Notes, a game) is switched on. Off by default. */
     val extrasChosen: Boolean = false,
+    /** False when the notification listener is unavailable on the device. */
+    val notificationListenerAvailable: Boolean = true,
 ) {
     fun isDone(step: SetupStep): Boolean =
         when (step) {
@@ -60,13 +62,29 @@ data class SetupState(
 }
 
 object OnboardingPlan {
+    /** The same reviewable setup sequence on first launch and every later visit. */
+    fun steps(state: SetupState): List<SetupStep> = SetupStep.entries.filterNot {
+        !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
+    }
+
     /** Android 13 added "restricted settings" for apps that were not installed from a store. */
     const val RESTRICTED_SETTINGS_SDK = 33
 
     private const val PLAY_STORE = "com.android.vending"
 
     /** The steps still to do, in order. Empty when everything is set up. */
-    fun pending(state: SetupState): List<SetupStep> = SetupStep.entries.filter { it.isChoice || !state.isDone(it) }
+    fun pending(state: SetupState): List<SetupStep> =
+        SetupStep.entries
+            .filterNot { !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK) }
+            .filter { it.isChoice || !state.isDone(it) }
+
+    /** An already-completed setup returns to overview; never hide this help there. */
+    fun needsRestrictedSettingsOverviewHelp(
+        state: SetupState,
+        eligible: (SetupStep) -> Boolean,
+        attempted: Set<SetupStep>,
+    ): Boolean = listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
+        .any { !state.isDone(it) && eligible(it) && it in attempted }
 
     /**
      * Whether to explain "Allow restricted settings". On Android 13 or newer, the switch for notification or

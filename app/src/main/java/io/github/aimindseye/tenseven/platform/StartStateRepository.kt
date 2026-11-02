@@ -11,7 +11,10 @@ import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.GridColumns
+import io.github.aimindseye.tenseven.model.HomeDisplayPolicy
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.model.ThemePresets
+import io.github.aimindseye.tenseven.model.WallpaperSets
 import io.github.aimindseye.tenseven.model.LauncherBackup
 import io.github.aimindseye.tenseven.model.WidgetList
 
@@ -210,6 +213,16 @@ class StartStateRepository(
         }.apply()
     }
 
+    /** Original installed icons by default; Tabler-derived TenSeven glyphs are opt-in. */
+    fun loadIconPresentation(): io.github.aimindseye.tenseven.model.IconPresentation =
+        io.github.aimindseye.tenseven.model.IconPresentation.decode(
+            preferences.getString(KEY_ICON_PRESENTATION, null),
+        )
+
+    fun saveIconPresentation(style: io.github.aimindseye.tenseven.model.IconPresentation) {
+        preferences.edit().putString(KEY_ICON_PRESENTATION, style.key).apply()
+    }
+
     /** Whether typing on a home screen starts a search (default on). */
     fun loadTypeToSearch(): Boolean = preferences.getInt(KEY_TYPE_TO_SEARCH, 1) != 0
 
@@ -225,9 +238,9 @@ class StartStateRepository(
     }
 
     /** Apps placed in the empty space of the BlackBerry 7 home screen, in order (stable keys). */
-    fun loadBb7Desktop(): List<String> = loadOrdered(KEY_BB7_DESKTOP).orEmpty()
+    fun loadBb7Desktop(): List<String> = Bb7Home.desktopShortcuts(loadOrdered(KEY_BB7_DESKTOP).orEmpty())
 
-    fun saveBb7Desktop(keys: List<String>) = saveOrdered(KEY_BB7_DESKTOP, keys)
+    fun saveBb7Desktop(keys: List<String>) = saveOrdered(KEY_BB7_DESKTOP, Bb7Home.desktopShortcuts(keys))
 
     /** Icon grid: columns (0 = as many as fit) and whether icons carry their names. */
     fun loadGridColumns(): Int = GridColumns.normalize(preferences.getInt(KEY_GRID_COLUMNS, GridColumns.AUTO))
@@ -243,6 +256,18 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_LOCK_LAYER, if (enabled) 1 else 0).apply()
     }
 
+    /** Explicit selection is separate from theme and Android WallpaperManager. */
+    fun loadWallpaperSetId(): String =
+        WallpaperSets.selectedId(
+            preferences.getString(KEY_WALLPAPER_SET, null),
+            ThemePresets.matching(loadAppearanceMode(), loadAppearanceAccent()).wallpaperId,
+        )
+
+    fun saveWallpaperSetId(id: String) {
+        require(WallpaperSets.ALL.any { it.id == id }) { "Unknown wallpaper: $id" }
+        preferences.edit().putString(KEY_WALLPAPER_SET, id).apply()
+    }
+
     /** Whether the BlackBerry 10 home lets the wallpaper show through, dimmed. On by default. */
     fun loadHomeWallpaper(): Boolean = preferences.getInt(KEY_HOME_WALLPAPER, 1) != 0
 
@@ -256,11 +281,62 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_GRID_LABELS, if (shown) 1 else 0).apply()
     }
 
-    /** Packages whose notifications the Hub ignores ("Apps in the Hub": the ones switched off). */
-    fun loadHubExcludedApps(): Set<String> = preferences.getStringSet(KEY_HUB_EXCLUDED, null).orEmpty().toSet()
+    /**
+     * Only explicitly opted-in apps may feed Hub and lock-layer badges. Old denylist values
+     * must NOT be converted into an all-apps grant; users select their sources again.
+     */
+    fun loadHubEnabledApps(): Set<String> = preferences.getStringSet(KEY_HUB_ENABLED, null).orEmpty().toSet()
 
-    fun saveHubExcludedApps(packages: Set<String>) {
-        preferences.edit().putStringSet(KEY_HUB_EXCLUDED, packages.toSet()).apply()
+    fun saveHubEnabledApps(packages: Set<String>) {
+        preferences.edit().putStringSet(KEY_HUB_ENABLED, packages.toSet()).apply()
+    }
+
+    /** Visibility is independent per selected home style, including an empty dial set. */
+    fun loadHomeDials(style: HomeStyle): Set<String> =
+        HomeDisplayPolicy.normalizedDials(
+            preferences.getStringSet(HomeDisplayPolicy.dialPreference(style), null)
+                ?: HomeDisplayPolicy.ALL_DIALS,
+        )
+
+    fun saveHomeDials(style: HomeStyle, selected: Set<String>) {
+        preferences.edit().putStringSet(
+            HomeDisplayPolicy.dialPreference(style), HomeDisplayPolicy.normalizedDials(selected),
+        ).apply()
+    }
+
+    fun loadHomeNotificationStrip(style: HomeStyle): Boolean =
+        preferences.getInt(HomeDisplayPolicy.stripPreference(style), 1) != 0
+
+    fun saveHomeNotificationStrip(style: HomeStyle, enabled: Boolean) {
+        preferences.edit().putInt(HomeDisplayPolicy.stripPreference(style), if (enabled) 1 else 0).apply()
+    }
+
+    fun loadHomeNotificationExpanded(style: HomeStyle): Boolean =
+        preferences.getInt(HomeDisplayPolicy.stripExpandedPreference(style), 0) != 0
+
+    fun saveHomeNotificationExpanded(style: HomeStyle, expanded: Boolean) {
+        preferences.edit().putInt(HomeDisplayPolicy.stripExpandedPreference(style), if (expanded) 1 else 0).apply()
+    }
+
+    /** null selects all visible calendars; empty selects none. IDs stay on-device (never backed up). */
+    fun loadHubSelectedCalendarIds(): Set<Long>? =
+        if (preferences.contains(KEY_HUB_SELECTED_CALENDARS)) {
+            preferences.getStringSet(KEY_HUB_SELECTED_CALENDARS, emptySet())
+                .orEmpty().mapNotNull { it.toLongOrNull() }.toSet()
+        } else null
+
+    fun saveHubSelectedCalendarIds(ids: Set<Long>?) {
+        preferences.edit().apply {
+            if (ids == null) remove(KEY_HUB_SELECTED_CALENDARS)
+            else putStringSet(KEY_HUB_SELECTED_CALENDARS, ids.map { it.toString() }.toSet())
+        }.apply()
+    }
+
+    /** Calendar Peek is optional: never read CalendarProvider until the user enables this. */
+    fun loadHubCalendarPeek(): Boolean = preferences.getInt(KEY_HUB_CALENDAR_PEEK, 0) != 0
+
+    fun saveHubCalendarPeek(enabled: Boolean) {
+        preferences.edit().putInt(KEY_HUB_CALENDAR_PEEK, if (enabled) 1 else 0).apply()
     }
 
     /** Whether the Hub peek on the home screen shows message text (off: names and counts only). */
@@ -388,6 +464,12 @@ class StartStateRepository(
         const val KEY_BB7_HOME_ROWS = "bb7_home_rows"
         const val KEY_BB7_PANELS = "bb7_panels"
         const val KEY_BB7_SCRIM = "bb7_scrim"
+        const val KEY_HOME_DIALS_BB7 = "home_dials_bb7"
+        const val KEY_HOME_DIALS_BB10 = "home_dials_bb10"
+        const val KEY_HOME_NOTIFICATION_STRIP_BB7 = "home_notification_strip_bb7"
+        const val KEY_HOME_NOTIFICATION_STRIP_BB10 = "home_notification_strip_bb10"
+        const val KEY_HOME_NOTIFICATION_EXPANDED_BB7 = "home_notification_expanded_bb7"
+        const val KEY_HOME_NOTIFICATION_EXPANDED_BB10 = "home_notification_expanded_bb10"
         const val KEY_TYPE_TO_SEARCH = "type_to_search"
         const val KEY_BB7_ICON_SIZE = "bb7_icon_size"
         const val KEY_WIDGETS_PAGE = "widgets_page"
@@ -396,8 +478,12 @@ class StartStateRepository(
         const val KEY_GRID_LABELS = "grid_labels"
         const val KEY_LOCK_LAYER = "lock_layer"
         const val KEY_HOME_WALLPAPER = "home_wallpaper"
-        const val KEY_HUB_EXCLUDED = "hub_excluded_apps"
+        const val KEY_WALLPAPER_SET = "wallpaper_set"
+        const val KEY_HUB_EXCLUDED = "hub_excluded_apps" // legacy backup compatibility; never used as consent
+        const val KEY_HUB_ENABLED = "hub_enabled_apps"
         const val KEY_HUB_PEEK_TEXT = "hub_peek_text"
+        const val KEY_HUB_CALENDAR_PEEK = "hub_calendar_peek"
+        const val KEY_HUB_SELECTED_CALENDARS = "hub_selected_calendar_ids_device"
         const val KEY_HOME_WIDGET_IDS = "home_widget_ids"
         const val KEY_APPEARANCE_MODE = "appearance_mode"
         const val KEY_APPEARANCE_ACCENT = "appearance_accent"
@@ -412,6 +498,7 @@ class StartStateRepository(
         const val KEY_HOME_STYLE = "home_style"
         const val KEY_ONBOARDING_DONE = "onboarding_done"
         const val KEY_ICON_PACK = "icon_pack"
+        const val KEY_ICON_PRESENTATION = "icon_presentation"
         const val KEY_DOUBLE_TAP_LOCK = "double_tap_lock"
         const val KEY_GRID_ORDER = "grid_order"
     }

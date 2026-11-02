@@ -106,30 +106,30 @@ adb shell appops set --user 0 <id> GET_USAGE_STATS allow
 adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.conversations.ConversationListenerService
 ```
 
-## Install
+## Install — Full only
 
-Tenseven is in alpha. Download the signed APK from the [latest GitHub release](https://github.com/aimindseye/tenseven-launcher/releases) (the `release` APK; the `debug` one installs beside it), build one yourself ([`docs/BUILD.md`](docs/BUILD.md)) or use a CI debug build. With an APK:
+The only distributed variant is **Full** (`Tenseven-Launcher-release.apk`); the Lite
+option and its Gradle build type are retired. Tenseven remains a normal Android Home app,
+without signature permissions or Play Protect workarounds.
 
-1. Download the APK from the GitHub release and open it; approve installing from that source if Android asks.
-   **If Google Play Protect says "App blocked to protect your device"** ("This app can request access to
-   sensitive data", with only a **Got it** button): this is not about the signature. Play Protect blocks apps
-   installed from a browser, messaging app or file manager when they declare an accessibility service or a
-   notification listener ([Google's explanation](https://developers.google.com/android/play-protect/warning-dev-guidance)),
-   and Tenseven declares both (lock screen on double tap, and Hub conversations). Both stay off until you allow
-   them. To install: if your phone has **Advanced Protection** (Settings > Security), switch it off; then in Play
-   Store > your profile > **Play Protect** > the gear, switch off **Scan apps with Play Protect**; install; then
-   switch both back on. Or install from a computer with `adb install -r Tenseven-Launcher-release.apk`, which is not
-   a download source. Updates need none of this. Install only an APK from the release page, whose SHA-256 is listed there.
-2. Press Home and choose **Tenseven** as the home app (or Settings > Apps > Default apps > Home app).
-3. Follow the setup screens that open on first run: the home role first, then each optional permission with its reason, then your choices (home style, theme and wallpaper, icon grid, widgets, Hub, lock screen, extra apps). All of it can be changed later in Launcher Settings, then Setup.
-4. Open Launcher Settings (BB7 menu, BB10 gear, or type "Launcher Settings" in Command) and pick the BlackBerry 10 or BlackBerry 7 card.
-5. **Notification or usage access on Android 13 or newer:** Android greys these switches out for apps
-   installed outside a store until you open Settings > Apps > Tenseven, tap the top-right menu and choose
-   **Allow restricted settings**. The setup screen shows this step when it applies. Only do this for an APK you trust.
+On the signing Mac, with the existing registered release keystore configured, run:
 
-To try the current debug build, download `tenseven-debug-apk` from a green run of the
-[Android workflow](https://github.com/aimindseye/tenseven-launcher/actions/workflows/android.yml) (it
-installs next to a future release as `io.github.aimindseye.tenseven.debug`).
+```bash
+bash tools/build-full-consolidated-test.sh
+```
+
+This checks unit tests, builds one signed Full APK, verifies its package/manifest/signing
+identity and writes the APK plus SHA-256 to
+`~/Downloads/tenseven-full-combined-test/`. The package ID is
+`io.github.aimindseye.tenseven`. See [docs/BUILD.md](docs/BUILD.md).
+
+Install the verified APK through the intended source with Play Protect enabled.
+If Android restricts Notification or Usage access for a downloaded APK, open
+**Settings → Apps → Tenseven → three-dot menu → Allow restricted settings**
+when that option exists. Return to Setup and grant access explicitly.
+This cannot be enabled through a manifest. Opt into Hub apps individually;
+Calendar access and calendar source selection are separate optional choices.
+The lock-layer Peek never replaces Android's secure keyguard.
 
 ## Supported devices
 

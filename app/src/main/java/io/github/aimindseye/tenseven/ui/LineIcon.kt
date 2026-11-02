@@ -16,6 +16,10 @@ import androidx.compose.ui.graphics.drawscope.translate
 
 /** Plain one-colour line icons (24 x 24 box, 2 unit round stroke, Tabler outline geometry, MIT) for the status row. */
 object LineIconPaths {
+    val EXTERNAL = listOf("M13 4h7v7", "M20 4l-10 10", "M19 14v5a1 1 0 0 1 -1 1h-13a1 1 0 0 1 -1 -1v-13a1 1 0 0 1 1 -1h5")
+    val REPLY = listOf("M10 8l-6 4 6 4", "M4 12h9a7 7 0 0 1 7 7")
+    val CHECK = listOf("M4 12l5 5 11 -11")
+    val SEARCH = listOf("M10 4a6 6 0 1 0 0 12a6 6 0 1 0 0-12", "M15 15l5 5")
     val BELL =
         listOf(
             "M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6",

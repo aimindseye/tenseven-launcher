@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,6 +53,7 @@ import io.github.aimindseye.tenseven.onboarding.OnboardingPlan
 import io.github.aimindseye.tenseven.onboarding.SetupState
 import io.github.aimindseye.tenseven.onboarding.SetupStatus
 import io.github.aimindseye.tenseven.onboarding.SetupStep
+import io.github.aimindseye.tenseven.onboarding.SpecialAccessAttemptStore
 import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
@@ -63,6 +65,7 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  */
 class OnboardingActivity : ComponentActivity() {
     private val setup = mutableStateOf<SetupState?>(null)
+    private val attemptedSpecialAccess = mutableStateOf<Set<SetupStep>>(emptySet())
     private lateinit var startState: StartStateRepository
     private lateinit var steps: List<SetupStep>
     private val homeRoleResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { refresh() }
@@ -73,12 +76,17 @@ class OnboardingActivity : ComponentActivity() {
         StartText.t.bindTo(this)
         DesignText.t.bindTo(this)
         startState = StartStateRepository(this)
+        attemptedSpecialAccess.value = SpecialAccessAttemptStore.attempted(this)
         val state = SetupStatus.read(this)
         setup.value = state
-        val only = intent?.getStringExtra(EXTRA_STEP)?.let { name -> SetupStep.entries.firstOrNull { it.name == name } }
-        steps = if (only != null) listOf(only) else OnboardingPlan.pending(state)
-        // Opened again after the first run (Launcher Settings, the BlackBerry 7 menu): show every choice to change, not a wizard.
-        val overview = only == null && startState.loadOnboardingDone()
+        val only = intent?.getStringExtra(EXTRA_STEP)?.let { name ->
+            SetupStep.entries.firstOrNull { it.name == name }
+        }?.takeUnless {
+            !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
+        }
+        steps = if (only != null) listOf(only) else OnboardingPlan.steps(state)
+        // Reopening Setup follows the same choices, retaining the existing selections.
+        val overview = false
         val installer = SetupStatus.installer(this)
         setContent {
             LauncherTheme(window = window) {
@@ -88,6 +96,7 @@ class OnboardingActivity : ComponentActivity() {
                     startOnOverview = overview,
                     state = setup.value ?: state,
                     showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
+                    attemptedSpecialAccess = attemptedSpecialAccess.value,
                     onAction = ::perform,
                     enabledExtras = ExtraAppsControl.enabledIds(this),
                     onApplyExtras = ::applyExtras,
@@ -116,10 +125,16 @@ class OnboardingActivity : ComponentActivity() {
     private fun refresh() {
         val state = SetupStatus.read(this)
         setup.value = state
-        if (state.notificationAccess) ConversationAccess.requestReconnect(this)
+        // Permission granted is not the same as listener connected. Never rebind an active listener
+        // merely because Setup resumed; doing so can briefly empty Hub, Peek and lock counts.
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
     }
 
     private fun perform(step: SetupStep) {
+        if (step.isSpecialAccess) {
+            attemptedSpecialAccess.value = attemptedSpecialAccess.value + step
+            SpecialAccessAttemptStore.markAttempted(this, step)
+        }
         when (step) {
             SetupStep.HOME -> requestHomeRole()
             SetupStep.CONTACTS -> permissionResult.launch(Manifest.permission.READ_CONTACTS)
@@ -175,6 +190,7 @@ private fun SetupScreen(
     startOnOverview: Boolean,
     state: SetupState,
     showRestrictedHelp: (SetupStep) -> Boolean,
+    attemptedSpecialAccess: Set<SetupStep>,
     onAction: (SetupStep) -> Unit,
     enabledExtras: Set<String>,
     onApplyExtras: (Set<String>) -> Unit,
@@ -188,6 +204,7 @@ private fun SetupScreen(
     var overview by rememberSaveable { mutableStateOf(startOnOverview) }
     val firstButton = remember { FocusRequester() }
     var picked by remember { mutableStateOf(enabledExtras) }
+    BackHandler(enabled = !overview && index > 0) { index -= 1 }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier =
@@ -203,6 +220,9 @@ private fun SetupScreen(
             if (overview || step == null) {
                 SetupOverview(
                     state = state,
+                    showRestrictedHelp = showRestrictedHelp,
+                    attemptedSpecialAccess = attemptedSpecialAccess,
+                    onOpenAppInfo = onOpenAppInfo,
                     picked = picked,
                     onPickedChange = { picked = it },
                     firstButton = firstButton,
@@ -223,7 +243,15 @@ private fun SetupScreen(
                 )
                 StepCard(step = step)
                 if (showRestrictedHelp(step) && !done) {
-                    RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+                    if (step in attemptedSpecialAccess) {
+                        RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+                    } else {
+                        Text(
+                            stringResource(R.string.setup_restricted_first_request),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 if (step == SetupStep.EXTRAS) {
                     ExtrasPicker(picked = picked, onChange = { picked = it })
@@ -237,11 +265,10 @@ private fun SetupScreen(
                     ChoiceSection(step, settings)
                 } else {
                     Button(
-                        onClick = { onAction(step) },
-                        enabled = !done,
+                        onClick = { if (done) onManage(step) else onAction(step) },
                         modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
                     ) {
-                        Text(if (done) stringResource(R.string.setup_allowed) else stepAction(step))
+                        Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
                     }
                 }
                 OutlinedButton(
@@ -269,6 +296,9 @@ private fun SetupScreen(
 @Composable
 private fun SetupOverview(
     state: SetupState,
+    showRestrictedHelp: (SetupStep) -> Boolean,
+    attemptedSpecialAccess: Set<SetupStep>,
+    onOpenAppInfo: () -> Unit,
     picked: Set<String>,
     onPickedChange: (Set<String>) -> Unit,
     firstButton: FocusRequester,
@@ -284,6 +314,20 @@ private fun SetupOverview(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    // Reopened setup defaults to overview: guidance must be visible here too,
+    // not only in the initial wizard's Notification or Usage step.
+    if (OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            state, showRestrictedHelp, attemptedSpecialAccess,
+        )) {
+        RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+    } else if (listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
+            .any { !state.isDone(it) && showRestrictedHelp(it) }) {
+        Text(
+            stringResource(R.string.setup_restricted_first_request),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     SetupStep.entries.forEachIndexed { position, step ->
         val done = state.isDone(step)
         Surface(
@@ -301,6 +345,9 @@ private fun SetupOverview(
                 Text(
                     when {
                         step == SetupStep.EXTRAS -> stringResource(R.string.setup_extras_status, picked.size)
+                        step == SetupStep.NOTIFICATIONS && done &&
+                            !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected ->
+                            stringResource(R.string.setup_notifications_connected_missing)
                         done -> stringResource(R.string.setup_allowed)
                         else -> stringResource(R.string.setup_not_set)
                     },
@@ -341,12 +388,18 @@ private fun ChoiceSection(
     state: StartStateRepository,
 ) {
     when (step) {
-        SetupStep.STYLE -> HomeStyleSection(state)
+        SetupStep.STYLE -> {
+            HomeStyleSection(state)
+            HomeDisplaySection(state)
+        }
         SetupStep.LOOK -> {
             ThemeSection(state)
             WallpaperSection(state)
         }
-        SetupStep.GRID -> IconGridSection(state)
+        SetupStep.GRID -> {
+            IconPresentationSection(state)
+            IconGridSection(state)
+        }
         SetupStep.WIDGETS -> WidgetsSection(state)
         SetupStep.HUB -> HubSection()
         SetupStep.LOCK -> LockLayerSection(state)

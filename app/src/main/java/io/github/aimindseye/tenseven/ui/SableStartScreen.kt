@@ -152,10 +152,15 @@ import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.NextAlarm
 import io.github.aimindseye.tenseven.R
+import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
 import io.github.aimindseye.tenseven.iconpacks.IconPackLoader
 import io.github.aimindseye.tenseven.iconpacks.IconPacks
+import io.github.aimindseye.tenseven.iconpacks.IconPresentationState
+import io.github.aimindseye.tenseven.model.IconPresentationPolicy
+import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.ActiveFrames
 import io.github.aimindseye.tenseven.model.AppEntry
@@ -180,6 +185,8 @@ import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeHeader
 import io.github.aimindseye.tenseven.model.HomeLayout
 import io.github.aimindseye.tenseven.model.HubBar
+import io.github.aimindseye.tenseven.model.HubSourceGroups
+import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.model.HubPeople
 import io.github.aimindseye.tenseven.model.HubPerson
@@ -1371,32 +1378,17 @@ private fun ActiveFramesPage(
 
     fun requesterFor(taskId: Int) = requesters.getOrPut(taskId) { FocusRequester() }
 
-    // An ordinary install sees no other app's tasks, so the apps you opened recently become the frames instead:
-    // one card per app, newest first, the way Active Frames list running apps. The x hides a card until you open it again.
+    // The platform can return a partial nonempty task list. Always merge its real tasks
+    // with launcher history and recent usage; a synthesized card is not a real Android task.
     var dismissed by remember { mutableStateOf(emptySet<String>()) }
     val byPackage = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
-    val recentFrames =
-        remember(frames, recentApps, byPackage, dismissed) {
-            if (frames.isNotEmpty()) {
-                emptyList()
-            } else {
-                recentApps
-                    .filter { it !in dismissed }
-                    .mapNotNull(byPackage::get)
-                    .take(ActiveFrames.MAX)
-                    .map { app ->
-                        ActiveFrame(
-                            taskId = app.component.packageName.hashCode(),
-                            packageName = app.component.packageName,
-                            className = null,
-                            userId = app.user.hashCode(),
-                            running = false,
-                        )
-                    }
-            }
+    val personalUserId = android.os.Process.myUserHandle().hashCode()
+    val mergedFrames =
+        remember(frames, recentApps, byPackage, dismissed, personalUserId) {
+            ActiveFrames.mergeForDisplay(frames, recentApps, byPackage.keys, personalUserId, dismissed)
         }
-    val recentMode = frames.isEmpty() && recentFrames.isNotEmpty()
-    val shownFrames = if (frames.isNotEmpty()) frames else recentFrames
+    val shownFrames = mergedFrames.frames
+    val recentMode = mergedFrames.syntheticTaskIds.isNotEmpty()
 
     LaunchedEffect(active, shownFrames.map { it.taskId }) {
         if (!active) return@LaunchedEffect
@@ -1410,17 +1402,31 @@ private fun ActiveFramesPage(
         }
     }
 
+    val displayState = remember(context) { StartStateRepository(context) }
+    val enabledDials = remember(refreshGeneration) { displayState.loadHomeDials(HomeStyle.Bb10) }
+    val showStrip = remember(refreshGeneration) { displayState.loadHomeNotificationStrip(HomeStyle.Bb10) }
+    val stripExpanded = remember(refreshGeneration) { displayState.loadHomeNotificationExpanded(HomeStyle.Bb10) }
+    val enabledHubApps = remember(refreshGeneration) { displayState.loadHubEnabledApps() }
+
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (shown(HomeLayout.STATUS_RINGS)) {
-            StatusDialsRow(onOpenSettings = onOpenSettings)
+        if (shown(HomeLayout.STATUS_RINGS) && enabledDials.isNotEmpty()) {
+            StatusDialsRow(onOpenSettings = onOpenSettings, visible = enabledDials)
         }
         if (shown(HomeLayout.WEATHER)) {
             DateHeader(
                 refreshGeneration = refreshGeneration,
-                unread = snapshot.hubApps.sumOf { it.count },
+                unread = snapshot.hubApps.filter { it.packageName in enabledHubApps }.sumOf { it.count },
                 onShowHub = onShowHub,
+                showLegacyBadge = !showStrip,
+                onOpenSettings = if (enabledDials.isEmpty()) onOpenSettings else null,
+            )
+            if (showStrip) HomeNotificationStrip(
+                counts = snapshot.hubApps,
+                enabledPackages = enabledHubApps,
+                expanded = stripExpanded,
+                onOpenHub = onShowHub,
             )
         }
         if (shown(HomeLayout.SEARCH_ROW)) {
@@ -1434,11 +1440,17 @@ private fun ActiveFramesPage(
             widgets = widgets,
             refreshGeneration = refreshGeneration,
             framesGeneration = framesGeneration,
-            frameSnapshot = frameSnapshot,
+            frameSnapshot = { frame ->
+                if (frame.taskId in mergedFrames.syntheticTaskIds) null else frameSnapshot(frame)
+            },
             requesterFor = ::requesterFor,
             firstWidgetFocus = firstWidgetFocus,
             onResume = { frame ->
-                if (recentMode) byPackage[frame.packageName]?.let(onLaunchApp) else onResume(frame)
+                if (frame.taskId in mergedFrames.syntheticTaskIds) {
+                    byPackage[frame.packageName]?.let(onLaunchApp)
+                } else {
+                    onResume(frame)
+                }
             },
             onClose = { frame ->
                 val index = shownFrames.indexOf(frame)
@@ -1446,7 +1458,8 @@ private fun ActiveFramesPage(
                     ActiveFrames.focusAfterClose(index, shownFrames.size)?.let { next ->
                         shownFrames.filterNot { it == frame }.getOrNull(next)?.taskId
                     }
-                if (recentMode) dismissed = dismissed + frame.packageName else onClose(frame)
+                dismissed = dismissed + frame.packageName
+                if (frame.taskId !in mergedFrames.syntheticTaskIds) onClose(frame)
             },
             onLaunchApp = onLaunchApp,
             onStartIntent = onStartIntent,
@@ -1461,12 +1474,12 @@ private fun ActiveFramesPage(
 
 /** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) and the Settings gear. */
 @Composable
-private fun StatusDialsRow(onOpenSettings: () -> Unit) {
+private fun StatusDialsRow(onOpenSettings: () -> Unit, visible: Set<String>) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = FRAME_PADDING, end = 2.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SableStatusRings(modifier = Modifier.weight(1f), ringSize = STATUS_RING_SIZE)
+        SableStatusRings(modifier = Modifier.weight(1f), ringSize = STATUS_RING_SIZE, visible = visible)
         Text(
             text = "⚙",
             fontSize = 22.sp,
@@ -1493,6 +1506,8 @@ private fun DateHeader(
     refreshGeneration: Int,
     unread: Int,
     onShowHub: () -> Unit,
+    showLegacyBadge: Boolean = true,
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     val locale = Locale.getDefault()
     val today by
@@ -1521,7 +1536,13 @@ private fun DateHeader(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { contentDescription = dateText },
         )
+        if (onOpenSettings != null) {
+            Text("⚙", color = Bb10Text, fontSize = 22.sp,
+                modifier = Modifier.sableFocusRing().clickable(onClick = onOpenSettings)
+                    .padding(horizontal = 10.dp).semantics { contentDescription = "Launcher settings" })
+        }
         // Notifications: a bell with the unread count; it opens the Hub. Beside it, the sound profile.
+        if (showLegacyBadge) {
         Row(
             modifier =
                 Modifier
@@ -1538,6 +1559,7 @@ private fun DateHeader(
             if (unread > 0) {
                 Text(text = unread.toString(), style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
+        }
         }
         SoundProfileButton()
     }
@@ -1864,7 +1886,9 @@ private fun LiveGlanceFrame(
             GlanceWidgets.HUB -> snapshot.messages to SableGreen
             else -> snapshot.mail to SableOrange
         }
-    val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED
+    // Calendar asks for a runtime permission; Now playing and the Hub need the notification listener, which the lite build lacks.
+    val listenerMissing = widget == GlanceWidgets.MEDIA && !Capabilities.hasConversationService(context)
+    val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED && !listenerMissing
     val headline =
         when {
             widget == GlanceWidgets.CALENDAR && needsAccess -> context.getString(R.string.calendar_allow)
@@ -2256,7 +2280,32 @@ private fun HubPage(
     val hubInstalled =
         snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
-    val barItems = remember(snapshot.hubApps, personalApps) { HubBar.items(snapshot.hubApps) { it in personalApps } }
+    val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
+    // The listener tells us which notifications are conversations (including email).
+    // The counts-only snapshot supplies totals; disabled and zero-count apps never get a chip.
+    val conversationSources = remember(refreshGeneration) { ConversationHub.notifications() }
+    val sourceGroups = remember(snapshot.hubApps, enabledHubApps, conversationSources) {
+        HubSourceGroups.summarize(
+            counts = snapshot.hubApps,
+            enabledPackages = enabledHubApps,
+            emailSources = conversationSources.filter { it.isEmail }.map { it.packageName }.toSet(),
+            messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
+        )
+    }
+    val selectedSources = remember(sourceGroups, personalApps) {
+        sourceGroups.otherApps.mapNotNull { source ->
+            personalApps[source.packageName]?.let { app ->
+                Triple(source.packageName, app.label, source.count)
+            }
+        }
+    }
+    val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
+    val barItems =
+        remember(snapshot.hubApps, personalApps, enabledHubApps) {
+            // Sable Hub can expose a separate notification source; opt-in still applies here.
+            // Do not reuse its aggregate redacted count: it may include disabled apps.
+            HubBar.items(snapshot.hubApps.filter { it.packageName in enabledHubApps }) { it in personalApps }
+        }
     val peopleRepository = remember(context) { PeopleRepository(context) }
     val contactsTab = filter == HubFilter.Contacts
     val canReadContacts = remember(refreshGeneration, contactsTab) { peopleRepository.hasPermission() }
@@ -2291,7 +2340,8 @@ private fun HubPage(
         }
     }
 
-    val conversationsUi = rememberHubConversationsUi(context, refreshGeneration, ::openMessages)
+    val conversationsUi =
+        rememberHubConversationsUi(context, refreshGeneration, ::openMessages, onOpenHubSettings)
 
     fun openBarItem(item: HubBar.Item) {
         when (val target = HubBar.target(item.packageName, messagesPackage, dialerPackage, contactsPackage)) {
@@ -2328,6 +2378,7 @@ private fun HubPage(
         return true
     }
 
+    HubContrastTheme {
     LazyColumn(
         modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
         state = listState,
@@ -2344,13 +2395,32 @@ private fun HubPage(
                 modifier = Modifier.semantics { heading() },
             )
             Spacer(Modifier.height(6.dp))
-            HubUnreadBar(
-                items = barItems,
-                appFor = { personalApps[it] },
-                onOpen = ::openBarItem,
+            HubUnifiedNavigation(
+                ui = conversationsUi,
+                currentTab = filter,
+                onTabChange = onFilter,
+                firstTab = tabFocus,
+                sources = selectedSources,
+                messageCount = sourceGroups.messages,
+                emailCount = sourceGroups.email,
             )
-            Spacer(Modifier.height(8.dp))
-            HubTabs(filter = filter, firstTab = tabFocus, onFilter = onFilter)
+        }
+        // Calendar data requires a second, explicit opt-in (separate from notification sources).
+        if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
+            item(key = "hub-upcoming-calendar") {
+                HubCalendarPeek(
+                    refreshGeneration = refreshGeneration,
+                    onRequestCalendarPermission = {
+                        context.findActivity()?.requestPermissions(
+                            arrayOf(Manifest.permission.READ_CALENDAR),
+                            SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
+                        )
+                    },
+                    onOpenCalendar = {
+                        onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
+                    },
+                )
+            }
         }
         if (contactsTab) {
             hubContactsItems(
@@ -2373,6 +2443,7 @@ private fun HubPage(
                 conversations = conversationsUi,
             )
         }
+    }
     }
 }
 
@@ -2524,36 +2595,6 @@ private class HubActions(
     val onRequestContactsPermission: () -> Unit,
 )
 
-/** The Hub page tabs: All · Messages · Calls · Contacts; All takes focus when the page opens. */
-@Composable
-private fun HubTabs(
-    filter: HubFilter,
-    firstTab: FocusRequester,
-    onFilter: (HubFilter) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        HubFilter.entries.forEach { tab ->
-            val selected = tab == filter
-            Text(
-                text = tab.label,
-                modifier =
-                    Modifier
-                        .then(if (tab == HubFilter.All) Modifier.focusRequester(firstTab) else Modifier)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                        ).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp))
-                        .sableFocusRing()
-                        .clickable { onFilter(tab) }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-            )
-        }
-    }
-}
-
 /**
  * The All, Messages and Calls tabs: Messages and Mail, Missed calls, and on All the notification
  * summary ([summary] is null when Sable Hub is absent, which also hides Hub settings).
@@ -2567,60 +2608,20 @@ private fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
     actions: HubActions,
     conversations: HubConversationsUi,
 ) {
-    val showMessages = filter != HubFilter.Calls
-    val showCalls = filter != HubFilter.Messages
-    if (showMessages) {
+    if (filter != HubFilter.Calls) {
         hubConversationItems(conversations)
-        item(key = "messages") {
-            GlanceCard(
-                title = t("messages"),
-                detail = liveDetail(snapshot.messages, messagesApp, stringResource(R.string.hub_open_default_app)),
-                accent = SableBlue,
-                onClick = actions.onOpenMessages,
-            )
-        }
-        item(key = "mail") {
-            GlanceCard(
-                title = t("mail"),
-                detail = liveDetail(snapshot.mail, mailApp, stringResource(R.string.hub_open_default_app)),
-                accent = Color(0xFFE5484D),
-                onClick = {
-                    if (mailApp != null) {
-                        actions.onLaunchApp(mailApp)
-                    } else {
-                        actions.onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_EMAIL))
-                    }
-                },
-            )
+    }
+    if (filter == HubFilter.Calls) {
+        item(key = "calls-shortcut") {
+            // Tenseven has no call log permission; the system Phone app owns the full log.
+            MetroLink(text = t("missed_calls"), onClick = {
+                actions.onStartIntent(Intent(Intent.ACTION_VIEW, CallLog.Calls.CONTENT_URI))
+            })
         }
     }
-    if (showCalls) {
-        item(key = "calls") {
-            // Start holds no call-log permission: the Phone app shows the missed calls.
-            GlanceCard(
-                title = t("missed_calls"),
-                detail = t("recent_calls_in_phone"),
-                accent = SableGreen,
-                onClick = { actions.onStartIntent(Intent(Intent.ACTION_VIEW, CallLog.Calls.CONTENT_URI)) },
-            )
-        }
-    }
-    if (filter == HubFilter.All) {
-        item(key = "notifications") {
-            // Android owns the notifications; its history lists what was dismissed too.
-            GlanceCard(
-                title = t("notifications"),
-                detail = summary ?: stringResource(R.string.hub_notifications_open),
-                accent = SableSun,
-                onClick = { actions.onStartIntent(Intent(ACTION_NOTIFICATION_HISTORY)) },
-            )
-        }
-    }
-    if (summary != null) {
-        item(key = "settings") {
-            Spacer(Modifier.height(4.dp))
-            MetroLink(text = t("hub_settings"), onClick = actions.onOpenHubSettings)
-        }
+    item(key = "hub-settings-link") {
+        Spacer(Modifier.height(8.dp))
+        MetroLink(text = t("hub_settings"), onClick = actions.onOpenHubSettings)
     }
 }
 
@@ -5011,17 +5012,24 @@ internal fun AppMark(
     app: AppEntry,
     size: Int,
 ) {
-    val glyph = AppGlyphs.forComponent(app.component.packageName, app.component.className)
+    val context = LocalContext.current
+    IconPacks.init(context)
+    IconPresentationState.init(context)
+    val iconPack = IconPacks.selected
+    val iconStyle = IconPresentationState.selected
+    val isOwnExtra = app.component.packageName == context.packageName &&
+        ExtraApps.byClassName(app.component.className) != null
+    val glyph = if (IconPresentationPolicy.useGlyph(iconStyle, isOwnExtra, iconPack != null)) {
+        AppGlyphs.forComponent(app.component.packageName, app.component.className)
+    } else null
     if (glyph != null) {
         SableGlyphIcon(glyph = glyph, modifier = Modifier.size(size.dp))
         return
     }
 
-    val context = LocalContext.current
+    val themedMonochrome = IconPresentationPolicy.useMonochrome(iconStyle, iconPack != null)
     val densityDpi = context.resources.displayMetrics.densityDpi
-    IconPacks.init(context)
-    val iconPack = IconPacks.selected
-    val iconKey = "${app.stableKey()}@$size@$densityDpi@${iconPack.orEmpty()}"
+    val iconKey = "${app.stableKey()}@$size@$densityDpi@${iconPack.orEmpty()}@${iconStyle.key}"
     // Loaded off the main thread and cached for the process: binding a row never
     // waits on LauncherApps (ROW_BIND_BLOCKING_QUERY=NO).
     val icon by
@@ -5029,7 +5037,7 @@ internal fun AppMark(
             if (value == null) {
                 value =
                     withContext(Dispatchers.IO) {
-                        loadLauncherIcon(context = context, app = app, sizeDp = size)
+                        loadLauncherIcon(context = context, app = app, sizeDp = size, themedMonochrome = themedMonochrome)
                     }?.also { LauncherIconCache.put(iconKey, it) }
             }
         }
@@ -5081,6 +5089,7 @@ private fun loadLauncherIcon(
     context: Context,
     app: AppEntry,
     sizeDp: Int,
+    themedMonochrome: Boolean,
 ): LauncherIcon? =
     runCatching {
         val launcherApps = context.getSystemService(LauncherApps::class.java)
@@ -5107,7 +5116,8 @@ private fun loadLauncherIcon(
         val canvas = Canvas(bitmap)
         val drawable = packDrawable ?: activityInfo.getIcon(densityDpi)
         val monochrome =
-            if (packDrawable == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
+            if (themedMonochrome && packDrawable == null &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
                 drawable.monochrome
             } else {
                 null
@@ -5468,6 +5478,8 @@ private fun AppearanceScreen(
 
         item {
             val context = LocalContext.current
+            // The lite build has no accessibility service, so the double-tap lock switch is not offered.
+            if (!Capabilities.hasLockService(context)) return@item
             Spacer(Modifier.height(14.dp))
             SectionLabel(stringResource(R.string.lock_label))
             Spacer(Modifier.height(4.dp))

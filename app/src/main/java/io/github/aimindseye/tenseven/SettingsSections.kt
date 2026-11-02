@@ -43,11 +43,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.GridColumns
+import io.github.aimindseye.tenseven.model.GridSettingsPolicy
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.ThemePresets
@@ -121,7 +123,7 @@ internal fun HomeStyleSection(
  */
 @Composable
 internal fun IconGridSection(state: StartStateRepository) {
-    val bb7 = homeStyleState(state).value == HomeStyle.Bb7
+    val bb7 = GridSettingsPolicy.showBb7OnlyOptions(homeStyleState(state).value)
     var iconSize by remember { mutableStateOf(state.loadBb7IconSize()) }
     var gridColumns by remember { mutableStateOf(state.loadGridColumns()) }
     var rows by remember { mutableStateOf(state.loadBb7HomeRows()) }
@@ -129,7 +131,11 @@ internal fun IconGridSection(state: StartStateRepository) {
     if (bb7) {
         IconGridPreview(columns = gridColumns, rows = rows, iconSize = iconSize, labels = labels)
     }
-    Text(stringResource(R.string.ls_icon_size), style = MaterialTheme.typography.bodyLarge)
+    // This icon scale is shared by both grids. Label it with the currently selected
+    // Home style rather than presenting it as a BB7-only option on BB10.
+    val iconSizeLabel = stringResource(R.string.ls_icon_size) + " · " +
+        stringResource(if (bb7) R.string.ls_bb7_title else R.string.ls_bb10_title)
+    Text(iconSizeLabel, style = MaterialTheme.typography.bodyLarge)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Bb7IconSize.entries.forEach { size ->
             Card(title = size.title, detail = "", active = size == iconSize, modifier = Modifier.weight(1f)) {
@@ -166,6 +172,42 @@ internal fun IconGridSection(state: StartStateRepository) {
     SwitchRow(stringResource(R.string.ls_labels), stringResource(R.string.ls_labels_detail), labels) {
         labels = it
         state.saveGridLabels(it)
+    }
+}
+
+/** Home header controls stay separate for BB7 and BB10, including when switching styles in Setup. */
+@Composable
+internal fun HomeDisplaySection(state: StartStateRepository) {
+    val style = homeStyleState(state).value
+    var dials by remember(style) { mutableStateOf(state.loadHomeDials(style)) }
+    var strip by remember(style) { mutableStateOf(state.loadHomeNotificationStrip(style)) }
+    var expanded by remember(style) { mutableStateOf(state.loadHomeNotificationExpanded(style)) }
+
+    Text("Home status and notifications", style = MaterialTheme.typography.titleMedium)
+    SwitchRow("Performance dials", "Show the performance gauges on this home style", dials.isNotEmpty()) { shown ->
+        dials = if (shown) io.github.aimindseye.tenseven.model.HomeDisplayPolicy.ALL_DIALS else emptySet()
+        state.saveHomeDials(style, dials)
+    }
+    if (dials.isNotEmpty()) {
+        listOf(
+            "wifi" to "Wi-Fi", "mobile" to "Mobile", "cpu" to "CPU",
+            "ram" to "RAM", "battery" to "Battery", "cell" to "Cell",
+        ).forEach { (key, title) ->
+            SwitchRow(title, "Show $title dial", key in dials) { enabled ->
+                dials = if (enabled) dials + key else dials - key
+                state.saveHomeDials(style, dials)
+            }
+        }
+    }
+    SwitchRow("Horizontal notification bar", "App icons and unread counts instead of a single badge", strip) {
+        strip = it
+        state.saveHomeNotificationStrip(style, it)
+    }
+    if (strip) {
+        SwitchRow("Expanded notification bar", "Show all opted-in notification sources in a scrollable strip", expanded) {
+            expanded = it
+            state.saveHomeNotificationExpanded(style, it)
+        }
     }
 }
 
@@ -207,9 +249,7 @@ internal fun ThemeSection(state: StartStateRepository) {
 internal fun WallpaperSection(state: StartStateRepository) {
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
-    var wallpaperId by remember {
-        mutableStateOf(ThemePresets.matching(state.loadAppearanceMode(), state.loadAppearanceAccent()).wallpaperId)
-    }
+    var wallpaperId by remember { mutableStateOf(state.loadWallpaperSetId()) }
     var status by remember { mutableStateOf<Int?>(null) }
     var homeWallpaper by remember { mutableStateOf(state.loadHomeWallpaper()) }
     Text(
@@ -218,7 +258,12 @@ internal fun WallpaperSection(state: StartStateRepository) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        WallpaperSets.ALL.forEach { set -> WallpaperThumb(set, active = set.id == wallpaperId) { wallpaperId = set.id } }
+        WallpaperSets.ALL.forEach { set ->
+            WallpaperThumb(set, active = set.id == wallpaperId) {
+                wallpaperId = set.id
+                state.saveWallpaperSetId(set.id)
+            }
+        }
     }
     // The BlackBerry 7 home always shows the wallpaper, so this switch is for the BlackBerry 10 home only.
     if (homeStyleState(state).value == HomeStyle.Bb10) {
@@ -242,6 +287,25 @@ internal fun WallpaperSection(state: StartStateRepository) {
     }
     status?.let {
         Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/**
+ * Choosing icons is independent of appearance and BB7/BB10 layout. Existing external packs
+ * still work; bundled TenSeven extra apps keep their own icons when installed/activated.
+ */
+@Composable
+internal fun IconPresentationSection(state: StartStateRepository) {
+    val context = LocalContext.current
+    var style by remember { mutableStateOf(state.loadIconPresentation()) }
+    SwitchRow(
+        "Use TenSeven icon styling",
+        "Off: show installed apps' original icons or your selected icon pack. On: apply TenSeven's Tabler-based style where available. TenSeven's bundled apps keep their own icons.",
+        style == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven,
+    ) { enabled ->
+        style = if (enabled) io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+            else io.github.aimindseye.tenseven.model.IconPresentation.Original
+        io.github.aimindseye.tenseven.iconpacks.IconPresentationState.choose(context, style)
     }
 }
 
@@ -282,6 +346,15 @@ internal fun HubSection() {
 @Composable
 internal fun LockLayerSection(state: StartStateRepository) {
     val context = LocalContext.current
+    // Automatic lock-layer wake requires the optional notification listener service.
+    if (!Capabilities.hasConversationService(context)) {
+        Text(
+            stringResource(R.string.lock_layer_full_only),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
     var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
     var tick by remember { mutableIntStateOf(0) }
     val activity = context as? ComponentActivity
@@ -291,7 +364,9 @@ internal fun LockLayerSection(state: StartStateRepository) {
         onDispose { activity?.lifecycle?.removeObserver(observer) }
     }
     val overlayAllowed = tick >= 0 && LockLayerLauncher.canDrawOverlays(context)
-    val accessAllowed = tick >= 0 && ConversationAccess.isGranted(context)
+    // Do not prompt for a listener that is not available on this device.
+    val accessAvailable = Capabilities.hasConversationService(context)
+    val accessAllowed = tick >= 0 && accessAvailable && ConversationAccess.isGranted(context)
     SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
         lockLayer = it
         state.saveLockLayer(it)

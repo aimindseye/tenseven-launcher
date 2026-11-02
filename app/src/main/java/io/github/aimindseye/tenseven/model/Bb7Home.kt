@@ -82,8 +82,8 @@ object Bb7Scrim {
     const val MAX = 3
     const val DEFAULT = 2
 
-    private val BANNER = floatArrayOf(0f, 0.35f, 0.6f, 0.8f)
-    private val TRAY = floatArrayOf(0.25f, 0.6f, 0.9f, 0.97f)
+    private val BANNER = floatArrayOf(0f, 0.26f, 0.46f, 0.68f)
+    private val TRAY = floatArrayOf(0.15f, 0.32f, 0.55f, 0.75f)
 
     fun clamp(level: Int): Int = level.coerceIn(MIN, MAX)
 
@@ -110,6 +110,17 @@ object Bb7Home {
     /** Rows of icons the closed tray shows on the home screen; one more opens the whole panel. */
     const val MIN_HOME_ROWS = 1
     const val MAX_HOME_ROWS = 3
+    /** Dedicated wallpaper-area shortcuts; never turn the desktop into a scrollable app drawer. */
+    const val MAX_DESKTOP_SHORTCUTS = 8
+
+    fun desktopShortcuts(keys: List<String>): List<String> =
+        keys.distinct().take(MAX_DESKTOP_SHORTCUTS)
+
+    /** Existing shortcuts are retained; reaching capacity does not overwrite the last icon. */
+    fun addDesktopShortcut(current: List<String>, key: String): List<String> {
+        val limited = desktopShortcuts(current)
+        return if (key in limited || limited.size >= MAX_DESKTOP_SHORTCUTS) limited else limited + key
+    }
 
     /** The system Settings app, always part of the starting home next to the phone's default apps. */
     const val SETTINGS_PACKAGE = "com.android.settings"

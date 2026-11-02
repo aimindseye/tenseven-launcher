@@ -95,6 +95,12 @@ internal object TablerGlyphPaths {
                 "M12 19l8.5 -8.5",
                 "M12 9l4.5 -4.5",
             ),
+            "clipboard-check" to
+            listOf(
+                "M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2",
+                "M9 5a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2",
+                "M9 14l2 2l4 -4",
+            ),
             "clock" to
             listOf(
                 "M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0",
