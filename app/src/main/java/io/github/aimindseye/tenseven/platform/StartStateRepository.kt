@@ -256,11 +256,14 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_GRID_LABELS, if (shown) 1 else 0).apply()
     }
 
-    /** Packages whose notifications the Hub ignores ("Apps in the Hub": the ones switched off). */
-    fun loadHubExcludedApps(): Set<String> = preferences.getStringSet(KEY_HUB_EXCLUDED, null).orEmpty().toSet()
+    /**
+     * Only explicitly opted-in apps may feed Hub and lock-layer badges. Old denylist values
+     * must NOT be converted into an all-apps grant; users select their sources again.
+     */
+    fun loadHubEnabledApps(): Set<String> = preferences.getStringSet(KEY_HUB_ENABLED, null).orEmpty().toSet()
 
-    fun saveHubExcludedApps(packages: Set<String>) {
-        preferences.edit().putStringSet(KEY_HUB_EXCLUDED, packages.toSet()).apply()
+    fun saveHubEnabledApps(packages: Set<String>) {
+        preferences.edit().putStringSet(KEY_HUB_ENABLED, packages.toSet()).apply()
     }
 
     /** Whether the Hub peek on the home screen shows message text (off: names and counts only). */
@@ -396,7 +399,8 @@ class StartStateRepository(
         const val KEY_GRID_LABELS = "grid_labels"
         const val KEY_LOCK_LAYER = "lock_layer"
         const val KEY_HOME_WALLPAPER = "home_wallpaper"
-        const val KEY_HUB_EXCLUDED = "hub_excluded_apps"
+        const val KEY_HUB_EXCLUDED = "hub_excluded_apps" // legacy backup compatibility; never used as consent
+        const val KEY_HUB_ENABLED = "hub_enabled_apps"
         const val KEY_HUB_PEEK_TEXT = "hub_peek_text"
         const val KEY_HOME_WIDGET_IDS = "home_widget_ids"
         const val KEY_APPEARANCE_MODE = "appearance_mode"

@@ -92,12 +92,12 @@ class LockLayerActivity : ComponentActivity() {
             }
         ContextCompat.registerReceiver(this, closer, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         val state = StartStateRepository(this)
-        val excluded = state.loadHubExcludedApps()
+        val enabled = state.loadHubEnabledApps()
         // Home's Hub peek option is not consent for text on an actual locked screen.
         val showText = isPreview && state.loadHubPeekText()
         setContent {
             LockLayerScreen(
-                excluded = excluded,
+                enabled = enabled,
                 showText = showText,
                 onUnlock = { unlock(null) },
                 onOpenApp = { pkg -> unlock(packageManager.getLaunchIntentForPackage(pkg)) },
@@ -172,7 +172,7 @@ const val EXTRA_RETURN_TO = "io.github.aimindseye.tenseven.extra.LOCK_PREVIEW_RE
 
 @Composable
 private fun LockLayerScreen(
-    excluded: Set<String>,
+    enabled: Set<String>,
     showText: Boolean,
     onUnlock: () -> Unit,
     onOpenApp: (String) -> Unit,
@@ -180,13 +180,13 @@ private fun LockLayerScreen(
 ) {
     val context = LocalContext.current
     val counts = LockLayerState.counts
-    val entries = remember(counts, excluded) { LockLayer.entries(counts, excluded) }
+    val entries = remember(counts, enabled) { LockLayer.entries(counts, counts.keys - enabled) }
     val preview =
-        remember(counts, excluded, showText) {
+        remember(counts, enabled, showText) {
             if (showText) {
                 ConversationHub
                     .conversations()
-                    .firstOrNull { conversation -> conversation.sourcePackages.none { it in excluded } }
+                    .firstOrNull { conversation -> conversation.sourcePackages.any { it in enabled } }
                     ?.let { it.name to it.latestMessage?.text.orEmpty() }
             } else {
                 null

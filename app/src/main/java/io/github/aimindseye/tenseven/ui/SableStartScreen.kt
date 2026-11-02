@@ -2259,7 +2259,13 @@ private fun HubPage(
     val hubInstalled =
         snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
-    val barItems = remember(snapshot.hubApps, personalApps) { HubBar.items(snapshot.hubApps) { it in personalApps } }
+    val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
+    val barItems =
+        remember(snapshot.hubApps, personalApps, enabledHubApps) {
+            // Sable Hub can expose a separate notification source; opt-in still applies here.
+            // Do not reuse its aggregate redacted count: it may include disabled apps.
+            HubBar.items(snapshot.hubApps.filter { it.packageName in enabledHubApps }) { it in personalApps }
+        }
     val peopleRepository = remember(context) { PeopleRepository(context) }
     val contactsTab = filter == HubFilter.Contacts
     val canReadContacts = remember(refreshGeneration, contactsTab) { peopleRepository.hasPermission() }

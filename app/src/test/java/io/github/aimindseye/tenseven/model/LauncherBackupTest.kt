@@ -13,6 +13,7 @@ class LauncherBackupTest {
             "quick_bar" to BackupValue.Text("one\ntwo\\three\ttab ünï"),
             "bb7_home_rows" to BackupValue.Number(3),
             "home_style" to BackupValue.Text("bb7"),
+            "hub_enabled_apps" to BackupValue.Items(setOf("com.signal")),
         )
 
     @Test
@@ -40,6 +41,15 @@ class LauncherBackupTest {
                 ),
             )
         assertEquals(setOf("home_style", "bb7_home_rows", "favorite_apps"), picked.keys)
+    }
+
+    @Test
+    fun oldDenylistBackupsStillDecodeButDoNotCreateAnAllowlist() {
+        val old = """{"format":"tenseven-backup","version":1,"settings":{"hub_excluded_apps":["a.app"]}}"""
+        val decoded = LauncherBackup.decode(old).getOrThrow()
+        assertEquals(setOf("a.app"), (decoded["hub_excluded_apps"] as BackupValue.Items).values)
+        assertFalse(decoded.containsKey("hub_enabled_apps"))
+        assertFalse(LauncherBackup.select(mapOf("hub_excluded_apps" to setOf("a.app"))).containsKey("hub_excluded_apps"))
     }
 
     @Test
@@ -89,6 +99,7 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_LOCK_LAYER,
                 StartStateRepository.KEY_HOME_WALLPAPER,
                 StartStateRepository.KEY_HUB_EXCLUDED,
+                StartStateRepository.KEY_HUB_ENABLED,
                 StartStateRepository.KEY_HUB_PEEK_TEXT,
                 StartStateRepository.KEY_APPEARANCE_MODE,
                 StartStateRepository.KEY_APPEARANCE_ACCENT,
