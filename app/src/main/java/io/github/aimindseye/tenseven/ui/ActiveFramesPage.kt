@@ -177,8 +177,12 @@ internal fun FrameTile(
         .border(if (focused) 2.dp else 1.dp, if (focused) Bb10Blue else Bb10Line, shape)
         .onPreviewKeyEvent { event ->
             val close = closable && ActiveFrames.isCloseKey(event.nativeKeyEvent.keyCode, event.nativeKeyEvent.metaState)
-            if (close && event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0) onClose()
-            close
+            val open = openEnabled && event.nativeKeyEvent.keyCode in listOf(23, 66) &&
+                event.nativeKeyEvent.metaState and (0x2 or 0x8 or 0x1000 or 0x10000) == 0
+            if (event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0) {
+                if (close) onClose() else if (open) onOpen()
+            }
+            close || open
         }.combinedClickable(enabled = openEnabled, onClick = onOpen, onLongClick = if (closable) onClose else null)
         .focusable().semantics { contentDescription = "$title, $badge" }) {
         Box(Modifier.weight(1f).fillMaxWidth().background(Bb10Background), contentAlignment = Alignment.Center) {

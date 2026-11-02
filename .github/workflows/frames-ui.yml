@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      ANDROID_USER_HOME: ${{ runner.temp }}/frames-android
-      ANDROID_AVD_HOME: ${{ runner.temp }}/frames-android/avd
+      ANDROID_USER_HOME: /tmp/tenseven-frames-android
+      ANDROID_AVD_HOME: /tmp/tenseven-frames-android/avd
     permissions:
       contents: read
     steps:
