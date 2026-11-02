@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
@@ -298,6 +303,14 @@ private fun ConversationRow(
     val latestAt = conversation.latestMessage?.timestamp ?: conversation.latestNotification.postedAt
     val whenText = DateUtils.getRelativeTimeSpanString(latestAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
     val source = conversation.latestNotification.appName
+    // Display installed source icons, not a letter avatar: several providers share initials.
+    val sourcePackage = conversation.sourcePackages.firstOrNull()
+    val context = LocalContext.current
+    val sourceIcon = remember(sourcePackage) {
+        sourcePackage?.let { pkg ->
+            runCatching { context.packageManager.getApplicationIcon(pkg).toBitmap(96, 96).asImageBitmap() }.getOrNull()
+        }
+    }
 
     fun send() {
         if (draft.isBlank()) return
@@ -330,16 +343,22 @@ private fun ConversationRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Flat source mark: visual distinction without surrounding every notification in a card.
-            Text(
-                text = source.take(1).uppercase(),
-                modifier =
-                    Modifier.clip(RoundedCornerShape(4.dp))
+            if (sourceIcon != null) {
+                Image(
+                    bitmap = sourceIcon,
+                    contentDescription = source,
+                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(7.dp)),
+                )
+            } else {
+                Text(
+                    text = source.take(1).uppercase(),
+                    modifier = Modifier.clip(RoundedCornerShape(4.dp))
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                         .padding(horizontal = 8.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.titleMedium,
-            )
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
