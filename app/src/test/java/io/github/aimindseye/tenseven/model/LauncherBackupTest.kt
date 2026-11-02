@@ -13,6 +13,7 @@ class LauncherBackupTest {
             "quick_bar" to BackupValue.Text("one\ntwo\\three\ttab ünï"),
             "bb7_home_rows" to BackupValue.Number(3),
             "home_style" to BackupValue.Text("bb7"),
+            "wallpaper_set" to BackupValue.Text("aurora"),
         )
 
     @Test
@@ -40,6 +41,12 @@ class LauncherBackupTest {
                 ),
             )
         assertEquals(setOf("home_style", "bb7_home_rows", "favorite_apps"), picked.keys)
+    }
+
+    @Test
+    fun oldBackupWithoutWallpaperSetStillDecodes() {
+        val previous = sample - "wallpaper_set"
+        assertEquals(previous, LauncherBackup.decode(LauncherBackup.encode(previous)).getOrThrow())
     }
 
     @Test
@@ -88,6 +95,7 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_GRID_LABELS,
                 StartStateRepository.KEY_LOCK_LAYER,
                 StartStateRepository.KEY_HOME_WALLPAPER,
+                StartStateRepository.KEY_WALLPAPER_SET,
                 StartStateRepository.KEY_HUB_EXCLUDED,
                 StartStateRepository.KEY_HUB_PEEK_TEXT,
                 StartStateRepository.KEY_APPEARANCE_MODE,

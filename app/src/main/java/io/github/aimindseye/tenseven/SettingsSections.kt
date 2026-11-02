@@ -207,9 +207,7 @@ internal fun ThemeSection(state: StartStateRepository) {
 internal fun WallpaperSection(state: StartStateRepository) {
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
-    var wallpaperId by remember {
-        mutableStateOf(ThemePresets.matching(state.loadAppearanceMode(), state.loadAppearanceAccent()).wallpaperId)
-    }
+    var wallpaperId by remember { mutableStateOf(state.loadWallpaperSetId()) }
     var status by remember { mutableStateOf<Int?>(null) }
     var homeWallpaper by remember { mutableStateOf(state.loadHomeWallpaper()) }
     Text(
@@ -218,7 +216,12 @@ internal fun WallpaperSection(state: StartStateRepository) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        WallpaperSets.ALL.forEach { set -> WallpaperThumb(set, active = set.id == wallpaperId) { wallpaperId = set.id } }
+        WallpaperSets.ALL.forEach { set ->
+            WallpaperThumb(set, active = set.id == wallpaperId) {
+                wallpaperId = set.id
+                state.saveWallpaperSetId(set.id)
+            }
+        }
     }
     // The BlackBerry 7 home always shows the wallpaper, so this switch is for the BlackBerry 10 home only.
     if (homeStyleState(state).value == HomeStyle.Bb10) {
