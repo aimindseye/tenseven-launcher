@@ -2,6 +2,9 @@ package io.github.aimindseye.tenseven
 
 import android.Manifest
 import android.os.Bundle
+import android.content.Intent
+import android.provider.Settings
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -167,6 +170,19 @@ private fun HubSettings(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (!accessGranted && android.os.Build.VERSION.SDK_INT >= 33) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                HubRow(
+                    title = "Before enabling notification access",
+                    detail = "For a downloaded APK, open Settings → Apps → Tenseven → ⋮ (three dots) → Allow restricted settings, if Android offers it. Return here and enable Notification access. Tenseven cannot grant this automatically.",
+                    onClick = {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:${context.packageName}")))
+                        }
+                    },
+                )
+            }
             HubRow(
                 title = stringResource(R.string.hub_access),
                 detail =
