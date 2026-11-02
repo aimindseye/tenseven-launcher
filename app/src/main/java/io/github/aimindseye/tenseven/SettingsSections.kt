@@ -49,6 +49,7 @@ import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.GridColumns
+import io.github.aimindseye.tenseven.model.GridSettingsPolicy
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.ThemePresets
@@ -122,7 +123,7 @@ internal fun HomeStyleSection(
  */
 @Composable
 internal fun IconGridSection(state: StartStateRepository) {
-    val bb7 = homeStyleState(state).value == HomeStyle.Bb7
+    val bb7 = GridSettingsPolicy.showBb7OnlyOptions(homeStyleState(state).value)
     var iconSize by remember { mutableStateOf(state.loadBb7IconSize()) }
     var gridColumns by remember { mutableStateOf(state.loadGridColumns()) }
     var rows by remember { mutableStateOf(state.loadBb7HomeRows()) }
@@ -130,7 +131,11 @@ internal fun IconGridSection(state: StartStateRepository) {
     if (bb7) {
         IconGridPreview(columns = gridColumns, rows = rows, iconSize = iconSize, labels = labels)
     }
-    Text(stringResource(R.string.ls_icon_size), style = MaterialTheme.typography.bodyLarge)
+    // This icon scale is shared by both grids. Label it with the currently selected
+    // Home style rather than presenting it as a BB7-only option on BB10.
+    val iconSizeLabel = stringResource(R.string.ls_icon_size) + " · " +
+        stringResource(if (bb7) R.string.ls_bb7_title else R.string.ls_bb10_title)
+    Text(iconSizeLabel, style = MaterialTheme.typography.bodyLarge)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Bb7IconSize.entries.forEach { size ->
             Card(title = size.title, detail = "", active = size == iconSize, modifier = Modifier.weight(1f)) {

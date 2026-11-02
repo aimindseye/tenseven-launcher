@@ -107,3 +107,40 @@ Test **before** granting notifications or selecting any apps:
 - Stacked PRs are intentionally drafts until CI, review and real-device tests pass.
 - Reconcile branch bases after earlier PR merges, retest the exact final combined
   commit, and generate **new APK SHA-256 hashes** before distributing.
+
+## F. Consolidated Full-only device test (branch test/full-consolidated-hub2-bb10-20261102)
+
+- **One APK to distribute:** Full only. The build helper may compile Lite internally
+  to run the paired signature/manifest verifier; only the signed Full artifact is
+  copied to the Downloads test folder. This is not a decision to delete Lite from
+  source control. The test build has `versionCode=2` so it is distinguishable
+  from the previously installed `versionCode=1` signed APKs.
+- **Active Frames (#82):** with Usage Access denied and then enabled, launch an app
+  through Tenseven, then through Android externally. Both should appear in
+  BB10 Active Frames, even with an incomplete nonempty Android recent-task list.
+  Test close/resume real tasks and synthetic cards separately.
+- **Wallpaper (#80):** choose non-theme wallpaper, close Launcher Settings,
+  reopen and ensure the selected preset remains highlighted. Change theme and
+  reopen; the explicit wallpaper choice should still be selected. Apply to Home,
+  Lock and Both; confirm the independent BB10 Show Home Wallpaper switch.
+- **Style-specific Settings (#77):** select BB10 Home, and verify BB7-only
+  preview/row-count controls are hidden. Shared grid size, columns and labels
+  remain useful, identified as BB10. Switch to BB7 and verify preview/rows
+  appear without resetting settings. Switch back and check immediate UI update.
+- **Hub 2.0 (#93):** the unified All/Unread/Messages/Email/Calls/Contacts strip
+  must appear even with **zero** allowed sources; no legacy duplicate tab bar.
+  Explicitly enable apps in Hub Settings; they must default OFF. Check multiple
+  messaging/mail clients and actual notification-derived actions.
+- **Lock 2.0 (#88):** enable Lock layer, test badges → borderless Peek →
+  expanded source counts, keyboard/gesture collapse, secure unlock. While locked
+  this version does **not** expose individual private message text or replies.
+- **Calendar (#89):** calendar Peek defaults OFF; with separate user opt-in and
+  Calendar permission, shows events from multiple Android-synced calendars.
+- **Restricted settings:** Android 13+ may deny Notification Access, Usage Access
+  or Accessibility following a downloaded APK install. **Do not bypass this**.
+  If the user trusts the signed APK, open system Settings → Apps → Tenseven →
+  menu → Allow restricted settings, then grant the desired normal settings
+  individually. The existing Tenseven onboarding includes an App Info help link.
+- **Play Protect:** install the exact signed Full APK through Google Drive
+  while protection is enabled. Record scan/pass/block separately from later
+  special-access consent, and compare the installed SHA-256 with this build.

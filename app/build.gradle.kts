@@ -48,8 +48,9 @@ android {
         applicationId = "io.github.aimindseye.tenseven"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // Test qualification build; distinguish it from the prior v1 Full/Lite APKs.
+        versionCode = 2
+        versionName = "0.1.1-hub2-test.1"
     }
 
     signingConfigs {
