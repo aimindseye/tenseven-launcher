@@ -53,6 +53,7 @@ object LauncherBackup {
             "hub_excluded_apps" to Type.ITEMS, // legacy backup decode only; never imply opt-in
             "hub_enabled_apps" to Type.ITEMS,
             "hub_peek_text" to Type.NUMBER,
+            "hub_calendar_peek" to Type.NUMBER,
             "appearance_mode" to Type.TEXT,
             "appearance_accent" to Type.TEXT,
             "appearance_custom" to Type.TEXT,
