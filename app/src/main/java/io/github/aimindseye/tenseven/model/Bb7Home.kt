@@ -110,6 +110,17 @@ object Bb7Home {
     /** Rows of icons the closed tray shows on the home screen; one more opens the whole panel. */
     const val MIN_HOME_ROWS = 1
     const val MAX_HOME_ROWS = 3
+    /** Dedicated wallpaper-area shortcuts; never turn the desktop into a scrollable app drawer. */
+    const val MAX_DESKTOP_SHORTCUTS = 8
+
+    fun desktopShortcuts(keys: List<String>): List<String> =
+        keys.distinct().take(MAX_DESKTOP_SHORTCUTS)
+
+    /** Existing shortcuts are retained; reaching capacity does not overwrite the last icon. */
+    fun addDesktopShortcut(current: List<String>, key: String): List<String> {
+        val limited = desktopShortcuts(current)
+        return if (key in limited || limited.size >= MAX_DESKTOP_SHORTCUTS) limited else limited + key
+    }
 
     /** The system Settings app, always part of the starting home next to the phone's default apps. */
     const val SETTINGS_PACKAGE = "com.android.settings"
