@@ -33,9 +33,8 @@ Install the debug build next to anything else: its id is `io.github.aimindseye.t
 Android installs only signed APKs. The build signs the release when it finds a key; the key stays on your computer.
 
 ```bash
-# Once: make a key. Keep the .jks file and both passwords safe, and out of this repository.
-keytool -genkeypair -v -keystore ~/tenseven-release.jks -alias tenseven \
-  -keyalg RSA -keysize 2048 -validity 10000
+# Official release keystore: ~/tenseven-release-2.jks (PKCS12), alias tenseven.
+# It is already registered in Android Developer Console. Never regenerate or commit it.
 ```
 
 Then give the build the key, in either of two ways:
@@ -43,7 +42,7 @@ Then give the build the key, in either of two ways:
 - a file `keystore.properties` at the repository root (git-ignored), with absolute paths:
 
   ```properties
-  storeFile=/Users/you/tenseven-release.jks
+  storeFile=/Users/you/tenseven-release-2.jks
   storePassword=...
   keyAlias=tenseven
   keyPassword=...
@@ -56,7 +55,7 @@ Then give the build the key, in either of two ways:
 adb install -r app/build/outputs/apk/release/Tenseven-Launcher-release.apk
 ```
 
-Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
+With signing credentials present, Gradle verifies the keystore certificate against the registered fingerprint before packaging. A different key fails closed. Without a key the build still succeeds and writes `Tenseven-Launcher-release-unsigned.apk` (what CI does). Use the same key
 for every release: Android refuses to update an app signed with a different one. The release app id is
 `io.github.aimindseye.tenseven` (no `.debug`), so it installs beside the debug build as a separate app.
 
@@ -66,9 +65,27 @@ Google Play Protect blocks a downloaded APK ("App blocked to protect your device
 service or a notification listener, and the full build declares both (double-tap lock, Hub conversations, Now playing).
 `./gradlew :app:assembleLite` builds the same release without those two services (`app/src/lite/AndroidManifest.xml`
 removes them) and writes `app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk` (`-lite-unsigned.apk` without a key).
-It has the same application id and the same signing key, so a lite install can later be updated to the full build.
-Screens that only switch those two features on check `platform/Capabilities.kt` and are hidden in lite. A release
-carries both APKs; sign and checksum each the same way.
+Both builds use the same application id, versionCode and release signing certificate. Do not assume cross-variant replacement succeeds until tested on devices.
+Screens that only switch those features on check `platform/Capabilities.kt` and are hidden in Lite, including the automatic lock layer. Lite also omits the unused lock-layer overlay permission.
+
+### 2c. Mandatory signed-release verification
+
+The Android Developer Console registered certificate SHA-256 for `io.github.aimindseye.tenseven` is:
+
+`9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`
+
+After configuring the **existing** protected release keystore, run:
+
+```bash
+./gradlew :app:assembleRelease :app:assembleLite
+bash tools/verify-release-apks.sh \
+  app/build/outputs/apk/release/Tenseven-Launcher-release.apk \
+  app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk
+```
+
+This rejects an unsigned APK, wrong package/minSdk, unexpected signing certificate, absent Full services, leaked Lite services or overlay permission, and mismatched versionCodes. It prints file SHA-256 hashes for publication. CI intentionally has **no private key**, and calls the checker with `--ci-unsigned` solely for compiled-manifest consistency.
+
+Do not publish the CI Lite artifact as a signed release. Play Protect acceptance must also pass the [manual device plan](PLAY_PROTECT_TEST_PLAN.md).
 
 ## 3. Quality gates
 

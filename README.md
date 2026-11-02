@@ -108,28 +108,20 @@ adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.con
 
 ## Install
 
-Tenseven is in alpha. Download the signed APK from the [latest GitHub release](https://github.com/aimindseye/tenseven-launcher/releases) (the `release` APK; the `debug` one installs beside it), build one yourself ([`docs/BUILD.md`](docs/BUILD.md)) or use a CI debug build. With an APK:
+Tenseven is in alpha. The currently published alpha release is **Full only**. Once the Lite/Full builds pass CI and device qualification, future [GitHub releases](https://github.com/aimindseye/tenseven-launcher/releases) can publish two signed APKs:
 
-1. Download the APK from the GitHub release and open it; approve installing from that source if Android asks.
-   **If Google Play Protect says "App blocked to protect your device"** ("This app can request access to
-   sensitive data", with only a **Got it** button): this is not about the signature. Play Protect blocks apps
-   installed from a browser, messaging app or file manager when they declare an accessibility service or a
-   notification listener ([Google's explanation](https://developers.google.com/android/play-protect/warning-dev-guidance)),
-   and Tenseven declares both (lock screen on double tap, and Hub conversations). Both stay off until you allow
-   them. To install: if your phone has **Advanced Protection** (Settings > Security), switch it off; then in Play
-   Store > your profile > **Play Protect** > the gear, switch off **Scan apps with Play Protect**; install; then
-   switch both back on. Or install from a computer with `adb install -r Tenseven-Launcher-release.apk`, which is not
-   a download source. Updates need none of this. Install only an APK from the release page, whose SHA-256 is listed there.
-2. Press Home and choose **Tenseven** as the home app (or Settings > Apps > Default apps > Home app).
-3. Follow the setup screens that open on first run: the home role first, then each optional permission with its reason, then your choices (home style, theme and wallpaper, icon grid, widgets, Hub, lock screen, extra apps). All of it can be changed later in Launcher Settings, then Setup.
-4. Open Launcher Settings (BB7 menu, BB10 gear, or type "Launcher Settings" in Command) and pick the BlackBerry 10 or BlackBerry 7 card.
-5. **Notification or usage access on Android 13 or newer:** Android greys these switches out for apps
-   installed outside a store until you open Settings > Apps > Tenseven, tap the top-right menu and choose
-   **Allow restricted settings**. The setup screen shows this step when it applies. Only do this for an APK you trust.
+- **Lite** (`Tenseven-Launcher-lite.apk`): no Accessibility service, notification listener, or lock-layer overlay permission; Hub notification conversations, Now Playing notification data, double-tap lock and automatic lock layer are unavailable.
+- **Full** (`Tenseven-Launcher-release.apk`): includes those optional services. Downloaded APKs that declare them can trigger Google Play Protect's internet-sideloading sensitive-permission block.
 
-To try the current debug build, download `tenseven-debug-apk` from a green run of the
-[Android workflow](https://github.com/aimindseye/tenseven-launcher/actions/workflows/android.yml) (it
-installs next to a future release as `io.github.aimindseye.tenseven.debug`).
+The variants have the same package name, versionCode and registered signing key. Back up settings and check device-specific test results before switching between variants. Debug is a separate app (`io.github.aimindseye.tenseven.debug`).
+
+1. Get a published APK from the official GitHub release. Verify its release file SHA-256 and registered signing-certificate fingerprint against [docs/BUILD.md](docs/BUILD.md).
+2. Leave Play Protect enabled. If a downloaded Full APK is blocked for sensitive access, use Lite instead. Disabling Play Protect or Advanced Protection is **not** a recommended installation step. Google's [Play Protect guidance](https://developers.google.com/android/play-protect/warning-dev-guidance) explains the restriction and how to appeal an incorrect classification.
+3. Press Home and set Tenseven as the default Home app. Complete optional setup as needed; Android may separately restrict sideloaded-app permissions.
+
+See [Build and release checks](docs/BUILD.md) and the [physical-device test plan](docs/PLAY_PROTECT_TEST_PLAN.md). Valid signing and developer registration do not themselves guarantee Play Protect approval.
+
+To try a debug build, download `tenseven-debug-apk` from a successful [Android workflow](https://github.com/aimindseye/tenseven-launcher/actions/workflows/android.yml) run. It is not a substitute for testing public signed APKs.
 
 ## Supported devices
 
