@@ -66,40 +66,25 @@ else
     pass "manifest requests no signature permission"
 fi
 
-# 6b. The Lite source overlay must explicitly preserve the main manifest security
-# defaults, even when a scanner analyzes the overlay as a standalone XML file.
-# This catches regressions in backup/cleartext restrictions without muting Sonar.
+# 6b. Single Full manifest must retain security defaults.
 if python3 - <<'PY'
 import xml.etree.ElementTree as ET
-
 android = "{http://schemas.android.com/apk/res/android}"
-tools = "{http://schemas.android.com/tools}"
-main = ET.parse("app/src/main/AndroidManifest.xml").getroot()
-lite = ET.parse("app/src/lite/AndroidManifest.xml").getroot()
-for name, root in (("main", main), ("lite", lite)):
-    app = root.find("application")
-    assert app is not None, f"{name}: <application> missing"
-    for key in ("allowBackup", "usesCleartextTraffic"):
-        assert app.get(android + key) == "false", f"{name}: android:{key} must be false"
-for service in (".platform.LockScreenAccessibilityService",
-                ".conversations.ConversationListenerService"):
-    matches = [e for e in lite.findall("application/service") if e.get(android + "name") == service]
-    assert len(matches) == 1 and matches[0].get(tools + "node") == "remove", \
-        f"Lite must remove {service}"
-overlays = [e for e in lite.findall("uses-permission")
-            if e.get(android + "name") == "android.permission.SYSTEM_ALERT_WINDOW"]
-assert len(overlays) == 1 and overlays[0].get(tools + "node") == "remove", \
-    "Lite must remove the unused overlay permission"
+root = ET.parse("app/src/main/AndroidManifest.xml").getroot()
+app = root.find("application")
+assert app is not None
+for key in ("allowBackup", "usesCleartextTraffic"):
+    assert app.get(android + key) == "false", key
 PY
 then
-    pass "Lite manifest security defaults and removed services"
+    pass "Full manifest security defaults"
 else
-    fail "Lite manifest security defaults and removed services"
+    fail "Full manifest security defaults"
 fi
 
 # 6c. Hub 2.0 must own its navigation even when zero apps are opted in.
 # Previous build kept the old HubTabs header and rendered new filters only after
-# a notification existed, so both Lite and Full looked like the pre-2.0 Hub.
+# a notification existed, so the Home looked like the pre-2.0 Hub.
 if python3 - <<'PY'
 from pathlib import Path
 
@@ -114,7 +99,7 @@ assert "HubTabs(" not in page, "old HubTabs must not be rendered"
 assert "internal fun HubUnifiedNavigation(" in hub, "unified navigation must exist"
 assert "HubStreamToolbar(" not in items, "no second toolbar inside conversations"
 assert "No apps selected for Hub" in hub, "first-run source-selection CTA missing"
-assert "hub-lite-summary" in hub, "Lite fallback must be identifiable"
+assert "hub-unavailable-summary" in hub, "listener unavailable state must be identifiable"
 PY
 then
     pass "Hub 2.0 navigation visible when no sources exist"
