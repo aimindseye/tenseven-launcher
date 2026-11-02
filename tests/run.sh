@@ -66,6 +66,37 @@ else
     pass "manifest requests no signature permission"
 fi
 
+# 6b. The Lite source overlay must explicitly preserve the main manifest security
+# defaults, even when a scanner analyzes the overlay as a standalone XML file.
+# This catches regressions in backup/cleartext restrictions without muting Sonar.
+if python3 - <<'PY'
+import xml.etree.ElementTree as ET
+
+android = "{http://schemas.android.com/apk/res/android}"
+tools = "{http://schemas.android.com/tools}"
+main = ET.parse("app/src/main/AndroidManifest.xml").getroot()
+lite = ET.parse("app/src/lite/AndroidManifest.xml").getroot()
+for name, root in (("main", main), ("lite", lite)):
+    app = root.find("application")
+    assert app is not None, f"{name}: <application> missing"
+    for key in ("allowBackup", "usesCleartextTraffic"):
+        assert app.get(android + key) == "false", f"{name}: android:{key} must be false"
+for service in (".platform.LockScreenAccessibilityService",
+                ".conversations.ConversationListenerService"):
+    matches = [e for e in lite.findall("application/service") if e.get(android + "name") == service]
+    assert len(matches) == 1 and matches[0].get(tools + "node") == "remove", \
+        f"Lite must remove {service}"
+overlays = [e for e in lite.findall("uses-permission")
+            if e.get(android + "name") == "android.permission.SYSTEM_ALERT_WINDOW"]
+assert len(overlays) == 1 and overlays[0].get(tools + "node") == "remove", \
+    "Lite must remove the unused overlay permission"
+PY
+then
+    pass "Lite manifest security defaults and removed services"
+else
+    fail "Lite manifest security defaults and removed services"
+fi
+
 # 7. Nothing that must never be committed.
 forbidden="$(tracked | grep -E '\.(img|zip|apk|aab|jks|keystore|pk8)$' || true)"
 if [[ -z "$forbidden" ]]; then pass "no images, archives, APKs or keys tracked"; else fail "forbidden files tracked: $forbidden"; fi
