@@ -363,7 +363,9 @@ internal fun rememberHubConversationsUi(
     refreshGeneration: Int,
     onOpenFallback: () -> Unit,
 ): HubConversationsUi {
-    val accessGranted = remember(refreshGeneration) { ConversationAccess.isGranted(context) }
+    val accessGranted = remember(refreshGeneration) {
+        Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context)
+    }
     val locked =
         remember(refreshGeneration) {
             context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true

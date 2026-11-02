@@ -1866,7 +1866,7 @@ private fun LiveGlanceFrame(
             else -> snapshot.mail to SableOrange
         }
     // Calendar asks for a runtime permission; Now playing and the Hub need the notification listener, which the lite build lacks.
-    val listenerMissing = widget != GlanceWidgets.CALENDAR && !Capabilities.hasConversationService(context)
+    val listenerMissing = widget == GlanceWidgets.MEDIA && !Capabilities.hasConversationService(context)
     val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED && !listenerMissing
     val headline =
         when {
