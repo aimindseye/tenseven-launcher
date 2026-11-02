@@ -1,12 +1,10 @@
 package io.github.aimindseye.tenseven.ui
 
 import android.graphics.Rect
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,10 +29,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -129,7 +123,7 @@ internal fun HubPeekHost(
     ) {
         content()
         if (peekOpen) {
-            PhoneColors {
+            HubContrastTheme {
                 HubPeekPanel(onClose = { onPeekChange(false) }, onOpenHub = {
                     onPeekChange(false)
                     onOpenHub()
@@ -139,24 +133,7 @@ internal fun HubPeekHost(
     }
 }
 
-/**
- * The peek is drawn in the phone's own colours, not the launcher's theme: Material You colours from the wallpaper on
- * Android 12 and newer, and the plain system light or dark colours before that.
- */
-@Composable
-private fun PhoneColors(content: @Composable () -> Unit) {
-    val context = LocalContext.current
-    val dark = isSystemInDarkTheme()
-    val scheme =
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(context)
-            dark -> darkColorScheme()
-            else -> lightColorScheme()
-        }
-    MaterialTheme(colorScheme = scheme, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
-}
-
+/** Peek inherits the same user-selected Launcher/Phone appearance as Hub. */
 @Composable
 private fun HubPeekPanel(
     onClose: () -> Unit,
@@ -197,7 +174,7 @@ private fun HubPeekPanel(
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
             shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 0.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = PANEL_ALPHA),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
