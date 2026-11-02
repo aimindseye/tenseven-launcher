@@ -77,8 +77,9 @@ object OnboardingPlan {
     fun needsRestrictedSettingsOverviewHelp(
         state: SetupState,
         eligible: (SetupStep) -> Boolean,
+        attempted: Set<SetupStep>,
     ): Boolean = listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
-        .any { !state.isDone(it) && eligible(it) }
+        .any { !state.isDone(it) && eligible(it) && it in attempted }
 
     /**
      * Whether to explain "Allow restricted settings". On Android 13 or newer, the switch for notification or
