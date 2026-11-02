@@ -48,6 +48,7 @@ import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubConversation
+import io.github.aimindseye.tenseven.model.HubStreamSelection
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -105,7 +106,7 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
     }
     val visible =
         ConversationView.apply(ui.conversations, ui.filter, ui.state, ui.now)
-            .filter { ui.sourcePackage == null || ui.sourcePackage in it.sourcePackages }
+            .let { HubStreamSelection.apply(it, ui.sourcePackage) { row -> row.sourcePackages } }
     item(key = "conversations-filter") {
         HubStreamToolbar(
             filter = ui.filter,
