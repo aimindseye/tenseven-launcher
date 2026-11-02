@@ -74,18 +74,24 @@ class OnboardingPlanTest {
     }
 
     @Test
-    fun reopenedOverviewShowsHelpWhenNotificationOrUsageStillBlocked() {
+    fun overviewOnlyShowsRestrictedAppInfoAfterFirstBlockedAccessAttempt() {
         val eligible = { step: SetupStep ->
             OnboardingPlan.needsRestrictedSettingsHelp(step, 35, null)
         }
-        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(nothing, eligible))
+        // App info overflow may not offer "Allow restricted settings" before the first request.
+        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(nothing, eligible, emptySet()))
         assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            everything.copy(notificationAccess = false), eligible))
+            nothing, eligible, setOf(SetupStep.NOTIFICATIONS)))
         assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            everything.copy(usageAccess = false), eligible))
-        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(everything, eligible))
+            everything.copy(notificationAccess = false), eligible, setOf(SetupStep.NOTIFICATIONS)))
+        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            everything.copy(usageAccess = false), eligible, setOf(SetupStep.USAGE)))
         assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            nothing, { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, 32, null) }))
+            everything, eligible, setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)))
+        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+            nothing,
+            { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, 32, null) },
+            setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)))
     }
 
     @Test
