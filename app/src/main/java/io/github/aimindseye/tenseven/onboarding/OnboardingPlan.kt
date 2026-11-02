@@ -73,6 +73,13 @@ object OnboardingPlan {
             .filterNot { !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK) }
             .filter { it.isChoice || !state.isDone(it) }
 
+    /** An already-completed setup returns to overview; never hide this help there. */
+    fun needsRestrictedSettingsOverviewHelp(
+        state: SetupState,
+        eligible: (SetupStep) -> Boolean,
+    ): Boolean = listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
+        .any { !state.isDone(it) && eligible(it) }
+
     /**
      * Whether to explain "Allow restricted settings". On Android 13 or newer, the switch for notification or
      * usage access can be greyed out for an app installed from a downloaded APK; the way round it is in App info.
