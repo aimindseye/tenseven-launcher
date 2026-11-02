@@ -16,6 +16,7 @@ on:
       - 'gradle.properties'
       - '.editorconfig'
       - '.github/workflows/android.yml'
+      - 'tools/verify-release-apks.sh'
       - '!**/*.md'
   push:
     branches: [main]
@@ -29,6 +30,7 @@ on:
       - 'gradle.properties'
       - '.editorconfig'
       - '.github/workflows/android.yml'
+      - 'tools/verify-release-apks.sh'
       - '!**/*.md'
   workflow_dispatch:
 
@@ -70,6 +72,11 @@ jobs:
           :design:lintDebug :app:lintDebug
           detekt ktlintCheck
           :design:koverXmlReportDebug :app:koverXmlReportDebug
+      - name: Verify compiled Full/Lite APK manifests
+        run: |
+          bash tools/verify-release-apks.sh --ci-unsigned \
+            app/build/outputs/apk/release/Tenseven-Launcher-release-unsigned.apk \
+            app/build/outputs/apk/lite/Tenseven-Launcher-lite-unsigned.apk
       - name: Kover line coverage (baseline, no threshold)
         run: |
           python3 - <<'PY'
@@ -95,8 +102,8 @@ jobs:
       - name: Upload lite APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: tenseven-lite-apk
-          path: app/build/outputs/apk/lite/*.apk
+          name: tenseven-lite-unsigned-ci-apk
+          path: app/build/outputs/apk/lite/*-unsigned.apk
           if-no-files-found: ignore
           retention-days: 14
       - name: Upload reports

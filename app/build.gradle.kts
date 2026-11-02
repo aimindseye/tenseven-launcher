@@ -1,3 +1,5 @@
+import java.security.KeyStore
+import java.security.MessageDigest
 import java.util.Properties
 
 plugins {
@@ -134,4 +136,33 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     testImplementation(libs.junit)
+}
+
+/** The SHA-256 certificate registered for this app in Android Developer Console. */
+val registeredTensevenCertificateSha256 =
+    "9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292"
+
+// CI intentionally assembles unsigned candidates. When real signing credentials are supplied,
+// fail before packaging if they do not belong to the registered Tenseven release key.
+if (releaseSigned) {
+    val verifyRegisteredReleaseKey by tasks.registering {
+        group = "verification"
+        description = "Verify the signing keystore matches the registered Tenseven certificate"
+        doLast {
+            val file = rootProject.file(releaseStoreFile!!)
+            check(file.isFile) { "Signing keystore is missing" }
+            val keystore = KeyStore.getInstance(file, releaseStorePassword!!.toCharArray())
+            val certificate = keystore.getCertificate(releaseKeyAlias!!)
+                ?: error("Release key alias was not found")
+            val actual = MessageDigest.getInstance("SHA-256").digest(certificate.encoded)
+                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+            check(actual == registeredTensevenCertificateSha256) {
+                "Wrong release signing certificate: expected registered SHA-256; got $actual"
+            }
+            println("Registered Tenseven signing certificate verified: $actual")
+        }
+    }
+    tasks.matching { it.name in setOf("packageRelease", "packageLite") }.configureEach {
+        dependsOn(verifyRegisteredReleaseKey)
+    }
 }
