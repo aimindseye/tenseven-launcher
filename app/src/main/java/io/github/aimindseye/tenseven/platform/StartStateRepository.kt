@@ -213,6 +213,16 @@ class StartStateRepository(
         }.apply()
     }
 
+    /** Original installed icons by default; Tabler-derived TenSeven glyphs are opt-in. */
+    fun loadIconPresentation(): io.github.aimindseye.tenseven.model.IconPresentation =
+        io.github.aimindseye.tenseven.model.IconPresentation.decode(
+            preferences.getString(KEY_ICON_PRESENTATION, null),
+        )
+
+    fun saveIconPresentation(style: io.github.aimindseye.tenseven.model.IconPresentation) {
+        preferences.edit().putString(KEY_ICON_PRESENTATION, style.key).apply()
+    }
+
     /** Whether typing on a home screen starts a search (default on). */
     fun loadTypeToSearch(): Boolean = preferences.getInt(KEY_TYPE_TO_SEARCH, 1) != 0
 
@@ -488,6 +498,7 @@ class StartStateRepository(
         const val KEY_HOME_STYLE = "home_style"
         const val KEY_ONBOARDING_DONE = "onboarding_done"
         const val KEY_ICON_PACK = "icon_pack"
+        const val KEY_ICON_PRESENTATION = "icon_presentation"
         const val KEY_DOUBLE_TAP_LOCK = "double_tap_lock"
         const val KEY_GRID_ORDER = "grid_order"
     }
