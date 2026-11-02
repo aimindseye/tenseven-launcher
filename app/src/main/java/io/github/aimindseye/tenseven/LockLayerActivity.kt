@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -354,7 +355,7 @@ private fun LockPeekRow(packageName: String, count: Int, onOpen: () -> Unit) {
         LockIcon(packageName, "", onClick = onOpen)
         Column(modifier = Modifier.weight(1f)) {
             Text(appName, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(if (count == 1) "1 notification" else "$" + "{count} notifications",
+            Text(if (count == 1) "1 notification" else count.toString() + " notifications",
                 color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
         }
         Text(LockLayer.countLabel(count), color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
