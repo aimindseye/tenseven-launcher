@@ -12,6 +12,8 @@ import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.model.ThemePresets
+import io.github.aimindseye.tenseven.model.WallpaperSets
 import io.github.aimindseye.tenseven.model.LauncherBackup
 import io.github.aimindseye.tenseven.model.WidgetList
 
@@ -243,6 +245,18 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_LOCK_LAYER, if (enabled) 1 else 0).apply()
     }
 
+    /** Explicit selection is separate from theme and Android WallpaperManager. */
+    fun loadWallpaperSetId(): String =
+        WallpaperSets.selectedId(
+            preferences.getString(KEY_WALLPAPER_SET, null),
+            ThemePresets.matching(loadAppearanceMode(), loadAppearanceAccent()).wallpaperId,
+        )
+
+    fun saveWallpaperSetId(id: String) {
+        require(WallpaperSets.ALL.any { it.id == id }) { "Unknown wallpaper: $id" }
+        preferences.edit().putString(KEY_WALLPAPER_SET, id).apply()
+    }
+
     /** Whether the BlackBerry 10 home lets the wallpaper show through, dimmed. On by default. */
     fun loadHomeWallpaper(): Boolean = preferences.getInt(KEY_HOME_WALLPAPER, 1) != 0
 
@@ -406,6 +420,7 @@ class StartStateRepository(
         const val KEY_GRID_LABELS = "grid_labels"
         const val KEY_LOCK_LAYER = "lock_layer"
         const val KEY_HOME_WALLPAPER = "home_wallpaper"
+        const val KEY_WALLPAPER_SET = "wallpaper_set"
         const val KEY_HUB_EXCLUDED = "hub_excluded_apps" // legacy backup compatibility; never used as consent
         const val KEY_HUB_ENABLED = "hub_enabled_apps"
         const val KEY_HUB_PEEK_TEXT = "hub_peek_text"

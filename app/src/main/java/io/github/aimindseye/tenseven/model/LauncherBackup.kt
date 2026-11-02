@@ -50,6 +50,7 @@ object LauncherBackup {
             "grid_labels" to Type.NUMBER,
             "lock_layer" to Type.NUMBER,
             "home_wallpaper" to Type.NUMBER,
+            "wallpaper_set" to Type.TEXT,
             "hub_excluded_apps" to Type.ITEMS, // legacy backup decode only; never imply opt-in
             "hub_enabled_apps" to Type.ITEMS,
             "hub_peek_text" to Type.NUMBER,
