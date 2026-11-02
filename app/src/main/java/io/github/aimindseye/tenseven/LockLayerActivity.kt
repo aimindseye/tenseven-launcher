@@ -257,12 +257,42 @@ private fun LockLayerScreen(
                 }
             }
             Spacer(Modifier.height(18.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                entries.forEach { entry -> LockIcon(entry.packageName, LockLayer.countLabel(entry.count)) { onOpenApp(entry.packageName) } }
+            if (stage == LockPeek.Stage.COUNTS) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    entries.forEach { entry ->
+                        LockIcon(entry.packageName, LockLayer.countLabel(entry.count), onClick = onAdvance)
+                    }
+                }
+            } else {
+                Text(
+                    if (stage == LockPeek.Stage.PEEK) "Peek · Notifications" else "Notifications",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 18.sp,
+                    modifier = Modifier.clickable(onClick = onAdvance),
+                )
+                Spacer(Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    if (entries.isEmpty()) {
+                        Text("No notifications from selected apps", color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp)
+                    }
+                    entries.forEach { entry ->
+                        LockPeekRow(entry.packageName, entry.count) { onOpenApp(entry.packageName) }
+                    }
+                    Text("Unlock to read message details",
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
+                }
             }
         }
         Text(
-            stringResource(R.string.lock_hint),
+            when (stage) {
+                LockPeek.Stage.COUNTS -> "Swipe up for Peek · Enter to unlock"
+                LockPeek.Stage.PEEK -> "Swipe up to expand · Enter to unlock"
+                LockPeek.Stage.EXPANDED -> stringResource(R.string.lock_hint)
+            },
             color = Color.White.copy(alpha = 0.7f),
             fontSize = 14.sp,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp).clickable(onClick = onUnlock),
@@ -305,6 +335,29 @@ private fun LockIcon(
             Box(Modifier.align(Alignment.TopEnd).size(12.dp).background(Color(0xFFE53935), CircleShape))
         }
         Text(label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+/** Borderless source rows. Only counts and app names are visible while the device is locked. */
+@Composable
+private fun LockPeekRow(packageName: String, count: Int, onOpen: () -> Unit) {
+    val packageManager = LocalContext.current.packageManager
+    val appName = remember(packageName) {
+        runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString() }
+            .getOrDefault("App")
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LockIcon(packageName, "", onClick = onOpen)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(appName, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (count == 1) "1 notification" else "$" + "{count} notifications",
+                color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+        }
+        Text(LockLayer.countLabel(count), color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
     }
 }
 
