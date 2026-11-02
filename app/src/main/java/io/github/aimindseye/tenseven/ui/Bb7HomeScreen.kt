@@ -145,6 +145,7 @@ fun Bb7HomeScreen(
     // Nothing is highlighted until the user actually navigates the tray with a key.
     var selected by remember { mutableIntStateOf(-1) }
     var moving by remember { mutableStateOf(false) }
+    var pickingDesktop by remember { mutableStateOf(false) }
     // Which list the arrow keys move in: the tray (false) or the icons in the empty space above it.
     var inDesktopZone by remember { mutableStateOf(false) }
     var deskSelected by remember { mutableIntStateOf(0) }
@@ -159,6 +160,7 @@ fun Bb7HomeScreen(
         query = ""
         selected = -1
         moving = false
+        pickingDesktop = false
         inDesktopZone = false
     }
     val live by
@@ -191,6 +193,7 @@ fun Bb7HomeScreen(
     val trayTitle =
         when {
             moving -> t("move") + shown.getOrNull(selected)?.label.orEmpty() + t("enter_to_drop")
+            pickingDesktop -> "Tap an app to add to Home"
             searching -> t("search", query)
             else -> panel.title
         }
@@ -217,6 +220,26 @@ fun Bb7HomeScreen(
         val rows = Bb7Home.rowsFor(next.size, keyColumns)
         if (rows > homeRows) onHomeRowsChanged(rows)
     }
+    // Tap empty wallpaper, then tap an installed app to add its shortcut.
+    val addToDesktop: (AppEntry) -> Unit = { app ->
+        val key = app.stableKey()
+        val next = Bb7Home.addDesktopShortcut(desktopKeys, key)
+        when {
+            key in desktopKeys -> Toast.makeText(context, "Already on Home", Toast.LENGTH_SHORT).show()
+            key !in next -> Toast.makeText(
+                context, "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts", Toast.LENGTH_LONG,
+            ).show()
+            else -> {
+                onDesktopChanged(next)
+                open = false
+                query = ""
+                pickingDesktop = false
+                selected = -1
+                Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     // The Menu key: the highlighted icon's items first, then Start's own (added by the activity).
     val menuFor = { app: AppEntry?, fromDesktop: Boolean ->
         buildList<Pair<String, () -> Unit>> {
@@ -233,18 +256,7 @@ fun Bb7HomeScreen(
                     )
                 } else {
                     add(
-                        context.getString(R.string.bb7_add_home) to {
-                            val next = Bb7Home.addDesktopShortcut(desktopKeys, key)
-                            if (key !in next) {
-                                Toast.makeText(context, "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts", Toast.LENGTH_LONG).show()
-                            } else {
-                                onDesktopChanged(next)
-                                open = false
-                                query = ""
-                                selected = -1
-                                Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
-                            }
-                        },
+                        context.getString(R.string.bb7_add_home) to { addToDesktop(app) },
                     )
                 }
                 if (key in favorites) {
@@ -488,7 +500,8 @@ fun Bb7HomeScreen(
                                 selected = -1
                                 inDesktopZone = false
                                 openApps()
-                                Toast.makeText(context, "Long-press an app → Add to home screen", Toast.LENGTH_SHORT).show()
+                                pickingDesktop = true
+                                Toast.makeText(context, "Tap an app to add to Home", Toast.LENGTH_SHORT).show()
                             },
                             onLongPress = { app ->
                                 inDesktopZone = true
@@ -521,13 +534,14 @@ fun Bb7HomeScreen(
                             open = !open
                             query = ""
                             selected = if (open) 0 else -1
+                            if (!open) pickingDesktop = false
                         },
                         onStep = { step ->
                             query = ""
                             panel = Bb7Home.step(panel, step, panels)
                             selected = 0
                         },
-                        onLaunch = { onLaunchApp(it) },
+                        onLaunch = { if (pickingDesktop) addToDesktop(it) else onLaunchApp(it) },
                         onMenu = {
                             // The ⋮ button: the menu for the highlighted icon.
                             onOpenMenu(menuFor(shown.getOrNull(selected), false))
