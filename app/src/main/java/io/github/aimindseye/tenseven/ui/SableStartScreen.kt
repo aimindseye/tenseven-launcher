@@ -2378,6 +2378,7 @@ private fun HubPage(
         return true
     }
 
+    HubContrastTheme {
     LazyColumn(
         modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
         state = listState,
@@ -2442,6 +2443,7 @@ private fun HubPage(
                 conversations = conversationsUi,
             )
         }
+    }
     }
 }
 
