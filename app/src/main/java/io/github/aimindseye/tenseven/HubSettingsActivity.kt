@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,6 +37,8 @@ import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HubApps
 import io.github.aimindseye.tenseven.model.StartText
+import io.github.aimindseye.tenseven.platform.HubCalendarRepository
+import io.github.aimindseye.tenseven.platform.HubCalendarSource
 import io.github.aimindseye.tenseven.platform.LauncherAppsRepository
 import io.github.aimindseye.tenseven.platform.LockLayerState
 import io.github.aimindseye.tenseven.platform.StartStateRepository
@@ -61,11 +64,20 @@ class HubSettingsActivity : ComponentActivity() {
         DesignText.t.bindTo(this)
         val state = StartStateRepository(this)
         val repository = LauncherAppsRepository(this)
+        val calendars = HubCalendarRepository(this)
         setContent {
             LauncherTheme(window = window) {
                 var enabled by remember { mutableStateOf(state.loadHubEnabledApps()) }
                 var showText by remember { mutableStateOf(state.loadHubPeekText()) }
                 var calendarPeek by remember { mutableStateOf(state.loadHubCalendarPeek()) }
+                var selectedCalendars by remember { mutableStateOf(state.loadHubSelectedCalendarIds()) }
+                var calendarSources by remember { mutableStateOf(emptyList<HubCalendarSource>()) }
+                val calendarPermitted = resumeTick >= 0 && calendars.hasPermission()
+                LaunchedEffect(resumeTick, calendarPeek) {
+                    calendarSources =
+                        if (calendarPeek && calendarPermitted) withContext(Dispatchers.IO) { calendars.calendars() }
+                        else emptyList()
+                }
                 var cleared by remember { mutableStateOf(false) }
                 var rows by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
                 LaunchedEffect(Unit) {
@@ -79,6 +91,17 @@ class HubSettingsActivity : ComponentActivity() {
                     listenerAvailable = Capabilities.hasConversationService(this),
                     showText = showText,
                     calendarPeek = calendarPeek,
+                    calendarPermitted = calendarPermitted,
+                    calendarSources = calendarSources,
+                    selectedCalendars = selectedCalendars,
+                    onCalendarPermission = {
+                        requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 7301)
+                    },
+                    onCalendarToggle = { id ->
+                        val existing = selectedCalendars ?: calendarSources.map { it.id }.toSet()
+                        selectedCalendars = if (id in existing) existing - id else existing + id
+                        state.saveHubSelectedCalendarIds(selectedCalendars)
+                    },
                     cleared = cleared,
                     rows = rows,
                     enabled = enabled,
@@ -118,6 +141,11 @@ private fun HubSettings(
     listenerAvailable: Boolean,
     showText: Boolean,
     calendarPeek: Boolean,
+    calendarPermitted: Boolean,
+    calendarSources: List<HubCalendarSource>,
+    selectedCalendars: Set<Long>?,
+    onCalendarPermission: () -> Unit,
+    onCalendarToggle: (Long) -> Unit,
     cleared: Boolean,
     rows: List<Pair<String, String>>,
     enabled: Set<String>,
@@ -159,6 +187,27 @@ private fun HubSettings(
             )
             HubSwitch(stringResource(R.string.hub_show_text), stringResource(R.string.hub_show_text_detail), showText, onShowText)
             HubSwitch(stringResource(R.string.hub_calendar_peek), stringResource(R.string.hub_calendar_peek_detail), calendarPeek, onCalendarPeek)
+            if (calendarPeek) {
+                if (!calendarPermitted) {
+                    HubRow("Allow Calendar access",
+                        "Required to show events from calendars synchronized with Android",
+                        onClick = onCalendarPermission)
+                } else {
+                    Text("Calendar sources", style = MaterialTheme.typography.titleMedium)
+                    Text("Select the calendars whose events appear in Hub. Selection stays on this device.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    calendarSources.forEach { source ->
+                        HubSwitch(source.name, source.account,
+                            selectedCalendars == null || source.id in selectedCalendars) {
+                            onCalendarToggle(source.id)
+                        }
+                    }
+                    if (calendarSources.isEmpty()) Text("No visible Android calendars found",
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
             Text(stringResource(R.string.hub_apps), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
             Text(
                 stringResource(R.string.hub_apps_enabled_count, enabled.size),
