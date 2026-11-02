@@ -30,6 +30,13 @@ class TaskScheduleTest {
         assertEquals(Instant.parse("2026-03-10T13:00:00Z").toEpochMilli(), next)
     }
 
+    @Test fun earlyCompletionStillMovesRepeatForward() {
+        val original = Instant.parse("2026-03-09T13:00:00Z").toEpochMilli()
+        val completed = Instant.parse("2026-03-08T19:00:00Z").toEpochMilli()
+        assertEquals(Instant.parse("2026-03-10T13:00:00Z").toEpochMilli(),
+            TaskSchedule.advanceAfter(original, TaskRepeat.Daily, ny.id, completed))
+    }
+
     @Test fun untilCompleteHasNoAndroidAlarm() {
         assertNull(TaskSchedule.preset("Until complete", Instant.now(), ny))
         assertEquals("No due date", TaskSchedule.group(TaskRecord(title = "Offline task")))
