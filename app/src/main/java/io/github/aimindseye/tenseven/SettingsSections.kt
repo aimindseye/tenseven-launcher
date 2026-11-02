@@ -290,6 +290,25 @@ internal fun WallpaperSection(state: StartStateRepository) {
     }
 }
 
+/**
+ * Choosing icons is independent of appearance and BB7/BB10 layout. Existing external packs
+ * still work; bundled TenSeven extra apps keep their own icons when installed/activated.
+ */
+@Composable
+internal fun IconPresentationSection(state: StartStateRepository) {
+    val context = LocalContext.current
+    var style by remember { mutableStateOf(state.loadIconPresentation()) }
+    SwitchRow(
+        "Use TenSeven icon styling",
+        "Off: show installed apps' original icons or your selected icon pack. On: apply TenSeven's Tabler-based style where available. TenSeven's bundled apps keep their own icons.",
+        style == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven,
+    ) { enabled ->
+        style = if (enabled) io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+            else io.github.aimindseye.tenseven.model.IconPresentation.Original
+        io.github.aimindseye.tenseven.iconpacks.IconPresentationState.choose(context, style)
+    }
+}
+
 /** The Widgets page switch and the built-in widgets that show on it. */
 @Composable
 internal fun WidgetsSection(state: StartStateRepository) {
