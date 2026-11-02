@@ -9,6 +9,16 @@
 - Run `bash tools/verify-release-apks.sh <full.apk> <lite.apk>` before device installation. Record its complete output and the individual APK SHA-256 file hashes.
 - Obtain consent before erasing any installation or its launcher preferences. Back up settings. Older published alpha builds may have a different signing certificate, in which case an in-place APK update is not possible.
 
+## Signed APK verification evidence (local Mac, supplied 2026-11-01)
+
+- Script: `bash tools/verify-release-apks.sh` at PR #76 commit `682307f2378faef7a9d3848c7c67c33d789fd68c`
+- Regression tests: **15 passed**
+- Full APK `app/build/outputs/apk/release/Tenseven-Launcher-release.apk`: valid **v2** signature, registered certificate SHA-256 confirmed, compiled manifest and package/minSdk/versionCode checks PASS. File SHA-256: `7dd0420d899af83839616d5d002b2a178ace94c34bccaab5dc7c5508a1b73ef9`
+- Lite APK `app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk`: valid **v2** signature, same registered certificate, compiled manifest and package/minSdk/versionCode checks PASS. File SHA-256: `a15a2e439ee1207b9cce90989e422d010f0750e811444728b3783e92ba652f0b`
+- Both report `versionCode=1`, `minSdk=30`, and certificate SHA-256 `9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
+
+This is user-supplied local validation output. The signed APK binaries have **not** been uploaded to CI and this is **not** physical-device or Play Protect evidence.
+
 ## Matrix (every result starts NOT RUN)
 
 | ID | Install source | Variant | What to record |
@@ -36,7 +46,7 @@
 ## Acceptance conditions
 
 - **Build:** Android CI passes Full/Lite assembly, unit tests and compiled-manifest checks.
-- **Signing:** Both final APKs pass `tools/verify-release-apks.sh`, including v3 verification and the registered signing certificate fingerprint.
+- **Signing:** Both final APKs pass `tools/verify-release-apks.sh`, including a valid v2 or v3 APK signature and the registered signing certificate fingerprint.
 - **Lite install:** On target phones, installation through intended downloadable sources succeeds with Play Protect enabled; unsupported service features are not offered.
 - **Full install:** Exact Play Protect outcome and permission explanations recorded honestly; do not promise installation where Android blocks it.
 - **Update:** Either direction is declared supported only after device-side evidence, otherwise instruct users to back up and reinstall.
