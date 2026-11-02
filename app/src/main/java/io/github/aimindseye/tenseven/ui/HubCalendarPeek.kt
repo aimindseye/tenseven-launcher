@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import android.app.KeyguardManager
 import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,12 +35,15 @@ internal fun HubCalendarPeek(
     val context = LocalContext.current
     val repository = remember(context) { HubCalendarRepository(context) }
     val permitted = repository.hasPermission()
+    val deviceLocked = context.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
     var expanded by remember { mutableStateOf(false) }
     var events by remember { mutableStateOf(emptyList<HubCalendarEvent>()) }
 
     LaunchedEffect(expanded, permitted, refreshGeneration) {
-        if (expanded && permitted) {
+        if (expanded && permitted && !deviceLocked) {
             events = withContext(Dispatchers.IO) { repository.upcoming() }
+        } else {
+            events = emptyList()
         }
     }
 
@@ -54,7 +58,11 @@ internal fun HubCalendarPeek(
             style = MaterialTheme.typography.titleSmall,
         )
         if (expanded) {
-            if (!permitted) {
+            if (deviceLocked) {
+                Text("Unlock to see upcoming calendar events",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium)
+            } else if (!permitted) {
                 Text("Allow Calendar access to see events from calendars synced to Android",
                     modifier = Modifier.fillMaxWidth().clickable(onClick = onRequestCalendarPermission).padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
