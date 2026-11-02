@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.OnboardingActivity
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.conversations.ConversationFilter
 import io.github.aimindseye.tenseven.conversations.ConversationKind
 import io.github.aimindseye.tenseven.conversations.ConversationState
@@ -49,6 +50,8 @@ import io.github.aimindseye.tenseven.onboarding.SetupStep
 /** What the Hub page needs to show conversations; built by [HubPage] from Tenseven's own notification listener. */
 internal class HubConversationsUi(
     val accessGranted: Boolean,
+    /** False in the lite build: there is no notification listener to ask for. */
+    val canAllowAccess: Boolean = true,
     val deviceLocked: Boolean,
     val conversations: List<HubConversation>,
     val filter: ConversationFilter,
@@ -71,6 +74,8 @@ private const val MAX_CONVERSATIONS = 30
  */
 internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
     if (!ui.accessGranted) {
+        // The lite build has no notification listener to allow, so it shows no conversations section at all.
+        if (!ui.canAllowAccess) return
         item(key = "conversations-allow") {
             ConversationCard(
                 title = stringResource(R.string.hub_allow_title),
@@ -358,7 +363,9 @@ internal fun rememberHubConversationsUi(
     refreshGeneration: Int,
     onOpenFallback: () -> Unit,
 ): HubConversationsUi {
-    val accessGranted = remember(refreshGeneration) { ConversationAccess.isGranted(context) }
+    val accessGranted = remember(refreshGeneration) {
+        Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context)
+    }
     val locked =
         remember(refreshGeneration) {
             context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
@@ -374,6 +381,7 @@ internal fun rememberHubConversationsUi(
     return remember(accessGranted, locked, conversations, filter, state, now) {
         HubConversationsUi(
             accessGranted = accessGranted,
+            canAllowAccess = Capabilities.hasConversationService(context),
             deviceLocked = locked,
             conversations = conversations,
             filter = filter,

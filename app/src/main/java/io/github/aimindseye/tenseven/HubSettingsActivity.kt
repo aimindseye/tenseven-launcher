@@ -30,6 +30,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.sableFocusRing
@@ -72,7 +73,8 @@ class HubSettingsActivity : ComponentActivity() {
                         }
                 }
                 HubSettings(
-                    accessGranted = resumeTick >= 0 && ConversationAccess.isGranted(this),
+                    accessGranted = resumeTick >= 0 && Capabilities.hasConversationService(this) && ConversationAccess.isGranted(this),
+                    listenerAvailable = Capabilities.hasConversationService(this),
                     showText = showText,
                     cleared = cleared,
                     rows = rows,
@@ -101,6 +103,7 @@ class HubSettingsActivity : ComponentActivity() {
 @Composable
 private fun HubSettings(
     accessGranted: Boolean,
+    listenerAvailable: Boolean,
     showText: Boolean,
     cleared: Boolean,
     rows: List<Pair<String, String>>,
@@ -124,9 +127,16 @@ private fun HubSettings(
             )
             HubRow(
                 title = stringResource(R.string.hub_access),
-                detail = stringResource(if (accessGranted) R.string.hub_access_on else R.string.hub_access_off),
+                detail =
+                    stringResource(
+                        when {
+                            !listenerAvailable -> R.string.hub_access_lite
+                            accessGranted -> R.string.hub_access_on
+                            else -> R.string.hub_access_off
+                        },
+                    ),
                 modifier = Modifier.focusRequester(first),
-                onClick = onAccess,
+                onClick = { if (listenerAvailable) onAccess() },
             )
             HubRow(
                 title = stringResource(R.string.hub_clear),

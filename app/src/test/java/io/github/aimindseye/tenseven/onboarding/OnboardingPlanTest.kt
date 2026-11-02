@@ -72,4 +72,14 @@ class OnboardingPlanTest {
         assertFalse(help(SetupStep.CONTACTS, 34, null))
         assertFalse(help(SetupStep.HOME, 34, null))
     }
+
+    @Test
+    fun theLiteBuildHasNoNotificationStep() {
+        val lite = nothing.copy(notificationListenerAvailable = false)
+        val pending = OnboardingPlan.pending(lite)
+        assertFalse(SetupStep.NOTIFICATIONS in pending)
+        assertFalse(SetupStep.LOCK in pending)
+        assertTrue(SetupStep.USAGE in pending && SetupStep.CONTACTS in pending)
+        assertEquals(OnboardingPlan.pending(nothing).size - 2, pending.size)
+    }
 }

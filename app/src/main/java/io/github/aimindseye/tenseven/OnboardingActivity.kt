@@ -75,7 +75,11 @@ class OnboardingActivity : ComponentActivity() {
         startState = StartStateRepository(this)
         val state = SetupStatus.read(this)
         setup.value = state
-        val only = intent?.getStringExtra(EXTRA_STEP)?.let { name -> SetupStep.entries.firstOrNull { it.name == name } }
+        val only = intent?.getStringExtra(EXTRA_STEP)?.let { name ->
+            SetupStep.entries.firstOrNull { it.name == name }
+        }?.takeUnless {
+            !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
+        }
         steps = if (only != null) listOf(only) else OnboardingPlan.pending(state)
         // Opened again after the first run (Launcher Settings, the BlackBerry 7 menu): show every choice to change, not a wizard.
         val overview = only == null && startState.loadOnboardingDone()

@@ -66,7 +66,7 @@ import java.util.Locale
  * only a cover. The phone's own lock stays underneath, so swiping up, pressing Enter or Space, or tapping an app asks
  * Android to dismiss the real lock first (PIN, pattern or fingerprint) and only then opens anything. It shows the
  * time, the date, an icon and count for each app with notifications waiting, and a camera shortcut. Message text
- * appears only if the user turned on "Show message text".
+ * never appears on the actual lock screen. A user-invoked settings preview may show opted-in text.
  */
 class LockLayerActivity : ComponentActivity() {
     private val closer =
@@ -93,7 +93,8 @@ class LockLayerActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, closer, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         val state = StartStateRepository(this)
         val excluded = state.loadHubExcludedApps()
-        val showText = state.loadHubPeekText()
+        // Home's Hub peek option is not consent for text on an actual locked screen.
+        val showText = isPreview && state.loadHubPeekText()
         setContent {
             LockLayerScreen(
                 excluded = excluded,

@@ -1,0 +1,95 @@
+# Lite / Full Play Protect device qualification
+
+**STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; BOTH LITE AND FULL GOOGLE DRIVE INSTALL AND PLAY PROTECT SCAN PASS REPORTED ON ONE DEVICE; FULL SENSITIVE ACCESS ENABLED AFTER USER-APPROVED RESTRICTED SETTINGS; FEATURE QUALIFICATION INCOMPLETE.** The installed APK hashes have not been independently matched to the locally verified final artifacts. The initial Access denial was subsequently resolved for Full by user-approved Android restricted settings, not by a limited-scope permission grant.
+
+## Prerequisites
+
+- A certified physical Android phone with Google Play services, Play Protect scanning **enabled**, and a reliable alternate Home app.
+- Final **signed** Full and Lite APKs from one commit, with the same versionCode, package name and registered certificate.
+- Run `bash tools/verify-release-apks.sh <full.apk> <lite.apk>` before device installation. Record its complete output and the individual APK SHA-256 file hashes.
+- Obtain consent before erasing any installation or its launcher preferences. Back up settings. Older published alpha builds may have a different signing certificate, in which case an in-place APK update is not possible.
+
+## Signed APK verification evidence (local Mac, supplied 2026-11-01)
+
+- Script: `bash tools/verify-release-apks.sh` at PR #76 commit `682307f2378faef7a9d3848c7c67c33d789fd68c`
+- Regression tests: **15 passed**
+- Full APK `app/build/outputs/apk/release/Tenseven-Launcher-release.apk`: valid **v2** signature, registered certificate SHA-256 confirmed, compiled manifest and package/minSdk/versionCode checks PASS. File SHA-256: `7dd0420d899af83839616d5d002b2a178ace94c34bccaab5dc7c5508a1b73ef9`
+- Lite APK `app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk`: valid **v2** signature, same registered certificate, compiled manifest and package/minSdk/versionCode checks PASS. File SHA-256: `a15a2e439ee1207b9cce90989e422d010f0750e811444728b3783e92ba652f0b`
+- Both report `versionCode=1`, `minSdk=30`, and certificate SHA-256 `9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
+
+This is user-supplied local validation output. The signed APK binaries have **not** been uploaded to CI and this is **not** physical-device or Play Protect evidence.
+
+## Final locally signed artifacts (2026-11-01; supplied local build log)
+
+Rebuilt from PR #76 source commit `5fb5a33e273d38a2932023ca5fe8e8f9f74226c5` after Lite manifest security fixes; Gradle `:app:verifyRegisteredReleaseKey :app:testDebugUnitTest :app:assembleRelease :app:assembleLite :app:lintLite` returned `BUILD SUCCESSFUL`. The user ran 15 release-verifier tests (all PASS) followed by `tools/verify-release-apks.sh`; both signed APKs returned PASS for package, minSdk, compiled manifest, matching `versionCode=1`, v2 signature and registered certificate SHA-256 `9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
+
+| Variant | Locally recorded APK file SHA-256 |
+|---|---|
+| Full (`Tenseven-Launcher-release.apk`) | `a218e49ead1bce588c3037ff4a9e9fe894d9bda3cbf5351dedac5e213e81b2ad` |
+| Lite (`Tenseven-Launcher-lite.apk`) | `a1c9a43bc676446c1a22ceedfe44652014b26cbbf8c8ea9ad9311df3d4ed03e3` |
+
+User copied files to `~/Downloads/tenseven-pr76-final/` and generated `SHA256SUMS.txt`, matching both output hashes. These local files have **not** been uploaded to CI or independently retrieved by the repository workflow. The prior hashes above describe historical builds and must **not** be used for final release publication.
+
+## Preliminary Google Drive installation evidence (older Lite build)
+
+The user previously installed an earlier Lite APK downloaded via Google Drive and shared device photos showing BB10-style Home rendering. Android denied **App usage data** special access, and Active Frames did not show all apps opened outside the launcher. This establishes a preliminary downloadable-APK installation and Home-launch success, with a Usage Access/Active Frames limitation. The exact installed file hash, device build details and Play Protect scan state were not captured; do not count it as a final-artifact Play Protect PASS. Retest the final Lite hash above before publication.
+
+## Additional Google Drive Lite scan / install evidence (user-observed, 2026-11-01)
+
+After rebuilding Lite/Full from `5fb5a33e273d38a2932023ca5fe8e8f9f74226c5`, user retested Lite via Google Drive. Two privately supplied device photos show:
+
+1. **Google Play Protect:** `App scan recommended`; explanation that Google has not seen Tenseven before, with the **Scan app** option.
+2. **Google Play Protect:** `This app looks safe` and `You can continue to install it` after the scan.
+
+User confirmed Lite **installed successfully** and BBOS10 Home works. **App usage data** special access remains denied; Active Frames is incomplete (user describes launcher-launched apps appearing, while other recently opened apps do not). This is a separate permission/functionality issue, not a Play Protect install block.
+
+User also reports Launcher Settings shows BB7 icon configuration while BB10 Home style is selected; tracked in [issue #77](https://github.com/aimindseye/tenseven-launcher/issues/77). Hub notification-derived conversations are intentionally absent in Lite because its listener is omitted; product utility of the remaining Hub warrants evaluation.
+
+**Qualification:** Evidence proves a successful Play Protect scan and permitted install on this device. It does not identify the device model / Android version, confirm the scanner's global coverage, or independently hash the installed/downloaded file. This is **not** Full acceptance, independent fresh Full sideload, or cross-variant replacement acceptance. Photos have not been committed to the public repository.
+
+## Additional Full Play Protect / restricted-access observation (user report, 2026-11-01)
+
+After the successful Lite scan/install, the user downloaded and installed the **Full build** through Google Drive. The user reports that Full received the **same Play Protect scan recommendation**, the scan **completed successfully**, and Android **allowed installation**. Subsequently, **Notification Access and App Usage Access were both blocked** in system Settings. BBOS10 Home retains the Lite-like incomplete Active Frames behavior. The Full Hub's notification-derived functionality and notification-dependent automatic lock layer are correspondingly limited. Full's optional Accessibility service, overlay permission and other feature behavior were not independently tested or confirmed.
+
+**Classification:** `Full downloaded APK scan/install: PASS (user-reported, one device)`; `Notification Access: DENIED`; `Usage Access: DENIED`; `Hub/Active Frames/lock layer: DEGRADED`; `Full fresh-install vs Lite→Full replacement: NOT YET DISTINGUISHED`; `final APK hash on device: NOT YET CAPTURED`. This is neither proof of a narrow Android permission grant nor a reason to disable Play Protect. Product follow-up is [issue #78](https://github.com/aimindseye/tenseven-launcher/issues/78).
+
+## Follow-up: restricted-settings approval worked (user report, 2026-11-01)
+
+The user opened **Settings → Apps → Tenseven → three-dot menu → Allow restricted settings** and then successfully enabled **Notification Access** and **Usage Access** on the same device. This qualifies the official Android user-approval path for these full permissions on that device; it does **not** prove narrow-scope grants or independently demonstrate every Hub / lock-layer feature. Record post-grant Hub conversations, BBOS10 Active Frames (including apps launched externally), and lock layer behavior separately.
+
+The user also reported selected wallpapers reset on reopening Launcher Settings; [issue #79](https://github.com/aimindseye/tenseven-launcher/issues/79) and independent draft [PR #80](https://github.com/aimindseye/tenseven-launcher/pull/80) track the separate UI persistence fix. The existing PR #76 signed binaries are unaffected.
+
+## Matrix (remaining scenarios require qualification)
+
+| ID | Install source | Variant | What to record |
+|---|---|---|---|
+| A | Browser / file-manager download | Lite | Install result with Play Protect enabled, warning text or screen, device/build |
+| B | Same download source | Full | Exact sensitive-access warning or success, without turning protections off |
+| C | ADB (distinct source) | Lite | Install and launcher / keyboard / Hub fallback behavior |
+| D | ADB (distinct source) | Full | Install and opt-in services, Hub and double-tap lock |
+| E | Installed Lite → Full | Same signed package, same versionCode | `adb install -r` result, preferences, Home role and feature migration |
+| F | Installed Full → Lite | Same signed package, same versionCode | `adb install -r` result, preferences and removal of dead service controls |
+
+**ADB is not a replacement for internet-sideload testing.** It may have different install-source behavior, so its success does not establish that browser/file-manager downloads will pass.
+
+## Procedure
+
+1. Capture device identity and OS details: `adb devices -l`, `adb shell getprop ro.build.version.release`, `adb shell getprop ro.build.version.sdk`, and `adb shell getprop ro.build.version.security_patch`. Record device model, country, installer and Play Protect version separately.
+2. Confirm Play Protect is **enabled** in the Play Store UI. Do not disable Play Protect or Advanced Protection for the test.
+3. Install Lite from the selected download source. Record allowed/blocked/scan prompt and exact text, then check launch, BB7/BB10 switching, keyboard search, app drawer and Hub fallback.
+4. Check that Lite exposes no Accessibility service, notification-listener grant step, double-tap lock control, automatic lock layer, or lock-layer overlay permission.
+5. Install Full through the corresponding source; record the warning or success. If installed, grant optional permissions only with tester consent, then test Hub conversations, Now Playing, double-tap locking and lock-layer behavior.
+6. Back up settings, then perform both same-package update directions using `adb install -r <apk>`. Confirm Home selection, preferences, notification state, service declarations and no crashes.
+7. Verify the **real locked screen** never displays message content, even when the Home Hub peek setting allows message text. A settings preview may display explicitly opted-in text.
+8. Retain only redacted warning screenshots and narrowly scoped error logs. Never publish real notifications, contacts, credentials or complete unredacted logcat output.
+
+## Acceptance conditions
+
+- **Build:** Android CI passes Full/Lite assembly, unit tests and compiled-manifest checks.
+- **Signing:** Both final APKs pass `tools/verify-release-apks.sh`, including a valid v2 or v3 APK signature and the registered signing certificate fingerprint.
+- **Lite install:** On target phones, installation through intended downloadable sources succeeds with Play Protect enabled; unsupported service features are not offered.
+- **Full install:** Exact Play Protect outcome and permission explanations recorded honestly; do not promise installation where Android blocks it.
+- **Update:** Either direction is declared supported only after device-side evidence, otherwise instruct users to back up and reinstall.
+- **Privacy:** No message text on the real lock screen. Full's existing overlay/background-start behavior requires independent compatibility testing.
+
+Do not claim Play Protect compatibility PASS or publish these variants as validated until physical-device results support it.

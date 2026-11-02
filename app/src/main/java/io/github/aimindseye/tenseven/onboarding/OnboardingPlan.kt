@@ -46,6 +46,8 @@ data class SetupState(
     val usageAccess: Boolean,
     /** At least one bundled extra app (Calculator, Notes, a game) is switched on. Off by default. */
     val extrasChosen: Boolean = false,
+    /** False in the lite build, which has no notification listener to turn on. */
+    val notificationListenerAvailable: Boolean = true,
 ) {
     fun isDone(step: SetupStep): Boolean =
         when (step) {
@@ -66,7 +68,10 @@ object OnboardingPlan {
     private const val PLAY_STORE = "com.android.vending"
 
     /** The steps still to do, in order. Empty when everything is set up. */
-    fun pending(state: SetupState): List<SetupStep> = SetupStep.entries.filter { it.isChoice || !state.isDone(it) }
+    fun pending(state: SetupState): List<SetupStep> =
+        SetupStep.entries
+            .filterNot { !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK) }
+            .filter { it.isChoice || !state.isDone(it) }
 
     /**
      * Whether to explain "Allow restricted settings". On Android 13 or newer, the switch for notification or

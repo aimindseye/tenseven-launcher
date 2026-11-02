@@ -227,6 +227,8 @@
     <string name="hub_settings_intro">The Hub keeps conversations in memory only. Nothing is saved or sent.</string>
     <string name="hub_access">Notification access</string>
     <string name="hub_access_on">On. Tap to change it in Android settings.</string>
+    <string name="hub_access_lite">Not in this build. The full build can group messages and email into conversations.</string>
+    <string name="lock_layer_full_only">Automatic lock layer is available only in the Full build, which includes the notification listener.</string>
     <string name="hub_access_off">Off. Tap to allow it so the Hub can fill.</string>
     <string name="hub_clear">Clear the Hub now</string>
     <string name="hub_clear_detail">Forget everything the Hub holds. Notifications in your shade stay where they are.</string>
