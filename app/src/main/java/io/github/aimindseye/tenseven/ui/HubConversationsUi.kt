@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
@@ -277,14 +278,19 @@ private fun IconHubFilterButton(
             .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
             .sableFocusRing()
             .clickable(onClick = onClick)
-            .semantics { contentDescription = label }
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+            .semantics {
+                contentDescription = label
+                stateDescription = if (selected) "Selected" else "Not selected"
+            }
+            .size(48.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LineIcon(paths = if (iconName == "search") LineIconPaths.SEARCH else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
-            modifier = Modifier.size(20.dp), tint = color)
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = color, maxLines = 1)
+        LineIcon(
+            paths = if (iconName == "search") LineIconPaths.SEARCH else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
+            modifier = Modifier.size(22.dp),
+            tint = color,
+        )
     }
 }
 
@@ -313,29 +319,6 @@ private fun AppSourceFilterButton(
         Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium,
             color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
     }
-}
-
-@Composable
-private fun FilterButton(
-    label: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val shape = RoundedCornerShape(6.dp)
-    Text(
-        text = label,
-        modifier =
-            modifier
-                .clip(shape)
-                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                .sableFocusRing()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 10.dp, vertical = 7.dp),
-        style = MaterialTheme.typography.labelMedium,
-        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-        maxLines = 1,
-    )
 }
 
 /** Compact action glyph with explicit screen-reader text and a keyboard focus ring. */
