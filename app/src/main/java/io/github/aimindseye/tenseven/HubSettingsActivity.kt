@@ -34,6 +34,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.onboarding.SpecialAccessAttemptStore
+import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.design.DesignText
@@ -91,9 +93,11 @@ class HubSettingsActivity : ComponentActivity() {
                         }
                 }
                 HubSettings(
-                    accessGranted = resumeTick >= 0 && 
+                    accessGranted = resumeTick >= 0 &&
                         io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(this).hubNotifications ==
                             io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+                    attemptedNotificationAccess = resumeTick >= 0 &&
+                        SetupStep.NOTIFICATIONS in SpecialAccessAttemptStore.attempted(this),
                     listenerAvailable =
                         io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(this).hubNotifications !=
                             io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
@@ -113,7 +117,10 @@ class HubSettingsActivity : ComponentActivity() {
                     cleared = cleared,
                     rows = rows,
                     enabled = enabled,
-                    onAccess = { runCatching { startActivity(ConversationAccess.settingsIntent()) } },
+                    onAccess = {
+                        SpecialAccessAttemptStore.markAttempted(this, SetupStep.NOTIFICATIONS)
+                        runCatching { startActivity(ConversationAccess.settingsIntent()) }
+                    },
                     onRetryListener = {
                         io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.retryFromSettings(this)
                     },
@@ -149,6 +156,7 @@ class HubSettingsActivity : ComponentActivity() {
 @Composable
 private fun HubSettings(
     accessGranted: Boolean,
+    attemptedNotificationAccess: Boolean,
     listenerAvailable: Boolean,
     showText: Boolean,
     calendarPeek: Boolean,
@@ -179,18 +187,26 @@ private fun HubSettings(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (!accessGranted && android.os.Build.VERSION.SDK_INT >= 33) {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                HubRow(
-                    title = "Before enabling notification access",
-                    detail = "First try Notification access above. If Android blocks it, return here, open App info, then ⋮ → Allow restricted settings if Android offers it. On Titan 2 this menu may only appear after the first denied request. Retry Notification access afterward. Tenseven cannot grant it automatically.",
-                    onClick = {
-                        runCatching {
-                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.parse("package:${context.packageName}")))
-                        }
-                    },
-                )
+            if (!accessGranted && listenerAvailable && android.os.Build.VERSION.SDK_INT >= 33) {
+                if (attemptedNotificationAccess) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    HubRow(
+                        title = "If Android blocked notification access",
+                        detail = "After an access request is blocked, App info may show ⋮ → Allow restricted settings. Choose it only if you trust this APK, return and retry notification access. This menu may be absent before the first blocked request.",
+                        onClick = {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:${context.packageName}")))
+                            }
+                        },
+                    )
+                } else {
+                    Text(
+                        "First try Notification access below. If Android blocks it, return here for App info instructions.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             HubRow(
                 title = stringResource(R.string.hub_access),
