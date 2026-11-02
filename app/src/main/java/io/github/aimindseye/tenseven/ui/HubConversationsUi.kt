@@ -39,6 +39,7 @@ import io.github.aimindseye.tenseven.tasks.ReminderPolicy
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -73,6 +74,7 @@ import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.model.HubStreamSelection
 import io.github.aimindseye.tenseven.model.HubFilter
+import io.github.aimindseye.tenseven.model.HubNavigationPolicy
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
@@ -236,7 +238,11 @@ internal fun HubUnifiedNavigation(
     emailCount: Int,
 ) {
     var searchOpen by remember { mutableStateOf(false) }
-    var moreOpen by remember { mutableStateOf(false) }
+    var moreOpen by rememberSaveable { mutableStateOf(false) }
+    val moreVisible = HubNavigationPolicy.showSecondaryControls(
+        expanded = moreOpen, currentTab = currentTab, snoozed = ui.filter.snoozed,
+        reminders = ui.remindersSelected, sourcePackage = ui.sourcePackage,
+    )
     val context = LocalContext.current
     fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter(), pkg: String? = null) {
         onTabChange(tab)
@@ -244,7 +250,7 @@ internal fun HubUnifiedNavigation(
         ui.onSourceChange(pkg)
         moreOpen = false
     }
-    BackHandler(enabled = ui.remindersSelected) { select(HubFilter.All) }
+    BackHandler(enabled = ui.remindersSelected || ui.filter.snoozed) { select(HubFilter.All) }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -269,9 +275,9 @@ internal fun HubUnifiedNavigation(
                 select(HubFilter.All, ConversationFilter(unreadOnly = true))
             }
             IconHubFilterButton("Search", "search", searchOpen) { searchOpen = !searchOpen }
-            IconHubFilterButton("More categories and active apps", "apps", moreOpen) { moreOpen = !moreOpen }
+            IconHubFilterButton("More categories and active apps", "apps", moreVisible) { moreOpen = !moreOpen }
         }
-        if (moreOpen) {
+        if (moreVisible) {
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),

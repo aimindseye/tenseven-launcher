@@ -6,6 +6,7 @@ package io.github.aimindseye.tenseven.conversations
 import android.app.Notification
 import android.app.PendingIntent
 import java.util.Locale
+import io.github.aimindseye.tenseven.model.HubSourceGroups
 
 /** One message of a conversation, as read from a notification. Held in memory only. */
 data class ConversationMessage(
@@ -63,10 +64,30 @@ data class HubConversation(
 internal fun isConversationNotification(
     category: String?,
     hasStructuredMessages: Boolean,
+    packageName: String = "",
 ): Boolean =
     hasStructuredMessages ||
         category == Notification.CATEGORY_MESSAGE ||
-        category == Notification.CATEGORY_EMAIL
+        isEmailNotification(packageName, category)
+
+/** A known mail provider may omit the category; do not reinterpret explicit promotions or services. */
+internal fun isEmailNotification(packageName: String, category: String?): Boolean =
+    category == Notification.CATEGORY_EMAIL ||
+        (HubSourceGroups.isKnownMailPackage(packageName) &&
+            (category.isNullOrBlank() || category == Notification.CATEGORY_MESSAGE))
+
+/** InboxStyle text lines are notification content too; blank extras must not hide later fallbacks. */
+internal fun fallbackNotificationText(
+    bigText: String?,
+    text: String?,
+    lines: List<String>,
+    summary: String?,
+    title: String?,
+): String? =
+    listOfNotNull(bigText, text).firstOrNull(String::isNotBlank)
+        ?: lines.filter(String::isNotBlank).joinToString("\n").takeIf(String::isNotBlank)
+        ?: summary?.takeIf(String::isNotBlank)
+        ?: title?.takeIf(String::isNotBlank)
 
 /** The name shown for a conversation: the group title, else the sender, else the title, else the app. */
 internal fun conversationName(

@@ -16,6 +16,8 @@ object HubSourceGroups {
         "com.yahoo.mobile.client.android.mail", "ch.protonmail.android",
         "com.readdle.spark", "me.bluemail.mail",
     )
+    fun isKnownMailPackage(packageName: String): Boolean = packageName in mailPackages
+
     private val messagePackages = setOf(
         "com.google.android.apps.messaging", "com.whatsapp", "com.whatsapp.w4b",
         "org.thoughtcrime.securesms", "org.telegram.messenger", "org.telegram.messenger.web",

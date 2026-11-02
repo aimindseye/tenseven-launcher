@@ -44,7 +44,13 @@ class ConversationListenerService : NotificationListenerService() {
 
     private fun importActiveNotifications() {
         val active = readActiveNotifications()
-        ConversationHub.replace(active.mapNotNull(::safeHubNotification))
+        // Parse before choosing summaries: a malformed/empty child must not hide usable mail content.
+        val parsed = active.mapNotNull { sbn -> safeHubNotification(sbn)?.let { sbn to it } }
+        val visible = NotificationGroupSelection.visibleKeys(parsed.map { (sbn, item) ->
+            NotificationGroupEntry(item.key, item.packageName, sbn.groupKey,
+                sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0)
+        })
+        ConversationHub.replace(parsed.map { it.second }.filter { it.key in visible })
         refreshLockCounts()
     }
 
@@ -100,13 +106,22 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        safeHubNotification(sbn)?.let(ConversationHub::upsert)
-        refreshLockCounts()
+        if (isEmailNotification(sbn.packageName, sbn.notification.category)) {
+            importActiveNotifications()
+        } else {
+            val converted = safeHubNotification(sbn)
+            if (converted != null) ConversationHub.upsert(converted) else ConversationHub.remove(sbn.key)
+            refreshLockCounts()
+        }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        ConversationHub.remove(sbn.key)
-        refreshLockCounts()
+        // When the last mail child disappears, its summary may be the only usable row.
+        if (isEmailNotification(sbn.packageName, sbn.notification.category)) importActiveNotifications()
+        else {
+            ConversationHub.remove(sbn.key)
+            refreshLockCounts()
+        }
     }
 
     private fun readActiveNotifications(): List<StatusBarNotification> =
@@ -136,10 +151,13 @@ class ConversationListenerService : NotificationListenerService() {
         // Enforce per-app consent before reading notification message extras or recovering styles.
         if (!HubApps.isIncluded(startState.loadHubEnabledApps(), sbn.packageName)) return null
         val notification = sbn.notification ?: return null
-        if (sbn.packageName == packageName || notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return null
+        if (sbn.packageName == packageName) return null
+        val email = isEmailNotification(sbn.packageName, notification.category)
+        if (notification.flags and Notification.FLAG_GROUP_SUMMARY != 0 && !email) return null
+        if (email && notification.flags and Notification.FLAG_ONGOING_EVENT != 0) return null
         val style = messagingStyleOf(notification)
         val extracted = style?.let(::extractMessages).orEmpty()
-        if (!isConversationNotification(notification.category, extracted.isNotEmpty())) return null
+        if (!isConversationNotification(notification.category, extracted.isNotEmpty(), sbn.packageName)) return null
         val extras = notification.extras ?: Bundle.EMPTY
         val appName = appLabel(sbn.packageName)
         val latestIncoming = extracted.lastOrNull { !it.isOutgoing && !it.isHistoric } ?: extracted.lastOrNull { !it.isOutgoing }
@@ -155,7 +173,7 @@ class ConversationListenerService : NotificationListenerService() {
             conversationId(
                 packageName = sbn.packageName,
                 isGroup = isGroup,
-                contactIdentity = if (isGroup) null else resolveContactIdentity(latestIncoming?.personUri, name),
+                contactIdentity = if (isGroup || email) null else resolveContactIdentity(latestIncoming?.personUri, name),
                 providerIdentity = notification.shortcutId?.takeIf(String::isNotBlank) ?: normalizeName(name),
             )
         val messages = toMessages(sbn, appName, id, extracted).ifEmpty { fallbackMessage(sbn, extras, appName, id, name) }
@@ -171,7 +189,7 @@ class ConversationListenerService : NotificationListenerService() {
             messages = messages,
             contentIntent = notification.contentIntent,
             replyAction = replyActionOf(notification),
-            isEmail = notification.category == Notification.CATEGORY_EMAIL,
+            isEmail = email,
             markReadAction = markReadActionOf(notification),
         )
     }
@@ -242,12 +260,13 @@ class ConversationListenerService : NotificationListenerService() {
         conversationId: String,
         name: String,
     ): List<ConversationMessage> {
-        val body =
-            (
-                extras.getCharSequence(Notification.EXTRA_BIG_TEXT)
-                    ?: extras.getCharSequence(Notification.EXTRA_TEXT)
-                    ?: extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)
-            )?.toString()?.takeIf(String::isNotBlank) ?: return emptyList()
+        val body = fallbackNotificationText(
+            bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
+            text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+            lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES).orEmpty().map { it.toString() },
+            summary = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString(),
+            title = titleOf(null, extras)?.toString(),
+        ) ?: return emptyList()
         return listOf(
             ConversationMessage(
                 id = "${sbn.packageName}|${sbn.postTime}|$body",
