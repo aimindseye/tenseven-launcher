@@ -92,6 +92,7 @@ private fun LauncherSettings(
 
             Section(stringResource(R.string.ls_section_grid))
             IconGridSection(state)
+            IconPresentationSection(state)
 
             Section(stringResource(R.string.ls_section_theme))
             ThemeSection(state)
