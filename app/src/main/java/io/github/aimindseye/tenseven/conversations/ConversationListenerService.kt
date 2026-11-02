@@ -30,6 +30,24 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  * never sends it anywhere.
  */
 class ConversationListenerService : NotificationListenerService() {
+    companion object {
+        private var live = java.lang.ref.WeakReference<ConversationListenerService>(null)
+
+        /** Main-thread callers can import a fresh snapshot without rebinding a connected service. */
+        fun refreshConnected(): Boolean {
+            val service = live.get() ?: return false
+            if (!NotificationConnection.connected) return false
+            service.importActiveNotifications()
+            return true
+        }
+    }
+
+    private fun importActiveNotifications() {
+        val active = readActiveNotifications()
+        ConversationHub.replace(active.mapNotNull(::safeHubNotification))
+        refreshLockCounts()
+    }
+
     private val screenOn =
         object : BroadcastReceiver() {
             override fun onReceive(
@@ -43,10 +61,9 @@ class ConversationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         // A single malformed third-party notification must not crash the entire listener.
-        val active = readActiveNotifications()
-        NotificationConnection.onConnected(active.size)
-        ConversationHub.replace(active.mapNotNull(::safeHubNotification))
-        refreshLockCounts()
+        live = java.lang.ref.WeakReference(this)
+        NotificationConnection.onConnected(0)
+        importActiveNotifications()
         if (!screenOnRegistered) {
             // Receiver registration failure must not disable Hub, Peek and lock-screen counts.
             screenOnRegistered = runCatching {
@@ -57,6 +74,7 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     override fun onListenerDisconnected() {
+        live.clear()
         NotificationConnection.onDisconnected()
         ConversationHub.clear()
         LockLayerState.update(emptyMap())
@@ -65,6 +83,20 @@ class ConversationListenerService : NotificationListenerService() {
             screenOnRegistered = false
         }
         super.onListenerDisconnected()
+    }
+
+    override fun onDestroy() {
+        if (live.get() === this) {
+            live.clear()
+            NotificationConnection.onDisconnected()
+            ConversationHub.clear()
+            LockLayerState.update(emptyMap())
+        }
+        if (screenOnRegistered) {
+            runCatching { unregisterReceiver(screenOn) }
+            screenOnRegistered = false
+        }
+        super.onDestroy()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {

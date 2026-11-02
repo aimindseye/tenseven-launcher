@@ -266,7 +266,7 @@ internal fun HubUnifiedNavigation(
                 IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) {
                     select(HubFilter.Contacts)
                 }
-                IconHubFilterButton("Remind", "clock", false) {
+                IconHubFilterButton("Remind", "clock", false, showLabel = true) {
                     context.startActivity(android.content.Intent(context,
                         io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
                         .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_MODE, "remind"))
@@ -274,7 +274,7 @@ internal fun HubUnifiedNavigation(
                 val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
                 if (snoozedCount > 0 || ui.filter.snoozed) {
                     IconHubFilterButton("Snoozed", "clock",
-                        currentTab == HubFilter.All && ui.filter.snoozed, count = snoozedCount) {
+                        currentTab == HubFilter.All && ui.filter.snoozed, count = snoozedCount, showLabel = true) {
                         select(HubFilter.All, ConversationFilter(snoozed = true))
                     }
                 }
@@ -305,6 +305,7 @@ private fun IconHubFilterButton(
     iconName: String,
     selected: Boolean,
     count: Int = 0,
+    showLabel: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
@@ -321,12 +322,15 @@ private fun IconHubFilterButton(
             .size(48.dp),
         contentAlignment = Alignment.Center,
     ) {
-        LineIcon(
-            paths = if (iconName == "search") LineIconPaths.SEARCH
-                else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
-            modifier = Modifier.size(22.dp),
-            tint = color,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            LineIcon(
+                paths = if (iconName == "search") LineIconPaths.SEARCH
+                    else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
+                modifier = Modifier.size(if (showLabel) 18.dp else 22.dp),
+                tint = color,
+            )
+            if (showLabel) Text(label, style = MaterialTheme.typography.labelSmall, color = color)
+        }
         if (count > 0) {
             Text(
                 text = if (count > 99) "99+" else count.toString(),
@@ -371,6 +375,7 @@ private fun AppSourceFilterButton(
 private fun HubActionIcon(
     label: String,
     glyph: List<String>,
+    showLabel: Boolean = false,
     onClick: () -> Unit,
 ) {
     OutlinedButton(
@@ -379,6 +384,10 @@ private fun HubActionIcon(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 7.dp),
     ) {
         LineIcon(paths = glyph, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface)
+        if (showLabel) {
+            Spacer(Modifier.width(6.dp))
+            Text(label, color = MaterialTheme.colorScheme.onSurface)
+        }
     }
 }
 
@@ -494,17 +503,18 @@ private fun ConversationRow(
                     .padding(start = 40.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                HubActionIcon("Open in source app", LineIconPaths.EXTERNAL, onOpen)
+                HubActionIcon("Open in source app", LineIconPaths.EXTERNAL, onClick = onOpen)
                 if (canReply) {
                     HubActionIcon("Reply", LineIconPaths.REPLY) { replying = !replying }
                 }
                 if (unread > 0) {
-                    HubActionIcon("Mark read", LineIconPaths.CHECK, onMarkRead)
+                    HubActionIcon("Mark read", LineIconPaths.CHECK, onClick = onMarkRead)
                 }
-                HubActionIcon("Save follow-up", TablerGlyphPaths.BY_NAME["clock"].orEmpty()) { remindMenu = true }
+                HubActionIcon("Remind", TablerGlyphPaths.BY_NAME["clock"].orEmpty(), showLabel = true) { remindMenu = true }
                 HubActionIcon(
-                    if (snoozed) "Show again now" else "Snooze for one hour",
+                    if (snoozed) "Show now" else "Snooze 1h",
                     TablerGlyphPaths.BY_NAME["clock"].orEmpty(),
+                    showLabel = true,
                 ) {
                     if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
                 }

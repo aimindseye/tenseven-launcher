@@ -140,7 +140,9 @@ class HubSettingsActivity : ComponentActivity() {
                         enabled = HubApps.toggle(enabled, pkg)
                         state.saveHubEnabledApps(enabled)
                         if (HubApps.isIncluded(enabled, pkg)) {
-                            ConversationAccess.requestReconnect(this)
+                            if (!io.github.aimindseye.tenseven.conversations.ConversationListenerService.refreshConnected()) {
+                                io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.retryFromSettings(this)
+                            }
                         } else {
                             // Drop newly excluded content and badges without waiting for another notification.
                             ConversationHub.dropPackages(setOf(pkg))

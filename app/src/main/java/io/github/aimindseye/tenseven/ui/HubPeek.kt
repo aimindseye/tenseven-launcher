@@ -314,21 +314,20 @@ private fun PeekButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp).sableFocusRing(),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.heightIn(min = 48.dp).sableFocusRing(),
+        shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.primary,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 label,
-                modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
             )
-            Text("\u203A", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.headlineSmall)
+            Text("  \u203A", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium)
         }
     }
 }

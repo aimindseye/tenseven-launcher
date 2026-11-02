@@ -35,6 +35,11 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  * Device and Privacy. Every change is saved at once; the home screens read it when they come forward.
  */
 class LauncherSettingsActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.onLauncherResume(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         StartText.t.bindTo(this)
