@@ -56,7 +56,7 @@ class VerifyApkReleaseTest(unittest.TestCase):
             executable.write_text(source)
             executable.chmod(0o755)
         self.full = self.root / "full.apk"
-                self.full.write_bytes(b"fake full")
+        self.full.write_bytes(b"fake full")
 
     def gate(self, expected_success=True, ci_unsigned=False, **overrides):
         env = dict(os.environ, ANDROID_HOME=str(self.root), **overrides)
