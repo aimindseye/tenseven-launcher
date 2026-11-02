@@ -327,7 +327,7 @@ internal fun HubSection() {
 @Composable
 internal fun LockLayerSection(state: StartStateRepository) {
     val context = LocalContext.current
-    // Automatic lock-layer wake is driven by the notification listener, absent from Lite.
+    // Automatic lock-layer wake requires the optional notification listener service.
     if (!Capabilities.hasConversationService(context)) {
         Text(
             stringResource(R.string.lock_layer_full_only),
@@ -345,7 +345,7 @@ internal fun LockLayerSection(state: StartStateRepository) {
         onDispose { activity?.lifecycle?.removeObserver(observer) }
     }
     val overlayAllowed = tick >= 0 && LockLayerLauncher.canDrawOverlays(context)
-    // The lite build has no notification listener, so there is nothing to allow and nothing to wait for.
+    // Do not prompt for a listener that is not available on this device.
     val accessAvailable = Capabilities.hasConversationService(context)
     val accessAllowed = tick >= 0 && accessAvailable && ConversationAccess.isGranted(context)
     SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
