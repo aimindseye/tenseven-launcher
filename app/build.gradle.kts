@@ -46,8 +46,8 @@ android {
         minSdk = 30
         targetSdk = 36
         // Full-only P1 qualification build; update code and name for every distributed test APK.
-        versionCode = 3
-        versionName = "0.1.2-p1-full-test.1"
+        versionCode = 4
+        versionName = "0.1.2-p1.1-test.1"
     }
 
     signingConfigs {
