@@ -2,6 +2,9 @@ package io.github.aimindseye.tenseven.ui
 
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetProviderInfo
+import android.os.Build
+import android.os.Bundle
+import android.util.SizeF
 import android.widget.FrameLayout
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -133,7 +136,7 @@ internal fun WidgetItem(
                 update = { view ->
                     // Tell the widget how much room it has, so one that lays itself out by size picks the right layout.
                     if (view is AppWidgetHostView) {
-                        runCatching { view.updateAppWidgetSize(null, widthDp, height, widthDp, height) }
+                        runCatching { updateHostedWidgetSize(view, widthDp, height) }
                     }
                 },
             )
@@ -287,5 +290,18 @@ internal fun SableThemeWithWidgets(
             LocalHomeBackdrop provides backdrop,
             content = content,
         )
+    }
+}
+
+/**
+ * API 31+ reports actual responsive sizes; API 30 still requires the old four-bound
+ * overload. Isolate the compatibility fallback rather than dropping widget sizing.
+ */
+@Suppress("DEPRECATION")
+private fun updateHostedWidgetSize(view: AppWidgetHostView, widthDp: Int, heightDp: Int) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        view.updateAppWidgetSize(Bundle(), listOf(SizeF(widthDp.toFloat(), heightDp.toFloat())))
+    } else {
+        view.updateAppWidgetSize(null, widthDp, heightDp, widthDp, heightDp)
     }
 }

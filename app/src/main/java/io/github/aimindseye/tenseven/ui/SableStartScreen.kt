@@ -1884,7 +1884,7 @@ private fun LiveGlanceFrame(
         onClick = {
             when {
                 widget == GlanceWidgets.HUB -> onShowHub()
-                widget == GlanceWidgets.CALENDAR && needsAccess -> context.findActivity()?.requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), SableStartActivity.LIVE_PERMISSION_REQUEST_CODE)
+                widget == GlanceWidgets.CALENDAR && needsAccess -> (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
                 widget == GlanceWidgets.MEDIA && needsAccess ->
                     onStartIntent(
                         Intent(context, OnboardingActivity::class.java)
@@ -2363,10 +2363,7 @@ private fun HubPage(
                 HubCalendarPeek(
                     refreshGeneration = refreshGeneration,
                     onRequestCalendarPermission = {
-                        context.findActivity()?.requestPermissions(
-                            arrayOf(Manifest.permission.READ_CALENDAR),
-                            SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
-                        )
+                        (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
                     },
                     onOpenCalendar = {
                         onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
