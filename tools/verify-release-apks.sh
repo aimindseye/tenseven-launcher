@@ -81,9 +81,9 @@ check_apk() {
       echo "ERROR: $kind has no verified v2/v3 APK signature" >&2; exit 1
     fi
     grep -qx 'Number of signers: 1' <<< "$output" || { echo "ERROR: $kind has unexpected signer count" >&2; exit 1; }
-    # Build Tools may print 'V2 Signer', 'V3.0 Signer' or 'Signer #1'.
+    # Build Tools may print 'V2 Signer:', 'V3.0 Signer:' or 'Signer #1' (no colon).
     # Validate every reported signing-certificate SHA-256, never only the first.
-    certs="$(sed -nE 's/^(V[0-9.]+ Signer|Signer #[0-9]+): certificate SHA-256 digest: ([[:xdigit:]]{64})$/\2/p' <<< "$output" | tr 'A-F' 'a-f')"
+    certs="$(sed -nE 's/^(V[0-9.]+ Signer|Signer #[0-9]+):? certificate SHA-256 digest: ([[:xdigit:]]{64})$/\2/p' <<< "$output" | tr 'A-F' 'a-f')"
     [[ -n "$certs" ]] || { echo "ERROR: $kind missing signing certificate SHA-256 in apksigner output" >&2; exit 1; }
     while IFS= read -r cert; do
       [[ "$cert" == "$EXPECTED_CERT" ]] || { echo "ERROR: $kind signing certificate does not match registered key ($cert)" >&2; exit 1; }
