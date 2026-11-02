@@ -340,4 +340,3 @@ private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
 /** How opaque the peek panel is; the rest lets Home show through. */
-private const val PANEL_ALPHA = 0.9f
