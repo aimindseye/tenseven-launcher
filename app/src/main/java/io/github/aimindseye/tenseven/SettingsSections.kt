@@ -283,6 +283,15 @@ internal fun HubSection() {
 @Composable
 internal fun LockLayerSection(state: StartStateRepository) {
     val context = LocalContext.current
+    // Automatic lock-layer wake is driven by the notification listener, absent from Lite.
+    if (!Capabilities.hasConversationService(context)) {
+        Text(
+            stringResource(R.string.lock_layer_full_only),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
     var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
     var tick by remember { mutableIntStateOf(0) }
     val activity = context as? ComponentActivity
@@ -294,7 +303,7 @@ internal fun LockLayerSection(state: StartStateRepository) {
     val overlayAllowed = tick >= 0 && LockLayerLauncher.canDrawOverlays(context)
     // The lite build has no notification listener, so there is nothing to allow and nothing to wait for.
     val accessAvailable = Capabilities.hasConversationService(context)
-    val accessAllowed = tick >= 0 && (!accessAvailable || ConversationAccess.isGranted(context))
+    val accessAllowed = tick >= 0 && accessAvailable && ConversationAccess.isGranted(context)
     SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
         lockLayer = it
         state.saveLockLayer(it)

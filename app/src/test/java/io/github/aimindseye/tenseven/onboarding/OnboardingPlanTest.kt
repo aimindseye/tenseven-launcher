@@ -78,7 +78,8 @@ class OnboardingPlanTest {
         val lite = nothing.copy(notificationListenerAvailable = false)
         val pending = OnboardingPlan.pending(lite)
         assertFalse(SetupStep.NOTIFICATIONS in pending)
-        assertTrue(SetupStep.USAGE in pending && SetupStep.CONTACTS in pending && SetupStep.LOCK in pending)
-        assertEquals(OnboardingPlan.pending(nothing).size - 1, pending.size)
+        assertFalse(SetupStep.LOCK in pending)
+        assertTrue(SetupStep.USAGE in pending && SetupStep.CONTACTS in pending)
+        assertEquals(OnboardingPlan.pending(nothing).size - 2, pending.size)
     }
 }

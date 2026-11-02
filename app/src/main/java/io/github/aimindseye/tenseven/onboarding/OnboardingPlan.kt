@@ -70,7 +70,7 @@ object OnboardingPlan {
     /** The steps still to do, in order. Empty when everything is set up. */
     fun pending(state: SetupState): List<SetupStep> =
         SetupStep.entries
-            .filterNot { it == SetupStep.NOTIFICATIONS && !state.notificationListenerAvailable }
+            .filterNot { !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK) }
             .filter { it.isChoice || !state.isDone(it) }
 
     /**
