@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Single-APK user test package. Build/verify both variants internally but distribute Full only.
+# Single-APK user test package. Build and verify one signed Full APK using the Mac's protected keystore.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -15,12 +15,10 @@ fi
   :app:verifyRegisteredReleaseKey \
   :app:testDebugUnitTest \
   :app:assembleRelease \
-  :app:assembleLite \
-  :app:lintLite
+  :app:lintRelease
 python3 tests/test_release_verifier.py
 full="app/build/outputs/apk/release/Tenseven-Launcher-release.apk"
-lite="app/build/outputs/apk/lite/Tenseven-Launcher-lite.apk"
-bash tools/verify-release-apks.sh "$full" "$lite"
+bash tools/verify-release-apks.sh "$full"
 sha="$(git rev-parse --short=12 HEAD)"
 out="${HOME}/Downloads/tenseven-full-combined-test"
 mkdir -p "$out"
