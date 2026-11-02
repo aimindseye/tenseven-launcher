@@ -6,7 +6,7 @@ This branch starts P2-A on top of P1.2 (#102). It is **not** a completed Tasks/R
 
 - Use the user's Launcher appearance (including Phone/Material You) for Hub and Peek.
 - Do not replace the user's palette. Only repair unreadable foreground contrast where the selected surface and text fail a 4.5:1 ratio. Conversation rows use a near-opaque theme-colored surface so arbitrary wallpaper colours cannot obscure messages.
-- Verify sender names, preview text, time and counts in Hub and Peek on Q25 with vivid/light/dark wallpapers, custom theme, phone Light/Dark and BlackBerry theme. Preserve privacy, keyboard focus and accessibility.
+- Verify sender names, preview text, time and counts in Hub and Peek on the Titan 2 with vivid/light/dark wallpapers, custom theme, phone Light/Dark and BlackBerry theme. Preserve privacy, keyboard focus and accessibility.
 
 ## Icons
 
@@ -29,6 +29,6 @@ This branch starts P2-A on top of P1.2 (#102). It is **not** a completed Tasks/R
 - [ ] User-consented notification capture with private storage, redaction, expiration and delete controls; never persist third-party PendingIntent.
 - [ ] Extract Hub/Notes presentation from `SableStartScreen.kt`, reduce Activity orchestration, add lifecycle/Compose UI tests.
 - [ ] Pass Android, CodeQL, Security and Sonar quality gates on exact integrated head. Baseline Sonar validation PR #101 failed; do not weaken or blanket-suppress rules.
-- [ ] Complete Q25 hardware keyboard and ordinary touchscreen tests; keep one Mac-signed Full APK.
+- [ ] Complete Titan 2 physical-keyboard tests and ordinary touchscreen tests; test Q25 separately in the P3 compatibility matrix; keep one Mac-signed Full APK.
 
 Build identity for **foundation testing only**: versionCode 6, versionName `0.2.0-p2a-foundation.1`. Mac helper: `bash tools/build-full-consolidated-test.sh`.
