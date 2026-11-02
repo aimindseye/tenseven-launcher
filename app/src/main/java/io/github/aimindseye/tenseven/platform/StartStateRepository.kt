@@ -11,6 +11,7 @@ import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.GridColumns
+import io.github.aimindseye.tenseven.model.HomeDisplayPolicy
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.ThemePresets
 import io.github.aimindseye.tenseven.model.WallpaperSets
@@ -280,6 +281,33 @@ class StartStateRepository(
         preferences.edit().putStringSet(KEY_HUB_ENABLED, packages.toSet()).apply()
     }
 
+    /** Visibility is independent per selected home style, including an empty dial set. */
+    fun loadHomeDials(style: HomeStyle): Set<String> =
+        HomeDisplayPolicy.normalizedDials(
+            preferences.getStringSet(HomeDisplayPolicy.dialPreference(style), null)
+                ?: HomeDisplayPolicy.ALL_DIALS,
+        )
+
+    fun saveHomeDials(style: HomeStyle, selected: Set<String>) {
+        preferences.edit().putStringSet(
+            HomeDisplayPolicy.dialPreference(style), HomeDisplayPolicy.normalizedDials(selected),
+        ).apply()
+    }
+
+    fun loadHomeNotificationStrip(style: HomeStyle): Boolean =
+        preferences.getInt(HomeDisplayPolicy.stripPreference(style), 1) != 0
+
+    fun saveHomeNotificationStrip(style: HomeStyle, enabled: Boolean) {
+        preferences.edit().putInt(HomeDisplayPolicy.stripPreference(style), if (enabled) 1 else 0).apply()
+    }
+
+    fun loadHomeNotificationExpanded(style: HomeStyle): Boolean =
+        preferences.getInt(HomeDisplayPolicy.stripExpandedPreference(style), 0) != 0
+
+    fun saveHomeNotificationExpanded(style: HomeStyle, expanded: Boolean) {
+        preferences.edit().putInt(HomeDisplayPolicy.stripExpandedPreference(style), if (expanded) 1 else 0).apply()
+    }
+
     /** Calendar Peek is optional: never read CalendarProvider until the user enables this. */
     fun loadHubCalendarPeek(): Boolean = preferences.getInt(KEY_HUB_CALENDAR_PEEK, 0) != 0
 
@@ -412,6 +440,12 @@ class StartStateRepository(
         const val KEY_BB7_HOME_ROWS = "bb7_home_rows"
         const val KEY_BB7_PANELS = "bb7_panels"
         const val KEY_BB7_SCRIM = "bb7_scrim"
+        const val KEY_HOME_DIALS_BB7 = "home_dials_bb7"
+        const val KEY_HOME_DIALS_BB10 = "home_dials_bb10"
+        const val KEY_HOME_NOTIFICATION_STRIP_BB7 = "home_notification_strip_bb7"
+        const val KEY_HOME_NOTIFICATION_STRIP_BB10 = "home_notification_strip_bb10"
+        const val KEY_HOME_NOTIFICATION_EXPANDED_BB7 = "home_notification_expanded_bb7"
+        const val KEY_HOME_NOTIFICATION_EXPANDED_BB10 = "home_notification_expanded_bb10"
         const val KEY_TYPE_TO_SEARCH = "type_to_search"
         const val KEY_BB7_ICON_SIZE = "bb7_icon_size"
         const val KEY_WIDGETS_PAGE = "widgets_page"
