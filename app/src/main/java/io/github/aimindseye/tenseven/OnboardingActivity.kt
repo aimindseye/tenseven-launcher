@@ -207,6 +207,8 @@ private fun SetupScreen(
             if (overview || step == null) {
                 SetupOverview(
                     state = state,
+                    showRestrictedHelp = showRestrictedHelp,
+                    onOpenAppInfo = onOpenAppInfo,
                     picked = picked,
                     onPickedChange = { picked = it },
                     firstButton = firstButton,
@@ -273,6 +275,8 @@ private fun SetupScreen(
 @Composable
 private fun SetupOverview(
     state: SetupState,
+    showRestrictedHelp: (SetupStep) -> Boolean,
+    onOpenAppInfo: () -> Unit,
     picked: Set<String>,
     onPickedChange: (Set<String>) -> Unit,
     firstButton: FocusRequester,
@@ -288,6 +292,12 @@ private fun SetupOverview(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    // Reopened setup defaults to overview: guidance must be visible here too,
+    // not only in the initial wizard's Notification or Usage step.
+    if (listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
+            .any { !state.isDone(it) && showRestrictedHelp(it) }) {
+        RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+    }
     SetupStep.entries.forEachIndexed { position, step ->
         val done = state.isDone(step)
         Surface(
