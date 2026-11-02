@@ -152,6 +152,7 @@ import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.NextAlarm
 import io.github.aimindseye.tenseven.R
+import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
@@ -1396,17 +1397,31 @@ private fun ActiveFramesPage(
         }
     }
 
+    val displayState = remember(context) { StartStateRepository(context) }
+    val enabledDials = remember(refreshGeneration) { displayState.loadHomeDials(HomeStyle.Bb10) }
+    val showStrip = remember(refreshGeneration) { displayState.loadHomeNotificationStrip(HomeStyle.Bb10) }
+    val stripExpanded = remember(refreshGeneration) { displayState.loadHomeNotificationExpanded(HomeStyle.Bb10) }
+    val enabledHubApps = remember(refreshGeneration) { displayState.loadHubEnabledApps() }
+
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (shown(HomeLayout.STATUS_RINGS)) {
-            StatusDialsRow(onOpenSettings = onOpenSettings)
+        if (shown(HomeLayout.STATUS_RINGS) && enabledDials.isNotEmpty()) {
+            StatusDialsRow(onOpenSettings = onOpenSettings, visible = enabledDials)
         }
         if (shown(HomeLayout.WEATHER)) {
             DateHeader(
                 refreshGeneration = refreshGeneration,
-                unread = snapshot.hubApps.sumOf { it.count },
+                unread = snapshot.hubApps.filter { it.packageName in enabledHubApps }.sumOf { it.count },
                 onShowHub = onShowHub,
+                showLegacyBadge = !showStrip,
+                onOpenSettings = if (enabledDials.isEmpty()) onOpenSettings else null,
+            )
+            if (showStrip) HomeNotificationStrip(
+                counts = snapshot.hubApps,
+                enabledPackages = enabledHubApps,
+                expanded = stripExpanded,
+                onOpenHub = onShowHub,
             )
         }
         if (shown(HomeLayout.SEARCH_ROW)) {
@@ -1454,12 +1469,12 @@ private fun ActiveFramesPage(
 
 /** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) and the Settings gear. */
 @Composable
-private fun StatusDialsRow(onOpenSettings: () -> Unit) {
+private fun StatusDialsRow(onOpenSettings: () -> Unit, visible: Set<String>) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = FRAME_PADDING, end = 2.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SableStatusRings(modifier = Modifier.weight(1f), ringSize = STATUS_RING_SIZE)
+        SableStatusRings(modifier = Modifier.weight(1f), ringSize = STATUS_RING_SIZE, visible = visible)
         Text(
             text = "⚙",
             fontSize = 22.sp,
@@ -1486,6 +1501,8 @@ private fun DateHeader(
     refreshGeneration: Int,
     unread: Int,
     onShowHub: () -> Unit,
+    showLegacyBadge: Boolean = true,
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     val locale = Locale.getDefault()
     val today by
@@ -1514,7 +1531,13 @@ private fun DateHeader(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { contentDescription = dateText },
         )
+        if (onOpenSettings != null) {
+            Text("⚙", color = Bb10Text, fontSize = 22.sp,
+                modifier = Modifier.sableFocusRing().clickable(onClick = onOpenSettings)
+                    .padding(horizontal = 10.dp).semantics { contentDescription = "Launcher settings" })
+        }
         // Notifications: a bell with the unread count; it opens the Hub. Beside it, the sound profile.
+        if (showLegacyBadge) {
         Row(
             modifier =
                 Modifier
@@ -1531,6 +1554,7 @@ private fun DateHeader(
             if (unread > 0) {
                 Text(text = unread.toString(), style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
+        }
         }
         SoundProfileButton()
     }
