@@ -32,9 +32,10 @@ class TaskRepository(private val context: Context) {
         store.delete(id)
     }
     fun complete(task: TaskRecord) {
-        val next = if (!task.completed && task.repeat != TaskRepeat.Never) {
-            val nextDue = TaskSchedule.nextOccurrence(task.dueAtEpochMs, task.repeat, task.zoneId)
-            val nextRemind = TaskSchedule.nextOccurrence(task.remindAtEpochMs, task.repeat, task.zoneId)
+        val next = if (!task.completed && task.repeat != TaskRepeat.Never &&
+            (task.dueAtEpochMs != null || task.remindAtEpochMs != null)) {
+            val nextDue = TaskSchedule.advanceAfter(task.dueAtEpochMs, task.repeat, task.zoneId, System.currentTimeMillis())
+            val nextRemind = TaskSchedule.advanceAfter(task.remindAtEpochMs, task.repeat, task.zoneId, System.currentTimeMillis())
             task.copy(dueAtEpochMs = nextDue, remindAtEpochMs = nextRemind, updatedAtEpochMs = System.currentTimeMillis())
         } else task.copy(completed = !task.completed, updatedAtEpochMs = System.currentTimeMillis())
         save(next)
@@ -66,6 +67,16 @@ object TaskSchedule {
             TaskRepeat.Never -> at
         }
         return shifted.toInstant().toEpochMilli()
+    }
+    fun advanceAfter(epochMs: Long?, repeat: TaskRepeat, zoneName: String, nowMs: Long): Long? {
+        var next = epochMs ?: return null
+        if (repeat == TaskRepeat.Never) return next
+        // Bounded to resist corrupt/imported years-old records and avoid infinite loops.
+        repeat(4000) {
+            if (next > nowMs) return next
+            next = nextOccurrence(next, repeat, zoneName) ?: return null
+        }
+        return next
     }
     fun preset(name: String, now: Instant, zone: ZoneId): Long? {
         val local = now.atZone(zone)
