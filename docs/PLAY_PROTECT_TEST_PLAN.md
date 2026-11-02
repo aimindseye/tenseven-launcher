@@ -1,3 +1,9 @@
+> **Archived Lite/Full comparison (before 2026-11-02).** Lite has been retired.
+> All new installation and special-access qualification is for the single signed
+> Full APK, with Play Protect enabled. Use the Full-only verifier and the
+> consolidated device acceptance document. Historic hashes/observations below
+> are preserved as evidence only, not installation instructions.
+
 # Lite / Full Play Protect device qualification
 
 **STATUS: FINAL PR #76 APKS SIGNED/VERIFIED; BOTH LITE AND FULL GOOGLE DRIVE INSTALL AND PLAY PROTECT SCAN PASS REPORTED ON ONE DEVICE; FULL SENSITIVE ACCESS ENABLED AFTER USER-APPROVED RESTRICTED SETTINGS; FEATURE QUALIFICATION INCOMPLETE.** The installed APK hashes have not been independently matched to the locally verified final artifacts. The initial Access denial was subsequently resolved for Full by user-approved Android restricted settings, not by a limited-scope permission grant.
