@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +45,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.security.MessageDigest
+import kotlinx.coroutines.delay
 
 /** Always-active internal screen. The optional launcher icon is managed independently. */
 class TasksActivity : ComponentActivity() {
@@ -100,6 +103,8 @@ private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
     }
     val records = remember(revision, resumeRevision) { repo.list() }
     fun refresh() { revision++ }
+    // Keep the in-app overdue list live even when the optional Android notification grant is denied.
+    LaunchedEffect(Unit) { while (true) { delay(60_000L); refresh() } }
     BackHandler(enabled = editing != null) { editing = null }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
@@ -121,7 +126,7 @@ private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
             )
         } else {
             Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp),
+                modifier = Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text("TenSeven Tasks", style = MaterialTheme.typography.headlineSmall)
@@ -195,6 +200,7 @@ private fun TaskItem(
     onDelete: () -> Unit,
     onTomorrow: () -> Unit,
 ) {
+    val context = LocalContext.current
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Checkbox(checked = task.completed, onCheckedChange = { onComplete() })
@@ -212,6 +218,13 @@ private fun TaskItem(
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             TextButton(onClick = onOpen) { Text("Edit") }
             TextButton(onClick = onTomorrow, enabled = !task.completed) { Text("Tomorrow") }
+            if (task.originPackage != null) {
+                TextButton(onClick = {
+                    val launch = context.packageManager.getLaunchIntentForPackage(task.originPackage)
+                    if (launch != null) context.startActivity(launch)
+                    else android.widget.Toast.makeText(context, "Source app unavailable", android.widget.Toast.LENGTH_SHORT).show()
+                }) { Text("Open source") }
+            }
             TextButton(onClick = onDelete) { Text("Delete") }
         }
     }
@@ -244,7 +257,7 @@ private fun TaskEditor(
         }, at.year, at.monthValue - 1, at.dayOfMonth).show()
     }
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp),
+        modifier = Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(if (isNew) "New task" else "Task details", style = MaterialTheme.typography.titleLarge)
