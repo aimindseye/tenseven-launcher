@@ -58,6 +58,7 @@ class HubSettingsActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.onLauncherResume(this)
         resumeTick++
     }
 
@@ -113,6 +114,9 @@ class HubSettingsActivity : ComponentActivity() {
                     rows = rows,
                     enabled = enabled,
                     onAccess = { runCatching { startActivity(ConversationAccess.settingsIntent()) } },
+                    onRetryListener = {
+                        io.github.aimindseye.tenseven.conversations.NotificationConnectionRecovery.retryFromSettings(this)
+                    },
                     onShowText = {
                         showText = it
                         state.saveHubPeekText(it)
@@ -157,6 +161,7 @@ private fun HubSettings(
     rows: List<Pair<String, String>>,
     enabled: Set<String>,
     onAccess: () -> Unit,
+    onRetryListener: () -> Unit,
     onShowText: (Boolean) -> Unit,
     onCalendarPeek: (Boolean) -> Unit,
     onClear: () -> Unit,
@@ -199,6 +204,21 @@ private fun HubSettings(
                     ),
                 modifier = Modifier.focusRequester(first),
                 onClick = { if (listenerAvailable) onAccess() },
+            )
+            val connected = io.github.aimindseye.tenseven.conversations.NotificationConnection.connected
+            val activeCount = io.github.aimindseye.tenseven.conversations.NotificationConnection.activeCount
+            val conversationsCount = ConversationHub.notifications().size
+            val lockCount = LockLayerState.counts.values.sum()
+            HubRow(
+                title = "Notification listener diagnostics",
+                detail = when {
+                    !listenerAvailable -> "Listener service unavailable in this APK."
+                    !accessGranted -> "Android notification access is off. Open Notification access above."
+                    !connected -> "Access granted, listener disconnected. Tap here to reconnect."
+                    enabled.isEmpty() -> "Connected; no apps selected. Enable notification sources below."
+                    else -> "Connected · $activeCount active device notifications · $conversationsCount Hub entries · $lockCount lock-screen counts · ${enabled.size} enabled apps. Tap to refresh."
+                },
+                onClick = { if (accessGranted) onRetryListener() else onAccess() },
             )
             HubRow(
                 title = stringResource(R.string.hub_clear),
