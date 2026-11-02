@@ -11,7 +11,8 @@ class FramesTest {
     private val work = FrameApp("mail", 10)
     private val task = ActiveFrame(7, "mail", "Inbox", 0, false)
     private fun caps(trusted: Boolean = false, usage: Boolean = true) = PlatformCapabilities.evaluate(
-        true, true, usage, true, false, trusted, trusted, trusted, trusted,
+        true, true, usage, true, false, trusted,
+        io.github.aimindseye.tenseven.platform.FramePlatformAccess(trusted, trusted, trusted),
     )
     private fun input(native: List<ActiveFrame> = listOf(task),
         recent: List<ForegroundEvent> = listOf(ForegroundEvent("mail", 100)),

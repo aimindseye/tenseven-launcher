@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
+import androidx.core.content.edit
 import android.content.SharedPreferences
 import io.github.aimindseye.tenseven.model.CustomTheme
 import io.github.aimindseye.tenseven.model.CustomThemes
@@ -49,10 +50,14 @@ class StartStateRepository(
 
     fun saveFrameSettings(value: io.github.aimindseye.tenseven.frames.FrameSettings) {
         val settings = value.normalized()
-        preferences.edit().putBoolean("frames_live", settings.liveSummaries)
-            .putBoolean("frames_messages", settings.newMessages).putBoolean("frames_snapshots", settings.snapshots)
-            .putBoolean("frames_open", settings.openApps).putBoolean("frames_recents", settings.rememberReturnedApps)
-            .putInt("frames_maximum", settings.maximum).apply()
+        preferences.edit {
+            putBoolean("frames_live", settings.liveSummaries)
+            putBoolean("frames_messages", settings.newMessages)
+            putBoolean("frames_snapshots", settings.snapshots)
+            putBoolean("frames_open", settings.openApps)
+            putBoolean("frames_recents", settings.rememberReturnedApps)
+            putInt("frames_maximum", settings.maximum)
+        }
     }
 
     fun loadFrameDismissals(): Map<String, Long> = io.github.aimindseye.tenseven.frames.FrameDismissals.decode(
@@ -60,7 +65,7 @@ class StartStateRepository(
     )
 
     fun saveFrameDismissals(value: Map<String, Long>) {
-        preferences.edit().putString("frames_dismissed", io.github.aimindseye.tenseven.frames.FrameDismissals.encode(value)).apply()
+        preferences.edit { putString("frames_dismissed", io.github.aimindseye.tenseven.frames.FrameDismissals.encode(value)) }
     }
 
     fun loadFavoriteKeys(): Set<String> {

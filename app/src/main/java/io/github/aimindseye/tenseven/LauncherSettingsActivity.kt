@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven
 
+import io.github.aimindseye.tenseven.ui.FrameSettingsSection
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
@@ -35,7 +36,7 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  * Device and Privacy. Every change is saved at once; the home screens read it when they come forward.
  */
 class LauncherSettingsActivity : ComponentActivity() {
-    private val resumeGeneration = mutableStateOf(0)
+    private val resumeGeneration = androidx.compose.runtime.mutableIntStateOf(0)
     override fun onResume() {
         super.onResume()
         resumeGeneration.value += 1

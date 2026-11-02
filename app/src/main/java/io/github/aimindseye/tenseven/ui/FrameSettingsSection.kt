@@ -1,5 +1,7 @@
-package io.github.aimindseye.tenseven
+package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.homeStyleState
+import io.github.aimindseye.tenseven.SwitchRow
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*

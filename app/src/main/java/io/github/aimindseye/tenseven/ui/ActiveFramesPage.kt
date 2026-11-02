@@ -131,23 +131,12 @@ internal fun ActiveFramesGrid(
                             val tile = tiles.first { it.key == key }
                             FrameTile(tile.key, tile.title, "Live tile", tile.detail, false, {}, {}, slot, openEnabled = false)
                         } else {
-                            val app = apps.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId }
-                            val label = app?.label ?: item.app.packageName
-                            val picture by produceState<Bitmap?>(null, key, state.generation, active, state.snapshotsAllowed) {
-                                value = null
-                                if (active && state.snapshotsAllowed) value = withContext(Dispatchers.IO) { frameSnapshot(item, state.generation) }
-                            }
-                            val count = FrameMessages.count(state, item, snapshot.hubApps, enabledApps,
-                                android.os.Process.myUserHandle().hashCode())
-                            FrameTile(key, label, if (picture == null) "Recent app" else "Preview",
-                                if (count > 0) "$count new" else "", true,
-                                { if (state.settings.openApps) onResume(item) },
-                                {
+                            RecentFrameCard(state, item, apps, snapshot, enabledApps, frameSnapshot, active,
+                                { onResume(item) }, {
                                     val index = keys.indexOf(key)
                                     nextFocus = keys.filterNot { it == key }.getOrNull(index.coerceAtMost(keys.size - 2).coerceAtLeast(0))
                                     onClose(item)
-                                }, slot, picture, state.settings.openApps,
-                                icon = { if (app != null) AppMark(app, 28) })
+                                }, slot)
                         }
                     }
                     repeat(2 - row.size) { Spacer(Modifier.weight(1f)) }
@@ -155,6 +144,23 @@ internal fun ActiveFramesGrid(
             }
         }
     }
+}
+
+@Composable
+private fun RecentFrameCard(
+    state: FramesState, item: FrameItem, apps: List<AppEntry>, snapshot: LiveSurfaceSnapshot,
+    enabledApps: Set<String>, frameSnapshot: (FrameItem, Long) -> Bitmap?, active: Boolean,
+    onOpen: () -> Unit, onClose: () -> Unit, modifier: Modifier,
+) {
+    val app = apps.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId }
+    val picture by produceState<Bitmap?>(null, item.key, state.generation, active, state.snapshotsAllowed) {
+        value = null
+        if (active && state.snapshotsAllowed) value = withContext(Dispatchers.IO) { frameSnapshot(item, state.generation) }
+    }
+    val count = FrameMessages.count(state, item, snapshot.hubApps, enabledApps, android.os.Process.myUserHandle().hashCode())
+    FrameTile(item.key, app?.label ?: item.app.packageName, if (picture == null) "Recent app" else "Preview",
+        if (count > 0) "$count new" else "", true, onOpen, onClose, modifier, picture, state.settings.openApps,
+        icon = { if (app != null) AppMark(app, 28) })
 }
 
 /** Shared card used by the real grid and Compose keyboard/layout tests. */

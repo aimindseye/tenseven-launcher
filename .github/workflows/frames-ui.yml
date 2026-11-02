@@ -15,6 +15,9 @@ jobs:
   instrumented:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    env:
+      ANDROID_USER_HOME: ${{ runner.temp }}/frames-android
+      ANDROID_AVD_HOME: ${{ runner.temp }}/frames-android/avd
     permissions:
       contents: read
     steps:
@@ -33,15 +36,18 @@ jobs:
           test -n "$sdkmanager"
           yes | "$sdkmanager" --licenses > /dev/null || true
           "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-35;default;x86_64'
+          mkdir -p "$ANDROID_AVD_HOME"
           avdmanager="$(dirname "$sdkmanager")/avdmanager"
           echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-35;default;x86_64' --force
           sudo chown "$(id -u)" /dev/kvm
+      - name: Compile instrumentation APKs
+        run: ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Run frame layout, keyboard and persistence tests
         run: |
           set -euo pipefail
           "$ANDROID_HOME/emulator/emulator" -avd frames-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/frames-emulator.log 2>&1 &
           emulator_pid=$!
-          trap 'kill "$emulator_pid" || true' EXIT
+          trap 'kill "$emulator_pid" || true; cat /tmp/frames-emulator.log' EXIT
           export PATH="$ANDROID_HOME/platform-tools:$PATH"
           timeout 120 adb wait-for-device
           timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == 1 ]]; do sleep 2; done'

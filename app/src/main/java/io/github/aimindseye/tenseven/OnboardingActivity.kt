@@ -2,6 +2,7 @@ package io.github.aimindseye.tenseven
 
 import android.Manifest
 import android.app.role.RoleManager
+import io.github.aimindseye.tenseven.ui.FrameSettingsSection
 import android.content.Intent
 import android.net.Uri
 import android.os.Build

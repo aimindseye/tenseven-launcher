@@ -3,6 +3,16 @@ package io.github.aimindseye.tenseven.platform
 /** Explicit platform contract; a sideloaded APK never assumes SableOS signature privileges. */
 enum class CapabilityStatus { Ready, PermissionRequired, Unavailable }
 
+data class FramePlatformAccess(
+    val tasks: Boolean = false,
+    val resume: Boolean = false,
+    val removal: Boolean = false,
+    val keyboard: Boolean = false,
+    val lock: CapabilityStatus = CapabilityStatus.Unavailable,
+    val postNotifications: Boolean = true,
+    val widgets: Boolean = true,
+)
+
 data class PlatformCapabilities(
     val hubNotifications: CapabilityStatus,
     val usageRecents: CapabilityStatus,
@@ -34,12 +44,7 @@ data class PlatformCapabilities(
             calendarAllowed: Boolean,
             overlayAllowed: Boolean,
             trustedSnapshotBridge: Boolean,
-            trustedTasks: Boolean = false,
-            canResumeTasks: Boolean = false,
-            canRemoveTasks: Boolean = false,
-            keyboard: Boolean = false,
-            lockService: Boolean = false,
-            notificationPostingAllowed: Boolean = true,
+            frameAccess: FramePlatformAccess = FramePlatformAccess(),
         ): PlatformCapabilities = PlatformCapabilities(
             hubNotifications = when {
                 !hasListenerService -> CapabilityStatus.Unavailable
@@ -52,12 +57,13 @@ data class PlatformCapabilities(
             thirdPartySnapshots = if (trustedSnapshotBridge) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
             // Notes/Tasks/Remind local records never need Calendar or network permissions.
             localTasks = CapabilityStatus.Ready,
-            taskEnumeration = if (trustedTasks) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            taskResume = if (canResumeTasks) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            taskRemoval = if (canRemoveTasks) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            hardwareKeyboard = keyboard,
-            deviceLock = if (lockService) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            postNotifications = if (notificationPostingAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+            taskEnumeration = if (frameAccess.tasks) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+            taskResume = if (frameAccess.resume) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+            taskRemoval = if (frameAccess.removal) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+            widgetHosting = if (frameAccess.widgets) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+            hardwareKeyboard = frameAccess.keyboard,
+            deviceLock = frameAccess.lock,
+            postNotifications = if (frameAccess.postNotifications) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
         )
     }
 }
