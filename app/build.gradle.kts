@@ -9,10 +9,7 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-// The APK files are named Tenseven-Launcher-debug.apk, Tenseven-Launcher-release.apk (signed, see below) or
-// Tenseven-Launcher-release-unsigned.apk (no signing key configured). The lite build (:app:assembleLite) is the
-// release build without the accessibility service and the notification listener, which Google Play Protect blocks a
-// downloaded APK for: Tenseven-Launcher-lite.apk or Tenseven-Launcher-lite-unsigned.apk.
+// One Full release APK (signed on the owner's Mac) and a separate debug build.
 base {
     archivesName.set("Tenseven-Launcher")
 }
@@ -48,7 +45,7 @@ android {
         applicationId = "io.github.aimindseye.tenseven"
         minSdk = 30
         targetSdk = 36
-        // Test qualification build; distinguish it from the prior v1 Full/Lite APKs.
+        // Full-only P1 qualification build; update code and name for every distributed test APK.
         versionCode = 3
         versionName = "0.1.2-p1-full-test.1"
     }
