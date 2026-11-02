@@ -175,6 +175,42 @@ internal fun IconGridSection(state: StartStateRepository) {
     }
 }
 
+/** Home header controls stay separate for BB7 and BB10, including when switching styles in Setup. */
+@Composable
+internal fun HomeDisplaySection(state: StartStateRepository) {
+    val style = homeStyleState(state).value
+    var dials by remember(style) { mutableStateOf(state.loadHomeDials(style)) }
+    var strip by remember(style) { mutableStateOf(state.loadHomeNotificationStrip(style)) }
+    var expanded by remember(style) { mutableStateOf(state.loadHomeNotificationExpanded(style)) }
+
+    Text("Home status and notifications", style = MaterialTheme.typography.titleMedium)
+    SwitchRow("Performance dials", "Show the performance gauges on this home style", dials.isNotEmpty()) { shown ->
+        dials = if (shown) io.github.aimindseye.tenseven.model.HomeDisplayPolicy.ALL_DIALS else emptySet()
+        state.saveHomeDials(style, dials)
+    }
+    if (dials.isNotEmpty()) {
+        listOf(
+            "wifi" to "Wi-Fi", "mobile" to "Mobile", "cpu" to "CPU",
+            "ram" to "RAM", "battery" to "Battery", "cell" to "Cell",
+        ).forEach { (key, title) ->
+            SwitchRow(title, "Show $title dial", key in dials) { enabled ->
+                dials = if (enabled) dials + key else dials - key
+                state.saveHomeDials(style, dials)
+            }
+        }
+    }
+    SwitchRow("Horizontal notification bar", "App icons and unread counts instead of a single badge", strip) {
+        strip = it
+        state.saveHomeNotificationStrip(style, it)
+    }
+    if (strip) {
+        SwitchRow("Expanded notification bar", "Show all opted-in notification sources in a scrollable strip", expanded) {
+            expanded = it
+            state.saveHomeNotificationExpanded(style, it)
+        }
+    }
+}
+
 /** The themes: BlackBerry (the default), Phone colours and six more. */
 @Composable
 internal fun ThemeSection(state: StartStateRepository) {
