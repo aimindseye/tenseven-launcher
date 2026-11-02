@@ -15,6 +15,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,6 +56,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.WindowCompat
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.LockLayer
+import io.github.aimindseye.tenseven.model.LockPeek
 import io.github.aimindseye.tenseven.platform.LockLayerState
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
@@ -69,6 +72,7 @@ import java.util.Locale
  * never appears on the actual lock screen. A user-invoked settings preview may show opted-in text.
  */
 class LockLayerActivity : ComponentActivity() {
+    private var peekStage by mutableStateOf(LockPeek.Stage.COUNTS)
     private val closer =
         object : BroadcastReceiver() {
             override fun onReceive(
@@ -99,6 +103,9 @@ class LockLayerActivity : ComponentActivity() {
             LockLayerScreen(
                 enabled = enabled,
                 showText = showText,
+                stage = peekStage,
+                onAdvance = { peekStage = LockPeek.next(peekStage) },
+                onBack = { peekStage = LockPeek.previous(peekStage) },
                 onUnlock = { unlock(null) },
                 onOpenApp = { pkg -> unlock(packageManager.getLaunchIntentForPackage(pkg)) },
                 onCamera = ::openCamera,
@@ -131,6 +138,14 @@ class LockLayerActivity : ComponentActivity() {
             KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_SPACE, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_CENTER -> {
                 unlock(null)
                 true
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                peekStage = LockPeek.next(peekStage)
+                true
+            }
+            KeyEvent.KEYCODE_BACK -> {
+                if (peekStage == LockPeek.Stage.COUNTS) super.onKeyDown(keyCode, event)
+                else { peekStage = LockPeek.previous(peekStage); true }
             }
             else -> super.onKeyDown(keyCode, event)
         }
@@ -174,6 +189,9 @@ const val EXTRA_RETURN_TO = "io.github.aimindseye.tenseven.extra.LOCK_PREVIEW_RE
 private fun LockLayerScreen(
     enabled: Set<String>,
     showText: Boolean,
+    stage: LockPeek.Stage,
+    onAdvance: () -> Unit,
+    onBack: () -> Unit,
     onUnlock: () -> Unit,
     onOpenApp: (String) -> Unit,
     onCamera: () -> Unit,
@@ -208,11 +226,17 @@ private fun LockLayerScreen(
             Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.45f))
-                .pointerInput(Unit) {
+                .pointerInput(stage) {
                     var total = 0f
                     detectVerticalDragGestures(
                         onDragStart = { total = 0f },
-                        onDragEnd = { if (total < -UNLOCK_SWIPE_PX) onUnlock() },
+                        onDragEnd = {
+                            when {
+                                total < -UNLOCK_SWIPE_PX && stage == LockPeek.Stage.EXPANDED -> onUnlock()
+                                total < -UNLOCK_SWIPE_PX -> onAdvance()
+                                total > UNLOCK_SWIPE_PX && stage != LockPeek.Stage.COUNTS -> onBack()
+                            }
+                        },
                         onVerticalDrag = { _, delta -> total += delta },
                     )
                 },
