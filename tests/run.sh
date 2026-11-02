@@ -97,6 +97,31 @@ else
     fail "Lite manifest security defaults and removed services"
 fi
 
+# 6c. Hub 2.0 must own its navigation even when zero apps are opted in.
+# Previous build kept the old HubTabs header and rendered new filters only after
+# a notification existed, so both Lite and Full looked like the pre-2.0 Hub.
+if python3 - <<'PY'
+from pathlib import Path
+
+home = Path("app/src/main/java/io/github/aimindseye/tenseven/ui/SableStartScreen.kt").read_text()
+hub = Path("app/src/main/java/io/github/aimindseye/tenseven/ui/HubConversationsUi.kt").read_text()
+page = home.split("private fun HubPage(", 1)[1].split("private fun HubUnreadBar(", 1)[0]
+items = hub.split("internal fun LazyListScope.hubConversationItems(", 1)[1].split(
+    "private fun LazyListScope.conversationItems(", 1
+)[0]
+assert "HubUnifiedNavigation(" in page, "HubPage must use unified navigation"
+assert "HubTabs(" not in page, "old HubTabs must not be rendered"
+assert "internal fun HubUnifiedNavigation(" in hub, "unified navigation must exist"
+assert "HubStreamToolbar(" not in items, "no second toolbar inside conversations"
+assert "No apps selected for Hub" in hub, "first-run source-selection CTA missing"
+assert "hub-lite-summary" in hub, "Lite fallback must be identifiable"
+PY
+then
+    pass "Hub 2.0 navigation visible when no sources exist"
+else
+    fail "Hub 2.0 navigation wiring regressed"
+fi
+
 # 7. Nothing that must never be committed.
 forbidden="$(tracked | grep -E '\.(img|zip|apk|aab|jks|keystore|pk8)$' || true)"
 if [[ -z "$forbidden" ]]; then pass "no images, archives, APKs or keys tracked"; else fail "forbidden files tracked: $forbidden"; fi
