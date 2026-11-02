@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The lite build: the same app without the two services Google Play Protect blocks a downloaded APK for
+     (see Capabilities.kt). Everything else is identical, so a lite install can later be updated to the full build. -->
+<manifest xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <service
+            android:name=".platform.LockScreenAccessibilityService"
+            tools:node="remove" />
+        <service
+            android:name=".conversations.ConversationListenerService"
+            tools:node="remove" />
+    </application>
+</manifest>

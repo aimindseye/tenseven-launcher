@@ -8,7 +8,9 @@ plugins {
 }
 
 // The APK files are named Tenseven-Launcher-debug.apk, Tenseven-Launcher-release.apk (signed, see below) or
-// Tenseven-Launcher-release-unsigned.apk (no signing key configured).
+// Tenseven-Launcher-release-unsigned.apk (no signing key configured). The lite build (:app:assembleLite) is the
+// release build without the accessibility service and the notification listener, which Google Play Protect blocks a
+// downloaded APK for: Tenseven-Launcher-lite.apk or Tenseven-Launcher-lite-unsigned.apk.
 base {
     archivesName.set("Tenseven-Launcher")
 }
@@ -69,6 +71,13 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseSigned) signingConfig = signingConfigs.getByName("release")
+        }
+        // Release without the two services Play Protect blocks (src/lite/AndroidManifest.xml). The same application id
+        // and key, so a lite install can be updated to the full release.
+        create("lite") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
             if (releaseSigned) signingConfig = signingConfigs.getByName("release")
         }
     }

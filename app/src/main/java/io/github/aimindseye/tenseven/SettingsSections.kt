@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
@@ -291,7 +292,9 @@ internal fun LockLayerSection(state: StartStateRepository) {
         onDispose { activity?.lifecycle?.removeObserver(observer) }
     }
     val overlayAllowed = tick >= 0 && LockLayerLauncher.canDrawOverlays(context)
-    val accessAllowed = tick >= 0 && ConversationAccess.isGranted(context)
+    // The lite build has no notification listener, so there is nothing to allow and nothing to wait for.
+    val accessAvailable = Capabilities.hasConversationService(context)
+    val accessAllowed = tick >= 0 && (!accessAvailable || ConversationAccess.isGranted(context))
     SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
         lockLayer = it
         state.saveLockLayer(it)
