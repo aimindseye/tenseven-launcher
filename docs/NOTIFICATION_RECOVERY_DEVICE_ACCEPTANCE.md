@@ -1,13 +1,22 @@
 # P2-A notification recovery regression — Hub, Peek, TenSeven lock screen
 
-## Context
-Q25 report on P2-A foundation v6: **all notification content/counts disappeared simultaneously** from Hub, BB10 Peek and TenSeven's lock screen, after P1.2 v5 worked.
+## Confirmed Titan 2 observations (2026-11-02)
 
-These three surfaces share the Android `ConversationListenerService`. A source diff from P1.2 to P2-A did **not** find a change to listener parsing, manifest declaration or enabled-app selection. The underlying device cause (Android revoked access, listener not connected, failed input parsing, or all sources disabled) is **unconfirmed without Q25 evidence**.
+- Physical test device for this launcher workflow is **Unihertz Titan 2**, not Zinwa Q25.
+- Notification access and Usage access were shown as **enabled** in Launcher Settings even when Hub/Peek/TenSeven lock-screen notifications were empty.
+- Turning **Notification access off and back on** restored all three surfaces; this confirms a reconnection recovery path, not a proven reason for the original disconnect.
+- On Titan 2, **Allow restricted settings** did **not** appear in App Info before the first request was blocked; the option became available after Android denied a notification or usage access attempt.
+- Launcher access status must distinguish **permission granted** from **listener connected**. The new diagnostics cover this distinction, but device validation is still required.
+- **Do not uninstall or clear app data** during regression tests. Q25 remains a separate future compatibility target, not the device that reproduced this bug.
+
+## Context
+Titan 2 report on P2-A foundation v6: **all notification content/counts disappeared simultaneously** from Hub, BB10 Peek and TenSeven's lock screen, after P1.2 v5 worked.
+
+These three surfaces share the Android `ConversationListenerService`. A source diff from P1.2 to P2-A did **not** find a change to listener parsing, manifest declaration or enabled-app selection. The underlying device cause (Android revoked access, listener not connected, failed input parsing, or all sources disabled) is **unconfirmed without Titan 2 evidence**.
 
 ## Device recovery — no uninstall / no clear storage
 1. Confirm original apps still have notifications visible in the **Android notification shade**.
-2. Settings → Apps → TenSeven → ⋮ → Allow restricted settings (only when Android offers it).
+2. First attempt to grant Notification/Usage access. If Android blocks the request, reopen Settings → Apps → TenSeven → ⋮ → Allow restricted settings, **if the menu appears after the denied request**. Before the first attempt this option may be absent on Titan 2.
 3. Settings → Notifications → Device & app notifications → Notification access → TenSeven. Confirm enabled; if already on, turn off/on and return to TenSeven.
 4. In TenSeven **Hub Settings**, inspect **Notification listener diagnostics**:
    - "Access off": restore Android listener access, not calendar permission.
@@ -29,4 +38,11 @@ These three surfaces share the Android `ConversationListenerService`. A source d
 ## Build / acceptance
 Branch `fix/p2a-notification-listener-recovery-20261102`, versionCode **7**, versionName `0.2.0-p2a-notification-fix.1`, one Full-only Mac-signed APK via `bash tools/build-full-consolidated-test.sh`.
 
-This PR is **not** the completion of P2-A Tasks/Remind. Do not merge until Android/tests/CodeQL/security and Q25 tests pass. SonarCloud Quality Gate remains a separate integration blocker.
+This PR is **not** the completion of P2-A Tasks/Remind. Do not merge until Android/tests/CodeQL/security and Titan 2 tests pass. SonarCloud Quality Gate remains a separate integration blocker.
+
+## Titan 2 onboarding sequence regression
+1. Freshly sideloaded trusted Full APK, special access not granted. **Before** first request, inspect App Info: allow-restricted-settings overflow may be absent.
+2. Attempt Notification access. If Android blocks it, return to TenSeven Setup; it should now show App Info recovery guidance. Open App Info, select **Allow restricted settings** if available, return and retry.
+3. Repeat separately for Usage access. Both are optional, independent grants; no manifest or automation bypass is permitted.
+4. With permission shown as granted but listener disconnected, Setup/Hub Settings must not claim notifications are working. Use Hub Settings diagnostics to distinguish disconnected from no enabled apps/no source notifications.
+5. Open/reopen Setup multiple times while connected: avoid unnecessary rebinds, and ensure Hub, Peek and lock-screen counts do not vanish.
