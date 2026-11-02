@@ -209,17 +209,25 @@ private fun HubSettings(
             val activeCount = io.github.aimindseye.tenseven.conversations.NotificationConnection.activeCount
             val conversationsCount = ConversationHub.notifications().size
             val lockCount = LockLayerState.counts.values.sum()
-            HubRow(
-                title = "Notification listener diagnostics",
-                detail = when {
-                    !listenerAvailable -> "Listener service unavailable in this APK."
-                    !accessGranted -> "Android notification access is off. Open Notification access above."
-                    !connected -> "Access granted, listener disconnected. Tap here to reconnect."
-                    enabled.isEmpty() -> "Connected; no apps selected. Enable notification sources below."
-                    else -> "Connected · $activeCount active device notifications · $conversationsCount Hub entries · $lockCount lock-screen counts · ${enabled.size} enabled apps. Tap to refresh."
-                },
-                onClick = { if (accessGranted) onRetryListener() else onAccess() },
-            )
+            if (accessGranted && connected) {
+                Text("Notification listener · Connected", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (enabled.isEmpty()) "No apps selected. Enable notification sources below."
+                    else "$activeCount active device notifications · $conversationsCount Hub entries · $lockCount lock-screen counts · ${enabled.size} enabled sources.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                HubRow(
+                    title = "Notification listener diagnostics",
+                    detail = when {
+                        !listenerAvailable -> "Listener service unavailable in this APK."
+                        !accessGranted -> "Android notification access is off. Open Notification access above."
+                        else -> "Access granted, listener disconnected. Tap here to reconnect.",
+                    },
+                    onClick = { if (accessGranted) onRetryListener() else onAccess() },
+                )
+            }
             HubRow(
                 title = stringResource(R.string.hub_clear),
                 detail = stringResource(if (cleared) R.string.hub_cleared else R.string.hub_clear_detail),
