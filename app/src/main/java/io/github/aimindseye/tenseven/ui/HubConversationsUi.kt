@@ -338,6 +338,22 @@ private fun FilterButton(
     )
 }
 
+/** Compact action glyph with explicit screen-reader text and a keyboard focus ring. */
+@Composable
+private fun HubActionIcon(
+    label: String,
+    glyph: List<String>,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.sableFocusRing().semantics { contentDescription = label },
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 7.dp),
+    ) {
+        LineIcon(paths = glyph, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
 @Composable
 private fun ConversationRow(
     conversation: HubConversation,
@@ -443,25 +459,19 @@ private fun ConversationRow(
                     .padding(start = 40.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                OutlinedButton(onClick = onOpen, modifier = Modifier.sableFocusRing()) {
-                    Text("Open")
-                }
+                HubActionIcon("Open in source app", LineIconPaths.EXTERNAL, onOpen)
                 if (canReply) {
-                    OutlinedButton(onClick = { replying = !replying }, modifier = Modifier.sableFocusRing()) {
-                        Text(stringResource(R.string.hub_reply))
-                    }
+                    HubActionIcon("Reply", LineIconPaths.REPLY) { replying = !replying }
                 }
                 if (unread > 0) {
-                    OutlinedButton(onClick = onMarkRead, modifier = Modifier.sableFocusRing()) {
-                        Text(stringResource(R.string.hub_mark_read))
-                    }
+                    HubActionIcon("Mark read", LineIconPaths.CHECK, onMarkRead)
                 }
-                OutlinedButton(
-                    onClick = {
-                        if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
-                    },
-                    modifier = Modifier.sableFocusRing(),
-                ) { Text(if (snoozed) stringResource(R.string.hub_wake) else stringResource(R.string.hub_snooze_hour)) }
+                HubActionIcon(
+                    if (snoozed) "Show again now" else "Snooze for one hour",
+                    TablerGlyphPaths.BY_NAME["clock"].orEmpty(),
+                ) {
+                    if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+                }
             }
             if (replying && canReply) {
                 Row(
