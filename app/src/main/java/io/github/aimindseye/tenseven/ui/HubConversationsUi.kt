@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -199,8 +200,8 @@ private fun ConversationCard(
 }
 
 /**
- * The single BBOS10 Hub navigation strip: visible even with zero notification sources
- * or an empty inbox. Calls and Contacts remain available when the listener is absent.
+ * The six-icon Hub navigation is stable on a square Q25, even when dozens of apps are enabled.
+ * Message/mail counts roll up; only other apps with live notifications appear under More.
  */
 @Composable
 internal fun HubUnifiedNavigation(
@@ -208,17 +209,21 @@ internal fun HubUnifiedNavigation(
     currentTab: HubFilter,
     onTabChange: (HubFilter) -> Unit,
     firstTab: FocusRequester,
-    sources: List<Pair<String, String>>,
+    sources: List<Triple<String, String, Int>>,
+    messageCount: Int,
+    emailCount: Int,
 ) {
     var searchOpen by remember { mutableStateOf(false) }
+    var moreOpen by remember { mutableStateOf(false) }
     fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter(), pkg: String? = null) {
         onTabChange(tab)
         ui.onFilterChange(next)
         ui.onSourceChange(pkg)
+        moreOpen = false
     }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -227,29 +232,47 @@ internal fun HubUnifiedNavigation(
                 currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null,
                 modifier = Modifier.focusRequester(firstTab),
             ) { select(HubFilter.All) }
+            IconHubFilterButton("Messages", "message-dots", currentTab == HubFilter.Messages,
+                count = messageCount) {
+                select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
+            }
+            IconHubFilterButton("Email", "mail",
+                currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email,
+                count = emailCount) {
+                select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
+            }
             IconHubFilterButton("Unread", "list-check", currentTab == HubFilter.All && ui.filter.unreadOnly) {
                 select(HubFilter.All, ConversationFilter(unreadOnly = true))
             }
-            IconHubFilterButton("Messages", "message-dots", currentTab == HubFilter.Messages) {
-                select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
-            }
-            IconHubFilterButton("Email", "mail", currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email) {
-                select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
-            }
-            IconHubFilterButton("Calls", "phone-call", currentTab == HubFilter.Calls) { select(HubFilter.Calls) }
-            IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) { select(HubFilter.Contacts) }
-            val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
-            if (snoozedCount > 0 || ui.filter.snoozed) {
-                IconHubFilterButton("Snoozed ($snoozedCount)", "clock", currentTab == HubFilter.All && ui.filter.snoozed) {
-                    select(HubFilter.All, ConversationFilter(snoozed = true))
-                }
-            }
-            sources.forEach { (pkg, name) ->
-                AppSourceFilterButton(pkg, name, currentTab == HubFilter.All && ui.sourcePackage == pkg) {
-                    select(HubFilter.All, pkg = pkg)
-                }
-            }
             IconHubFilterButton("Search", "search", searchOpen) { searchOpen = !searchOpen }
+            IconHubFilterButton("More categories and active apps", "apps", moreOpen) { moreOpen = !moreOpen }
+        }
+        if (moreOpen) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconHubFilterButton("Calls", "phone-call", currentTab == HubFilter.Calls) {
+                    select(HubFilter.Calls)
+                }
+                IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) {
+                    select(HubFilter.Contacts)
+                }
+                val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
+                if (snoozedCount > 0 || ui.filter.snoozed) {
+                    IconHubFilterButton("Snoozed", "clock",
+                        currentTab == HubFilter.All && ui.filter.snoozed, count = snoozedCount) {
+                        select(HubFilter.All, ConversationFilter(snoozed = true))
+                    }
+                }
+                sources.forEach { (pkg, name, count) ->
+                    AppSourceFilterButton(pkg, name, count,
+                        currentTab == HubFilter.All && ui.sourcePackage == pkg) {
+                        select(HubFilter.All, pkg = pkg)
+                    }
+                }
+            }
         }
         if (searchOpen && currentTab != HubFilter.Calls && currentTab != HubFilter.Contacts) {
             OutlinedTextField(
@@ -263,34 +286,43 @@ internal fun HubUnifiedNavigation(
     }
 }
 
-/** Icon-first BB10 navigation; text stays visible at compact size and TalkBack has a full label. */
+/** One keyboard-accessible icon with an optional unread total, not an always-enabled app chip. */
 @Composable
 private fun IconHubFilterButton(
     label: String,
     iconName: String,
     selected: Boolean,
+    count: Int = 0,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-    Row(
+    Box(
         modifier = modifier.clip(RoundedCornerShape(7.dp))
             .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
             .sableFocusRing()
             .clickable(onClick = onClick)
             .semantics {
-                contentDescription = label
+                contentDescription = if (count > 0) "$label, $count notifications" else label
                 stateDescription = if (selected) "Selected" else "Not selected"
             }
             .size(48.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+        contentAlignment = Alignment.Center,
     ) {
         LineIcon(
-            paths = if (iconName == "search") LineIconPaths.SEARCH else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
+            paths = if (iconName == "search") LineIconPaths.SEARCH
+                else TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
             modifier = Modifier.size(22.dp),
             tint = color,
         )
+        if (count > 0) {
+            Text(
+                text = if (count > 99) "99+" else count.toString(),
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 2.dp, top = 1.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+            )
+        }
     }
 }
 
@@ -299,6 +331,7 @@ private fun IconHubFilterButton(
 private fun AppSourceFilterButton(
     packageName: String,
     label: String,
+    count: Int,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -316,7 +349,7 @@ private fun AppSourceFilterButton(
     ) {
         if (appIcon != null) Image(appIcon, contentDescription = label,
             modifier = Modifier.size(21.dp).clip(RoundedCornerShape(4.dp)))
-        Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium,
+        Text("$label · $count", maxLines = 1, style = MaterialTheme.typography.labelMedium,
             color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
     }
 }
