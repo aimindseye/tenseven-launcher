@@ -67,6 +67,7 @@ private const val SAMPLE_INTERVAL_MS = 3_000L
 fun SableStatusRings(
     modifier: Modifier = Modifier,
     ringSize: Dp = 36.dp,
+    visible: Set<String> = io.github.aimindseye.tenseven.model.HomeDisplayPolicy.ALL_DIALS,
 ) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -90,11 +91,11 @@ fun SableStatusRings(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        NetRing(label = "Wi-Fi", up = st.wifiUp, down = st.wifiDown, size = ringSize)
-        NetRing(label = t("mobile"), up = st.mobileUp, down = st.mobileDown, size = ringSize)
-        StatRing(label = "CPU", fraction = st.cpu, color = primary, size = ringSize)
-        StatRing(label = "RAM", fraction = st.ram, color = RingPurple, size = ringSize)
-        StatRing(
+        if ("wifi" in visible) NetRing(label = "Wi-Fi", up = st.wifiUp, down = st.wifiDown, size = ringSize)
+        if ("mobile" in visible) NetRing(label = t("mobile"), up = st.mobileUp, down = st.mobileDown, size = ringSize)
+        if ("cpu" in visible) StatRing(label = "CPU", fraction = st.cpu, color = primary, size = ringSize)
+        if ("ram" in visible) StatRing(label = "RAM", fraction = st.ram, color = RingPurple, size = ringSize)
+        if ("battery" in visible) StatRing(
             label =
                 when {
                     st.charging -> t("bat")
@@ -106,7 +107,7 @@ fun SableStatusRings(
             size = ringSize,
             hotAbove = 2f,
         )
-        StatRing(
+        if ("cell" in visible) StatRing(
             label = t("cell"),
             fraction = st.signal,
             color = RingOrange,
