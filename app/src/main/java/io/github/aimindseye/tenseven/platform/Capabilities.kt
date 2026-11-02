@@ -5,9 +5,8 @@ import android.content.Context
 import io.github.aimindseye.tenseven.conversations.ConversationListenerService
 
 /**
- * Which optional services this build declares. The lite build (`:app:assembleLite`) leaves out the accessibility
- * service (double-tap to lock) and the notification listener (Hub conversations), because these declarations can trigger Google Play Protect protections for downloaded APKs. Screens that only exist to switch them on check here,
- * so the lite build never offers a switch that cannot work.
+ * Runtime availability of optional services in the Full-only install.
+ * Android still requires the user's explicit grant of each special access.
  */
 object Capabilities {
     /** True when the double-tap lock accessibility service is part of this build. */
