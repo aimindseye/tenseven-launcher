@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kover)
 }
@@ -9,20 +8,16 @@ android {
     namespace = "io.github.aimindseye.tenseven.design"
     compileSdk = 36
     defaultConfig { minSdk = 30 }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        resValues = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
     lint {
         abortOnError = rootProject.extra["strictQuality"] as Boolean
-        sarifReport = true
-        htmlReport = true
     }
 }
 
