@@ -239,6 +239,9 @@ fun Bb7HomeScreen(
                                 Toast.makeText(context, "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts", Toast.LENGTH_LONG).show()
                             } else {
                                 onDesktopChanged(next)
+                                open = false
+                                query = ""
+                                selected = -1
                                 Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
                             }
                         },
