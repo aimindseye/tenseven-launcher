@@ -12,7 +12,7 @@ never in CI or GitHub. On a clean checked-out P1 branch:
 
 ```bash
 git fetch origin
-git switch feat/p1-full-only-hub-ui-20261102
+git switch fix/p1-onboarding-icon-hub-20261102
 git status --short
 bash tools/build-full-consolidated-test.sh
 ```
@@ -20,9 +20,19 @@ bash tools/build-full-consolidated-test.sh
 This builds and tests, runs release lint and Full-only signature verification and writes:
 `~/Downloads/tenseven-full-combined-test/Tenseven-Full-Hub2-<sha>.apk`
 with `.sha256`. Expected application ID `io.github.aimindseye.tenseven`,
-versionCode `3`, versionName `0.1.2-p1-full-test.1`.
+versionCode `4`, versionName `0.1.2-p1.1-test.1` for this P1.1 branch.
 Registered certificate SHA-256:
 `9b2047390e5aa77537b8e8875cdfd3c2c72d0a0715e172a7f77457fc4300f292`.
+
+## P1.1 focus: permissions and Hub navigation (PR #97)
+
+1. Install the **Mac-signed** Full APK and verify Android App Info reflects **0.1.2-p1.1-test.1** (versionCode 4). Confirm existing wallpaper/home preferences survive an update from versionCode 3.
+2. On the Q25 where the APK was sideloaded, with Notification and Usage access not yet granted, reopen TenSeven **Setup and permissions** (overview). Verify the visible **Before Notification or Usage access** guidance directs you to Settings → Apps → Tenseven → three-dot menu → Allow restricted settings **when available**.
+3. Tap **App info** from the guidance. Manually approve restricted settings, return to TenSeven, enable Notification and Usage access, then confirm the Setup overview updates. TenSeven must not claim to grant these switches itself.
+4. With Notification access still absent, also open **Hub Settings**; verify the instruction is visible there and App Info can be opened. Test on an Android variant without this menu: the app must not trap the user.
+5. In Hub: confirm icon-bearing navigation for Hub, Unread, Messages, Email, Calls, Contacts, Snoozed, Search; source-app icons; hardware keyboard focus, Enter activation, Back, horizontal scrolling on 720×720.
+6. For a conversation with supported actions, confirm compact Open / Reply / Mark read / Snooze glyph controls function, have accessibility labels and do not overflow. Verify lockscreen privacy, Peek, wallpaper, BB7/BB10 homes remain unchanged.
+7. Record pass/fail with screenshots and source APK checksum. No Sonar outcome is inferred from this stacked PR; include Sonar in the eventual integration PR targeting main.
 
 ## P1 physical-device matrix (record PASS/FAIL per row)
 
