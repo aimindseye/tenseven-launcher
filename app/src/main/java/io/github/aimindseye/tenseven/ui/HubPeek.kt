@@ -164,7 +164,8 @@ private fun HubPeekPanel(
 ) {
     val context = LocalContext.current
     val showText = remember { StartStateRepository(context).loadHubPeekText() }
-    val conversations = remember { ConversationHub.conversations().take(MAX_ROWS) }
+    val deviceLocked = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
+    val conversations = ConversationHub.conversations().take(MAX_ROWS)
     val focus = remember { FocusRequester() }
     // The panel slides in from the left edge while the rest of Home dims.
     val slide = remember { Animatable(0f) }
@@ -195,11 +196,11 @@ private fun HubPeekPanel(
                     .graphicsLayer { translationX = (slide.value - 1f) * size.width }
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
-            shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 18.dp),
+            shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 0.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = PANEL_ALPHA),
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,
-            shadowElevation = 12.dp,
+            shadowElevation = 0.dp,
         ) {
             Column {
                 Box(Modifier.fillMaxWidth().height(3.dp).background(accent))
@@ -227,7 +228,7 @@ private fun HubPeekPanel(
                     }
                     Column(
                         modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp),
                     ) {
                         if (conversations.isEmpty()) {
                             Column(
@@ -247,7 +248,7 @@ private fun HubPeekPanel(
                             PeekRow(
                                 name = conversation.name,
                                 detail =
-                                    if (showText) {
+                                    if (showText && !deviceLocked) {
                                         conversation.latestMessage?.text.orEmpty()
                                     } else {
                                         stringResource(R.string.peek_count, conversation.notifications.size)
@@ -286,13 +287,12 @@ private fun PeekRow(
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
-        shape = RoundedCornerShape(12.dp),
-        color = if (focused) accent.copy(alpha = 0.22f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+        shape = RoundedCornerShape(0.dp),
+        color = if (focused) accent.copy(alpha = 0.16f) else Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(if (focused) 2.dp else 1.dp, if (focused) accent else MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
