@@ -65,7 +65,7 @@ import io.github.aimindseye.tenseven.onboarding.SetupStep
 /** What the Hub page needs to show conversations; built by [HubPage] from Tenseven's own notification listener. */
 internal class HubConversationsUi(
     val accessGranted: Boolean,
-    /** False in the lite build: there is no notification listener to ask for. */
+    /** False only when the listener is unavailable on the installed device. */
     val canAllowAccess: Boolean = true,
     val enabledAppCount: Int,
     val onChooseApps: () -> Unit,
@@ -93,11 +93,11 @@ private const val MAX_CONVERSATIONS = 30
  */
 internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
     if (!ui.accessGranted) {
-        // The lite build has no notification listener to allow, so it shows no conversations section at all.
+        // Avoid offering an impossible permission when the listener service is unavailable.
         if (!ui.canAllowAccess) {
-            item(key = "hub-lite-summary") {
+            item(key = "hub-unavailable-summary") {
                 Text(
-                    "Lite Hub has shortcuts and contacts. Notification conversations require Full.",
+                    "Notification listener unavailable on this device; Hub shortcuts remain available.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(vertical = 12.dp),
