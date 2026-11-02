@@ -15,6 +15,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -54,6 +57,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.WindowCompat
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.LockLayer
+import io.github.aimindseye.tenseven.model.LockPeek
 import io.github.aimindseye.tenseven.platform.LockLayerState
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
@@ -69,6 +73,7 @@ import java.util.Locale
  * never appears on the actual lock screen. A user-invoked settings preview may show opted-in text.
  */
 class LockLayerActivity : ComponentActivity() {
+    private var peekStage by mutableStateOf(LockPeek.Stage.COUNTS)
     private val closer =
         object : BroadcastReceiver() {
             override fun onReceive(
@@ -99,6 +104,9 @@ class LockLayerActivity : ComponentActivity() {
             LockLayerScreen(
                 enabled = enabled,
                 showText = showText,
+                stage = peekStage,
+                onAdvance = { peekStage = LockPeek.next(peekStage) },
+                onBack = { peekStage = LockPeek.previous(peekStage) },
                 onUnlock = { unlock(null) },
                 onOpenApp = { pkg -> unlock(packageManager.getLaunchIntentForPackage(pkg)) },
                 onCamera = ::openCamera,
@@ -131,6 +139,14 @@ class LockLayerActivity : ComponentActivity() {
             KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_SPACE, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_CENTER -> {
                 unlock(null)
                 true
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                peekStage = LockPeek.next(peekStage)
+                true
+            }
+            KeyEvent.KEYCODE_BACK -> {
+                if (peekStage == LockPeek.Stage.COUNTS) super.onKeyDown(keyCode, event)
+                else { peekStage = LockPeek.previous(peekStage); true }
             }
             else -> super.onKeyDown(keyCode, event)
         }
@@ -174,6 +190,9 @@ const val EXTRA_RETURN_TO = "io.github.aimindseye.tenseven.extra.LOCK_PREVIEW_RE
 private fun LockLayerScreen(
     enabled: Set<String>,
     showText: Boolean,
+    stage: LockPeek.Stage,
+    onAdvance: () -> Unit,
+    onBack: () -> Unit,
     onUnlock: () -> Unit,
     onOpenApp: (String) -> Unit,
     onCamera: () -> Unit,
@@ -208,11 +227,17 @@ private fun LockLayerScreen(
             Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.45f))
-                .pointerInput(Unit) {
+                .pointerInput(stage) {
                     var total = 0f
                     detectVerticalDragGestures(
                         onDragStart = { total = 0f },
-                        onDragEnd = { if (total < -UNLOCK_SWIPE_PX) onUnlock() },
+                        onDragEnd = {
+                            when {
+                                total < -UNLOCK_SWIPE_PX && stage == LockPeek.Stage.EXPANDED -> onUnlock()
+                                total < -UNLOCK_SWIPE_PX -> onAdvance()
+                                total > UNLOCK_SWIPE_PX && stage != LockPeek.Stage.COUNTS -> onBack()
+                            }
+                        },
                         onVerticalDrag = { _, delta -> total += delta },
                     )
                 },
@@ -233,12 +258,42 @@ private fun LockLayerScreen(
                 }
             }
             Spacer(Modifier.height(18.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                entries.forEach { entry -> LockIcon(entry.packageName, LockLayer.countLabel(entry.count)) { onOpenApp(entry.packageName) } }
+            if (stage == LockPeek.Stage.COUNTS) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    entries.forEach { entry ->
+                        LockIcon(entry.packageName, LockLayer.countLabel(entry.count), onClick = onAdvance)
+                    }
+                }
+            } else {
+                Text(
+                    if (stage == LockPeek.Stage.PEEK) "Peek · Notifications" else "Notifications",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 18.sp,
+                    modifier = Modifier.clickable(onClick = onAdvance),
+                )
+                Spacer(Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    if (entries.isEmpty()) {
+                        Text("No notifications from selected apps", color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp)
+                    }
+                    entries.forEach { entry ->
+                        LockPeekRow(entry.packageName, entry.count) { onOpenApp(entry.packageName) }
+                    }
+                    Text("Unlock to read message details",
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
+                }
             }
         }
         Text(
-            stringResource(R.string.lock_hint),
+            when (stage) {
+                LockPeek.Stage.COUNTS -> "Swipe up for Peek · Enter to unlock"
+                LockPeek.Stage.PEEK -> "Swipe up to expand · Enter to unlock"
+                LockPeek.Stage.EXPANDED -> stringResource(R.string.lock_hint)
+            },
             color = Color.White.copy(alpha = 0.7f),
             fontSize = 14.sp,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp).clickable(onClick = onUnlock),
@@ -281,6 +336,29 @@ private fun LockIcon(
             Box(Modifier.align(Alignment.TopEnd).size(12.dp).background(Color(0xFFE53935), CircleShape))
         }
         Text(label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+/** Borderless source rows. Only counts and app names are visible while the device is locked. */
+@Composable
+private fun LockPeekRow(packageName: String, count: Int, onOpen: () -> Unit) {
+    val packageManager = LocalContext.current.packageManager
+    val appName = remember(packageName) {
+        runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString() }
+            .getOrDefault("App")
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LockIcon(packageName, "", onClick = onOpen)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(appName, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (count == 1) "1 notification" else count.toString() + " notifications",
+                color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+        }
+        Text(LockLayer.countLabel(count), color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
     }
 }
 
