@@ -15,6 +15,9 @@
     <!-- Only for the optional lock layer: lets it start over the lock screen when the screen wakes. Off until the user turns it on. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- POST_NOTIFICATIONS is optional; overdue tasks remain in-app without it. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
          Tenseven under Settings, Usage access, and "appops set" is ignored. The user still grants it there. -->
@@ -105,6 +108,25 @@
         android:theme="@style/Theme.SableLauncher"
         android:usesCleartextTraffic="false">
 
+        <!-- Remind scheduler is independent of the optional Notes and Tasks launcher icons. -->
+        <receiver android:name=".tasks.TaskAlarmReceiver" android:enabled="true" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <activity android:name=".tasks.TasksActivity" android:exported="false"
+            android:label="TenSeven Tasks" android:theme="@android:style/Theme.Material.NoActionBar" />
+        <activity-alias android:name=".tasks.TasksLauncherActivity"
+            android:targetActivity=".tasks.TasksActivity"
+            android:exported="true" android:enabled="false"
+            android:icon="@mipmap/ic_tenseven" android:label="TenSeven Tasks">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
         <activity
             android:name="io.github.aimindseye.tenseven.SableStartActivity"
             android:clearTaskOnLaunch="true"
