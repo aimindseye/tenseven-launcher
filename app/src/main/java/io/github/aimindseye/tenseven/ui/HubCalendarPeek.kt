@@ -2,6 +2,7 @@ package io.github.aimindseye.tenseven.ui
 
 import android.app.KeyguardManager
 import android.text.format.DateUtils
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,8 +52,12 @@ internal fun HubCalendarPeek(
         }
     }
 
+    HubContrastTheme {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
+            .padding(horizontal = 9.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
@@ -97,5 +104,6 @@ internal fun HubCalendarPeek(
                 }
             }
         }
+    }
     }
 }
