@@ -46,7 +46,7 @@ data class SetupState(
     val usageAccess: Boolean,
     /** At least one bundled extra app (Calculator, Notes, a game) is switched on. Off by default. */
     val extrasChosen: Boolean = false,
-    /** False in the lite build, which has no notification listener to turn on. */
+    /** False when the notification listener is unavailable on the device. */
     val notificationListenerAvailable: Boolean = true,
 ) {
     fun isDone(step: SetupStep): Boolean =
