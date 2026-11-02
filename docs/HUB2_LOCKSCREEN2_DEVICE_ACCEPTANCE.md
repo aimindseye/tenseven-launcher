@@ -1,3 +1,10 @@
+> **Current P1 policy (2026-11-02): one Full APK only.** Lite tests below are historical
+> evidence from earlier builds, not a current APK option. Use
+> `bash tools/build-full-consolidated-test.sh` and
+> `bash tools/verify-release-apks.sh app/build/outputs/apk/release/Tenseven-Launcher-release.apk`
+> for this branch. Preserve the accepted wallpaper fix, secure lockscreen flow,
+> and the BB7/BB10 settings and notification matrix.
+
 # Hub 2.0 and Lock Screen 2.0 — device acceptance
 
 **Status: IMPLEMENTATION CANDIDATE, DEVICE VALIDATION NOT RUN.** This plan applies to
