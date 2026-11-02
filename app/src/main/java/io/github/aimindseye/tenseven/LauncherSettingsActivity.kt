@@ -82,6 +82,7 @@ private fun LauncherSettings(
             ProvideHomeStyle(state) {
             Section(stringResource(R.string.ls_section_style))
             HomeStyleSection(state, first)
+            HomeDisplaySection(state)
 
             Section(stringResource(R.string.ls_section_home))
             SwitchRow(stringResource(R.string.ls_type_to_search), stringResource(R.string.ls_type_to_search_detail), typeToSearch) {
