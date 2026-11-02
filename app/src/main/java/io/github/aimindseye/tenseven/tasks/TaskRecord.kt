@@ -25,6 +25,9 @@ data class TaskRecord(
     val repeat: TaskRepeat = TaskRepeat.Never,
     val tags: Set<String> = emptySet(),
     val linkedNoteId: String? = null,
+    /** Source identity, never notification text or an Android PendingIntent. */
+    val originPackage: String? = null,
+    val originToken: String? = null,
     val updatedAtEpochMs: Long = System.currentTimeMillis(),
 ) {
     init {
@@ -35,6 +38,8 @@ data class TaskRecord(
         require(remindAtEpochMs == null || remindAtEpochMs >= 0) { "Invalid reminder date" }
         require(updatedAtEpochMs >= 0) { "Invalid update time" }
         require(tags.size <= 24 && tags.all { it.isNotBlank() && it.length <= 60 }) { "Invalid tags" }
+        require(originPackage == null || (originPackage.isNotBlank() && originPackage.length <= 240))
+        require(originToken == null || originToken.matches(Regex("[0-9a-f]{64}")))
         ZoneId.of(zoneId)
     }
 
