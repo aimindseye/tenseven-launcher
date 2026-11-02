@@ -308,6 +308,20 @@ class StartStateRepository(
         preferences.edit().putInt(HomeDisplayPolicy.stripExpandedPreference(style), if (expanded) 1 else 0).apply()
     }
 
+    /** null selects all visible calendars; empty selects none. IDs stay on-device (never backed up). */
+    fun loadHubSelectedCalendarIds(): Set<Long>? =
+        if (preferences.contains(KEY_HUB_SELECTED_CALENDARS)) {
+            preferences.getStringSet(KEY_HUB_SELECTED_CALENDARS, emptySet())
+                .orEmpty().mapNotNull { it.toLongOrNull() }.toSet()
+        } else null
+
+    fun saveHubSelectedCalendarIds(ids: Set<Long>?) {
+        preferences.edit().apply {
+            if (ids == null) remove(KEY_HUB_SELECTED_CALENDARS)
+            else putStringSet(KEY_HUB_SELECTED_CALENDARS, ids.map { it.toString() }.toSet())
+        }.apply()
+    }
+
     /** Calendar Peek is optional: never read CalendarProvider until the user enables this. */
     fun loadHubCalendarPeek(): Boolean = preferences.getInt(KEY_HUB_CALENDAR_PEEK, 0) != 0
 
@@ -459,6 +473,7 @@ class StartStateRepository(
         const val KEY_HUB_ENABLED = "hub_enabled_apps"
         const val KEY_HUB_PEEK_TEXT = "hub_peek_text"
         const val KEY_HUB_CALENDAR_PEEK = "hub_calendar_peek"
+        const val KEY_HUB_SELECTED_CALENDARS = "hub_selected_calendar_ids_device"
         const val KEY_HOME_WIDGET_IDS = "home_widget_ids"
         const val KEY_APPEARANCE_MODE = "appearance_mode"
         const val KEY_APPEARANCE_ACCENT = "appearance_accent"
