@@ -115,8 +115,10 @@ internal fun WidgetItem(
     editing: Boolean,
 ) {
     val density = LocalDensity.current.density
-    val info = controller.info(id)
-    val height = WidgetSizing.heightDp(info?.minHeight ?: 0, density)
+    val info = rememberWidgetInfo(controller, id)
+    val suggested = WidgetSizing.heightDp(info?.minHeight ?: 0, density)
+    var height by remember(id, suggested) { mutableStateOf(controller.height(id, suggested)) }
+    val canResize = info != null && info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         BoxWithConstraints(
             modifier =
@@ -127,28 +129,25 @@ internal fun WidgetItem(
                     .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium),
         ) {
             val widthDp = maxWidth.value.toInt()
+            androidx.compose.runtime.key(info?.provider, info?.profile) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { context -> controller.createView(id) ?: FrameLayout(context) },
                 update = { view ->
                     // Tell the widget how much room it has, so one that lays itself out by size picks the right layout.
                     if (view is AppWidgetHostView) {
-                        runCatching { view.updateAppWidgetSize(null, widthDp, height, widthDp, height) }
+                        runCatching { view.updateAppWidgetSize(null, listOf(android.util.SizeF(widthDp.toFloat(), height.toFloat()))) }
                     }
                 },
             )
+            }
+            if (info == null) Text("Widget unavailable · unlock its profile or remove it", Modifier.padding(8.dp))
             // While editing, touches must not reach the widget underneath.
             if (editing) {
                 Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { } })
             }
         }
-        if (editing) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PageButton(stringResource(R.string.widgets_up), Modifier.weight(1f)) { controller.move(id, -1) }
-                PageButton(stringResource(R.string.widgets_down), Modifier.weight(1f)) { controller.move(id, 1) }
-                PageButton(stringResource(R.string.widgets_remove), Modifier.weight(1f)) { controller.remove(id) }
-            }
-        }
+        if (editing) WidgetEditControls(controller, id, suggested, canResize) { height = it }
     }
 }
 
@@ -287,5 +286,28 @@ internal fun SableThemeWithWidgets(
             LocalHomeBackdrop provides backdrop,
             content = content,
         )
+    }
+}
+
+// Compose Unit renderers require PascalCase; exception is local to this renderer.
+@Suppress("FunctionNaming")
+@Composable
+private fun WidgetEditControls(
+    controller: WidgetHostController,
+    id: Int,
+    suggested: Int,
+    canResize: Boolean,
+    onHeight: (Int) -> Unit,
+) {
+    if (canResize) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PageButton("Shorter", Modifier.weight(1f)) { onHeight(controller.resize(id, suggested, -1)) }
+            PageButton("Taller", Modifier.weight(1f)) { onHeight(controller.resize(id, suggested, 1)) }
+        }
+    }
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        PageButton(stringResource(R.string.widgets_up), Modifier.weight(1f)) { controller.move(id, -1) }
+        PageButton(stringResource(R.string.widgets_down), Modifier.weight(1f)) { controller.move(id, 1) }
+        PageButton(stringResource(R.string.widgets_remove), Modifier.weight(1f)) { controller.remove(id) }
     }
 }

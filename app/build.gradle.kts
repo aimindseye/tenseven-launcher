@@ -4,7 +4,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kover)
 }
@@ -47,8 +46,8 @@ android {
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Full-only P1 qualification build; update code and name for every distributed test APK.
-        versionCode = 16
-        versionName = "0.2.0-p2-architecture.1"
+        versionCode = 17
+        versionName = "0.2.0-p3-device-polish.1"
     }
 
     signingConfigs {
@@ -78,6 +77,7 @@ android {
 
     buildFeatures {
         compose = true
+        resValues = true
     }
 
     compileOptions {
@@ -85,16 +85,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
 
     lint {
         abortOnError = rootProject.extra["strictQuality"] as Boolean
-        sarifReport = true
-        htmlReport = true
         ignoreTestSources = true
     }
 }

@@ -83,7 +83,9 @@ internal fun AppGridPage(
             AppGrid.iconSizeFor(
                 cellWidthDp = (maxWidth / columns).value.toInt(),
                 cellHeightDp = (maxHeight / rows).value.toInt(),
-                labelDp = if (showLabels) GRID_LABEL_LINE_DP + GRID_CELL_CHROME_DP else GRID_CELL_CHROME_DP,
+                labelDp = if (showLabels) {
+                    (GRID_LABEL_LINE_DP * androidx.compose.ui.platform.LocalDensity.current.fontScale).toInt() + GRID_CELL_CHROME_DP
+                } else GRID_CELL_CHROME_DP,
                 scale = iconScale,
             )
         Column(modifier = Modifier.fillMaxSize()) {

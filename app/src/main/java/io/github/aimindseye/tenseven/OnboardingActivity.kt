@@ -165,7 +165,7 @@ class OnboardingActivity : ComponentActivity() {
     private fun requestHomeRole() {
         val roles = getSystemService(RoleManager::class.java)
         val canAsk = roles != null && roles.isRoleAvailable(RoleManager.ROLE_HOME) && !roles.isRoleHeld(RoleManager.ROLE_HOME)
-        if (canAsk && roles != null) {
+        if (canAsk) {
             runCatching { homeRoleResult.launch(roles.createRequestRoleIntent(RoleManager.ROLE_HOME)) }
         } else {
             openSettings(Intent(Settings.ACTION_HOME_SETTINGS))

@@ -215,10 +215,7 @@ internal fun HubPage(
                     HubCalendarPeek(
                         refreshGeneration = refreshGeneration,
                         onRequestCalendarPermission = {
-                            context.findActivity()?.requestPermissions(
-                                arrayOf(Manifest.permission.READ_CALENDAR),
-                                SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
-                            )
+                            (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
                         },
                         onOpenCalendar = {
                             onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))

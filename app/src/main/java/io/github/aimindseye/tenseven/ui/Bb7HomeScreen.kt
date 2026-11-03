@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.platform.DeviceCompatibility
+import io.github.aimindseye.tenseven.model.LauncherKeys
 import android.widget.Toast
 import android.view.KeyEvent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -404,12 +407,12 @@ fun Bb7HomeScreen(
                                     } else {
                                         selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 0, 1)
                                     }
-                                native.keyCode == KeyEvent.KEYCODE_ENTER && native.isAltPressed ->
+                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu ->
                                     onOpenMenu(menuFor(shown.getOrNull(selected), false))
                                 native.keyCode == KeyEvent.KEYCODE_ENTER ||
                                     native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ->
                                     shown.getOrNull(selected)?.let { onLaunchApp(it) }
-                                native.keyCode == KeyEvent.KEYCODE_SPACE && native.isAltPressed -> onOpenCommand()
+                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Command -> onOpenCommand()
                                 native.keyCode == KeyEvent.KEYCODE_SPACE && !searching -> {
                                     panel = Bb7Home.step(panel, 1, panels)
                                     selected = 0
@@ -439,12 +442,7 @@ fun Bb7HomeScreen(
                             true
                         },
             ) {
-                val columns =
-                    GridColumns.resolve(
-                        chosen = gridColumns,
-                        widthDp = maxWidth.value.toInt(),
-                        autoColumns = Bb7Home.columns(maxWidth.value.toInt(), iconSize.cellDp),
-                    )
+                val columns = bb7Columns(gridColumns, maxWidth.value.toInt(), iconSize.cellDp)
                 SideEffect { keyColumns = columns }
                 val swipe = with(LocalDensity.current) { SWIPE_DP.dp.toPx() }
                 val rowPx = with(LocalDensity.current) { ROW_DP.dp.toPx() }
@@ -677,7 +675,7 @@ private fun Bb7Tray(
                 ).padding(bottom = 6.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(32.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TrayArrow("‹") { onStep(-1) }
@@ -825,7 +823,7 @@ private fun TrayArrow(
     onClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.width(44.dp).height(32.dp).clickable(onClick = onClick),
+        modifier = Modifier.width(48.dp).height(48.dp).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(text = mark, color = Color.White, fontSize = 22.sp)
@@ -839,3 +837,10 @@ private const val SWIPE_DP = 72
 /** A tray row's height, the drag that shows one more or one fewer row. */
 private const val ROW_DP = 64
 private val BANNER_MUTED = Color(0xFFC9D1DA)
+
+@Composable
+private fun bb7Columns(chosen: Int, widthDp: Int, cellDp: Int): Int {
+    val normal = GridColumns.resolve(chosen, widthDp, Bb7Home.columns(widthDp, cellDp))
+    return normal.coerceAtMost(io.github.aimindseye.tenseven.model.HomeViewport.columns(
+        widthDp, chosen, LocalDensity.current.fontScale))
+}

@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.platform.DeviceCompatibility
+import io.github.aimindseye.tenseven.model.LauncherKeys
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -77,7 +79,18 @@ import java.util.Locale
 import androidx.compose.foundation.Canvas as ComposeCanvas
 
 @Composable
-internal fun startGridWidthDp(): Int = LocalConfiguration.current.screenWidthDp - (GRID_PADDING.value * 2).toInt()
+internal fun startGridWidthDp(): Int {
+    val density = LocalDensity.current
+    val width = LocalWindowInfo.current.containerSize.width
+    val insets = WindowInsets.safeDrawing
+    val available = if (width > 0) {
+        with(density) { (width - insets.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr) -
+            insets.getRight(density, androidx.compose.ui.unit.LayoutDirection.Ltr)).toDp().value.toInt() }
+    } else {
+        LocalConfiguration.current.screenWidthDp
+    }
+    return (available - (GRID_PADDING.value * 2).toInt()).coerceAtLeast(1)
+}
 
 /**
  * The app grid's height in dp: the window (LocalWindowInfo, so the Q25's
@@ -175,7 +188,7 @@ internal fun StartStrip(
                 }.onKeyEvent { event ->
                     // What no frame, icon or slot took: Menu edits Home, printable keys search.
                     val native = event.nativeKeyEvent
-                    if (native.keyCode == AllAppsKeyPolicy.KEYCODE_MENU) {
+                    if (DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu) {
                         if (event.type == KeyEventType.KeyDown) onEditHome()
                         return@onKeyEvent true
                     }

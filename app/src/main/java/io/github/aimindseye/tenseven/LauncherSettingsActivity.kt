@@ -124,6 +124,7 @@ private fun LauncherSettings(
                 LockLayerSection(state)
 
                 Section(stringResource(R.string.ls_section_device))
+                DeviceCompatibilityLink()
                 Card(stringResource(R.string.ls_language), stringResource(R.string.ls_language_detail), false, onClick = onLanguage)
                 Card(stringResource(R.string.ls_backup), stringResource(R.string.ls_backup_detail), false, onClick = onBackup)
                 Card(stringResource(R.string.ls_setup), stringResource(R.string.ls_setup_detail), false, onClick = onSetup)
@@ -144,4 +145,14 @@ private fun LauncherSettings(
         }
     }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+}
+
+// Unit composables follow the naming required by Compose lint.
+@Suppress("FunctionNaming")
+@Composable
+private fun DeviceCompatibilityLink() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Card("Device compatibility", "Window, keyboard profile and key-event probe", false, onClick = {
+        context.startActivity(Intent(context, DeviceCompatibilityActivity::class.java))
+    })
 }

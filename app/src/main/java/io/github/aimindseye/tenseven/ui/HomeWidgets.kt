@@ -218,10 +218,7 @@ internal fun LiveGlanceFrame(
                 }
 
                 widget == GlanceWidgets.CALENDAR && needsAccess -> {
-                    context.findActivity()?.requestPermissions(
-                        arrayOf(Manifest.permission.READ_CALENDAR),
-                        SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
-                    )
+                    (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
                 }
 
                 widget == GlanceWidgets.MEDIA && needsAccess -> {

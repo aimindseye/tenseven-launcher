@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.model.HomeViewport
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -132,13 +133,16 @@ internal fun ActiveFramesGrid(
         }
     }
     BoxWithConstraints(modifier.testTag("active-frames-grid")) {
-        val height = ((maxHeight - 18.dp) / 2).coerceAtLeast(72.dp)
+        val fontScale = HomeViewport.textScale(
+            androidx.compose.ui.platform.LocalDensity.current.fontScale)
+        val columns = HomeViewport.frameColumns(maxWidth.value.toInt(), fontScale)
+        val height = ((maxHeight - 18.dp) / 2).coerceAtLeast(72.dp * fontScale)
         if (keys.isEmpty()) {
             Text(state.fallbackReason, color = Bb10Muted, modifier = Modifier.padding(12.dp)
                 .focusRequester(first).focusable().testTag("frames-empty"))
         }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(keys.chunked(2), key = { it.first() }) { row ->
+            items(keys.chunked(columns), key = { it.first() }) { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     row.forEach { key ->
                         val item = state.items.firstOrNull { it.key == key }
@@ -159,7 +163,7 @@ internal fun ActiveFramesGrid(
                                 }, slot)
                         }
                     }
-                    repeat(2 - row.size) { Spacer(Modifier.weight(1f)) }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -223,7 +227,7 @@ internal fun FrameTile(
             verticalAlignment = Alignment.CenterVertically) {
             Text(title, color = if (focused) Bb10OnBlue else Bb10Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            if (closable) Box(Modifier.size(44.dp, 36.dp).testTag("close:$key").clickable(onClick = onClose)
+            if (closable) Box(Modifier.size(48.dp).testTag("close:$key").clickable(onClick = onClose)
                 .semantics { contentDescription = "Close $title card" }, contentAlignment = Alignment.Center) {
                 Text("×", color = if (focused) Bb10OnBlue else Bb10Text)
             }
