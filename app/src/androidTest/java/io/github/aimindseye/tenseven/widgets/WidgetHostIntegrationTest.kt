@@ -149,12 +149,12 @@ class WidgetHostIntegrationTest {
         }
     }
 
-    // Match Android CTS: grant binding without adopting a shell identity during Activity launches.
+    // Match Android CTS on the primary emulator user; Android 14 does not resolve "current" here.
     private fun setBindingPermission(granted: Boolean) {
         val operation = if (granted) "grantbind" else "revokebind"
         val descriptor =
             instrumentation.uiAutomation.executeShellCommand(
-                "appwidget $operation --package ${context.packageName} --user current",
+                "appwidget $operation --package ${context.packageName} --user 0",
             )
         android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use {
             assertEquals("", it.readText().trim())

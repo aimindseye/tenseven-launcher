@@ -84,8 +84,9 @@ and reapplies their intended changes to the current Full-only architecture: AGP 
 Kotlin/new DSL, explicit resValues, removed obsolete flags/report toggles, modern runtime
 permission callbacks and AppOps calls, modern widget sizes, and AGP 9.5.0 with Gradle 9.8.2 (official distribution checksum pinned). Lifecycle 2.10.0 in both modules
 keeps its bundled lint checks compatible with the upgraded AGP. Compile/target SDK remain 36
-and the installation minimum remains 34. The version-catalog GradleDependency exception
-is limited to this compatibility pin: 2.11 requires SDK 37, unavailable on the CI SDK channel.
+and the installation minimum remains 34. Version-catalog GradleDependency exceptions
+are limited to the Lifecycle and Compose BOM compatibility pins: their newer lines require
+SDK 37, unavailable on the CI SDK channel.
 Lint correctness checks, ratchet baseline and thresholds are unchanged. API-30 widget
 fallback from the old draft is unnecessary at the approved API-34 floor. The final combined
 tree must pass CI before mainline merge; original heads are retained in Git history.

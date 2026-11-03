@@ -15,6 +15,8 @@ androidx-core = "1.16.0"
 # 2.10 fixes AGP 9.5 lint compatibility and supports the current compile SDK 36.
 #noinspection GradleDependency
 androidx-lifecycle = "2.10.0"
+# Keep the SDK-36-compatible Compose line; the 2026.09 line requires SDK 37.
+#noinspection GradleDependency
 compose-bom = "2026.02.01"
 junit = "4.13.2"
 kotlinx-coroutines = "1.11.0"
