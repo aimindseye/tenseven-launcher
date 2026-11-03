@@ -85,7 +85,7 @@ internal fun ProvideHomeStyle(
 }
 
 @Composable
-private fun homeStyleState(state: StartStateRepository): MutableState<HomeStyle> =
+internal fun homeStyleState(state: StartStateRepository): MutableState<HomeStyle> =
     LocalHomeStyleState.current ?: remember { mutableStateOf(state.loadHomeStyle()) }
 
 /** BlackBerry 7 or BlackBerry 10. */

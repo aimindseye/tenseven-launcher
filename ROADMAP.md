@@ -74,3 +74,14 @@ Order and details in [`third_party/minklauncher/PORTING.md`](third_party/minklau
 Mink's Day (screen-time limits), MinkSpace mini-apps, MinkPad, an AI provider catalog, a virtual contact
 card, Mink's widget pages, a weather source of Tenseven's own, an in-app update check or any network access. A launcher that makes no network
 request is a feature.
+
+### P2-B Active Frames (PR #109)
+
+- Frame presentation extracted from `SableStartScreen`; lifecycle/task orchestration
+  delegated from `SableStartActivity` to an injected coordinator and Android host.
+- Persisted 4/8/12 limits, safe dismissal/reopen, exact-profile matching, merged
+  recents, capability-gated previews, read-only live summaries and BB10 settings.
+- Unit and instrumented square-display keyboard/lifecycle/persistence checks added.
+- Physical acceptance remains open in #99; combined architecture/device gates stay
+  in #100. See `docs/P2B_ACTIVE_FRAMES_ACCEPTANCE.md`. No broader device completion
+  or privileged bridge qualification is claimed.

@@ -15,6 +15,8 @@
     <!-- Only for the optional lock layer: lets it start over the lock screen when the screen wakes. Off until the user turns it on. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <!-- POST_NOTIFICATIONS is optional; overdue tasks remain in-app without it. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -427,5 +429,9 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <activity android:name=".ScreenCaptureActivity" android:exported="false"
+            android:theme="@android:style/Theme.Material.NoActionBar" android:resizeableActivity="true" />
+        <service android:name=".platform.ScreenCaptureService" android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
     </application>
 </manifest>

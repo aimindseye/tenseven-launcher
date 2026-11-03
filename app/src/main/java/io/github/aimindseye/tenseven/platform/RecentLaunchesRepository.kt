@@ -8,11 +8,13 @@ import io.github.aimindseye.tenseven.model.RecentLaunches
 class RecentLaunchesRepository(
     context: Context,
 ) {
-    private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val preferences = appContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
     fun load(): List<ForegroundEvent> = RecentLaunches.decode(preferences.getString(KEY, null))
 
     fun record(packageName: String) {
+        if (!StartStateRepository(appContext).loadFrameSettings().rememberReturnedApps) return
         val next = RecentLaunches.record(load(), packageName, System.currentTimeMillis())
         preferences.edit().putString(KEY, RecentLaunches.encode(next)).apply()
     }

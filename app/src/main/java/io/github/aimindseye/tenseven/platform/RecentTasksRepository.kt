@@ -1,9 +1,7 @@
 package io.github.aimindseye.tenseven.platform
 
-import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.ColorSpace
 import android.hardware.HardwareBuffer
@@ -11,22 +9,7 @@ import android.os.Bundle
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.ActiveFrames
 
-/**
- * Active Frames from Android's recent tasks.
- *
- * SableLauncher is platform-signed, so it holds what Launcher3 Quickstep uses
- * for Recents: REAL_GET_TASKS (every app's recent tasks through the public
- * [ActivityManager.getRecentTasks]), REORDER_TASKS ([ActivityManager.moveTaskToFront]),
- * REMOVE_TASKS and START_TASKS_FROM_RECENTS (IActivityTaskManager
- * removeTask / startActivityFromRecents) and READ_FRAME_BUFFER
- * (IActivityTaskManager getTaskSnapshot, the frame's live picture).
- * Platform-signed apps may call those hidden methods; they are reached by
- * reflection so this file builds against the public SDK, and every call
- * fails soft: no snapshot shows the app's summary instead, a close that does
- * not work leaves the task in Recents.
- *
- * Every method does binder calls: call it off the main thread.
- */
+/** Android task bridge. Every privileged operation checks the same detected capabilities as the UI. */
 class RecentTasksRepository(
     context: Context,
 ) {
@@ -38,6 +21,7 @@ class RecentTasksRepository(
      * Tasks of [hiddenUsers] (the Private Space profile) are left out.
      */
     fun loadFrames(hiddenUsers: Set<Int> = emptySet()): List<ActiveFrame> {
+        if (PlatformCapabilityProbe.detect(appContext).taskEnumeration != CapabilityStatus.Ready) return emptyList()
         val tasks =
             runCatching {
                 @Suppress("DEPRECATION")
@@ -55,7 +39,7 @@ class RecentTasksRepository(
                     running = info.isRunning,
                 )
             }
-        return ActiveFrames.select(frames, excludedPackages + appContext.packageName, hiddenUsers)
+        return frames.filterNot { it.packageName in excludedPackages + appContext.packageName || it.userId in hiddenUsers }.distinctBy { it.taskId }.take(12)
     }
 
     /** The task's last picture (low resolution first), or null when Android has none for it. */
@@ -66,8 +50,8 @@ class RecentTasksRepository(
      * Brings the task back as it was; false when Android refused (the caller then launches the app).
      * SableLauncher's manifest declares REORDER_TASKS; the presentation check module has no manifest for it.
      */
-    @SuppressLint("MissingPermission")
     fun resume(taskId: Int): Boolean {
+        if (PlatformCapabilityProbe.detect(appContext).taskResume != CapabilityStatus.Ready) return false
         val fromRecents =
             runCatching {
                 val service = taskService() ?: return@runCatching false
@@ -79,15 +63,13 @@ class RecentTasksRepository(
                 result >= 0
             }.getOrDefault(false)
         if (fromRecents) return true
-        return runCatching {
-            activityManager?.moveTaskToFront(taskId, 0) ?: return@runCatching false
-            true
-        }.getOrDefault(false)
+        return false
     }
 
     /** Removes the task from Recents and stops it, like swiping it away in Recents. */
     fun close(taskId: Int): Boolean =
         runCatching {
+            if (PlatformCapabilityProbe.detect(appContext).taskRemoval != CapabilityStatus.Ready) return@runCatching false
             val service = taskService() ?: return@runCatching false
             val method =
                 service.javaClass.methods.firstOrNull {
@@ -101,6 +83,7 @@ class RecentTasksRepository(
         lowResolution: Boolean,
     ): Bitmap? =
         runCatching {
+            if (PlatformCapabilityProbe.detect(appContext).thirdPartySnapshots != CapabilityStatus.Ready) return@runCatching null
             val service = taskService() ?: return@runCatching null
             val method =
                 service.javaClass.methods.firstOrNull {
@@ -113,14 +96,30 @@ class RecentTasksRepository(
             val flags: List<Any> = method.parameterTypes.drop(1).mapIndexed { index, _ -> index == 0 && lowResolution }
             val args: Array<Any> = (listOf<Any>(taskId) + flags).toTypedArray()
             val snapshot = method.invoke(service, *args) ?: return@runCatching null
+            // Android's non-real (theme-only) snapshots are not app previews.
+            if (snapshot.javaClass.getMethod("isRealSnapshot").invoke(snapshot) != true) return@runCatching null
             val buffer =
                 snapshot.javaClass.getMethod("getHardwareBuffer").invoke(snapshot) as? HardwareBuffer
                     ?: return@runCatching null
             val colorSpace =
                 runCatching { snapshot.javaClass.getMethod("getColorSpace").invoke(snapshot) as? ColorSpace }.getOrNull()
                     ?: ColorSpace.get(ColorSpace.Named.SRGB)
-            Bitmap.wrapHardwareBuffer(buffer, colorSpace)
+            buffer.use {
+                val hardware = Bitmap.wrapHardwareBuffer(it, colorSpace) ?: return@runCatching null
+                val software = hardware.copy(Bitmap.Config.ARGB_8888, false)
+                hardware.recycle()
+                if (software.width <= 512 && software.height <= 512) software else {
+                    val scale = 512f / maxOf(software.width, software.height)
+                    Bitmap.createScaledBitmap(software, (software.width * scale).toInt().coerceAtLeast(1),
+                        (software.height * scale).toInt().coerceAtLeast(1), true).also { software.recycle() }
+                }
+            }
         }.getOrNull()
+
+    /** Capability probing shares this bridge; no second hidden-API entry point in the UI probe. */
+    internal fun hasTaskMethod(name: String): Boolean = runCatching {
+        taskService()?.javaClass?.methods?.any { it.name == name } == true
+    }.getOrDefault(false)
 
     private fun taskService(): Any? =
         runCatching {
@@ -132,13 +131,9 @@ class RecentTasksRepository(
         runCatching { info.javaClass.getField("userId").getInt(info) }
             .getOrElse { android.os.Process.myUserHandle().hashCode() }
 
-    /** The app a frame stands for, when the task cannot be resumed any more. */
-    fun launchIntent(frame: ActiveFrame): Intent? =
-        appContext.packageManager.getLaunchIntentForPackage(frame.packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
     companion object {
         /** More than [ActiveFrames.MAX], since some recent tasks are filtered out. */
-        const val QUERY_LIMIT = 16
+        const val QUERY_LIMIT = 48
 
         val excludedPackages: Set<String> =
             setOf(
