@@ -141,7 +141,6 @@ touch-only phone.
 | Zinwa Q25 (SableOS or stock Android) | QWERTY, trackpad | Layouts designed for it; not yet run |
 | Unihertz Titan 2 | QWERTY, trackpad; no Menu key (use Alt+Enter) | Debug build runs and is tried by hand; not every feature confirmed |
 | Unihertz Titan Pocket | QWERTY | Not yet run |
-| BlackBerry KEY2, KEYone | QWERTY | Not yet run |
 | Any other Android 11+ phone | on-screen or Bluetooth keyboard | Not yet run |
 
 To add a device, capture its keys with the event viewer in Sable Keyboard (`KeyProbeActivity`) or
@@ -262,7 +261,7 @@ need checking. What is done and what is next: [`ROADMAP.md`](ROADMAP.md).
 | Launcher Settings, Setup (first run and overview) | Run on the Titan 2 |
 | Themes, wallpapers (Home, Lock, BB10 see-through), lock layer and its preview | Run on the Titan 2 |
 | Widgets page and widget tiles, Hub peek, Hub settings, icon grid options, Edit Home bar | Written and in CI; not yet confirmed on a phone |
-| Other devices (Q25, Titan Pocket, KEY2, plain phones) | Not run |
+| Other devices (Q25, Titan 2 Slim, touchscreen phones) | Not run |
 
 ```text
 APP=Tenseven Launcher (io.github.aimindseye.tenseven)

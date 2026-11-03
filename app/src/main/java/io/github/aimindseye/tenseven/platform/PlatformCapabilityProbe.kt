@@ -29,10 +29,19 @@ object PlatformCapabilityProbe {
                 else -> CapabilityStatus.PermissionRequired
             },
             widgets = context.packageManager.hasSystemFeature(PackageManager.FEATURE_APP_WIDGETS),
+            contacts = granted(context, Manifest.permission.READ_CONTACTS),
+            photos = granted(context, SetupStatus.photosPermission()),
+            camera = DefaultApps.cameraPackage(context) != null,
+            secureKeyguard = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceSecure == true,
+            deviceLocked = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true,
+            lockService = Capabilities.hasLockService(context),
             postNotifications = android.os.Build.VERSION.SDK_INT < 33 ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
         ),
     )
+
+    private fun granted(context: Context, permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun permission(context: Context, name: String): Boolean =
         context.checkSelfPermission("android.permission.$name") == PackageManager.PERMISSION_GRANTED

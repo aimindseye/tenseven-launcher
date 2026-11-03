@@ -11,6 +11,12 @@ data class FramePlatformAccess(
     val lock: CapabilityStatus = CapabilityStatus.Unavailable,
     val postNotifications: Boolean = true,
     val widgets: Boolean = true,
+    val contacts: Boolean = false,
+    val photos: Boolean = false,
+    val camera: Boolean = false,
+    val secureKeyguard: Boolean = false,
+    val deviceLocked: Boolean = false,
+    val lockService: Boolean = false,
 )
 
 data class PlatformCapabilities(
@@ -25,6 +31,12 @@ data class PlatformCapabilities(
     val taskRemoval: CapabilityStatus = CapabilityStatus.Unavailable,
     val widgetHosting: CapabilityStatus = CapabilityStatus.Ready,
     val hardwareKeyboard: Boolean = false,
+    val contacts: CapabilityStatus = CapabilityStatus.PermissionRequired,
+    val photos: CapabilityStatus = CapabilityStatus.PermissionRequired,
+    val camera: CapabilityStatus = CapabilityStatus.Unavailable,
+    val secureKeyguard: Boolean = false,
+    val deviceLocked: Boolean = false,
+    val lockServiceAvailable: Boolean = false,
     val deviceLock: CapabilityStatus = CapabilityStatus.Unavailable,
     val postNotifications: CapabilityStatus = CapabilityStatus.Ready,
 
@@ -62,6 +74,12 @@ data class PlatformCapabilities(
             taskRemoval = if (frameAccess.removal) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
             widgetHosting = if (frameAccess.widgets) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
             hardwareKeyboard = frameAccess.keyboard,
+            contacts = if (frameAccess.contacts) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+            photos = if (frameAccess.photos) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+            camera = if (frameAccess.camera) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+            secureKeyguard = frameAccess.secureKeyguard,
+            deviceLocked = frameAccess.deviceLocked,
+            lockServiceAvailable = frameAccess.lockService,
             deviceLock = frameAccess.lock,
             postNotifications = if (frameAccess.postNotifications) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
         )

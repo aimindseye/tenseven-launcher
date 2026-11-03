@@ -17,22 +17,20 @@ internal fun FrameSettingsSection(repository: StartStateRepository, notification
     val styleHolder = homeStyleState(repository)
     val style by styleHolder
     val context = LocalContext.current
-    var observedAccess by remember(context) { mutableStateOf(io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)) }
+    val capabilities = rememberPlatformCapabilities()
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, repository) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 styleHolder.value = repository.loadHomeStyle()
-                observedAccess = io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)
             }
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
-    val granted = notificationAccess ?: observedAccess
+    val granted = notificationAccess ?: (capabilities.hubNotifications == CapabilityStatus.Ready)
     if (!io.github.aimindseye.tenseven.frames.FrameAvailability.setup(style == HomeStyle.Bb10, granted)) return
     var value by remember { mutableStateOf(repository.loadFrameSettings()) }
-    val capabilities = remember { PlatformCapabilityProbe.detect(context) }
     FrameIntegrationControls()
     ScreenCaptureControls()
     FrameSettingsPanel(value, capabilities) { value = it.normalized(); repository.saveFrameSettings(value) }

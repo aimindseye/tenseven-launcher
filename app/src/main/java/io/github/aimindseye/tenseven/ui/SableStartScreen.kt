@@ -538,7 +538,7 @@ fun SableStartScreen(
 
                     SableStartDestination.EditHome ->
                         EditHomeScreen(
-                            showFrameOptions = !blankHomePage && ConversationAccess.isGranted(homeContext),
+                            showFrameOptions = !blankHomePage && rememberPlatformCapabilities(refreshGeneration).hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
                             apps = apps,
                             initial =
                                 HomeEdit(

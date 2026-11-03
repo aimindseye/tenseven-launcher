@@ -142,7 +142,7 @@ private fun HubPeekPanel(
 ) {
     val context = LocalContext.current
     val showText = remember { StartStateRepository(context).loadHubPeekText() }
-    val deviceLocked = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
+    val deviceLocked = rememberPlatformCapabilities().deviceLocked
     val conversations = ConversationHub.conversations().take(MAX_ROWS)
     val focus = remember { FocusRequester() }
     // The panel slides in from the left edge while the rest of Home dims.

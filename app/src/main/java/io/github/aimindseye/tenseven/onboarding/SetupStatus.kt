@@ -14,16 +14,19 @@ import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 
 /** Reads what has been granted, from Android. Cheap; call it again when the user comes back from Settings. */
 object SetupStatus {
-    fun read(context: Context): SetupState =
-        SetupState(
+    fun read(context: Context): SetupState {
+        val capabilities = io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(context)
+        return SetupState(
             homeRoleHeld = isHomeRoleHeld(context),
-            contactsGranted = granted(context, Manifest.permission.READ_CONTACTS),
-            photosGranted = granted(context, photosPermission()),
-            notificationAccess = Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context),
-            usageAccess = hasUsageAccess(context),
+            contactsGranted = capabilities.contacts == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+            photosGranted = capabilities.photos == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+            notificationAccess = capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+            usageAccess = capabilities.usageRecents == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
             extrasChosen = ExtraAppsControl.enabledIds(context).isNotEmpty(),
-            notificationListenerAvailable = Capabilities.hasConversationService(context),
+            notificationListenerAvailable = capabilities.hubNotifications != io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
         )
+
+    }
 
     /** READ_MEDIA_IMAGES from Android 13; READ_EXTERNAL_STORAGE before. */
     fun photosPermission(): String =

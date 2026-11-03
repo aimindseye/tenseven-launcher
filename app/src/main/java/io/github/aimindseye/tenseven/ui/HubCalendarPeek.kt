@@ -38,9 +38,10 @@ internal fun HubCalendarPeek(
 ) {
     val context = LocalContext.current
     val repository = remember(context) { HubCalendarRepository(context) }
-    val permitted = repository.hasPermission()
+    val capabilities = rememberPlatformCapabilities(refreshGeneration)
+    val permitted = capabilities.calendarEvents == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
     val selectedIds = remember(refreshGeneration) { StartStateRepository(context).loadHubSelectedCalendarIds() }
-    val deviceLocked = context.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
+    val deviceLocked = capabilities.deviceLocked
     var expanded by remember { mutableStateOf(false) }
     var events by remember { mutableStateOf(emptyList<HubCalendarEvent>()) }
 

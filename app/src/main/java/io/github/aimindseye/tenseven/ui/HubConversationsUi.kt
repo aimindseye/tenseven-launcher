@@ -543,13 +543,9 @@ internal fun rememberHubConversationsUi(
     onOpenFallback: () -> Unit,
     onChooseApps: () -> Unit,
 ): HubConversationsUi {
-    val accessGranted = remember(refreshGeneration) {
-        Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context)
-    }
-    val locked =
-        remember(refreshGeneration) {
-            context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
-        }
+    val capabilities = rememberPlatformCapabilities(refreshGeneration)
+    val accessGranted = capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+    val locked = capabilities.deviceLocked
     remember(context) { ConversationHub.ensureStateLoaded(context) }
     val conversations =
         remember(refreshGeneration, accessGranted) {
@@ -571,10 +567,10 @@ internal fun rememberHubConversationsUi(
             delay(nextWake?.let { (it - now).coerceIn(1L, 60_000L) } ?: 60_000L)
         }
     }
-    return remember(accessGranted, locked, conversations, filter, sourcePackage, enabledAppCount, state, now, remindersSelected, reminders) {
+    return remember(capabilities, accessGranted, locked, conversations, filter, sourcePackage, enabledAppCount, state, now, remindersSelected, reminders) {
         HubConversationsUi(
             accessGranted = accessGranted,
-            canAllowAccess = Capabilities.hasConversationService(context),
+            canAllowAccess = capabilities.hubNotifications != io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
             enabledAppCount = enabledAppCount,
             onChooseApps = onChooseApps,
             deviceLocked = locked,

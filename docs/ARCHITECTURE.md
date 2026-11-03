@@ -119,7 +119,6 @@ event viewer in Sable Keyboard, then add a row here:
 |---|---|---|---|---|---|---|
 | Zinwa Q25 | `Q25_keyboard` | D-pad keys (kernel mode 1) or pointer (mode 0); SableOS wants D-pad | Right Alt | `KEYCODE_MENU` (kl 139) | scan code unknown | no |
 | Unihertz Titan 2 | not captured | Touch-sensitive keyboard (not captured in detail) | not captured | No Menu key: Alt+Enter opens the menu | not captured | Alt+Space (Command) and Alt+Enter (menu) work in hand testing |
-| BlackBerry KEY2 | not captured | touch-sensitive keyboard | not captured | not captured | programmable | no |
 
 The Q25 row is from SableOS's `device-profile/KEYMAP.md` and `docs/KEYBOARD_AND_INPUT.md` (device tree and
 kernel source, not measured on hardware).

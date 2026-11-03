@@ -93,6 +93,7 @@ internal fun HubPage(
     onRequestContactsPermission: () -> Unit,
 ) {
     val context = LocalContext.current
+    val capabilities = rememberPlatformCapabilities(refreshGeneration)
     // The phone's own default apps, whichever they are: Tenseven looks for no Sable app here.
     val messagesPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.MESSAGING) }
     val mailPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.EMAIL) }
@@ -104,7 +105,7 @@ internal fun HubPage(
     val contactsApp = appOf(contactsPackage) ?: findLiveApp(apps, CONTACTS_PACKAGE)
     // The Hub works from Tenseven's own notification listener, or from Sable Hub's snapshot when that is installed.
     val hubInstalled =
-        snapshot.messages.availability != LiveAvailability.UNAVAILABLE || ConversationAccess.isGranted(context)
+        snapshot.messages.availability != LiveAvailability.UNAVAILABLE || capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
     // The listener tells us which notifications are conversations (including email).
@@ -127,7 +128,7 @@ internal fun HubPage(
         }
     val peopleRepository = remember(context) { PeopleRepository(context) }
     val contactsTab = filter == HubFilter.Contacts
-    val canReadContacts = remember(refreshGeneration, contactsTab) { peopleRepository.hasPermission() }
+    val canReadContacts = capabilities.contacts == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
     // Kept across reloads (live refreshes, Start coming back) so the list never blinks empty.
     var people by remember { mutableStateOf(emptyList<HubPerson>()) }
     var peopleLoaded by remember { mutableStateOf(false) }

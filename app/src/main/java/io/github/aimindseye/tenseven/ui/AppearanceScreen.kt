@@ -143,7 +143,7 @@ internal fun AppearanceScreen(
         item {
             val context = LocalContext.current
             // The lite build has no accessibility service, so the double-tap lock switch is not offered.
-            if (!Capabilities.hasLockService(context)) return@item
+            if (!rememberPlatformCapabilities().lockServiceAvailable) return@item
             Spacer(Modifier.height(14.dp))
             SectionLabel(stringResource(R.string.lock_label))
             Spacer(Modifier.height(4.dp))

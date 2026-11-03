@@ -180,7 +180,7 @@ internal fun LiveGlanceFrame(
             else -> snapshot.mail to SableOrange
         }
     // Calendar asks for a runtime permission; Now playing and the Hub need the notification listener, which the lite build lacks.
-    val listenerMissing = widget == GlanceWidgets.MEDIA && !Capabilities.hasConversationService(context)
+    val listenerMissing = widget == GlanceWidgets.MEDIA && rememberPlatformCapabilities().hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable
     val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED && !listenerMissing
     val headline =
         when {
@@ -213,7 +213,7 @@ internal fun LiveGlanceFrame(
     )
 }
 
-private tailrec fun Context.findActivity(): android.app.Activity? =
+internal tailrec fun Context.findActivity(): android.app.Activity? =
     when (this) {
         is android.app.Activity -> this
         is android.content.ContextWrapper -> baseContext.findActivity()
