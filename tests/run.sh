@@ -88,9 +88,9 @@ fi
 if python3 - <<'PY'
 from pathlib import Path
 
-home = Path("app/src/main/java/io/github/aimindseye/tenseven/ui/SableStartScreen.kt").read_text()
+home = Path("app/src/main/java/io/github/aimindseye/tenseven/ui/HubPage.kt").read_text()
 hub = Path("app/src/main/java/io/github/aimindseye/tenseven/ui/HubConversationsUi.kt").read_text()
-page = home.split("private fun HubPage(", 1)[1].split("private fun HubUnreadBar(", 1)[0]
+page = home.split("internal fun HubPage(", 1)[1].split("internal fun HubUnreadBar(", 1)[0]
 items = hub.split("internal fun LazyListScope.hubConversationItems(", 1)[1].split(
     "private fun LazyListScope.conversationItems(", 1
 )[0]
