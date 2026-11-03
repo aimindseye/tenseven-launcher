@@ -85,3 +85,8 @@ catalog. Compose UI tests bring in coroutines-test transitively, aligned by the 
 BOM. Both Google Maven and Maven Central remain configured. The instrumentation compile
 step retries a dependency-resolution failure once with --refresh-dependencies; compiler
 or test failures still fail the workflow. No alternate/unverified Maven repository is added.
+
+The three new private Unit renderers CalendarPeekEvent, PeekConversations and
+SearchBestMatch follow Compose lint's required PascalCase naming. Each has a local
+FunctionNaming exception for detekt's conflicting generic camelCase rule. Compose's
+ComposableNaming check remains enabled, and no file-wide/global naming exemption is used.

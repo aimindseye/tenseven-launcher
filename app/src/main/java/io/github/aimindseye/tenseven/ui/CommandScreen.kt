@@ -397,7 +397,7 @@ internal fun SearchScreen(
             }
             if (bestApp != null || bestOther != null) {
                 item(key = "best") {
-                    searchBestMatch {
+                    SearchBestMatch {
                         if (bestApp != null) AppResult(bestApp) else bestOther?.let { CommandResult(it) }
                     }
                 }
@@ -919,8 +919,10 @@ internal fun assignRows(
     }
 }
 
+// Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
+@Suppress("FunctionNaming")
 @Composable
-private fun searchBestMatch(content: @Composable () -> Unit) {
+private fun SearchBestMatch(content: @Composable () -> Unit) {
     SectionLabel(t("best_match"))
     Box(
         Modifier

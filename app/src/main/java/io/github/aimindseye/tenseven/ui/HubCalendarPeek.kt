@@ -91,7 +91,7 @@ internal fun HubCalendarPeek(
                     )
                 } else {
                     events.forEach { event ->
-                        calendarPeekEvent(event, onOpenCalendar)
+                        CalendarPeekEvent(event, onOpenCalendar)
                     }
                 }
             }
@@ -99,8 +99,10 @@ internal fun HubCalendarPeek(
     }
 }
 
+// Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
+@Suppress("FunctionNaming")
 @Composable
-private fun calendarPeekEvent(
+private fun CalendarPeekEvent(
     event: HubCalendarEvent,
     onOpenCalendar: () -> Unit,
 ) {

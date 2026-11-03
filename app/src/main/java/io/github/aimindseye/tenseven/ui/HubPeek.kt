@@ -225,7 +225,7 @@ private fun HubPeekPanel(
                         modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(0.dp),
                     ) {
-                        peekConversations(conversations, showText && !deviceLocked, onClose)
+                        PeekConversations(conversations, showText && !deviceLocked, onClose)
                     }
                     PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
                 }
@@ -329,8 +329,10 @@ private const val MAX_ROWS = 8
 
 // How opaque the peek panel is; the rest lets Home show through.
 
+// Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
+@Suppress("FunctionNaming")
 @Composable
-private fun peekConversations(
+private fun PeekConversations(
     conversations: List<HubConversation>,
     showText: Boolean,
     onClose: () -> Unit,
