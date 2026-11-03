@@ -58,6 +58,15 @@ jobs:
           adb shell settings put global animator_duration_scale 0
           adb shell input keyevent 82
           ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase seed io.github.aimindseye.tenseven.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-seed.log
+          adb shell am force-stop io.github.aimindseye.tenseven
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase verify io.github.aimindseye.tenseven.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-verify.log
+          python3 - <<'PYTEST'
+          from pathlib import Path
+          for phase in ('seed', 'verify'):
+              assert 'OK (1 test)' in Path(f'/tmp/p2-process-{phase}.log').read_text(), phase
+          print('P2_PROCESS_REENTRY=PASS: persisted frame/style verified across force-stop and a different PID')
+          PYTEST
       - name: Upload UI test evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -67,4 +76,5 @@ jobs:
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
             /tmp/frames-emulator.log
+            /tmp/p2-process-*.log
           if-no-files-found: ignore

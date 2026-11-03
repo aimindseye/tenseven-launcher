@@ -198,11 +198,12 @@ private fun LockLayerScreen(
     onCamera: () -> Unit,
 ) {
     val context = LocalContext.current
-    val counts = LockLayerState.counts
+    val capabilities = io.github.aimindseye.tenseven.ui.rememberPlatformCapabilities()
+    val counts = if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready) LockLayerState.counts else emptyMap()
     val entries = remember(counts, enabled) { LockLayer.entries(counts, counts.keys - enabled) }
     val preview =
-        remember(counts, enabled, showText) {
-            if (showText) {
+        remember(counts, enabled, showText, capabilities) {
+            if (showText && !capabilities.deviceLocked && capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready) {
                 ConversationHub
                     .conversations()
                     .firstOrNull { conversation -> conversation.sourcePackages.any { it in enabled } }
@@ -303,7 +304,7 @@ private fun LockLayerScreen(
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 22.dp)
                 .size(44.dp)
-                .clickable(onClick = onCamera),
+                .clickable(enabled = capabilities.camera == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready, onClick = onCamera),
         ) {
             val stroke = Stroke(width = 3.dp.toPx())
             drawRoundRect(

@@ -231,3 +231,21 @@ Home is drawn; lock, system revocation, Stop and process death end the session. 
 session always needs fresh consent. No audio is captured. Thumbnail dimensions/throttle
 and Home/lock decisions are pure CapturePolicy logic. Physical consent and protected-screen
 qualification are tracked in P2B_LIVE_CAPTURE_ACCEPTANCE.md.
+
+## P2 engineering boundaries (2026-11-03)
+
+The current source replaces the historical monolithic layout described above: SableStartScreen
+is the navigation/composition host; HubPage, CommandScreen, AppsScreen, HomeAppGrid,
+EditHomeScreen, AppPrivacyScreen, AppearanceScreen, HomeActionBar, HomeWidgets and
+Bb10HomeChrome are separate presenters with immutable inputs and callbacks. Shared palette,
+argument models, layout tokens and primitives have their own files.
+
+LauncherRuntime owns inventory I/O, package/profile/privacy signals and their lifecycle cleanup;
+InventoryCoordinator owns generation-based stale-result rejection. LauncherHomeState owns
+Compose preference/session state. PlatformCapabilityState supplies lifecycle-refreshed typed
+capabilities; HubRevision supplies a lifecycle-bound notification revision to inbox and Peek.
+
+See P2_ENGINEERING_ACCEPTANCE.md for tests, accepted legacy static baseline, blocking quality
+ratchet and the distinction between synthetic/emulator evidence and P3 hardware qualification.
+P3 follows P2; KEY2 is removed from the active device list. The owner tests the Full APK once
+both phases are delivered.

@@ -141,6 +141,7 @@ touch-only phone.
 | Zinwa Q25 (SableOS or stock Android) | QWERTY, trackpad | Layouts designed for it; not yet run |
 | Unihertz Titan 2 | QWERTY, trackpad; no Menu key (use Alt+Enter) | Debug build runs and is tried by hand; not every feature confirmed |
 | Unihertz Titan Pocket | QWERTY | Not yet run |
+| BlackBerry KEYone | QWERTY | Historical target, not tested and outside current P3 scope |
 | Any other Android 11+ phone | on-screen or Bluetooth keyboard | Not yet run |
 
 To add a device, capture its keys with the event viewer in Sable Keyboard (`KeyProbeActivity`) or
@@ -279,3 +280,12 @@ SABLE_KEYBOARD=separate companion app, not in this repository yet (docs/ARCHITEC
 RELEASES=none published; release signing supported (docs/BUILD.md)
 INTERNET=none (no INTERNET permission)
 ```
+
+### Current P2/P3 delivery order
+
+P2 engineering is being completed in PR #111 (screen boundaries, lifecycle orchestration,
+capability snapshots and blocking quality ratchet). See
+[engineering acceptance](docs/P2_ENGINEERING_ACCEPTANCE.md). P3 follows P2 and targets Titan 2,
+Titan 2 Slim, Zinwa Q25 and a touchscreen Android device; KEY2 is removed from active scope.
+The owner will build/test the single Full APK when both deliveries are ready. Current minimum
+Android version remains Android 11 (API 30).

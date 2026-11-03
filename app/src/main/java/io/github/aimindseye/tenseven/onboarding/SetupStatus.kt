@@ -53,5 +53,4 @@ object SetupStatus {
         runCatching {
             context.packageManager.getInstallSourceInfo(context.packageName).installingPackageName
         }.getOrNull()
-
 }
