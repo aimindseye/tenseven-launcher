@@ -43,7 +43,7 @@ android {
 
     defaultConfig {
         applicationId = "io.github.aimindseye.tenseven"
-        minSdk = 30
+        minSdk = 34
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Full-only P1 qualification build; update code and name for every distributed test APK.

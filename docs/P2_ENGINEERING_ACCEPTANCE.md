@@ -58,10 +58,21 @@ remain available; new/changed P2 code is subject to the additional ratchet.
 
 ## Delivery order
 
-P2 engineering first, followed by P3. Active P3 targets: Titan 2, Titan 2 Slim, Zinwa Q25 and
+P2 engineering first, followed by P3. Active P3 targets: Titan 2, Titan 2 Slim, Zinwa Q25, Zinwa P26 and
 an ordinary touchscreen Android device. KEY2 is removed from active scope. Current minSdk
-is 30 (Android 11+). No signed APK is published and no additional phone test is requested
+is 34 (Android 14+). No signed APK is published and no additional phone test is requested
 before the combined P2/P3 delivery. One Full APK remains the distribution target.
 
 CI results and exact candidate SHA are recorded in PR #111. Keep this candidate open until
 all required workflows, including the quality ratchet and expanded emulator tests, pass.
+
+## Android 14 floor and P26 scope revision
+
+Owner approved minimum Android 14 (API 34). API-35 profile availability actions are added
+to the receiver filter only on Android 15+; API-34 actions remain available on Android 14.
+Receiver registration uses ContextCompat with NOT_EXPORTED. Release verification rejects
+an APK declaring the old API-30 floor. This is an implementation fix, not a baseline change.
+
+P3 also includes [Zinwa P26](https://zinwa.com/product/p26-full-device-pre-order/). The
+official listing describes a Passport with the P26 motherboard; it does not state the OS
+version or establish launcher compatibility. Capture actual OS/display/keyboard data in P3.

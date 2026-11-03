@@ -72,7 +72,7 @@ Registered certificate SHA-256:
 | Active Frames | Test launcher-owned and externally opened apps | Partial task API fallback remains working |
 | Accessibility | Keyboard-only, large fonts, TalkBack and landscape | Labels readable and focused row/actions reachable |
 
-Device qualification targets: Titan 2, Titan 2 Slim, Zinwa Q25 and an ordinary
+Device qualification targets: Titan 2, Titan 2 Slim, Zinwa Q25, Zinwa P26 and an ordinary
 touchscreen Android phone. Passing CI does **not** establish a physical-device PASS.
 The full multi-device matrix and further keyboard/widget work remain P3, not silently
 closed by the P1 release.

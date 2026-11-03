@@ -6,9 +6,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.LauncherApps
 import android.database.ContentObserver
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.UserHandle
+import androidx.core.content.ContextCompat
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.runtime.InventoryCoordinator
@@ -158,8 +160,8 @@ internal class LauncherRuntime(
         permissionSignal.register()
         profileRegistered =
             runCatching {
-                val filter = IntentFilter().apply { PROFILE_ACTIONS.forEach(::addAction) }
-                app.registerReceiver(profileReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+                val filter = IntentFilter().apply { profileActions().forEach(::addAction) }
+                ContextCompat.registerReceiver(app, profileReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
                 true
             }.getOrDefault(false)
         LiveSurfaceRepository.OBSERVED_URIS.forEach { uri ->
@@ -223,19 +225,21 @@ internal class LauncherRuntime(
     }
 
     private companion object {
-        val PROFILE_ACTIONS =
-            listOf(
-                Intent.ACTION_MANAGED_PROFILE_ADDED,
-                Intent.ACTION_MANAGED_PROFILE_REMOVED,
-                Intent.ACTION_MANAGED_PROFILE_AVAILABLE,
-                Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE,
-                Intent.ACTION_MANAGED_PROFILE_UNLOCKED,
-                Intent.ACTION_PROFILE_ACCESSIBLE,
-                Intent.ACTION_PROFILE_INACCESSIBLE,
-                Intent.ACTION_PROFILE_AVAILABLE,
-                Intent.ACTION_PROFILE_UNAVAILABLE,
-                Intent.ACTION_PROFILE_ADDED,
-                Intent.ACTION_PROFILE_REMOVED,
-            )
+        fun profileActions(): List<String> =
+            buildList {
+                add(Intent.ACTION_MANAGED_PROFILE_ADDED)
+                add(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+                add(Intent.ACTION_MANAGED_PROFILE_AVAILABLE)
+                add(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
+                add(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
+                add(Intent.ACTION_PROFILE_ACCESSIBLE)
+                add(Intent.ACTION_PROFILE_INACCESSIBLE)
+                add(Intent.ACTION_PROFILE_ADDED)
+                add(Intent.ACTION_PROFILE_REMOVED)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    add(Intent.ACTION_PROFILE_AVAILABLE)
+                    add(Intent.ACTION_PROFILE_UNAVAILABLE)
+                }
+            }
     }
 }
