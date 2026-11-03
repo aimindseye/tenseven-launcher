@@ -120,10 +120,13 @@ internal fun ActiveFramesGrid(
 ) {
     val requesters = remember { mutableMapOf<String, FocusRequester>() }
     var nextFocus by remember { mutableStateOf<String?>(null) }
-    val tiles = ownedTiles.take(state.settings.maximum)
     val personalUser = android.os.Process.myUserHandle().hashCode()
-    val visibleItems = state.items.sortedBy { if (FrameLiveSummary.detail(state, it, snapshot, personalUser) != null) 0 else 1 }
-        .take((state.settings.maximum - tiles.size).coerceAtLeast(0))
+    val sortedItems = state.items.sortedBy { if (FrameLiveSummary.detail(state, it, snapshot, personalUser) != null) 0 else 1 }
+    val liveCount = sortedItems.count { FrameLiveSummary.detail(state, it, snapshot, personalUser) != null }
+    val captureCount = ownedTiles.count { it.key == "tile:capture" }
+    val reserved = liveCount.coerceAtMost((state.settings.maximum - captureCount).coerceAtLeast(0))
+    val tiles = ownedTiles.take((state.settings.maximum - reserved).coerceAtLeast(0))
+    val visibleItems = sortedItems.take((state.settings.maximum - tiles.size).coerceAtLeast(0))
     val keys = tiles.map { it.key } + visibleItems.map { it.key }
     val first = remember { FocusRequester() }
     fun requester(key: String) = requesters.getOrPut(key) { FocusRequester() }

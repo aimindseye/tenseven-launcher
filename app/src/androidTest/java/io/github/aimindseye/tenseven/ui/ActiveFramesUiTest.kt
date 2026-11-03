@@ -104,4 +104,18 @@ class ActiveFramesUiTest {
         compose.runOnIdle { assertTrue(stopped) }
     }
 
+    @Test fun ownedIntegrationsDoNotDisplaceLiveAppFromFullGrid() {
+        val media = snapshot.copy(music = LiveDatum("Music", "Playing track", LiveAvailability.LIVE, sourcePackage = "yt.music"))
+        val item = FrameItem(FrameApp("yt.music", android.os.Process.myUserHandle().hashCode()))
+        compose.setContent {
+            MaterialTheme {
+                ActiveFramesGrid(FramesState(listOf(item), notificationsAllowed = true, settings = FrameSettings(maximum = 4)),
+                    emptyList(), media, emptySet(), (1..4).map { FrameTileView("owned:$it", "Local $it", "Saved data") },
+                    { _, _ -> null }, true, {}, {}, Modifier.size(360.dp))
+            }
+        }
+        compose.onNodeWithText("Playing track", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("owned:4").assertDoesNotExist()
+    }
+
 }
