@@ -30,7 +30,7 @@ def findings(root):
     for report in root.glob("*/build/reports/**/*.xml"):
         relative = str(report.relative_to(root)).lower()
         tool = next((tool for tool in sorted(TOOLS, key=len, reverse=True) if tool in relative), None)
-        if not tool:
+        if not tool or (tool == "ktlint" and "format" in relative):
             continue
         document = ET.parse(report).getroot()
         if document.tag == "issues" and tool == "lint":

@@ -41,6 +41,9 @@ class QualityRatchetTest(unittest.TestCase):
                 else:
                     report.write_text('<checkstyle><file name="fixture.kt"><error source="rule" '
                                       'message="message" line="1"/></file></checkstyle>')
+            formatter = root / "app/build/reports/ktlint/ktlintMainSourceSetFormat.xml"
+            formatter.write_text('<checkstyle><file name="fixture.kt"><error source="format-only" '
+                                 'message="old formatter report" line="1"/></file></checkstyle>')
             self.assertEqual(3, sum(quality.findings(root).values()))
 
 

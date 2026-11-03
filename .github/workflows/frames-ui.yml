@@ -58,9 +58,13 @@ jobs:
           adb shell settings put global animator_duration_scale 0
           adb shell input keyevent 82
           ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest
-          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase seed io.github.aimindseye.tenseven.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-seed.log
-          adb shell am force-stop io.github.aimindseye.tenseven
-          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase verify io.github.aimindseye.tenseven.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-verify.log
+          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/androidTest/debug/*.apk; do
+            test -f "$apk"
+            adb install -r -t "$apk"
+          done
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase seed io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-seed.log
+          adb shell am force-stop io.github.aimindseye.tenseven.debug
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase verify io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-verify.log
           python3 - <<'PYTEST'
           from pathlib import Path
           for phase in ('seed', 'verify'):

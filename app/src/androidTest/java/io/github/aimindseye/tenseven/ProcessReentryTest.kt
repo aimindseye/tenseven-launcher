@@ -26,15 +26,31 @@ class ProcessReentryTest {
         val window = FrameWindowRepository(context)
         val probe = context.getSharedPreferences("p2_process_probe", Context.MODE_PRIVATE)
         if (phase == "seed") {
-            assertTrue(probe.edit().putInt("pid", Process.myPid()).putString("style", state.loadHomeStyle().name).commit())
+            assertTrue(
+                probe
+                    .edit()
+                    .putInt("pid", Process.myPid())
+                    .putString("style", state.loadHomeStyle().name)
+                    .commit(),
+            )
             state.saveHomeStyle(HomeStyle.Bb10)
             state.saveOnboardingDone()
             window.clear()
             window.record(FrameApp("com.android.settings", Process.myUserHandle().hashCode()))
-            assertTrue(context.getSharedPreferences(StartStateRepository.PREFERENCES_NAME, Context.MODE_PRIVATE)
-                .edit().putBoolean("p2_flush", true).commit())
-            assertTrue(context.getSharedPreferences("active_frame_window_v12", Context.MODE_PRIVATE)
-                .edit().putBoolean("p2_flush", true).commit())
+            assertTrue(
+                context
+                    .getSharedPreferences(StartStateRepository.PREFERENCES_NAME, Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("p2_flush", true)
+                    .commit(),
+            )
+            assertTrue(
+                context
+                    .getSharedPreferences("active_frame_window_v12", Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("p2_flush", true)
+                    .commit(),
+            )
         } else {
             assertNotEquals("Verification must run in a new OS process", probe.getInt("pid", -1), Process.myPid())
             assertEquals(HomeStyle.Bb10, state.loadHomeStyle())
@@ -44,7 +60,11 @@ class ProcessReentryTest {
             }
             window.clear()
             state.saveHomeStyle(HomeStyle.entries.firstOrNull { it.name == probe.getString("style", null) } ?: HomeStyle.DEFAULT)
-            context.getSharedPreferences(StartStateRepository.PREFERENCES_NAME, Context.MODE_PRIVATE).edit().remove("p2_flush").commit()
+            context
+                .getSharedPreferences(StartStateRepository.PREFERENCES_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove("p2_flush")
+                .commit()
             probe.edit().clear().commit()
         }
     }
