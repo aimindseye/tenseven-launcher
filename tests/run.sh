@@ -112,7 +112,7 @@ forbidden="$(tracked | grep -E '\.(img|zip|apk|aab|jks|keystore|pk8)$' || true)"
 if [[ -z "$forbidden" ]]; then pass "no images, archives, APKs or keys tracked"; else fail "forbidden files tracked: $forbidden"; fi
 
 # 8. The Gradle wrapper jar is the one this repository pinned.
-expected_jar="7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+expected_jar="3b8a25775a69158b5ad2b1d17a80a88dc7b40a352a73eb27d06c612a7ce68e98"
 if [[ "$(sha256sum gradle/wrapper/gradle-wrapper.jar | cut -d' ' -f1)" == "$expected_jar" ]]; then
     pass "gradle-wrapper.jar checksum"
 else

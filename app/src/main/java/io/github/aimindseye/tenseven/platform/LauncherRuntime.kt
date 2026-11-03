@@ -130,6 +130,7 @@ internal class LauncherRuntime(
             ) {
                 @Suppress("DEPRECATION")
                 val user = intent.getParcelableExtra<UserHandle>(Intent.EXTRA_USER)
+                WidgetProfileEpoch.invalidate()
                 inventory.invalidatePrivacyForUser(user)
                 if (started && !closed) {
                     coordinator.stop()

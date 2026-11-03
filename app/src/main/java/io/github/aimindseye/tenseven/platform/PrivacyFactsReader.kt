@@ -99,7 +99,7 @@ class PrivacyFactsReader(
         val op = runCatching { AppOpsManager.permissionToOp(permission) }.getOrNull() ?: return OpMode.NotApplicable
         if (appOps == null) return OpMode.Unknown
         return runCatching {
-            when (appOps.unsafeCheckOpNoThrow(op, uid, packageName)) {
+            when (appOps.checkOpNoThrow(op, uid, packageName)) {
                 AppOpsManager.MODE_ALLOWED -> OpMode.Allowed
                 AppOpsManager.MODE_FOREGROUND -> OpMode.Foreground
                 AppOpsManager.MODE_DEFAULT -> OpMode.Default

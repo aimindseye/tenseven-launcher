@@ -45,6 +45,7 @@ import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeLayout
+import io.github.aimindseye.tenseven.model.HomeViewport
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.StartPages
@@ -178,9 +179,10 @@ fun SableStartScreen(
         quickBarTokens.mapNotNull { token ->
             resolveQuickSlot(token, apps, appByKey)
         }
-    val gridColumns = AppGrid.columnsFor(gridColumnsSetting, startGridWidthDp())
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    val gridColumns = HomeViewport.columns(startGridWidthDp(), gridColumnsSetting, fontScale)
     val gridIconScale = AppGrid.iconScale(gridIconSize)
-    val gridRows = AppGrid.rowsFor(startGridHeightDp(), (GRID_CELL_MIN_DP * gridIconScale).toInt())
+    val gridRows = HomeViewport.rows(startGridHeightDp(), (GRID_CELL_MIN_DP * gridIconScale).toInt(), fontScale)
     val gridPerPage = AppGrid.perPage(gridRows, gridColumns)
     val gridPages = AppGrid.pageCount(gridApps.size, gridPerPage)
     // The Widgets page, when kept on, is one page left of Hub: every pager index is the page's own number plus lead.

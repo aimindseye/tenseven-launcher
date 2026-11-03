@@ -254,3 +254,14 @@ both phases are delivered.
 Owner scope update: Full APK minimum is Android 14 (API 34). P3 also includes Zinwa P26;
 its OS, key events and display metrics remain to be captured. API-35 profile actions are
 registered only behind an Android 15+ version guard. Emulator CI covers API 34 and 35.
+
+### P3 device and widget boundaries
+
+HomeViewport uses measured window/insets/text scale rather than device-model dimensions.
+LauncherKeys owns standard Android fallback chords; DeviceCompatibility reports actual
+input capabilities and offers an explicit foreground metadata probe. No OEM scan code
+is guessed or globally intercepted. WidgetBinding/WidgetRecovery are pure transaction
+and reconciliation policies; WidgetHostStore journals local pending setup/sizes before
+Android UI. WidgetHostController validates stage/id/provider/profile before committing,
+and WidgetAvailability clears hosted content outside resumed, unlocked Home.
+Physical target qualification is tracked separately in P3_DEVICE_QUALIFICATION.md.

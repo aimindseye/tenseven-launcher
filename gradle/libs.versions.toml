@@ -2,7 +2,7 @@
 # (aimindseye/zinwaq25-sableos, sable-src/apps/r8/android/gradle/libs.versions.toml), so the imported
 # sources compile against what they were written for. Changing one here changes every module.
 [versions]
-agp = "9.3.3"
+agp = "9.5.0"
 kotlin = "2.4.21"
 detekt = "1.23.8"
 ktlint-gradle = "14.2.0"
@@ -11,7 +11,12 @@ kover = "0.9.11"
 activity-compose = "1.12.4"
 androidx-collection = "1.7.0"
 androidx-core = "1.16.0"
-androidx-lifecycle = "2.9.4"
+# Lifecycle 2.11 requires compile SDK 37, unavailable on the CI SDK channel.
+# 2.10 fixes AGP 9.5 lint compatibility and supports the current compile SDK 36.
+#noinspection GradleDependency
+androidx-lifecycle = "2.10.0"
+# Keep the SDK-36-compatible Compose line; the 2026.09 line requires SDK 37.
+#noinspection GradleDependency
 compose-bom = "2026.02.01"
 junit = "4.13.2"
 kotlinx-coroutines = "1.11.0"
@@ -44,7 +49,6 @@ androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "a
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }

@@ -39,7 +39,7 @@ object SetupStatus {
     fun hasUsageAccess(context: Context): Boolean =
         runCatching {
             val appOps = context.getSystemService(AppOpsManager::class.java) ?: return false
-            val mode = appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+            val mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
             mode == AppOpsManager.MODE_ALLOWED
         }.getOrDefault(false)
 

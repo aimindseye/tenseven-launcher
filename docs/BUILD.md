@@ -9,9 +9,10 @@ sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
 export ANDROID_HOME=/path/to/android-sdk     # or write sdk.dir=... into local.properties (not committed)
 ```
 
-The first Gradle run downloads Gradle 8.13 (checksum pinned in `gradle/wrapper/gradle-wrapper.properties`),
-the Android Gradle Plugin 8.13.2, Kotlin 2.3.10 and the Compose BOM 2026.02.01. These are the versions
-SableOS builds the same sources with.
+The first Gradle run downloads Gradle 9.8.2 (checksum pinned in `gradle/wrapper/gradle-wrapper.properties`),
+Android Gradle Plugin 9.5.0, Kotlin 2.4.21, Lifecycle 2.10.0 and the Compose BOM 2026.02.01.
+Compile and target SDK are 36; minSdk is 34. Lifecycle 2.10 is pinned for compatibility
+because 2.11 requires SDK 37, which the CI SDK channel does not provide.
 
 ## 2. Build and test
 

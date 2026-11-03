@@ -100,3 +100,11 @@ Owner update: current Full APK minimum is Android 14 (API 34). Zinwa P26 joins t
 qualification matrix; its actual OS/build, keyboard events and display metrics must be
 recorded from hardware before qualification. Product reference:
 https://zinwa.com/product/p26-full-device-pre-order/
+
+### P3 engineering candidate (version 17)
+
+Window/text-aware BB7/BB10 grids, shared Android keyboard fallback profiles, local
+foreground compatibility/key capture, recoverable widget setup and modern sizing,
+resize controls, real test-APK provider integration and responsive emulator coverage.
+See docs/P3_DEVICE_QUALIFICATION.md. Titan 2, Titan 2 Slim, Q25, P26 and touchscreen
+physical acceptance remain pending the owner's combined test; KEY2 is excluded.

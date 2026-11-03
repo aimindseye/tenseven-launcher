@@ -37,6 +37,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -83,7 +84,12 @@ internal fun AppGridPage(
             AppGrid.iconSizeFor(
                 cellWidthDp = (maxWidth / columns).value.toInt(),
                 cellHeightDp = (maxHeight / rows).value.toInt(),
-                labelDp = if (showLabels) GRID_LABEL_LINE_DP + GRID_CELL_CHROME_DP else GRID_CELL_CHROME_DP,
+                labelDp =
+                    if (showLabels) {
+                        (GRID_LABEL_LINE_DP * LocalDensity.current.fontScale).toInt() + GRID_CELL_CHROME_DP
+                    } else {
+                        GRID_CELL_CHROME_DP
+                    },
                 scale = iconScale,
             )
         Column(modifier = Modifier.fillMaxSize()) {

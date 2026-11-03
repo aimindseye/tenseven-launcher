@@ -2,13 +2,13 @@ package io.github.aimindseye.tenseven
 
 import android.Manifest
 import android.app.role.RoleManager
-import io.github.aimindseye.tenseven.ui.FrameSettingsSection
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -29,7 +29,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,6 +43,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.sableFocusRing
@@ -57,6 +57,7 @@ import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.onboarding.SpecialAccessAttemptStore
 import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.ui.FrameSettingsSection
 
 /**
  * First-run setup, and "Setup and permissions" in the menu: the home role first, then each optional
@@ -80,11 +81,14 @@ class OnboardingActivity : ComponentActivity() {
         attemptedSpecialAccess.value = SpecialAccessAttemptStore.attempted(this)
         val state = SetupStatus.read(this)
         setup.value = state
-        val only = intent?.getStringExtra(EXTRA_STEP)?.let { name ->
-            SetupStep.entries.firstOrNull { it.name == name }
-        }?.takeUnless {
-            !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
-        }
+        val only =
+            intent
+                ?.getStringExtra(EXTRA_STEP)
+                ?.let { name ->
+                    SetupStep.entries.firstOrNull { it.name == name }
+                }?.takeUnless {
+                    !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
+                }
         steps = if (only != null) listOf(only) else OnboardingPlan.steps(state)
         // Reopening Setup follows the same choices, retaining the existing selections.
         val overview = false
@@ -92,21 +96,21 @@ class OnboardingActivity : ComponentActivity() {
         setContent {
             LauncherTheme(window = window) {
                 ProvideHomeStyle(startState) {
-                SetupScreen(
-                    steps = steps,
-                    startOnOverview = overview,
-                    state = setup.value ?: state,
-                    showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
-                    attemptedSpecialAccess = attemptedSpecialAccess.value,
-                    onAction = ::perform,
-                    enabledExtras = ExtraAppsControl.enabledIds(this),
-                    onApplyExtras = ::applyExtras,
-                    onOpenAppInfo = ::openAppInfo,
-                    onManage = ::manage,
-                    onOpenLauncherSettings = { openSettings(Intent(this, LauncherSettingsActivity::class.java)) },
-                    onFinish = { finish() },
-                    settings = startState,
-                )
+                    SetupScreen(
+                        steps = steps,
+                        startOnOverview = overview,
+                        state = setup.value ?: state,
+                        showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
+                        attemptedSpecialAccess = attemptedSpecialAccess.value,
+                        onAction = ::perform,
+                        enabledExtras = ExtraAppsControl.enabledIds(this),
+                        onApplyExtras = ::applyExtras,
+                        onOpenAppInfo = ::openAppInfo,
+                        onManage = ::manage,
+                        onOpenLauncherSettings = { openSettings(Intent(this, LauncherSettingsActivity::class.java)) },
+                        onFinish = { finish() },
+                        settings = startState,
+                    )
                 }
             }
         }
@@ -128,7 +132,8 @@ class OnboardingActivity : ComponentActivity() {
         setup.value = state
         // Permission granted is not the same as listener connected. Never rebind an active listener
         // merely because Setup resumed; doing so can briefly empty Hub, Peek and lock counts.
-        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+            .onLauncherResume(this)
     }
 
     private fun perform(step: SetupStep) {
@@ -137,14 +142,34 @@ class OnboardingActivity : ComponentActivity() {
             SpecialAccessAttemptStore.markAttempted(this, step)
         }
         when (step) {
-            SetupStep.HOME -> requestHomeRole()
-            SetupStep.CONTACTS -> permissionResult.launch(Manifest.permission.READ_CONTACTS)
-            SetupStep.PHOTOS -> permissionResult.launch(SetupStatus.photosPermission())
-            SetupStep.NOTIFICATIONS -> openSettings(ConversationAccess.settingsIntent())
-            SetupStep.USAGE ->
+            SetupStep.HOME -> {
+                requestHomeRole()
+            }
+
+            SetupStep.CONTACTS -> {
+                permissionResult.launch(Manifest.permission.READ_CONTACTS)
+            }
+
+            SetupStep.PHOTOS -> {
+                permissionResult.launch(SetupStatus.photosPermission())
+            }
+
+            SetupStep.NOTIFICATIONS -> {
+                openSettings(ConversationAccess.settingsIntent())
+            }
+
+            SetupStep.USAGE -> {
                 openSettings(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setData(Uri.parse("package:$packageName")))
-            SetupStep.EXTRAS -> Unit // chosen with checkboxes on the step itself
-            SetupStep.STYLE, SetupStep.LOOK, SetupStep.GRID, SetupStep.WIDGETS, SetupStep.HUB, SetupStep.LOCK -> Unit // controls on the step itself
+            }
+
+            SetupStep.EXTRAS -> {
+                Unit
+            }
+
+            // chosen with checkboxes on the step itself
+            SetupStep.STYLE, SetupStep.LOOK, SetupStep.GRID, SetupStep.WIDGETS, SetupStep.HUB, SetupStep.LOCK -> {
+                Unit
+            } // controls on the step itself
         }
     }
 
@@ -165,15 +190,16 @@ class OnboardingActivity : ComponentActivity() {
     private fun requestHomeRole() {
         val roles = getSystemService(RoleManager::class.java)
         val canAsk = roles != null && roles.isRoleAvailable(RoleManager.ROLE_HOME) && !roles.isRoleHeld(RoleManager.ROLE_HOME)
-        if (canAsk && roles != null) {
+        if (canAsk) {
             runCatching { homeRoleResult.launch(roles.createRequestRoleIntent(RoleManager.ROLE_HOME)) }
         } else {
             openSettings(Intent(Settings.ACTION_HOME_SETTINGS))
         }
     }
 
-    private fun openAppInfo() =
-        openSettings(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+    private fun openAppInfo() {
+        openSettings(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))
+    }
 
     private fun openSettings(intent: Intent) {
         runCatching { startActivity(intent) }
@@ -207,88 +233,88 @@ private fun SetupScreen(
     var picked by remember { mutableStateOf(enabledExtras) }
     BackHandler(enabled = !overview && index > 0) { index -= 1 }
     ProvideHomeStyle(settings) {
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .safeDrawingPadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.titleLarge)
-            val step = steps.getOrNull(index)
-            if (overview || step == null) {
-                SetupOverview(
-                    state = state,
-                    showRestrictedHelp = showRestrictedHelp,
-                    attemptedSpecialAccess = attemptedSpecialAccess,
-                    onOpenAppInfo = onOpenAppInfo,
-                    picked = picked,
-                    onPickedChange = { picked = it },
-                    firstButton = firstButton,
-                    onAction = onAction,
-                    onManage = onManage,
-                    onApplyExtras = { onApplyExtras(picked) },
-                    onOpenLauncherSettings = onOpenLauncherSettings,
-                    onFinish = onFinish,
-                    settings = settings,
-                )
-            } else {
-                val done = state.isDone(step)
-                val last = index + 1 >= steps.size
-                Text(
-                    stringResource(R.string.setup_progress, index + 1, steps.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                StepCard(step = step)
-                if (showRestrictedHelp(step) && !done) {
-                    if (step in attemptedSpecialAccess) {
-                        RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .safeDrawingPadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.titleLarge)
+                val step = steps.getOrNull(index)
+                if (overview || step == null) {
+                    SetupOverview(
+                        state = state,
+                        showRestrictedHelp = showRestrictedHelp,
+                        attemptedSpecialAccess = attemptedSpecialAccess,
+                        onOpenAppInfo = onOpenAppInfo,
+                        picked = picked,
+                        onPickedChange = { picked = it },
+                        firstButton = firstButton,
+                        onAction = onAction,
+                        onManage = onManage,
+                        onApplyExtras = { onApplyExtras(picked) },
+                        onOpenLauncherSettings = onOpenLauncherSettings,
+                        onFinish = onFinish,
+                        settings = settings,
+                    )
+                } else {
+                    val done = state.isDone(step)
+                    val last = index + 1 >= steps.size
+                    Text(
+                        stringResource(R.string.setup_progress, index + 1, steps.size),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    StepCard(step = step)
+                    if (showRestrictedHelp(step) && !done) {
+                        if (step in attemptedSpecialAccess) {
+                            RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
+                        } else {
+                            Text(
+                                stringResource(R.string.setup_restricted_first_request),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    if (step == SetupStep.EXTRAS) {
+                        ExtrasPicker(picked = picked, onChange = { picked = it })
+                        Button(
+                            onClick = { onApplyExtras(picked) },
+                            modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
+                        ) {
+                            Text(stringResource(R.string.setup_extras_action))
+                        }
+                    } else if (step.isChoice) {
+                        ChoiceSection(step, settings)
                     } else {
+                        Button(
+                            onClick = { if (done) onManage(step) else onAction(step) },
+                            modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
+                        ) {
+                            Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
+                        }
+                    }
+                    if (step == SetupStep.NOTIFICATIONS && done) FrameSettingsSection(settings, state.notificationAccess)
+                    OutlinedButton(
+                        onClick = { if (last) onFinish() else index += 1 },
+                        modifier = Modifier.fillMaxWidth().sableFocusRing(),
+                    ) {
                         Text(
-                            stringResource(R.string.setup_restricted_first_request),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            when {
+                                last -> stringResource(R.string.setup_done)
+                                done || (step == SetupStep.EXTRAS && picked.isNotEmpty()) -> stringResource(R.string.setup_next)
+                                else -> stringResource(R.string.setup_skip)
+                            },
                         )
                     }
                 }
-                if (step == SetupStep.EXTRAS) {
-                    ExtrasPicker(picked = picked, onChange = { picked = it })
-                    Button(
-                        onClick = { onApplyExtras(picked) },
-                        modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
-                    ) {
-                        Text(stringResource(R.string.setup_extras_action))
-                    }
-                } else if (step.isChoice) {
-                    ChoiceSection(step, settings)
-                } else {
-                    Button(
-                        onClick = { if (done) onManage(step) else onAction(step) },
-                        modifier = Modifier.fillMaxWidth().focusRequester(firstButton).sableFocusRing(),
-                    ) {
-                        Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
-                    }
-                }
-                if (step == SetupStep.NOTIFICATIONS && done) FrameSettingsSection(settings, state.notificationAccess)
-                OutlinedButton(
-                    onClick = { if (last) onFinish() else index += 1 },
-                    modifier = Modifier.fillMaxWidth().sableFocusRing(),
-                ) {
-                    Text(
-                        when {
-                            last -> stringResource(R.string.setup_done)
-                            done || (step == SetupStep.EXTRAS && picked.isNotEmpty()) -> stringResource(R.string.setup_next)
-                            else -> stringResource(R.string.setup_skip)
-                        },
-                    )
-                }
             }
         }
-    }
     }
     LaunchedEffect(index) { runCatching { firstButton.requestFocus() } }
 }
@@ -321,11 +347,15 @@ private fun SetupOverview(
     // Reopened setup defaults to overview: guidance must be visible here too,
     // not only in the initial wizard's Notification or Usage step.
     if (OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            state, showRestrictedHelp, attemptedSpecialAccess,
-        )) {
+            state,
+            showRestrictedHelp,
+            attemptedSpecialAccess,
+        )
+    ) {
         RestrictedSettingsCard(onOpenAppInfo = onOpenAppInfo)
     } else if (listOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)
-            .any { !state.isDone(it) && showRestrictedHelp(it) }) {
+            .any { !state.isDone(it) && showRestrictedHelp(it) }
+    ) {
         Text(
             stringResource(R.string.setup_restricted_first_request),
             style = MaterialTheme.typography.bodySmall,
@@ -348,12 +378,22 @@ private fun SetupOverview(
                 }
                 Text(
                     when {
-                        step == SetupStep.EXTRAS -> stringResource(R.string.setup_extras_status, picked.size)
+                        step == SetupStep.EXTRAS -> {
+                            stringResource(R.string.setup_extras_status, picked.size)
+                        }
+
                         step == SetupStep.NOTIFICATIONS && done &&
-                            !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected ->
+                            !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected -> {
                             stringResource(R.string.setup_notifications_connected_missing)
-                        done -> stringResource(R.string.setup_allowed)
-                        else -> stringResource(R.string.setup_not_set)
+                        }
+
+                        done -> {
+                            stringResource(R.string.setup_allowed)
+                        }
+
+                        else -> {
+                            stringResource(R.string.setup_not_set)
+                        }
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -362,14 +402,32 @@ private fun SetupOverview(
                     ExtrasPicker(picked = picked, onChange = onPickedChange)
                     Button(
                         onClick = onApplyExtras,
-                        modifier = Modifier.fillMaxWidth().sableFocusRing().then(if (position == 0) Modifier.focusRequester(firstButton) else Modifier),
+                        modifier =
+                            Modifier.fillMaxWidth().sableFocusRing().then(
+                                if (position ==
+                                    0
+                                ) {
+                                    Modifier.focusRequester(firstButton)
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     ) {
                         Text(stringResource(R.string.setup_extras_action))
                     }
                 } else {
                     OutlinedButton(
                         onClick = { if (done) onManage(step) else onAction(step) },
-                        modifier = Modifier.fillMaxWidth().sableFocusRing().then(if (position == 0) Modifier.focusRequester(firstButton) else Modifier),
+                        modifier =
+                            Modifier.fillMaxWidth().sableFocusRing().then(
+                                if (position ==
+                                    0
+                                ) {
+                                    Modifier.focusRequester(firstButton)
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     ) {
                         Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
                     }
@@ -397,18 +455,32 @@ private fun ChoiceSection(
             HomeStyleSection(state)
             HomeDisplaySection(state)
         }
+
         SetupStep.LOOK -> {
             ThemeSection(state)
             WallpaperSection(state)
         }
+
         SetupStep.GRID -> {
             IconPresentationSection(state)
             IconGridSection(state)
         }
-        SetupStep.WIDGETS -> WidgetsSection(state)
-        SetupStep.HUB -> HubSection()
-        SetupStep.LOCK -> LockLayerSection(state)
-        else -> Unit
+
+        SetupStep.WIDGETS -> {
+            WidgetsSection(state)
+        }
+
+        SetupStep.HUB -> {
+            HubSection()
+        }
+
+        SetupStep.LOCK -> {
+            LockLayerSection(state)
+        }
+
+        else -> {
+            Unit
+        }
     }
 }
 
@@ -435,19 +507,53 @@ private fun stepLabel(step: SetupStep): String =
 private fun StepCard(step: SetupStep) {
     val (title, reason) =
         when (step) {
-            SetupStep.HOME -> stringResource(R.string.setup_home_title) to stringResource(R.string.setup_home_reason)
-            SetupStep.CONTACTS -> stringResource(R.string.setup_contacts_title) to stringResource(R.string.setup_contacts_reason)
-            SetupStep.PHOTOS -> stringResource(R.string.setup_photos_title) to stringResource(R.string.setup_photos_reason)
-            SetupStep.NOTIFICATIONS ->
+            SetupStep.HOME -> {
+                stringResource(R.string.setup_home_title) to stringResource(R.string.setup_home_reason)
+            }
+
+            SetupStep.CONTACTS -> {
+                stringResource(R.string.setup_contacts_title) to stringResource(R.string.setup_contacts_reason)
+            }
+
+            SetupStep.PHOTOS -> {
+                stringResource(R.string.setup_photos_title) to stringResource(R.string.setup_photos_reason)
+            }
+
+            SetupStep.NOTIFICATIONS -> {
                 stringResource(R.string.setup_notifications_title) to stringResource(R.string.setup_notifications_reason)
-            SetupStep.USAGE -> stringResource(R.string.setup_usage_title) to stringResource(R.string.setup_usage_reason)
-            SetupStep.EXTRAS -> stringResource(R.string.setup_extras_title) to stringResource(R.string.setup_extras_reason)
-            SetupStep.STYLE -> stringResource(R.string.setup_style_title) to stringResource(R.string.setup_style_reason)
-            SetupStep.LOOK -> stringResource(R.string.setup_look_title) to stringResource(R.string.setup_look_reason)
-            SetupStep.GRID -> stringResource(R.string.setup_grid_title) to stringResource(R.string.setup_grid_reason)
-            SetupStep.WIDGETS -> stringResource(R.string.setup_widgets_title) to stringResource(R.string.setup_widgets_reason)
-            SetupStep.HUB -> stringResource(R.string.setup_hub_title) to stringResource(R.string.setup_hub_reason)
-            SetupStep.LOCK -> stringResource(R.string.setup_lock_title) to stringResource(R.string.setup_lock_reason)
+            }
+
+            SetupStep.USAGE -> {
+                stringResource(R.string.setup_usage_title) to stringResource(R.string.setup_usage_reason)
+            }
+
+            SetupStep.EXTRAS -> {
+                stringResource(R.string.setup_extras_title) to stringResource(R.string.setup_extras_reason)
+            }
+
+            SetupStep.STYLE -> {
+                stringResource(R.string.setup_style_title) to stringResource(R.string.setup_style_reason)
+            }
+
+            SetupStep.LOOK -> {
+                stringResource(R.string.setup_look_title) to stringResource(R.string.setup_look_reason)
+            }
+
+            SetupStep.GRID -> {
+                stringResource(R.string.setup_grid_title) to stringResource(R.string.setup_grid_reason)
+            }
+
+            SetupStep.WIDGETS -> {
+                stringResource(R.string.setup_widgets_title) to stringResource(R.string.setup_widgets_reason)
+            }
+
+            SetupStep.HUB -> {
+                stringResource(R.string.setup_hub_title) to stringResource(R.string.setup_hub_reason)
+            }
+
+            SetupStep.LOCK -> {
+                stringResource(R.string.setup_lock_title) to stringResource(R.string.setup_lock_reason)
+            }
         }
     Surface(
         modifier = Modifier.fillMaxWidth(),

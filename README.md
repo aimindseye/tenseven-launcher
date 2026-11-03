@@ -141,6 +141,7 @@ touch-only phone.
 | Zinwa Q25 (SableOS or stock Android) | QWERTY, trackpad | Layouts designed for it; not yet run |
 | Zinwa P26 (Passport-based) | Hardware profile pending | Planned for P3; not tested |
 | Unihertz Titan 2 | QWERTY, trackpad; no Menu key (use Alt+Enter) | Debug build runs and is tried by hand; not every feature confirmed |
+| Unihertz Titan 2 Slim | Hardware profile pending | Planned for P3; not tested |
 | Unihertz Titan Pocket | QWERTY | Not yet run |
 | BlackBerry KEYone | QWERTY | Historical target, not tested and outside current P3 scope |
 | Any other Android 14+ phone | on-screen or Bluetooth keyboard | Not yet run |
@@ -284,9 +285,13 @@ INTERNET=none (no INTERNET permission)
 
 ### Current P2/P3 delivery order
 
-P2 engineering is being completed in PR #111 (screen boundaries, lifecycle orchestration,
+P2 engineering is merged through PR #111 (screen boundaries, lifecycle orchestration,
 capability snapshots and blocking quality ratchet). See
 [engineering acceptance](docs/P2_ENGINEERING_ACCEPTANCE.md). P3 follows P2 and targets Titan 2,
 Titan 2 Slim, Zinwa Q25, Zinwa P26 and a touchscreen Android device; KEY2 is removed from active scope.
 The owner will build/test the single Full APK when both deliveries are ready. Current minimum
 Android version remains Android 14 (API 34).
+
+P3 device/window/keyboard/widget engineering and the pending physical qualification
+matrix are documented in [P3 device qualification](docs/P3_DEVICE_QUALIFICATION.md).
+Launcher Settings → Device compatibility provides the foreground key-event probe.

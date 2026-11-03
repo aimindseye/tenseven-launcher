@@ -13,6 +13,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import io.github.aimindseye.tenseven.design.DesignText
@@ -57,6 +58,10 @@ class SableStartActivity : ComponentActivity() {
             if (target == WidgetTarget.HOME) screen.homeWidgetIds.value = ids else screen.widgetIds.value = ids
         }
     }
+    private val permissionResults =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            screen.liveRefreshGeneration.intValue += 1
+        }
     private var opaqueWindowBackground: Drawable? = null
 
     private val runtime by lazy {
@@ -325,7 +330,7 @@ class SableStartActivity : ComponentActivity() {
         data: Intent?,
     ) {
         super.onActivityResult(requestCode, resultCode, data)
-        widgetController.onActivityResult(requestCode, resultCode)
+        widgetController.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -389,17 +394,6 @@ class SableStartActivity : ComponentActivity() {
         runtime.close()
         activeFrames.destroy()
         super.onDestroy()
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray,
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LIVE_PERMISSION_REQUEST_CODE || requestCode == CONTACTS_PERMISSION_REQUEST_CODE) {
-            screen.liveRefreshGeneration.intValue += 1
-        }
     }
 
     private fun scheduleInventoryRefresh() = runtime.refresh()
@@ -532,18 +526,16 @@ class SableStartActivity : ComponentActivity() {
     }
 
     private fun requestLivePermissions() {
-        val permissions =
-            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
-
-        requestPermissions(
-            permissions,
-            LIVE_PERMISSION_REQUEST_CODE,
-        )
+        permissionResults.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
     }
 
-    /** The Hub page's Contacts tab: names, favourites and numbers, read on the device only. */
     private fun requestContactsPermission() {
-        requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), CONTACTS_PERMISSION_REQUEST_CODE)
+        permissionResults.launch(arrayOf(Manifest.permission.READ_CONTACTS))
+    }
+
+    /** Calendar access is requested only from the user's explicit Hub/Calendar action. */
+    fun requestCalendarPermission() {
+        permissionResults.launch(arrayOf(Manifest.permission.READ_CALENDAR))
     }
 
     /**
@@ -590,9 +582,6 @@ class SableStartActivity : ComponentActivity() {
 
     companion object {
         private const val MENU_WIDTH_FRACTION = 0.88f
-
-        const val LIVE_PERMISSION_REQUEST_CODE = 0x534D
-        const val CONTACTS_PERMISSION_REQUEST_CODE = 0x534E
 
         /** Show the Hub page; [EXTRA_HUB_FILTER] picks the tab ("all", "messages", "calls", "contacts"). */
         const val ACTION_SHOW_HUB = "org.sableos.start.action.SHOW_HUB"

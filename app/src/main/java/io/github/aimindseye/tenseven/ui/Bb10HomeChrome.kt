@@ -62,11 +62,13 @@ import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.Bb10Gestures
 import io.github.aimindseye.tenseven.model.HomeHeader
+import io.github.aimindseye.tenseven.model.LauncherKeys
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.SpeedDialKeys
 import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.StartTypeToSearch
+import io.github.aimindseye.tenseven.platform.DeviceCompatibility
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -77,7 +79,19 @@ import java.util.Locale
 import androidx.compose.foundation.Canvas as ComposeCanvas
 
 @Composable
-internal fun startGridWidthDp(): Int = LocalConfiguration.current.screenWidthDp - (GRID_PADDING.value * 2).toInt()
+internal fun startGridWidthDp(): Int {
+    val density = LocalDensity.current
+    val width = LocalWindowInfo.current.containerSize.width
+    val insets = WindowInsets.safeDrawing
+    val available =
+        with(density) {
+            (
+                width - insets.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr) -
+                    insets.getRight(density, androidx.compose.ui.unit.LayoutDirection.Ltr)
+            ).toDp().value.toInt()
+        }
+    return (available - (GRID_PADDING.value * 2).toInt()).coerceAtLeast(1)
+}
 
 /**
  * The app grid's height in dp: the window (LocalWindowInfo, so the Q25's
@@ -175,7 +189,7 @@ internal fun StartStrip(
                 }.onKeyEvent { event ->
                     // What no frame, icon or slot took: Menu edits Home, printable keys search.
                     val native = event.nativeKeyEvent
-                    if (native.keyCode == AllAppsKeyPolicy.KEYCODE_MENU) {
+                    if (DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu) {
                         if (event.type == KeyEventType.KeyDown) onEditHome()
                         return@onKeyEvent true
                     }

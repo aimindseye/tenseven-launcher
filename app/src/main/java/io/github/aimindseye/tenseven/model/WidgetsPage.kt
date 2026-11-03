@@ -52,6 +52,12 @@ object WidgetSizing {
     const val MIN_DP = 64
     const val MAX_DP = 360
     const val DEFAULT_DP = 110
+    private const val RESIZE_STEP_DP = 48
+
+    fun resize(
+        current: Int,
+        steps: Int,
+    ): Int = (current.toLong() + steps.toLong() * RESIZE_STEP_DP).coerceIn(MIN_DP.toLong(), MAX_DP.toLong()).toInt()
 
     /** The height a widget asks for ([minHeightPx] is in pixels, as AppWidgetProviderInfo reports it), kept in range. */
     fun heightDp(
