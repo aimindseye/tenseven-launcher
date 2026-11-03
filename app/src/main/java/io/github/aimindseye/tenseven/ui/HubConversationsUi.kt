@@ -544,11 +544,12 @@ internal fun rememberHubConversationsUi(
     onChooseApps: () -> Unit,
 ): HubConversationsUi {
     val capabilities = rememberPlatformCapabilities(refreshGeneration)
+    val revision = rememberHubRevision()
     val accessGranted = capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
     val locked = capabilities.deviceLocked
     remember(context) { ConversationHub.ensureStateLoaded(context) }
     val conversations =
-        remember(refreshGeneration, accessGranted) {
+        remember(refreshGeneration, revision, accessGranted) {
             if (accessGranted) ConversationHub.conversations() else emptyList()
         }
     var filter by remember { mutableStateOf(ConversationFilter()) }
@@ -558,7 +559,7 @@ internal fun rememberHubConversationsUi(
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var sourcePackage by remember { mutableStateOf<String?>(null) }
     val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
-    val state = remember(refreshGeneration, accessGranted) { ConversationHub.state() }
+    val state = remember(refreshGeneration, revision, accessGranted) { ConversationHub.state() }
     LaunchedEffect(state, conversations) {
         while (true) {
             now = System.currentTimeMillis()

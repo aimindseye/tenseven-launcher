@@ -3,6 +3,7 @@ package io.github.aimindseye.tenseven.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
@@ -23,11 +24,16 @@ internal fun rememberPlatformCapabilities(refreshGeneration: Int = 0): PlatformC
     LocalPlatformCapabilities.current?.let { return it }
     val app = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val value by produceState(PlatformCapabilityProbe.detect(app), app, lifecycle, refreshGeneration) {
+    val initial = remember(app) { PlatformCapabilityProbe.detect(app) }
+    val value by produceState(initial, app, lifecycle, refreshGeneration) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
-                value = withContext(Dispatchers.IO) { PlatformCapabilityProbe.detect(app) }
-                delay(2_000)
+            try {
+                while (true) {
+                    value = withContext(Dispatchers.IO) { PlatformCapabilityProbe.detect(app) }
+                    delay(2_000)
+                }
+            } finally {
+                value = value.copy(deviceLocked = true)
             }
         }
     }

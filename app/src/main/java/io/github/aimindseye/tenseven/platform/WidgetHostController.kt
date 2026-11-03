@@ -59,7 +59,7 @@ class WidgetHostController(
     }
 
     fun startListening() {
-        if (listening) return
+        if (listening || PlatformCapabilityProbe.detect(activity).widgetHosting != CapabilityStatus.Ready) return
         listening = runCatching { host.startListening() }.isSuccess
     }
 
@@ -79,6 +79,7 @@ class WidgetHostController(
         info: AppWidgetProviderInfo,
         target: WidgetTarget = WidgetTarget.PAGE,
     ) {
+        if (PlatformCapabilityProbe.detect(activity).widgetHosting != CapabilityStatus.Ready) return
         cancelPending()
         pendingTarget = target
         val id = runCatching { host.allocateAppWidgetId() }.getOrNull() ?: return

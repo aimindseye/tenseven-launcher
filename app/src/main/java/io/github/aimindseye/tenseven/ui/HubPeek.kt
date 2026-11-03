@@ -142,8 +142,13 @@ private fun HubPeekPanel(
 ) {
     val context = LocalContext.current
     val showText = remember { StartStateRepository(context).loadHubPeekText() }
-    val deviceLocked = rememberPlatformCapabilities().deviceLocked
-    val conversations = ConversationHub.conversations().take(MAX_ROWS)
+    val capabilities = rememberPlatformCapabilities()
+    val deviceLocked = capabilities.deviceLocked
+    val revision = rememberHubRevision()
+    val conversations = remember(revision, capabilities) {
+        if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready && !deviceLocked)
+            ConversationHub.conversations().take(MAX_ROWS) else emptyList()
+    }
     val focus = remember { FocusRequester() }
     // The panel slides in from the left edge while the rest of Home dims.
     val slide = remember { Animatable(0f) }

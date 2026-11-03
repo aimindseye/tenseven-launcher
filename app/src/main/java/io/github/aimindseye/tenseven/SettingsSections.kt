@@ -347,7 +347,8 @@ internal fun HubSection() {
 internal fun LockLayerSection(state: StartStateRepository) {
     val context = LocalContext.current
     // Automatic lock-layer wake requires the optional notification listener service.
-    if (!Capabilities.hasConversationService(context)) {
+    val capabilities = io.github.aimindseye.tenseven.ui.rememberPlatformCapabilities()
+    if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable) {
         Text(
             stringResource(R.string.lock_layer_full_only),
             style = MaterialTheme.typography.bodyMedium,
@@ -363,10 +364,9 @@ internal fun LockLayerSection(state: StartStateRepository) {
         activity?.lifecycle?.addObserver(observer)
         onDispose { activity?.lifecycle?.removeObserver(observer) }
     }
-    val overlayAllowed = tick >= 0 && LockLayerLauncher.canDrawOverlays(context)
+    val overlayAllowed = capabilities.overlay == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
     // Do not prompt for a listener that is not available on this device.
-    val accessAvailable = Capabilities.hasConversationService(context)
-    val accessAllowed = tick >= 0 && accessAvailable && ConversationAccess.isGranted(context)
+    val accessAllowed = capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
     SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
         lockLayer = it
         state.saveLockLayer(it)

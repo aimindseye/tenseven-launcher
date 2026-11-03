@@ -4,6 +4,22 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PlatformCapabilitiesTest {
+    @Test fun permissionAndLockSnapshotsChangeIndependentlyOnReturn() {
+        val denied = PlatformCapabilities.evaluate(true, false, false, false, false, false)
+        assertEquals(CapabilityStatus.PermissionRequired, denied.contacts)
+        assertEquals(CapabilityStatus.PermissionRequired, denied.photos)
+        assertEquals(CapabilityStatus.Unavailable, denied.camera)
+        val ready = PlatformCapabilities.evaluate(true, true, true, true, true, false,
+            FramePlatformAccess(contacts = true, photos = true, camera = true,
+                secureKeyguard = true, deviceLocked = true, lockService = true))
+        assertEquals(CapabilityStatus.Ready, ready.contacts)
+        assertEquals(CapabilityStatus.Ready, ready.photos)
+        assertEquals(CapabilityStatus.Ready, ready.camera)
+        org.junit.Assert.assertTrue(ready.secureKeyguard && ready.deviceLocked && ready.lockServiceAvailable)
+        assertEquals(CapabilityStatus.Unavailable, ready.thirdPartySnapshots)
+        org.junit.Assert.assertFalse(denied.deviceLocked)
+    }
+
     @Test fun ordinaryInstallNeverPromisesForeignAppSnapshots() {
         val caps = PlatformCapabilities.evaluate(
             hasListenerService = true, listenerAllowed = false, usageAllowed = true,
