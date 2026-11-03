@@ -137,9 +137,7 @@ class P3ResponsiveUiTest {
             }
         }
         compose.waitForIdle()
-        val instrumentation =
-            androidx.test.platform.app.InstrumentationRegistry
-                .getInstrumentation()
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
         val now = android.os.SystemClock.uptimeMillis()
         instrumentation.sendKeySync(
             android.view.KeyEvent(
