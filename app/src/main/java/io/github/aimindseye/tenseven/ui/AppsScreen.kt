@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.os.SystemClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,10 +27,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -142,30 +142,41 @@ internal fun AppsScreen(
                 focusMemory.remember(FOCUS_SURFACE_ALL_APPS, keys[index], index)
                 onLaunchApp(row.app)
             }
+
             AllAppsKeyAction.OpenSecond -> {
                 focusMemory.remember(FOCUS_SURFACE_ALL_APPS, keys[index], index)
                 onLaunchSecond(row.app)
             }
+
             AllAppsKeyAction.ToggleDetail -> {
                 val key = keys[index]
                 expandedKeys = if (key in expandedKeys) expandedKeys - key else expandedKeys + key
             }
-            AllAppsKeyAction.Actions -> openActions(index)
+
+            AllAppsKeyAction.Actions -> {
+                openActions(index)
+            }
+
             AllAppsKeyAction.AppInfo -> {
                 focusMemory.remember(FOCUS_SURFACE_ALL_APPS, keys[index], index)
                 onOpenAppInfo(row.app)
             }
+
             AllAppsKeyAction.Search -> {
                 focusMemory.remember(FOCUS_SURFACE_ALL_APPS, keys[index], index)
                 onSearch()
             }
+
             AllAppsKeyAction.TypeToJump -> {
                 val target =
                     typeToJump.onChar(decision.char, SystemClock.uptimeMillis(), labels, index)
                         ?: alphabet.indexForChar(decision.char)
                 if (target != null) focusIndex(target)
             }
-            AllAppsKeyAction.IgnoreRepeat, AllAppsKeyAction.PassThrough -> Unit
+
+            AllAppsKeyAction.IgnoreRepeat, AllAppsKeyAction.PassThrough -> {
+                Unit
+            }
         }
         return true
     }

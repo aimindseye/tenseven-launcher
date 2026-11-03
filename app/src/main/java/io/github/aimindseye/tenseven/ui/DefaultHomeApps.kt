@@ -22,15 +22,17 @@ internal fun defaultHomeApps(
             DefaultApps.dialerPackage(context),
             DefaultApps.cameraPackage(context),
         )
-    return HOME_APP_DEFAULT_GROUPS.mapIndexedNotNull { index, group ->
-        val phoneDefault = defaults.getOrNull(index)?.let { pkg -> personal.firstOrNull { it.component.packageName == pkg } }
-        phoneDefault
-            ?: group.packageNames.firstNotNullOfOrNull { packageName ->
-                personal.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
-            }
-            ?: personal.firstOrNull { app -> group.labels.any { app.label.equals(it, ignoreCase = true) } }
-    }.distinctBy { it.stableKey() }
+    return HOME_APP_DEFAULT_GROUPS
+        .mapIndexedNotNull { index, group ->
+            val phoneDefault = defaults.getOrNull(index)?.let { pkg -> personal.firstOrNull { it.component.packageName == pkg } }
+            phoneDefault
+                ?: group.packageNames.firstNotNullOfOrNull { packageName ->
+                    personal.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
+                }
+                ?: personal.firstOrNull { app -> group.labels.any { app.label.equals(it, ignoreCase = true) } }
+        }.distinctBy { it.stableKey() }
 }
+
 internal data class PreferredStartAppGroup(
     /** Canonical packages for this tile, best first. */
     val packageNames: List<String> = emptyList(),

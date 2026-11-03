@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.content.Context
 import android.content.pm.LauncherApps
 import android.graphics.Bitmap
@@ -29,9 +27,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -292,11 +292,15 @@ internal fun AppMark(
     IconPresentationState.init(context)
     val iconPack = IconPacks.selected
     val iconStyle = IconPresentationState.selected
-    val isOwnExtra = app.component.packageName == context.packageName &&
-        ExtraApps.byClassName(app.component.className) != null
-    val glyph = if (IconPresentationPolicy.useGlyph(iconStyle, isOwnExtra, iconPack != null)) {
-        AppGlyphs.forComponent(app.component.packageName, app.component.className)
-    } else null
+    val isOwnExtra =
+        app.component.packageName == context.packageName &&
+            ExtraApps.byClassName(app.component.className) != null
+    val glyph =
+        if (IconPresentationPolicy.useGlyph(iconStyle, isOwnExtra, iconPack != null)) {
+            AppGlyphs.forComponent(app.component.packageName, app.component.className)
+        } else {
+            null
+        }
     if (glyph != null) {
         SableGlyphIcon(glyph = glyph, modifier = Modifier.size(size.dp))
         return
@@ -319,7 +323,7 @@ internal fun AppMark(
 
     val loadedIcon = icon
     when {
-        loadedIcon == null ->
+        loadedIcon == null -> {
             // Until the icon loads: the first letter in the glyph colours, no tile.
             Box(modifier = Modifier.size(size.dp), contentAlignment = Alignment.Center) {
                 Text(
@@ -329,19 +333,24 @@ internal fun AppMark(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-        loadedIcon.monochrome ->
+        }
+
+        loadedIcon.monochrome -> {
             SableMonochromeIcon(
                 mask = loadedIcon.bitmap.asImageBitmap(),
                 accent = appColor(app),
                 modifier = Modifier.size(size.dp),
             )
-        else ->
+        }
+
+        else -> {
             Image(
                 bitmap = loadedIcon.bitmap.asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier.size(size.dp),
                 contentScale = ContentScale.Fit,
             )
+        }
     }
 }
 
@@ -392,7 +401,8 @@ internal fun loadLauncherIcon(
         val drawable = packDrawable ?: activityInfo.getIcon(densityDpi)
         val monochrome =
             if (themedMonochrome && packDrawable == null &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable
+            ) {
                 drawable.monochrome
             } else {
                 null
@@ -415,6 +425,7 @@ internal fun loadLauncherIcon(
         drawable.draw(canvas)
         LauncherIcon(bitmap, monochrome = false)
     }.getOrNull()
+
 internal fun appMark(app: AppEntry): String =
     app.label
         .trim()

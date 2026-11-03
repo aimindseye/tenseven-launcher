@@ -16,20 +16,20 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
-import io.github.aimindseye.tenseven.model.StartText
-import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.applySableSystemBars
 import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
 import io.github.aimindseye.tenseven.design.writeGlobalSableAppearance
 import io.github.aimindseye.tenseven.model.Bb7Detour
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.model.StartText
+import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.LauncherAppsRepository
 import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
-import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
+import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
 import io.github.aimindseye.tenseven.platform.WidgetTarget
@@ -50,7 +50,9 @@ class SableStartActivity : ComponentActivity() {
     private lateinit var startStateRepository: StartStateRepository
     private lateinit var activeFrames: io.github.aimindseye.tenseven.platform.ActiveFramesHost
 
-    private val screen = io.github.aimindseye.tenseven.ui.LauncherHomeState()
+    private val screen =
+        io.github.aimindseye.tenseven.ui
+            .LauncherHomeState()
     private val widgetController by lazy {
         WidgetHostController(this, startStateRepository) { target, ids ->
             if (target == WidgetTarget.HOME) screen.homeWidgetIds.value = ids else screen.widgetIds.value = ids
@@ -60,7 +62,8 @@ class SableStartActivity : ComponentActivity() {
 
     private val runtime by lazy {
         io.github.aimindseye.tenseven.platform.LauncherRuntime(
-            this, launcherAppsRepository,
+            this,
+            launcherAppsRepository,
             onInventory = { inventory ->
                 screen.appsState.value = inventory.apps
                 screen.privateSpaceLockedState.value = inventory.privateSpaceLocked
@@ -85,7 +88,9 @@ class SableStartActivity : ComponentActivity() {
         liveSurfaceRepository = LiveSurfaceRepository(this)
         startStateRepository = StartStateRepository(this)
         screen.reload(startStateRepository, widgetController)
-        activeFrames = io.github.aimindseye.tenseven.platform.ActiveFramesHost(this)
+        activeFrames =
+            io.github.aimindseye.tenseven.platform
+                .ActiveFramesHost(this)
         opaqueWindowBackground = window.decorView.background
 
         onBackPressedDispatcher.addCallback(
@@ -106,7 +111,9 @@ class SableStartActivity : ComponentActivity() {
             if (!startStateRepository.loadOnboardingDone()) {
                 runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
             }
-            screen.startRequest.value = io.github.aimindseye.tenseven.runtime.LauncherRequest(screenFor(intent), 0)
+            screen.startRequest.value =
+                io.github.aimindseye.tenseven.runtime
+                    .LauncherRequest(screenFor(intent), 0)
             if (intent?.action == ACTION_SHOW_HUB) requestHub(intent)
             if (intent?.action in BB10_ONLY_ACTIONS) {
                 startBb10Detour(returnOnHome = intent?.action != ACTION_SHOW_ACTIVE_FRAMES)
@@ -253,7 +260,8 @@ class SableStartActivity : ComponentActivity() {
                         startStateRepository.saveAppearance(null, null)
                         writeGlobalSableAppearance(
                             this@SableStartActivity,
-                            io.github.aimindseye.tenseven.design.SableAppearance(),
+                            io.github.aimindseye.tenseven.design
+                                .SableAppearance(),
                         )
                     },
                     onLaunchApp = { entry ->
@@ -296,7 +304,8 @@ class SableStartActivity : ComponentActivity() {
         super.onResume()
         // Android may leave a sideloaded listener disconnected after an update even if access
         // remains granted. Recover without prompting or changing the user's source choices.
-        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+            .onLauncherResume(this)
         val priorStyle = screen.homeStyle.value
         screen.reload(startStateRepository, widgetController)
         val style = screen.homeStyle.value
@@ -330,21 +339,28 @@ class SableStartActivity : ComponentActivity() {
                 screen.homeGeneration.value = 0
                 screen.backGeneration.value = 0
                 screen.hubGeneration.value = 0
-                screen.startRequest.value = io.github.aimindseye.tenseven.runtime.LauncherRequest(screenFor(intent), screen.startRequest.value.serial + 1)
+                screen.startRequest.value =
+                    io.github.aimindseye.tenseven.runtime
+                        .LauncherRequest(screenFor(intent), screen.startRequest.value.serial + 1)
                 startBb10Detour(returnOnHome = true)
             }
+
             // Home, and the Recents key (Active Frames are the BB10 Recents): close anything open
             // over the pages and show Active Frames.
             Intent.ACTION_MAIN, ACTION_SHOW_ACTIVE_FRAMES -> {
                 screen.homeGeneration.value += 1
                 activeFrames.coordinator.onResume()
                 // On the BlackBerry 7 home, Home goes back to it; Recents shows the Active Frames.
-                if (intent.action == ACTION_SHOW_ACTIVE_FRAMES && io.github.aimindseye.tenseven.frames.FrameAvailability.frames(screen.homeStyle.value == HomeStyle.Bb10)) {
+                if (intent.action == ACTION_SHOW_ACTIVE_FRAMES &&
+                    io.github.aimindseye.tenseven.frames.FrameAvailability
+                        .frames(screen.homeStyle.value == HomeStyle.Bb10)
+                ) {
                     startBb10Detour(returnOnHome = false)
                 } else {
                     endBb10Detour()
                 }
             }
+
             // The one Hub is Start's Hub page (the Sable Hub app has no launcher entry).
             ACTION_SHOW_HUB -> {
                 requestHub(intent)
@@ -452,45 +468,60 @@ class SableStartActivity : ComponentActivity() {
         // BB7 menu is a translucent on-wallpaper surface, never a system-white dialog.
         // Views retain native D-pad/trackpad focus and accessibility click actions.
         val density = resources.displayMetrics.density
+
         fun dp(value: Int) = (value * density).toInt()
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            setBackgroundColor(Color.argb(215, 22, 31, 47))
-        }
+        val layout =
+            android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+                setBackgroundColor(Color.argb(215, 22, 31, 47))
+            }
         var dialog: AlertDialog? = null
         items.forEach { (title, action) ->
-            layout.addView(android.widget.TextView(this).apply {
-                text = title
-                setTextColor(Color.WHITE)
-                textSize = 16f
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(dp(14), dp(11), dp(12), dp(11))
-                isFocusable = true
-                isClickable = true
-                background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
-                setOnClickListener { dialog?.dismiss(); action() }
-                setOnKeyListener { _, keyCode, event ->
-                    if (event.action == android.view.KeyEvent.ACTION_DOWN &&
-                        (keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
-                            keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER)) {
-                        performClick()
-                        true
-                    } else false
-                }
-            })
+            layout.addView(
+                android.widget.TextView(this).apply {
+                    text = title
+                    setTextColor(Color.WHITE)
+                    textSize = 16f
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(dp(14), dp(11), dp(12), dp(11))
+                    isFocusable = true
+                    isClickable = true
+                    background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+                    setOnClickListener {
+                        dialog?.dismiss()
+                        action()
+                    }
+                    setOnKeyListener { _, keyCode, event ->
+                        if (event.action == android.view.KeyEvent.ACTION_DOWN &&
+                            (
+                                keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+                                    keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER
+                            )
+                        ) {
+                            performClick()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                },
+            )
         }
-        val scroll = android.widget.ScrollView(this).apply {
-            isFillViewport = false
-            addView(layout)
-        }
+        val scroll =
+            android.widget.ScrollView(this).apply {
+                isFillViewport = false
+                addView(layout)
+            }
         val menuDialog = AlertDialog.Builder(this).setView(scroll).create()
         dialog = menuDialog
         menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         menuDialog.show()
         menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.argb(225, 22, 31, 47)))
-        menuDialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(),
-            WindowManager.LayoutParams.WRAP_CONTENT)
+        menuDialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.88f).toInt(),
+            WindowManager.LayoutParams.WRAP_CONTENT,
+        )
         layout.getChildAt(0)?.requestFocus()
     }
 
@@ -527,7 +558,9 @@ class SableStartActivity : ComponentActivity() {
         screen.homeGeneration.value = 0
         screen.backGeneration.value = 0
         screen.hubGeneration.value = 0
-        screen.startRequest.value = io.github.aimindseye.tenseven.runtime.LauncherRequest(SCREEN_SEARCH, screen.startRequest.value.serial + 1)
+        screen.startRequest.value =
+            io.github.aimindseye.tenseven.runtime
+                .LauncherRequest(SCREEN_SEARCH, screen.startRequest.value.serial + 1)
         startBb10Detour(returnOnHome = true)
     }
 

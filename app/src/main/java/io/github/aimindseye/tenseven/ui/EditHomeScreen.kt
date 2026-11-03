@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,10 +25,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -150,13 +150,22 @@ internal fun EditHomeScreen(
         if (backGeneration > startBack) {
             val move = moving
             when {
-                picking != null -> picking = null
+                picking != null -> {
+                    picking = null
+                }
+
                 move != null -> {
                     draft = move.before
                     moving = null
                 }
-                optionsFor != null -> optionsFor = null
-                else -> onCancel()
+
+                optionsFor != null -> {
+                    optionsFor = null
+                }
+
+                else -> {
+                    onCancel()
+                }
             }
         }
     }
@@ -197,19 +206,24 @@ internal fun EditHomeScreen(
                 if (down) move(section, key, delta)
                 true
             }
+
             native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && !alt -> {
                 if (down && native.repeatCount == 0) {
                     moving = if (picked) null else EditMove(section, key, draft)
                 }
                 true
             }
+
             native.keyCode == AllAppsKeyPolicy.KEYCODE_MENU ||
                 native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE ||
                 (native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && alt) -> {
                 if (down && native.repeatCount == 0) optionsFor = if (optionsFor == optionsKey) null else optionsKey
                 true
             }
-            else -> false
+
+            else -> {
+                false
+            }
         }
     }
 
@@ -377,22 +391,24 @@ internal fun EditHomeScreen(
                     onClick = { draft = draft.copy(quickBar = QuickBar.DEFAULT) },
                 )
             }
-            if (showFrameOptions) item(key = "frames-options") {
-                Spacer(Modifier.height(10.dp))
-                SectionLabel(t("active_frames_header"))
-                Spacer(Modifier.height(4.dp))
-                val accent = MaterialTheme.colorScheme.primary
-                HomeLayout.SECTIONS.forEach { section ->
-                    HomeToggleRow(
-                        title = HomeLayout.label(section),
-                        subtitle = HomeLayout.description(section),
-                        selected = HomeLayout.isShown(draft.hiddenSections, section),
-                        accent = accent,
-                        onClick = { draft = draft.copy(hiddenSections = HomeLayout.toggle(draft.hiddenSections, section)) },
-                    )
+            if (showFrameOptions) {
+                item(key = "frames-options") {
+                    Spacer(Modifier.height(10.dp))
+                    SectionLabel(t("active_frames_header"))
+                    Spacer(Modifier.height(4.dp))
+                    val accent = MaterialTheme.colorScheme.primary
+                    HomeLayout.SECTIONS.forEach { section ->
+                        HomeToggleRow(
+                            title = HomeLayout.label(section),
+                            subtitle = HomeLayout.description(section),
+                            selected = HomeLayout.isShown(draft.hiddenSections, section),
+                            accent = accent,
+                            onClick = { draft = draft.copy(hiddenSections = HomeLayout.toggle(draft.hiddenSections, section)) },
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    MetroLink(text = "appearance", onClick = onAppearance)
                 }
-                Spacer(Modifier.height(10.dp))
-                MetroLink(text = "appearance", onClick = onAppearance)
             }
         }
         if (pickKind == null) {

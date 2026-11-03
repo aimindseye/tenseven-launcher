@@ -1,10 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.content.Intent
 import android.provider.CallLog
-import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,9 +29,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +64,7 @@ import io.github.aimindseye.tenseven.model.inLauncherUser
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import java.util.Locale
+import androidx.compose.foundation.Canvas as ComposeCanvas
 
 @Composable
 internal fun SlotOptionsScreen(
@@ -104,6 +104,7 @@ internal fun SlotOptionsScreen(
                     }
                     ContextAction(mark = "⚙", label = t("hub_settings"), onClick = onOpenHubSettings)
                 }
+
                 QuickBar.PHONE -> {
                     ContextAction(mark = "☎", label = t("dial_pad"), onClick = { onStartIntent(Intent(Intent.ACTION_DIAL)) })
                     ContextAction(
@@ -115,7 +116,10 @@ internal fun SlotOptionsScreen(
                         ContextAction(mark = "@", label = "contacts", onClick = { onLaunchApp(contacts) })
                     }
                 }
-                else -> Unit
+
+                else -> {
+                    Unit
+                }
             }
             slot.app?.let { app ->
                 ContextAction(mark = "ⓘ", label = t("app_info_2"), onClick = { onAppInfo(app) })
@@ -171,8 +175,14 @@ internal fun Bb10ActionBar(
                                         (native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && alt) -> {
                                         { onOptions(slot) }
                                     }
-                                    native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE && !alt && slot.token == QuickBar.HUB -> onHubPeek
-                                    else -> null
+
+                                    native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE && !alt && slot.token == QuickBar.HUB -> {
+                                        onHubPeek
+                                    }
+
+                                    else -> {
+                                        null
+                                    }
                                 }
                             if (action != null && event.type == KeyEventType.KeyDown && native.repeatCount == 0) action()
                             action != null
@@ -226,6 +236,7 @@ internal fun QuickSlotMark(
                     cap = StrokeCap.Round,
                 )
             }
+
             QuickBar.PHONE -> {
                 // Handset: a "C" arc with round ear and mouth pieces.
                 val inset = unit * 0.2f
@@ -245,16 +256,23 @@ internal fun QuickSlotMark(
                     drawCircle(
                         color = color,
                         radius = unit * 0.11f,
-                        center = Offset(center.x + radius * kotlin.math.cos(rad).toFloat(), center.y + radius * kotlin.math.sin(rad).toFloat()),
+                        center =
+                            Offset(
+                                center.x + radius * kotlin.math.cos(rad).toFloat(),
+                                center.y + radius * kotlin.math.sin(rad).toFloat(),
+                            ),
                     )
                 }
             }
-            QuickBar.HUB ->
+
+            QuickBar.HUB -> {
                 // Hub: three short lines, as on the page indicator.
                 for (line in 0..2) {
                     val y = unit * (0.25f + line * 0.25f)
                     drawLine(color, Offset(unit * 0.12f, y), Offset(unit * 0.88f, y), strokeWidth = stroke, cap = StrokeCap.Round)
                 }
+            }
+
             QuickBar.CAMERA -> {
                 // Camera body, viewfinder bump and lens.
                 drawRoundRect(
@@ -267,6 +285,7 @@ internal fun QuickSlotMark(
                 drawRect(color = color, topLeft = Offset(unit * 0.34f, unit * 0.18f), size = Size(unit * 0.32f, unit * 0.12f))
                 drawCircle(color = color, radius = unit * 0.14f, center = Offset(unit * 0.5f, unit * 0.56f), style = Stroke(stroke))
             }
+
             else -> {
                 // Four squares: All Apps.
                 val cell = unit * 0.36f
@@ -400,17 +419,31 @@ internal fun resolveQuickSlot(
         } ?: personal.firstOrNull { app -> labels.any { app.label.equals(it, ignoreCase = true) } }
     }
     return when (token) {
-        QuickBar.COMMAND -> QuickSlot(token, t("search_2"), null)
-        QuickBar.ALL_APPS -> QuickSlot(token, t("all_apps"), null)
-        QuickBar.PHONE ->
+        QuickBar.COMMAND -> {
+            QuickSlot(token, t("search_2"), null)
+        }
+
+        QuickBar.ALL_APPS -> {
+            QuickSlot(token, t("all_apps"), null)
+        }
+
+        QuickBar.PHONE -> {
             role(listOf(DIALER_PACKAGE), listOf(t("phone")))?.let { QuickSlot(token, t("phone"), it) }
+        }
+
         // Start's own Hub page: always available, whatever messaging apps are installed.
-        QuickBar.HUB -> QuickSlot(token, t("hub"), null)
-        QuickBar.CAMERA ->
+        QuickBar.HUB -> {
+            QuickSlot(token, t("hub"), null)
+        }
+
+        QuickBar.CAMERA -> {
             role(CoreAppIdentity.startTileCandidates(CoreAppIdentity.CAMERA), listOf(t("camera")))
                 ?.let { QuickSlot(token, t("camera"), it) }
-        else ->
+        }
+
+        else -> {
             QuickBar.appKey(token)?.let(appByKey::get)?.let { QuickSlot(token, it.label, it) }
+        }
     }
 }
 

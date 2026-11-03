@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,57 +54,77 @@ internal fun HubCalendarPeek(
     }
 
     HubContrastTheme {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(7.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
-            .padding(horizontal = 9.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = if (expanded) "▴ Upcoming calendar" else "▾ Upcoming calendar",
-            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 6.dp),
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.titleSmall,
-        )
-        if (expanded) {
-            if (deviceLocked) {
-                Text("Unlock to see upcoming calendar events",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium)
-            } else if (!permitted) {
-                Text("Allow Calendar access to see events from calendars synced to Android",
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = onRequestCalendarPermission).padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium)
-            } else if (events.isEmpty()) {
-                Text("No upcoming events in the next seven days",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium)
-            } else {
-                events.forEach { event ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenCalendar).padding(vertical = 5.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(event.title, style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(event.calendarName, style = MaterialTheme.typography.labelSmall,
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
+                    .padding(horizontal = 9.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = if (expanded) "▴ Upcoming calendar" else "▾ Upcoming calendar",
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 6.dp),
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleSmall,
+            )
+            if (expanded) {
+                if (deviceLocked) {
+                    Text(
+                        "Unlock to see upcoming calendar events",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                } else if (!permitted) {
+                    Text(
+                        "Allow Calendar access to see events from calendars synced to Android",
+                        modifier = Modifier.fillMaxWidth().clickable(onClick = onRequestCalendarPermission).padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                } else if (events.isEmpty()) {
+                    Text(
+                        "No upcoming events in the next seven days",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                } else {
+                    events.forEach { event ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenCalendar).padding(vertical = 5.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    event.title,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    event.calendarName,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            Text(
+                                DateUtils
+                                    .getRelativeTimeSpanString(
+                                        event.beginsAt,
+                                        System.currentTimeMillis(),
+                                        DateUtils.MINUTE_IN_MILLIS,
+                                    ).toString(),
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            )
                         }
-                        Text(
-                            DateUtils.getRelativeTimeSpanString(event.beginsAt,
-                                System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                 }
             }
         }
-    }
     }
 }

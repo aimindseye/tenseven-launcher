@@ -30,9 +30,13 @@ internal fun findLiveApp(
 ): AppEntry? =
     apps.firstOrNull { CoreAppIdentity.canonicalPackage(it.component.packageName) == packageName }
         ?: when (packageName) {
-            MAIL_PACKAGE ->
+            MAIL_PACKAGE -> {
                 apps.firstOrNull { it.label.equals(MAIL_LABEL, ignoreCase = true) }
-            else -> null
+            }
+
+            else -> {
+                null
+            }
         }
 
 @Composable

@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -21,11 +19,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.type
@@ -95,7 +95,9 @@ fun SableStartScreen(
     onGlanceWidgetsChanged: (List<String>?) -> Unit = {},
     initialHiddenHomeSections: Set<String>? = null,
     onHiddenHomeSectionsChanged: (Set<String>?) -> Unit = {},
-    framesState: io.github.aimindseye.tenseven.frames.FramesState = io.github.aimindseye.tenseven.frames.FramesState(),
+    framesState: io.github.aimindseye.tenseven.frames.FramesState =
+        io.github.aimindseye.tenseven.frames
+            .FramesState(),
     frameSnapshot: (io.github.aimindseye.tenseven.frames.FrameItem, Long) -> Bitmap? = { _, _ -> null },
     onResumeFrame: (io.github.aimindseye.tenseven.frames.FrameItem) -> Unit = {},
     onCloseFrame: (io.github.aimindseye.tenseven.frames.FrameItem) -> Unit = {},
@@ -168,8 +170,11 @@ fun SableStartScreen(
         liveLifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
             while (true) {
                 liveRefreshing = true
-                try { liveSnapshot = liveSurfaceRepository.snapshot() }
-                finally { liveRefreshing = false }
+                try {
+                    liveSnapshot = liveSurfaceRepository.snapshot()
+                } finally {
+                    liveRefreshing = false
+                }
                 kotlinx.coroutines.delay(5000)
             }
         }
@@ -289,9 +294,12 @@ fun SableStartScreen(
     fun activateSlot(slot: QuickSlot) {
         when (slot.token) {
             QuickBar.COMMAND -> openSearch(SableStartDestination.Start)
+
             QuickBar.ALL_APPS -> destination = SableStartDestination.Apps
+
             // The Hub slot is Start's own Hub page; the Sable Hub app has no screen to open.
             QuickBar.HUB -> showHub(HubFilter.All)
+
             else -> slot.app?.let(::launchApp)
         }
     }
@@ -329,10 +337,19 @@ fun SableStartScreen(
     LaunchedEffect(backGeneration) {
         if (backGeneration > 0) {
             when {
-                hubPeek -> hubPeek = false
+                hubPeek -> {
+                    hubPeek = false
+                }
+
                 // Edit Home decides: cancel the item being moved, else leave without saving.
-                destination == SableStartDestination.EditHome -> editBackGeneration += 1
-                destination != SableStartDestination.Start -> navigateBack()
+                destination == SableStartDestination.EditHome -> {
+                    editBackGeneration += 1
+                }
+
+                destination != SableStartDestination.Start -> {
+                    navigateBack()
+                }
+
                 // Back on Hub or an app grid page returns to Active Frames.
                 currentPage != StartPages.HOME -> {
                     onBackToHomePage()
@@ -371,7 +388,7 @@ fun SableStartScreen(
                         },
             ) {
                 when (destination) {
-                    SableStartDestination.Start ->
+                    SableStartDestination.Start -> {
                         Bb10ThemeWithPeek(
                             appearance = appearance,
                             peekOpen = hubPeek,
@@ -401,7 +418,7 @@ fun SableStartScreen(
                             ) { pagerIndex ->
                                 val page = pagerIndex - lead
                                 when {
-                                    page == StartPages.WIDGETS ->
+                                    page == StartPages.WIDGETS -> {
                                         WidgetsPage(
                                             controller = widgetsController,
                                             ids = widgetIds,
@@ -423,7 +440,9 @@ fun SableStartScreen(
                                                     }
                                                 },
                                         )
-                                    page == StartPages.HUB ->
+                                    }
+
+                                    page == StartPages.HUB -> {
                                         SableRefreshableSurface(
                                             isRefreshing = liveRefreshing,
                                             onRefresh = onRefreshLive,
@@ -441,8 +460,13 @@ fun SableStartScreen(
                                                 onRequestContactsPermission = onRequestContactsPermission,
                                             )
                                         }
-                                    page == StartPages.HOME && blankHomePage -> Spacer(Modifier.fillMaxSize())
-                                    page == StartPages.HOME ->
+                                    }
+
+                                    page == StartPages.HOME && blankHomePage -> {
+                                        Spacer(Modifier.fillMaxSize())
+                                    }
+
+                                    page == StartPages.HOME -> {
                                         ActiveFramesPage(
                                             state = framesState,
                                             apps = apps,
@@ -461,6 +485,8 @@ fun SableStartScreen(
                                             onOpenNotificationApp = ::openNotificationApp,
                                             onAllowUsageAccess = onAllowUsageAccess,
                                         )
+                                    }
+
                                     else -> {
                                         val index = page - StartPages.FIRST_GRID
                                         AppGridPage(
@@ -480,6 +506,7 @@ fun SableStartScreen(
                                 }
                             }
                         }
+                    }
 
                     SableStartDestination.SlotOptions -> {
                         val slot = selectedSlot
@@ -536,9 +563,12 @@ fun SableStartScreen(
                         }
                     }
 
-                    SableStartDestination.EditHome ->
+                    SableStartDestination.EditHome -> {
                         EditHomeScreen(
-                            showFrameOptions = !blankHomePage && rememberPlatformCapabilities(refreshGeneration).hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+                            showFrameOptions =
+                                !blankHomePage &&
+                                    rememberPlatformCapabilities(refreshGeneration).hubNotifications ==
+                                    io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
                             apps = apps,
                             initial =
                                 HomeEdit(
@@ -577,8 +607,9 @@ fun SableStartScreen(
                                 destination = SableStartDestination.Appearance
                             },
                         )
+                    }
 
-                    SableStartDestination.Apps ->
+                    SableStartDestination.Apps -> {
                         AppsScreen(
                             apps = apps,
                             focusMemory = focusMemory,
@@ -595,8 +626,9 @@ fun SableStartScreen(
                             privateSpaceLocked = privateSpaceLocked,
                             onTogglePrivateSpace = onTogglePrivateSpace,
                         )
+                    }
 
-                    SableStartDestination.Search ->
+                    SableStartDestination.Search -> {
                         SearchScreen(
                             apps = apps,
                             recentKeys = recentKeys,
@@ -629,14 +661,16 @@ fun SableStartScreen(
                             onOpenSettings = onOpenSystemSettings,
                             onStartIntent = onStartIntent,
                         )
+                    }
 
-                    SableStartDestination.Appearance ->
+                    SableStartDestination.Appearance -> {
                         AppearanceScreen(
                             appearance = appearance,
                             onBack = ::navigateBack,
                             onAppearanceChanged = onAppearanceChanged,
                             onReset = onResetAppearance,
                         )
+                    }
 
                     SableStartDestination.Peek -> {
                         val app = selectedApp

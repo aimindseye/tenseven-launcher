@@ -22,14 +22,45 @@ import org.junit.Test
 
 class P2ScreenLifecycleTest {
     @get:Rule val compose = createComposeRule()
-    private fun capabilities(allowed: Boolean = true, locked: Boolean = false) =
-        PlatformCapabilities.evaluate(true, allowed, false, false, false, false,
-            FramePlatformAccess(deviceLocked = locked))
 
-    private fun notification(text: String) = HubNotification("p2-fixture", "p2-conversation", "Fixture sender",
-        "p2.fixture", "Fixture app", System.currentTimeMillis(), false,
-        listOf(ConversationMessage(text, "p2-conversation", "p2-fixture", "p2.fixture", "Fixture app",
-            text, System.currentTimeMillis(), "Fixture sender", false)), null, null)
+    private fun capabilities(
+        allowed: Boolean = true,
+        locked: Boolean = false,
+    ) = PlatformCapabilities.evaluate(
+        true,
+        allowed,
+        false,
+        false,
+        false,
+        false,
+        FramePlatformAccess(deviceLocked = locked),
+    )
+
+    private fun notification(text: String) =
+        HubNotification(
+            "p2-fixture",
+            "p2-conversation",
+            "Fixture sender",
+            "p2.fixture",
+            "Fixture app",
+            System.currentTimeMillis(),
+            false,
+            listOf(
+                ConversationMessage(
+                    text,
+                    "p2-conversation",
+                    "p2-fixture",
+                    "p2.fixture",
+                    "Fixture app",
+                    text,
+                    System.currentTimeMillis(),
+                    "Fixture sender",
+                    false,
+                ),
+            ),
+            null,
+            null,
+        )
 
     @Test fun hubAndPeekReactToPermissionRevocationAndNotificationReplacement() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -41,21 +72,33 @@ class P2ScreenLifecycleTest {
         store.saveHubPeekText(true)
         ConversationHub.replace(listOf(notification("first fixture text")))
         try {
-            compose.setContent { MaterialTheme {
-                CompositionLocalProvider(LocalPlatformCapabilities provides access) {
-                    val current = rememberHubConversationsUi(LocalContext.current, 0, {}, {})
-                    SideEffect { rendered = current }
-                    HubPeekHost(true, false, {}, {}) {}
+            compose.setContent {
+                MaterialTheme {
+                    CompositionLocalProvider(LocalPlatformCapabilities provides access) {
+                        val current = rememberHubConversationsUi(LocalContext.current, 0, {}, {})
+                        SideEffect { rendered = current }
+                        HubPeekHost(true, false, {}, {}) {}
+                    }
                 }
-            } }
+            }
             compose.onNodeWithText("first fixture text", substring = true).assertExists()
             compose.runOnIdle { ConversationHub.replace(listOf(notification("replacement fixture text"))) }
-            compose.waitUntil { rendered?.conversations?.singleOrNull()?.messages?.singleOrNull()?.text == "replacement fixture text" }
+            compose.waitUntil {
+                rendered
+                    ?.conversations
+                    ?.singleOrNull()
+                    ?.messages
+                    ?.singleOrNull()
+                    ?.text == "replacement fixture text"
+            }
             compose.onNodeWithText("replacement fixture text", substring = true).assertExists()
             compose.onNodeWithText("first fixture text", substring = true).assertDoesNotExist()
             compose.runOnIdle { access = capabilities(allowed = false) }
             compose.onNodeWithText("replacement fixture text", substring = true).assertDoesNotExist()
-            compose.runOnIdle { assertFalse(rendered!!.accessGranted); assertTrue(rendered!!.conversations.isEmpty()) }
+            compose.runOnIdle {
+                assertFalse(rendered!!.accessGranted)
+                assertTrue(rendered!!.conversations.isEmpty())
+            }
             compose.runOnIdle { access = capabilities(locked = true) }
             compose.onNodeWithText("replacement fixture text", substring = true).assertDoesNotExist()
             compose.runOnIdle { assertTrue(rendered!!.deviceLocked) }
@@ -68,9 +111,11 @@ class P2ScreenLifecycleTest {
     @Test fun extractedAppsScreenDoesNotExposeLockedPrivateProfileRows() {
         val personal = AppEntry("Personal fixture", ComponentName("personal", "Main"), Process.myUserHandle())
         val privateApp = personal.copy(label = "Hidden private fixture", profileLabel = AppProfiles.PRIVATE)
-        compose.setContent { MaterialTheme {
-            AppsScreen(listOf(personal, privateApp), remember { SableFocusMemory() }, {}, {}, {}, {}, {}, {}, true, {})
-        } }
+        compose.setContent {
+            MaterialTheme {
+                AppsScreen(listOf(personal, privateApp), remember { SableFocusMemory() }, {}, {}, {}, {}, {}, {}, true, {})
+            }
+        }
         compose.onNodeWithText("Personal fixture").assertExists()
         compose.onNodeWithText("Hidden private fixture").assertDoesNotExist()
     }
@@ -89,6 +134,8 @@ class P2ScreenLifecycleTest {
                 scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
                 compose.onNodeWithTag("active-frames-grid").assertDoesNotExist()
             }
-        } finally { state.saveHomeStyle(style) }
+        } finally {
+            state.saveHomeStyle(style)
+        }
     }
 }

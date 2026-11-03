@@ -5,7 +5,6 @@ import io.github.aimindseye.tenseven.model.*
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
 import io.github.aimindseye.tenseven.platform.WidgetTarget
-
 import io.github.aimindseye.tenseven.runtime.LauncherRequest
 
 /** Compose presentation state; Android registrations and inventory work live in LauncherRuntime. */
@@ -54,7 +53,10 @@ internal class LauncherHomeState {
     val homeWidgets = mutableStateOf(GlanceWidgets.DEFAULT)
     var canNavigateBack = false
 
-    fun reload(store: StartStateRepository, widgets: WidgetHostController) {
+    fun reload(
+        store: StartStateRepository,
+        widgets: WidgetHostController,
+    ) {
         homeStyle.value = store.loadHomeStyle()
         doubleTapLockState.value = store.loadDoubleTapLock()
         bb7Favorites.value = store.loadHomeApps()

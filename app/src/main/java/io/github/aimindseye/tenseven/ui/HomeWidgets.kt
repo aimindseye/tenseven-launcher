@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -30,9 +28,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -110,7 +110,11 @@ internal fun BuiltInWidgets(
                                 modifier = modifier,
                             )
                         }
-                        GlanceWidgets.BATTERY -> BatteryGlanceFrame(battery, onStartIntent, modifier)
+
+                        GlanceWidgets.BATTERY -> {
+                            BatteryGlanceFrame(battery, onStartIntent, modifier)
+                        }
+
                         GlanceWidgets.PHOTOS -> {
                             val datum = snapshot.photos
                             val needsPermission = datum.availability == LiveAvailability.PERMISSION_REQUIRED
@@ -123,7 +127,8 @@ internal fun BuiltInWidgets(
                                 modifier = modifier,
                             )
                         }
-                        else ->
+
+                        else -> {
                             LiveGlanceFrame(
                                 widget = widget,
                                 snapshot = snapshot,
@@ -132,6 +137,7 @@ internal fun BuiltInWidgets(
                                 onShowHub = onShowHub,
                                 modifier = modifier,
                             )
+                        }
                     }
                 }
                 repeat(ActiveFrames.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
@@ -151,7 +157,14 @@ internal fun BatteryGlanceFrame(
     GlanceFrameCard(
         title = t("battery"),
         headline = level?.let { "$it%" } ?: "--",
-        detail = if (level == null) "unavailable" else if (charging) "charging" else "",
+        detail =
+            if (level == null) {
+                "unavailable"
+            } else if (charging) {
+                "charging"
+            } else {
+                ""
+            },
         accent = SableGreen,
         onClick = { onStartIntent(Intent(Intent.ACTION_POWER_USAGE_SUMMARY)) },
         modifier = modifier,
@@ -180,7 +193,9 @@ internal fun LiveGlanceFrame(
             else -> snapshot.mail to SableOrange
         }
     // Calendar asks for a runtime permission; Now playing and the Hub need the notification listener, which the lite build lacks.
-    val listenerMissing = widget == GlanceWidgets.MEDIA && rememberPlatformCapabilities().hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable
+    val listenerMissing =
+        widget == GlanceWidgets.MEDIA &&
+            rememberPlatformCapabilities().hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable
     val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED && !listenerMissing
     val headline =
         when {
@@ -197,16 +212,35 @@ internal fun LiveGlanceFrame(
         accent = accent,
         onClick = {
             when {
-                widget == GlanceWidgets.HUB -> onShowHub()
-                widget == GlanceWidgets.CALENDAR && needsAccess -> context.findActivity()?.requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), SableStartActivity.LIVE_PERMISSION_REQUEST_CODE)
-                widget == GlanceWidgets.MEDIA && needsAccess ->
+                widget == GlanceWidgets.HUB -> {
+                    onShowHub()
+                }
+
+                widget == GlanceWidgets.CALENDAR && needsAccess -> {
+                    context.findActivity()?.requestPermissions(
+                        arrayOf(Manifest.permission.READ_CALENDAR),
+                        SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
+                    )
+                }
+
+                widget == GlanceWidgets.MEDIA && needsAccess -> {
                     onStartIntent(
                         Intent(context, OnboardingActivity::class.java)
                             .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.NOTIFICATIONS.name),
                     )
-                widget == GlanceWidgets.CALENDAR -> openDefault(DefaultApps.CALENDAR)
-                widget == GlanceWidgets.MEDIA -> openDefault(DefaultApps.MUSIC)
-                else -> openDefault(DefaultApps.EMAIL)
+                }
+
+                widget == GlanceWidgets.CALENDAR -> {
+                    openDefault(DefaultApps.CALENDAR)
+                }
+
+                widget == GlanceWidgets.MEDIA -> {
+                    openDefault(DefaultApps.MUSIC)
+                }
+
+                else -> {
+                    openDefault(DefaultApps.EMAIL)
+                }
             }
         },
         modifier = modifier,
@@ -314,6 +348,7 @@ internal fun readBattery(context: Context): Pair<Int?, Boolean> =
         percent to
             (status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL)
     }.getOrDefault(null to false)
+
 @Composable
 internal fun GlanceCard(
     title: String,

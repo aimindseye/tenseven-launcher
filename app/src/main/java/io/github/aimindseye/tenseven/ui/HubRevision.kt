@@ -18,7 +18,10 @@ internal fun rememberHubRevision(): Int {
     val revision by produceState(0, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             callbackFlow {
-                val listener: () -> Unit = { trySend(Unit); Unit }
+                val listener: () -> Unit = {
+                    trySend(Unit)
+                    Unit
+                }
                 ConversationHub.addChangeListener(listener)
                 trySend(Unit)
                 awaitClose { ConversationHub.removeChangeListener(listener) }

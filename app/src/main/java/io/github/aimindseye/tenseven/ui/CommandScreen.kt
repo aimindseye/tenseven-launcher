@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
@@ -33,9 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,8 +83,8 @@ import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyAction
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import io.github.aimindseye.tenseven.privacy.PrivacySummaryPolicy
-import java.util.Locale
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
 internal fun SearchLaunchButton(
@@ -124,6 +124,7 @@ internal fun SearchLaunchButton(
         }
     }
 }
+
 @Composable
 internal fun SearchScreen(
     apps: List<AppEntry>,
@@ -184,20 +185,22 @@ internal fun SearchScreen(
                 // Recents first, label prefix before contains; apps whose effective
                 // access matches privacy words ("camera", "mic") are their own group.
                 val byName =
-                    CommandRanking.apps(
-                        items = apps,
-                        label = { it.label },
-                        recentRank = { app -> recentKeys.indexOf(app.stableKey()).takeIf { it >= 0 } },
-                        term = term,
-                        frequency = { app -> appUsage.score(app.stableKey()) },
-                    ).take(if (term.isEmpty()) 6 else 12)
+                    CommandRanking
+                        .apps(
+                            items = apps,
+                            label = { it.label },
+                            recentRank = { app -> recentKeys.indexOf(app.stableKey()).takeIf { it >= 0 } },
+                            term = term,
+                            frequency = { app -> appUsage.score(app.stableKey()) },
+                        ).take(if (term.isEmpty()) 6 else 12)
                 val byPrivacy =
                     if (term.isEmpty()) {
                         emptyList()
                     } else {
-                        apps.filter { app ->
-                            app !in byName && PrivacySummaryPolicy.matchesPrivacyQuery(app.privacy, term)
-                        }.take(8)
+                        apps
+                            .filter { app ->
+                                app !in byName && PrivacySummaryPolicy.matchesPrivacyQuery(app.privacy, term)
+                            }.take(8)
                     }
                 byName to byPrivacy
             }
@@ -315,10 +318,14 @@ internal fun SearchScreen(
                             AllAppsKeyAction.OpenSecond -> {
                                 { onLaunchApp(secondInstanceOf(app) ?: app) }
                             }
+
                             AllAppsKeyAction.Actions -> {
                                 { actionsFor = if (actionsFor == key) null else key }
                             }
-                            else -> null
+
+                            else -> {
+                                null
+                            }
                         }
                     if (action != null && event.type == KeyEventType.KeyDown) action()
                     action != null
@@ -406,7 +413,19 @@ internal fun SearchScreen(
             }
             val apps1 = filteredApps.filterNot { it == bestApp }
             if (apps1.isNotEmpty()) {
-                item { SectionLabel(if (profileApps != null) CommandGroups.label(parsed.scope).lowercase(locale) + " apps" else if (term.isEmpty()) t("recent_apps") else "apps") }
+                item {
+                    SectionLabel(
+                        if (profileApps !=
+                            null
+                        ) {
+                            CommandGroups.label(parsed.scope).lowercase(locale) + " apps"
+                        } else if (term.isEmpty()) {
+                            t("recent_apps")
+                        } else {
+                            "apps"
+                        },
+                    )
+                }
                 items(apps1, key = { "a:" + it.stableKey() }) { app -> AppResult(app) }
                 item { Spacer(Modifier.height(12.dp)) }
             }
@@ -429,7 +448,8 @@ internal fun SearchScreen(
                     item { Spacer(Modifier.height(12.dp)) }
                 }
             }
-            if (filteredApps.isEmpty() && privacyMatches.isEmpty() && filteredCommands.isEmpty() && settingsResults.isEmpty() && quickRows.isEmpty() &&
+            if (filteredApps.isEmpty() && privacyMatches.isEmpty() && filteredCommands.isEmpty() && settingsResults.isEmpty() &&
+                quickRows.isEmpty() &&
                 peopleResults.isEmpty() && hubResults.isEmpty() && !lockedPrivate
             ) {
                 item {
@@ -665,28 +685,37 @@ internal fun SableSearchField(
                             val native = event.nativeKeyEvent
                             val selection = value.selection
                             when {
-                                event.type != KeyEventType.KeyDown -> false
+                                event.type != KeyEventType.KeyDown -> {
+                                    false
+                                }
+
                                 // Holding Backspace clears the whole query.
                                 native.keyCode == KEYCODE_DEL && native.repeatCount > 0 -> {
                                     if (value.text.isNotEmpty()) onValueChange(TextFieldValue(""))
                                     true
                                 }
+
                                 native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && native.repeatCount == 0 -> {
                                     onSubmit()
                                     true
                                 }
+
                                 // Left at the start or Right at the end of the query: previous / next group.
                                 native.metaState == 0 && selection.collapsed &&
                                     native.keyCode == KEYCODE_DPAD_LEFT && selection.start == 0 -> {
                                     onGroupDelta(-1)
                                     true
                                 }
+
                                 native.metaState == 0 && selection.collapsed &&
                                     native.keyCode == KEYCODE_DPAD_RIGHT && selection.end == value.text.length -> {
                                     onGroupDelta(1)
                                     true
                                 }
-                                else -> false
+
+                                else -> {
+                                    false
+                                }
                             }
                         }.padding(vertical = 8.dp),
                 singleLine = true,
@@ -769,6 +798,7 @@ internal fun SearchCommandRow(
         )
     }
 }
+
 internal fun quickActionRows(
     context: Context,
     raw: String,
@@ -778,23 +808,28 @@ internal fun quickActionRows(
     QuickActions.parse(raw)?.let { action ->
         val (title, intent) =
             when (action.kind) {
-                QuickActionKind.TODO ->
+                QuickActionKind.TODO -> {
                     context.getString(R.string.quick_todo, action.text) to
                         Intent.createChooser(
                             Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, action.text),
                             context.getString(R.string.quick_send_to_app),
                         )
-                QuickActionKind.NOTE ->
+                }
+
+                QuickActionKind.NOTE -> {
                     context.getString(R.string.quick_note, action.text) to
                         Intent.createChooser(
                             Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, action.text),
                             context.getString(R.string.quick_send_to_app),
                         )
-                QuickActionKind.EVENT ->
+                }
+
+                QuickActionKind.EVENT -> {
                     context.getString(R.string.quick_event, action.text) to
                         Intent(Intent.ACTION_INSERT)
                             .setData(CalendarContract.Events.CONTENT_URI)
                             .putExtra(CalendarContract.Events.TITLE, action.text)
+                }
             }
         return listOf(
             SearchCommand(title, context.getString(R.string.quick_hint), "+", source, { onStartIntent(intent) }),
@@ -813,7 +848,6 @@ internal fun quickActionRows(
     }
     return emptyList()
 }
-
 
 /** `assign k camera` lists the apps that K could open; choosing one holds it on K. `unassign k` frees the letter. */
 internal fun assignRows(
@@ -849,7 +883,8 @@ internal fun assignRows(
                 )
             }
         }
-        is AssignRequest.Assign ->
+
+        is AssignRequest.Assign -> {
             CommandRanking
                 .apps(
                     items = apps.filter { it.inLauncherUser },
@@ -861,11 +896,19 @@ internal fun assignRows(
                 .map { app ->
                     val holder = current.componentFor(request.letter)
                     val replaces =
-                        holder?.takeIf { it != app.component.flattenToString() }?.let(android.content.ComponentName::unflattenFromString)
+                        holder
+                            ?.takeIf { it != app.component.flattenToString() }
+                            ?.let(android.content.ComponentName::unflattenFromString)
                             ?.let { c -> apps.firstOrNull { it.component == c }?.label ?: c.packageName }
                     SearchCommand(
                         context.getString(R.string.assign_row, letter, app.label),
-                        if (replaces != null) context.getString(R.string.assign_replaces, replaces) else context.getString(R.string.assign_hint, letter),
+                        if (replaces !=
+                            null
+                        ) {
+                            context.getString(R.string.assign_replaces, replaces)
+                        } else {
+                            context.getString(R.string.assign_hint, letter)
+                        },
                         "$letter",
                         source,
                         {
@@ -874,5 +917,6 @@ internal fun assignRows(
                         },
                     )
                 }
+        }
     }
 }

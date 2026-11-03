@@ -1,9 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.provider.Settings
-import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -28,10 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,12 +68,13 @@ import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.StartTypeToSearch
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.Canvas as ComposeCanvas
 
 @Composable
 internal fun startGridWidthDp(): Int = LocalConfiguration.current.screenWidthDp - (GRID_PADDING.value * 2).toInt()
@@ -153,14 +153,22 @@ internal fun StartStrip(
                             delta != null -> {
                                 { onMovePage(delta) }
                             }
-                            alt && native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE -> onCommand
+
+                            alt && native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE -> {
+                                onCommand
+                            }
+
                             dial != null -> {
                                 { onDial(dial) }
                             }
+
                             slot != null -> {
                                 { onQuickSlot(quickSlots[slot]) }
                             }
-                            else -> null
+
+                            else -> {
+                                null
+                            }
                         }
                     if (action != null && event.type == KeyEventType.KeyDown && native.repeatCount == 0) action()
                     action != null
@@ -272,7 +280,7 @@ internal fun Bb10PageIndicator(
                 ComposeCanvas(Modifier.size(if (page < StartPages.FIRST_GRID) 10.dp else 6.dp)) {
                     val unit = size.minDimension
                     when (page) {
-                        StartPages.WIDGETS ->
+                        StartPages.WIDGETS -> {
                             // Widgets: one wide outlined panel.
                             drawRoundRect(
                                 color = color,
@@ -281,12 +289,16 @@ internal fun Bb10PageIndicator(
                                 cornerRadius = CornerRadius(unit * 0.12f),
                                 style = Stroke(width = unit * 0.14f),
                             )
-                        StartPages.HUB ->
+                        }
+
+                        StartPages.HUB -> {
                             // Hub: three short lines.
                             for (line in 0..2) {
                                 val y = unit * (0.2f + line * 0.3f)
                                 drawLine(color, Offset(0f, y), Offset(unit, y), strokeWidth = unit * 0.14f, cap = StrokeCap.Round)
                             }
+                        }
+
                         StartPages.HOME -> {
                             // Active Frames: four small squares.
                             val cell = unit * 0.42f
@@ -300,7 +312,10 @@ internal fun Bb10PageIndicator(
                                 }
                             }
                         }
-                        else -> drawCircle(color = color, radius = unit / 2f)
+
+                        else -> {
+                            drawCircle(color = color, radius = unit / 2f)
+                        }
                     }
                 }
             }
@@ -321,7 +336,10 @@ internal fun pageDescription(
 
 /** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) and the Settings gear. */
 @Composable
-internal fun StatusDialsRow(onOpenSettings: () -> Unit, visible: Set<String>) {
+internal fun StatusDialsRow(
+    onOpenSettings: () -> Unit,
+    visible: Set<String>,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = FRAME_PADDING, end = 2.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -367,7 +385,9 @@ internal fun DateHeader(
         }
     val dateText =
         remember(today, locale) {
-            val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, HomeHeader.DATE_SKELETON)
+            val pattern =
+                android.text.format.DateFormat
+                    .getBestDateTimePattern(locale, HomeHeader.DATE_SKELETON)
             today.format(DateTimeFormatter.ofPattern(pattern, locale))
         }
     Row(
@@ -384,29 +404,37 @@ internal fun DateHeader(
             modifier = Modifier.weight(1f).semantics { contentDescription = dateText },
         )
         if (onOpenSettings != null) {
-            Text("⚙", color = Bb10Text, fontSize = 22.sp,
-                modifier = Modifier.sableFocusRing().clickable(onClick = onOpenSettings)
-                    .padding(horizontal = 10.dp).semantics { contentDescription = "Launcher settings" })
+            Text(
+                "⚙",
+                color = Bb10Text,
+                fontSize = 22.sp,
+                modifier =
+                    Modifier
+                        .sableFocusRing()
+                        .clickable(onClick = onOpenSettings)
+                        .padding(horizontal = 10.dp)
+                        .semantics { contentDescription = "Launcher settings" },
+            )
         }
         // Notifications: a bell with the unread count; it opens the Hub. Beside it, the sound profile.
         if (showLegacyBadge) {
-        Row(
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (unread > 0) Bb10Blue else Color.Black.copy(alpha = 0.35f))
-                    .sableFocusRing()
-                    .clickable(onClick = onShowHub)
-                    .semantics { contentDescription = "Notifications $unread" }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            LineIcon(paths = LineIconPaths.BELL, modifier = Modifier.size(22.dp), tint = Color.White)
-            if (unread > 0) {
-                Text(text = unread.toString(), style = MaterialTheme.typography.titleMedium, color = Color.White)
+            Row(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (unread > 0) Bb10Blue else Color.Black.copy(alpha = 0.35f))
+                        .sableFocusRing()
+                        .clickable(onClick = onShowHub)
+                        .semantics { contentDescription = "Notifications $unread" }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                LineIcon(paths = LineIconPaths.BELL, modifier = Modifier.size(22.dp), tint = Color.White)
+                if (unread > 0) {
+                    Text(text = unread.toString(), style = MaterialTheme.typography.titleMedium, color = Color.White)
+                }
             }
-        }
         }
         SoundProfileButton()
     }

@@ -8,9 +8,13 @@ class InventoryCoordinatorTest {
     private val posted = mutableListOf<() -> Unit>()
     private val delivered = mutableListOf<Int>()
     private var next = 0
-    private val subject = InventoryCoordinator(
-        load = { ++next }, execute = { work += it }, post = { posted += it }, deliver = { delivered += it },
-    )
+    private val subject =
+        InventoryCoordinator(
+            load = { ++next },
+            execute = { work += it },
+            post = { posted += it },
+            deliver = { delivered += it },
+        )
 
     @Test fun refreshChurnDeliversOnlyNewestResult() {
         subject.start()
@@ -44,8 +48,13 @@ class InventoryCoordinatorTest {
     }
 
     @Test fun deniedOrFailedLoadDoesNotReplaceTheLastGoodInventory() {
-        val failures = InventoryCoordinator<Int>(load = { error("profile locked") },
-            execute = { work += it }, post = { posted += it }, deliver = { delivered += it })
+        val failures =
+            InventoryCoordinator<Int>(
+                load = { error("profile locked") },
+                execute = { work += it },
+                post = { posted += it },
+                deliver = { delivered += it },
+            )
         failures.start()
         work.single()()
         assertEquals(emptyList<Int>(), delivered)

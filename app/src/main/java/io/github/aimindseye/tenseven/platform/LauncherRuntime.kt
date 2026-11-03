@@ -31,63 +31,132 @@ internal class LauncherRuntime(
 ) {
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
-    private val executor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-        ArrayBlockingQueue(1), ThreadPoolExecutor.DiscardOldestPolicy())
-    private val profileExecutor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-        ArrayBlockingQueue(4), ThreadPoolExecutor.DiscardOldestPolicy())
-    private val coordinator = InventoryCoordinator(
-        load = { LauncherInventory(inventory.loadApps(), inventory.privateSpace()?.let(inventory::isLocked), inventory.workProfilesPaused()) },
-        execute = { executor.execute(it) },
-        post = { main.post(it) },
-        deliver = onInventory,
-    )
+    private val executor =
+        ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            ArrayBlockingQueue(1),
+            ThreadPoolExecutor.DiscardOldestPolicy(),
+        )
+    private val profileExecutor =
+        ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            ArrayBlockingQueue(4),
+            ThreadPoolExecutor.DiscardOldestPolicy(),
+        )
+    private val coordinator =
+        InventoryCoordinator(
+            load = {
+                LauncherInventory(
+                    inventory.loadApps(),
+                    inventory.privateSpace()?.let(inventory::isLocked),
+                    inventory.workProfilesPaused(),
+                )
+            },
+            execute = { executor.execute(it) },
+            post = { main.post(it) },
+            deliver = onInventory,
+        )
+
     @Volatile private var started = false
+
     @Volatile private var closed = false
     private var callbackRegistered = false
     private var profileRegistered = false
-    private val callback = object : LauncherApps.Callback() {
-        private fun changed(packages: List<String>, user: UserHandle) {
-            packages.forEach { inventory.invalidatePrivacy(it, user) }
+    private val callback =
+        object : LauncherApps.Callback() {
+            private fun changed(
+                packages: List<String>,
+                user: UserHandle,
+            ) {
+                packages.forEach { inventory.invalidatePrivacy(it, user) }
+                refresh()
+            }
+
+            override fun onPackageRemoved(
+                packageName: String,
+                user: UserHandle,
+            ) = changed(listOf(packageName), user)
+
+            override fun onPackageAdded(
+                packageName: String,
+                user: UserHandle,
+            ) = changed(listOf(packageName), user)
+
+            override fun onPackageChanged(
+                packageName: String,
+                user: UserHandle,
+            ) = changed(listOf(packageName), user)
+
+            override fun onPackagesAvailable(
+                vararg packageNames: String,
+                user: UserHandle,
+                replacing: Boolean,
+            ) = changed(packageNames.toList(), user)
+
+            override fun onPackagesUnavailable(
+                packageNames: Array<out String>,
+                user: UserHandle,
+                replacing: Boolean,
+            ) = changed(packageNames.toList(), user)
+
+            override fun onPackagesSuspended(
+                vararg packageNames: String,
+                user: UserHandle,
+            ) = refresh()
+
+            override fun onPackagesUnsuspended(
+                vararg packageNames: String,
+                user: UserHandle,
+            ) = refresh()
+        }
+    private val permissionSignal =
+        PermissionChangeSignal(app.packageManager) { uid ->
+            inventory.invalidatePrivacyForUid(uid)
             refresh()
         }
-        override fun onPackageRemoved(packageName: String, user: UserHandle) = changed(listOf(packageName), user)
-        override fun onPackageAdded(packageName: String, user: UserHandle) = changed(listOf(packageName), user)
-        override fun onPackageChanged(packageName: String, user: UserHandle) = changed(listOf(packageName), user)
-        override fun onPackagesAvailable(vararg packageNames: String, user: UserHandle, replacing: Boolean) = changed(packageNames.toList(), user)
-        override fun onPackagesUnavailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) = changed(packageNames.toList(), user)
-        override fun onPackagesSuspended(vararg packageNames: String, user: UserHandle) = refresh()
-        override fun onPackagesUnsuspended(vararg packageNames: String, user: UserHandle) = refresh()
-    }
-    private val permissionSignal = PermissionChangeSignal(app.packageManager) { uid ->
-        inventory.invalidatePrivacyForUid(uid)
-        refresh()
-    }
-    private val profileReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            @Suppress("DEPRECATION")
-            val user = intent.getParcelableExtra<UserHandle>(Intent.EXTRA_USER)
-            inventory.invalidatePrivacyForUser(user)
-            refresh()
+    private val profileReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                @Suppress("DEPRECATION")
+                val user = intent.getParcelableExtra<UserHandle>(Intent.EXTRA_USER)
+                inventory.invalidatePrivacyForUser(user)
+                refresh()
+            }
         }
-    }
-    private val liveObserver = object : ContentObserver(main) {
-        override fun onChange(selfChange: Boolean) = refresh()
-    }
-    private val appObserver = object : ContentObserver(main) {
-        override fun onChange(selfChange: Boolean) = refresh()
-    }
+    private val liveObserver =
+        object : ContentObserver(main) {
+            override fun onChange(selfChange: Boolean) = refresh()
+        }
+    private val appObserver =
+        object : ContentObserver(main) {
+            override fun onChange(selfChange: Boolean) = refresh()
+        }
     private val conversationsChanged: () -> Unit = { refresh() }
 
     fun start() {
         if (closed || started) return
         started = true
-        callbackRegistered = runCatching { inventory.registerCallback(callback); true }.getOrDefault(false)
+        callbackRegistered =
+            runCatching {
+                inventory.registerCallback(callback)
+                true
+            }.getOrDefault(false)
         permissionSignal.register()
-        profileRegistered = runCatching {
-            val filter = IntentFilter().apply { PROFILE_ACTIONS.forEach(::addAction) }
-            app.registerReceiver(profileReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            true
-        }.getOrDefault(false)
+        profileRegistered =
+            runCatching {
+                val filter = IntentFilter().apply { PROFILE_ACTIONS.forEach(::addAction) }
+                app.registerReceiver(profileReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+                true
+            }.getOrDefault(false)
         LiveSurfaceRepository.OBSERVED_URIS.forEach { uri ->
             runCatching { app.contentResolver.registerContentObserver(uri, true, liveObserver) }
         }
@@ -106,9 +175,10 @@ internal class LauncherRuntime(
         }
     }
 
-    fun setPrivateLocked(locked: Boolean) = profileAction {
-        inventory.privateSpace()?.let { inventory.setLocked(it, locked) }
-    }
+    fun setPrivateLocked(locked: Boolean) =
+        profileAction {
+            inventory.privateSpace()?.let { inventory.setLocked(it, locked) }
+        }
 
     fun setWorkPaused(paused: Boolean) = profileAction { inventory.setWorkProfilesPaused(paused) }
 
@@ -148,12 +218,19 @@ internal class LauncherRuntime(
     }
 
     private companion object {
-        val PROFILE_ACTIONS = listOf(
-            Intent.ACTION_MANAGED_PROFILE_ADDED, Intent.ACTION_MANAGED_PROFILE_REMOVED,
-            Intent.ACTION_MANAGED_PROFILE_AVAILABLE, Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE,
-            Intent.ACTION_MANAGED_PROFILE_UNLOCKED, Intent.ACTION_PROFILE_ACCESSIBLE,
-            Intent.ACTION_PROFILE_INACCESSIBLE, Intent.ACTION_PROFILE_AVAILABLE,
-            Intent.ACTION_PROFILE_UNAVAILABLE, Intent.ACTION_PROFILE_ADDED, Intent.ACTION_PROFILE_REMOVED,
-        )
+        val PROFILE_ACTIONS =
+            listOf(
+                Intent.ACTION_MANAGED_PROFILE_ADDED,
+                Intent.ACTION_MANAGED_PROFILE_REMOVED,
+                Intent.ACTION_MANAGED_PROFILE_AVAILABLE,
+                Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE,
+                Intent.ACTION_MANAGED_PROFILE_UNLOCKED,
+                Intent.ACTION_PROFILE_ACCESSIBLE,
+                Intent.ACTION_PROFILE_INACCESSIBLE,
+                Intent.ACTION_PROFILE_AVAILABLE,
+                Intent.ACTION_PROFILE_UNAVAILABLE,
+                Intent.ACTION_PROFILE_ADDED,
+                Intent.ACTION_PROFILE_REMOVED,
+            )
     }
 }

@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
@@ -11,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
@@ -136,27 +136,38 @@ internal fun phonePalette(scheme: androidx.compose.material3.ColorScheme): Start
 internal val LocalStartPalette = staticCompositionLocalOf { startPalette(dark = true, accent = AccentPreset.Blue) }
 
 internal val Bb10Blue: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.accent
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.accent
 internal val Bb10OnBlue: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.onAccent
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.onAccent
 internal val Bb10Background: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.background
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.background
 internal val Bb10Card: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.card
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.card
 internal val Bb10Tile: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.tile
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.tile
 internal val Bb10Line: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.line
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.line
 internal val Bb10BarTop: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.barTop
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.barTop
 internal val Bb10BarBottom: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.barBottom
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.barBottom
 internal val Bb10Text: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.text
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.text
 internal val Bb10Muted: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.muted
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.muted
 internal val Bb10Dim: Color
-    @Composable @ReadOnlyComposable get() = LocalStartPalette.current.dim
+    @Composable @ReadOnlyComposable
+    get() = LocalStartPalette.current.dim
 
 @Composable
 internal fun Bb10Theme(

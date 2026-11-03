@@ -44,6 +44,7 @@ internal val PrivacyBadgeWidth = 18.dp
 // BB10 strip metrics, designed for the Q25's 720x720 panel at density 280
 // (411dp square, about 387dp tall under the status bar). The grid's rows and
 // icon size, and the Active Frames card height, come from the window.
+
 /** The built-in widget cards on the Widgets page. */
 internal val BUILT_IN_WIDGET_HEIGHT = 110.dp
 internal val FRAME_PADDING = 6.dp
@@ -80,7 +81,6 @@ internal const val STATUS_BAR_FALLBACK_DP = 24
 /** Page indicator, bar and the grid's own padding: what the grid rows do not get. */
 internal const val START_CHROME_DP = INDICATOR_HEIGHT_DP + BAR_HEIGHT_DP + 2 * 4
 internal const val NANOS_PER_MILLI = 1_000_000L
-
 
 /** Typed `-todo`, `/note`, `+event` and web addresses become rows that hand the text to the app that handles it. */
 internal const val ASSIGN_ROWS = 6

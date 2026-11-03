@@ -10,7 +10,9 @@ internal class InventoryCoordinator<T : Any>(
     private val deliver: (T) -> Unit,
 ) {
     private val generation = AtomicLong()
+
     @Volatile private var active = false
+
     @Volatile private var closed = false
 
     fun start() {

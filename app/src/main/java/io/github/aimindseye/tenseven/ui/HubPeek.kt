@@ -56,10 +56,10 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -117,7 +117,11 @@ internal fun HubPeekHost(
                             onPeekChange(true)
                         }
                         // Once the peek opens, keep the rest of this drag from also scrolling the page underneath.
-                        if (opened) change.consume() else if (abs(change.position.y - down.position.y) > slop * 2) break
+                        if (opened) {
+                            change.consume()
+                        } else if (abs(change.position.y - down.position.y) > slop * 2) {
+                            break
+                        }
                     }
                 }
             },
@@ -145,10 +149,14 @@ private fun HubPeekPanel(
     val capabilities = rememberPlatformCapabilities()
     val deviceLocked = capabilities.deviceLocked
     val revision = rememberHubRevision()
-    val conversations = remember(revision, capabilities) {
-        if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready && !deviceLocked)
-            ConversationHub.conversations().take(MAX_ROWS) else emptyList()
-    }
+    val conversations =
+        remember(revision, capabilities) {
+            if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready && !deviceLocked) {
+                ConversationHub.conversations().take(MAX_ROWS)
+            } else {
+                emptyList()
+            }
+        }
     val focus = remember { FocusRequester() }
     // The panel slides in from the left edge while the rest of Home dims.
     val slide = remember { Animatable(0f) }

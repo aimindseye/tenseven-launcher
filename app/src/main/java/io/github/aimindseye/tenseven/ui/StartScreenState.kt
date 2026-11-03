@@ -51,6 +51,7 @@ internal data class HomeEdit(
     val glanceWidgets: List<String>,
     val hiddenSections: Set<String>,
 )
+
 internal fun destinationFor(screen: String): SableStartDestination =
     when (screen.lowercase(Locale.ROOT)) {
         "apps" -> SableStartDestination.Apps

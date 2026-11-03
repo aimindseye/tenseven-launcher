@@ -1,11 +1,8 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import android.Manifest
 import android.content.Intent
 import android.provider.CallLog
-import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,10 +31,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +77,7 @@ import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.PeopleRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.Canvas as ComposeCanvas
 
 @Composable
 internal fun HubPage(
@@ -99,26 +99,29 @@ internal fun HubPage(
     val mailPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.EMAIL) }
     val contactsPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.CONTACTS) }
     val dialerPackage = remember(context) { DefaultApps.dialerPackage(context) }
+
     fun appOf(pkg: String?) = pkg?.let { p -> apps.firstOrNull { it.inLauncherUser && it.component.packageName == p } }
     val messagesApp = appOf(messagesPackage)
     val mailApp = appOf(mailPackage)
     val contactsApp = appOf(contactsPackage) ?: findLiveApp(apps, CONTACTS_PACKAGE)
     // The Hub works from Tenseven's own notification listener, or from Sable Hub's snapshot when that is installed.
     val hubInstalled =
-        snapshot.messages.availability != LiveAvailability.UNAVAILABLE || capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+        snapshot.messages.availability != LiveAvailability.UNAVAILABLE ||
+            capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
     // The listener tells us which notifications are conversations (including email).
     // The counts-only snapshot supplies totals; disabled and zero-count apps never get a chip.
     val conversationSources = remember(refreshGeneration) { ConversationHub.notifications() }
-    val sourceGroups = remember(snapshot.hubApps, enabledHubApps, conversationSources) {
-        HubSourceGroups.summarize(
-            counts = snapshot.hubApps,
-            enabledPackages = enabledHubApps,
-            emailSources = conversationSources.filter { it.isEmail }.map { it.packageName }.toSet(),
-            messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
-        )
-    }
+    val sourceGroups =
+        remember(snapshot.hubApps, enabledHubApps, conversationSources) {
+            HubSourceGroups.summarize(
+                counts = snapshot.hubApps,
+                enabledPackages = enabledHubApps,
+                emailSources = conversationSources.filter { it.isEmail }.map { it.packageName }.toSet(),
+                messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
+            )
+        }
     val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
     val barItems =
         remember(snapshot.hubApps, personalApps, enabledHubApps) {
@@ -199,71 +202,71 @@ internal fun HubPage(
     }
 
     HubContrastTheme {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
-        state = listState,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item(key = "header") {
-            Text(
-                text = HUB_LABEL,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Medium,
-                // The strip's own text colour (BB10 palette), not the appearance's content colour.
-                color = Bb10Text,
-                modifier = Modifier.semantics { heading() },
-            )
-            Spacer(Modifier.height(6.dp))
-            HubUnifiedNavigation(
-                ui = conversationsUi,
-                currentTab = filter,
-                onTabChange = onFilter,
-                firstTab = tabFocus,
-                messageCount = sourceGroups.messages,
-                emailCount = sourceGroups.email,
-                onOpenCalendar = { onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR)) },
-            )
-        }
-        // Calendar data requires a second, explicit opt-in (separate from notification sources).
-        if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
-            item(key = "hub-upcoming-calendar") {
-                HubCalendarPeek(
-                    refreshGeneration = refreshGeneration,
-                    onRequestCalendarPermission = {
-                        context.findActivity()?.requestPermissions(
-                            arrayOf(Manifest.permission.READ_CALENDAR),
-                            SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
-                        )
-                    },
-                    onOpenCalendar = {
-                        onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
-                    },
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
+            state = listState,
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item(key = "header") {
+                Text(
+                    text = HUB_LABEL,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Medium,
+                    // The strip's own text colour (BB10 palette), not the appearance's content colour.
+                    color = Bb10Text,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Spacer(Modifier.height(6.dp))
+                HubUnifiedNavigation(
+                    ui = conversationsUi,
+                    currentTab = filter,
+                    onTabChange = onFilter,
+                    firstTab = tabFocus,
+                    messageCount = sourceGroups.messages,
+                    emailCount = sourceGroups.email,
+                    onOpenCalendar = { onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR)) },
+                )
+            }
+            // Calendar data requires a second, explicit opt-in (separate from notification sources).
+            if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
+                item(key = "hub-upcoming-calendar") {
+                    HubCalendarPeek(
+                        refreshGeneration = refreshGeneration,
+                        onRequestCalendarPermission = {
+                            context.findActivity()?.requestPermissions(
+                                arrayOf(Manifest.permission.READ_CALENDAR),
+                                SableStartActivity.LIVE_PERMISSION_REQUEST_CODE,
+                            )
+                        },
+                        onOpenCalendar = {
+                            onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
+                        },
+                    )
+                }
+            }
+            if (contactsTab) {
+                hubContactsItems(
+                    people = people,
+                    loaded = peopleLoaded,
+                    canRead = canReadContacts,
+                    contactsApp = contactsApp,
+                    messagesPackage = messagesApp?.component?.packageName,
+                    requesterFor = ::requesterFor,
+                    actions = actions,
+                )
+            } else {
+                hubSummaryItems(
+                    filter = filter,
+                    snapshot = snapshot,
+                    summary = if (hubInstalled) HubBar.summary(barItems) else null,
+                    messagesApp = messagesApp,
+                    mailApp = mailApp,
+                    actions = actions,
+                    conversations = conversationsUi,
                 )
             }
         }
-        if (contactsTab) {
-            hubContactsItems(
-                people = people,
-                loaded = peopleLoaded,
-                canRead = canReadContacts,
-                contactsApp = contactsApp,
-                messagesPackage = messagesApp?.component?.packageName,
-                requesterFor = ::requesterFor,
-                actions = actions,
-            )
-        } else {
-            hubSummaryItems(
-                filter = filter,
-                snapshot = snapshot,
-                summary = if (hubInstalled) HubBar.summary(barItems) else null,
-                messagesApp = messagesApp,
-                mailApp = mailApp,
-                actions = actions,
-                conversations = conversationsUi,
-            )
-        }
-    }
     }
 }
 

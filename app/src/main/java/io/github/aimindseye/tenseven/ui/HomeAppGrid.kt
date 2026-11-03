@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -23,8 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -185,15 +185,17 @@ internal fun GridCell(
             }
         }
         if (showLabel) Spacer(Modifier.height(GRID_ICON_LABEL_GAP))
-        if (showLabel) Text(
-            text = label,
-            // No tracking: "Minesweeper" fits a fifth of 411dp on one line.
-            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
-            color = Bb10Text,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (showLabel) {
+            Text(
+                text = label,
+                // No tracking: "Minesweeper" fits a fifth of 411dp on one line.
+                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                color = Bb10Text,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

@@ -149,10 +149,14 @@ if (releaseSigned) {
             val file = rootProject.file(releaseStoreFile!!)
             check(file.isFile) { "Signing keystore is missing" }
             val keystore = KeyStore.getInstance(file, releaseStorePassword!!.toCharArray())
-            val certificate = keystore.getCertificate(releaseKeyAlias!!)
-                ?: error("Release key alias was not found")
-            val actual = MessageDigest.getInstance("SHA-256").digest(certificate.encoded)
-                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+            val certificate =
+                keystore.getCertificate(releaseKeyAlias!!)
+                    ?: error("Release key alias was not found")
+            val actual =
+                MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(certificate.encoded)
+                    .joinToString("") { "%02x".format(it.toInt() and 0xff) }
             check(actual == registeredTensevenCertificateSha256) {
                 "Wrong release signing certificate: expected registered SHA-256; got $actual"
             }

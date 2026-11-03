@@ -39,13 +39,13 @@ data class PlatformCapabilities(
     val lockServiceAvailable: Boolean = false,
     val deviceLock: CapabilityStatus = CapabilityStatus.Unavailable,
     val postNotifications: CapabilityStatus = CapabilityStatus.Ready,
-
 ) {
-    val frameFallbackReason: String get() = when {
-        thirdPartySnapshots == CapabilityStatus.Ready -> "Preview uses an OS-authorized task snapshot; protected content stays hidden."
-        usageRecents == CapabilityStatus.Ready -> "Opened frames use launcher records and usage access; only the latest eight are kept. Automatic app snapshots are unavailable for this install."
-        else -> "Open an app to create a frame. Usage access adds new openings outside TenSeven. Automatic app snapshots are unavailable for this install."
-    }
+    val frameFallbackReason: String get() =
+        when {
+            thirdPartySnapshots == CapabilityStatus.Ready -> "Preview uses an OS-authorized task snapshot; protected content stays hidden."
+            usageRecents == CapabilityStatus.Ready -> "Opened frames use launcher records and usage access; only the latest eight are kept. Automatic app snapshots are unavailable for this install."
+            else -> "Open an app to create a frame. Usage access adds new openings outside TenSeven. Automatic app snapshots are unavailable for this install."
+        }
 
     companion object {
         /** Pure and independently testable; exactly the same matrix is shared by UI and actions. */
@@ -57,31 +57,33 @@ data class PlatformCapabilities(
             overlayAllowed: Boolean,
             trustedSnapshotBridge: Boolean,
             frameAccess: FramePlatformAccess = FramePlatformAccess(),
-        ): PlatformCapabilities = PlatformCapabilities(
-            hubNotifications = when {
-                !hasListenerService -> CapabilityStatus.Unavailable
-                listenerAllowed -> CapabilityStatus.Ready
-                else -> CapabilityStatus.PermissionRequired
-            },
-            usageRecents = if (usageAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-            calendarEvents = if (calendarAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-            overlay = if (overlayAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-            thirdPartySnapshots = if (trustedSnapshotBridge) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            // Notes/Tasks/Remind local records never need Calendar or network permissions.
-            localTasks = CapabilityStatus.Ready,
-            taskEnumeration = if (frameAccess.tasks) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            taskResume = if (frameAccess.resume) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            taskRemoval = if (frameAccess.removal) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            widgetHosting = if (frameAccess.widgets) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            hardwareKeyboard = frameAccess.keyboard,
-            contacts = if (frameAccess.contacts) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-            photos = if (frameAccess.photos) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-            camera = if (frameAccess.camera) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-            secureKeyguard = frameAccess.secureKeyguard,
-            deviceLocked = frameAccess.deviceLocked,
-            lockServiceAvailable = frameAccess.lockService,
-            deviceLock = frameAccess.lock,
-            postNotifications = if (frameAccess.postNotifications) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-        )
+        ): PlatformCapabilities =
+            PlatformCapabilities(
+                hubNotifications =
+                    when {
+                        !hasListenerService -> CapabilityStatus.Unavailable
+                        listenerAllowed -> CapabilityStatus.Ready
+                        else -> CapabilityStatus.PermissionRequired
+                    },
+                usageRecents = if (usageAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+                calendarEvents = if (calendarAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+                overlay = if (overlayAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+                thirdPartySnapshots = if (trustedSnapshotBridge) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                // Notes/Tasks/Remind local records never need Calendar or network permissions.
+                localTasks = CapabilityStatus.Ready,
+                taskEnumeration = if (frameAccess.tasks) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                taskResume = if (frameAccess.resume) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                taskRemoval = if (frameAccess.removal) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                widgetHosting = if (frameAccess.widgets) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                hardwareKeyboard = frameAccess.keyboard,
+                contacts = if (frameAccess.contacts) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+                photos = if (frameAccess.photos) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+                camera = if (frameAccess.camera) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                secureKeyguard = frameAccess.secureKeyguard,
+                deviceLocked = frameAccess.deviceLocked,
+                lockServiceAvailable = frameAccess.lockService,
+                deviceLock = frameAccess.lock,
+                postNotifications = if (frameAccess.postNotifications) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+            )
     }
 }
