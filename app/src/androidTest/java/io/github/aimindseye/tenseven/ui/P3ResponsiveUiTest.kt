@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
@@ -111,7 +113,10 @@ class P3ResponsiveUiTest {
 
     @Test fun fnEnterFallsBackToHomeMenuOnKeyboardsWithoutMenuKey() {
         var menus = 0
+        var hostView: android.view.View? = null
         compose.setContent {
+            val view = LocalView.current
+            SideEffect { hostView = view }
             MaterialTheme {
                 val pager =
                     androidx.compose.foundation.pager
@@ -137,6 +142,7 @@ class P3ResponsiveUiTest {
             }
         }
         compose.waitForIdle()
+        awaitWindowFocus(checkNotNull(hostView))
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val now = android.os.SystemClock.uptimeMillis()
         instrumentation.sendKeySync(
@@ -170,13 +176,32 @@ class P3ResponsiveUiTest {
 
     @Test fun foregroundKeyProbeStopsCaptureWhenItsActivityPauses() {
         ActivityScenario.launch(DeviceCompatibilityActivity::class.java).use { scenario ->
+            var window: android.view.View? = null
+            scenario.onActivity { window = it.window.decorView }
+            awaitWindowFocus(checkNotNull(window))
             compose.onNodeWithText("Start key capture").performScrollTo().performClick()
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_A)
+            compose.waitForIdle()
             compose.onNodeWithText("key=29", substring = true).performScrollTo().assertIsDisplayed()
             scenario.moveToState(Lifecycle.State.CREATED)
             scenario.moveToState(Lifecycle.State.RESUMED)
             compose.onNodeWithText("Start key capture").performScrollTo().assertIsDisplayed()
         }
+    }
+
+    private fun awaitWindowFocus(view: android.view.View) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        compose.waitUntil(timeoutMillis = WINDOW_FOCUS_TIMEOUT_MS) {
+            var focused = false
+            instrumentation.runOnMainSync { focused = view.hasWindowFocus() }
+            focused
+        }
+        compose.waitForIdle()
+    }
+
+    private companion object {
+        const val WINDOW_FOCUS_TIMEOUT_MS = 5_000L
     }
 }
