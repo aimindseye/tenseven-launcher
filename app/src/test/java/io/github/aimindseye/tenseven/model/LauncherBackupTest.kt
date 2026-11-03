@@ -104,6 +104,8 @@ class LauncherBackupTest {
                 StartStateRepository.KEY_HOME_NOTIFICATION_STRIP_BB10,
                 StartStateRepository.KEY_HOME_NOTIFICATION_EXPANDED_BB7,
                 StartStateRepository.KEY_HOME_NOTIFICATION_EXPANDED_BB10,
+                StartStateRepository.KEY_HUB_ALL_ICONS_BB7,
+                StartStateRepository.KEY_HUB_ALL_ICONS_BB10,
                 StartStateRepository.KEY_TYPE_TO_SEARCH,
                 StartStateRepository.KEY_BB7_ICON_SIZE,
                 StartStateRepository.KEY_WIDGETS_PAGE,
