@@ -887,6 +887,7 @@ fun SableStartScreen(
 
                     SableStartDestination.EditHome ->
                         EditHomeScreen(
+                            showFrameOptions = !blankHomePage && ConversationAccess.isGranted(homeContext),
                             apps = apps,
                             initial =
                                 HomeEdit(
@@ -968,7 +969,7 @@ fun SableStartScreen(
                                 returnDestination = SableStartDestination.Start
                                 destination = SableStartDestination.Appearance
                             },
-                            onFrames = { showPage(StartPages.HOME) },
+                            onFrames = if (blankHomePage) null else ({ showPage(StartPages.HOME) }),
                             onGrid = { showPage(StartPages.FIRST_GRID) },
                             onHub = ::showHub,
                             onEditHome = {
@@ -2777,6 +2778,7 @@ private fun HomeEdit.moved(
  */
 @Composable
 private fun EditHomeScreen(
+    showFrameOptions: Boolean,
     apps: List<AppEntry>,
     initial: HomeEdit,
     defaults: HomeEdit,
@@ -3028,7 +3030,7 @@ private fun EditHomeScreen(
                     onClick = { draft = draft.copy(quickBar = QuickBar.DEFAULT) },
                 )
             }
-            item(key = "frames-options") {
+            if (showFrameOptions) item(key = "frames-options") {
                 Spacer(Modifier.height(10.dp))
                 SectionLabel(t("active_frames_header"))
                 Spacer(Modifier.height(4.dp))
@@ -3829,7 +3831,7 @@ private fun SearchScreen(
     onOpenPeek: (AppEntry) -> Unit,
     onAllApps: () -> Unit,
     onAppearance: () -> Unit,
-    onFrames: () -> Unit,
+    onFrames: (() -> Unit)?,
     onGrid: () -> Unit,
     onHub: (HubFilter) -> Unit,
     onEditHome: () -> Unit,
@@ -3895,7 +3897,7 @@ private fun SearchScreen(
     val commands =
         listOf(
             SearchCommand(t("all_apps"), t("a_to_z_with_privacy"), "A", t("start"), onAllApps),
-            SearchCommand(t("active_frames"), t("open_apps_home"), "▦", t("start"), onFrames),
+            onFrames?.let { SearchCommand(t("active_frames"), t("open_apps_home"), "▦", t("start"), it) },
             SearchCommand(t("app_grid"), t("every_app_in_your_order"), "▤", t("start"), onGrid),
             SearchCommand(t("hub_page"), t("messages_mail_calls_contacts_and"), "◇", t("start"), { onHub(HubFilter.All) }),
             SearchCommand(t("edit_home"), t("order_the_app_grid_the"), "▭", t("start"), onEditHome),

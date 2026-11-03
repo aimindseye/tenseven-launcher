@@ -14,9 +14,22 @@ import io.github.aimindseye.tenseven.platform.*
 
 @Composable
 internal fun FrameSettingsSection(repository: StartStateRepository, notificationAccess: Boolean? = null) {
-    val style by homeStyleState(repository)
+    val styleHolder = homeStyleState(repository)
+    val style by styleHolder
     val context = LocalContext.current
-    val granted = notificationAccess ?: io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)
+    var observedAccess by remember(context) { mutableStateOf(io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)) }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, repository) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                styleHolder.value = repository.loadHomeStyle()
+                observedAccess = io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    val granted = notificationAccess ?: observedAccess
     if (!io.github.aimindseye.tenseven.frames.FrameAvailability.setup(style == HomeStyle.Bb10, granted)) return
     var value by remember { mutableStateOf(repository.loadFrameSettings()) }
     val capabilities = remember { PlatformCapabilityProbe.detect(context) }
