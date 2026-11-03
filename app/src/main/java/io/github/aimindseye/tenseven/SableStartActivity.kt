@@ -50,7 +50,7 @@ class SableStartActivity : ComponentActivity() {
     private lateinit var startStateRepository: StartStateRepository
     private lateinit var activeFrames: io.github.aimindseye.tenseven.platform.ActiveFramesHost
 
-    private val screen = io.github.aimindseye.tenseven.runtime.LauncherHomeState()
+    private val screen = io.github.aimindseye.tenseven.ui.LauncherHomeState()
     private val widgetController by lazy {
         WidgetHostController(this, startStateRepository) { target, ids ->
             if (target == WidgetTarget.HOME) screen.homeWidgetIds.value = ids else screen.widgetIds.value = ids
@@ -391,11 +391,7 @@ class SableStartActivity : ComponentActivity() {
     /** Lock or unlock the private space; the profile broadcasts refresh All Apps. */
     private fun togglePrivateSpace() {
         val locked = screen.privateSpaceLockedState.value ?: return
-        inventoryExecutor.execute {
-            val user = launcherAppsRepository.privateSpace() ?: return@execute
-            launcherAppsRepository.setLocked(user, !locked)
-            runOnUiThread { scheduleInventoryRefresh() }
-        }
+        runtime.setPrivateLocked(!locked)
     }
 
     /** The lock action for a double tap on empty Home space; null while the setting or the service is off. */
@@ -409,10 +405,7 @@ class SableStartActivity : ComponentActivity() {
     /** Pause or resume work apps; the profile broadcasts refresh All Apps. */
     private fun toggleWorkProfile() {
         val paused = screen.workPausedState.value ?: return
-        inventoryExecutor.execute {
-            launcherAppsRepository.setWorkProfilesPaused(!paused)
-            runOnUiThread { scheduleInventoryRefresh() }
-        }
+        runtime.setWorkPaused(!paused)
     }
 
     /** The BlackBerry 7 home draws on the wallpaper; the BlackBerry 10 screen paints its own. */

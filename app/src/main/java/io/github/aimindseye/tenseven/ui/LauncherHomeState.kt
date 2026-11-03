@@ -1,4 +1,4 @@
-package io.github.aimindseye.tenseven.runtime
+package io.github.aimindseye.tenseven.ui
 
 import androidx.compose.runtime.mutableStateOf
 import io.github.aimindseye.tenseven.model.*
@@ -6,9 +6,9 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
 import io.github.aimindseye.tenseven.platform.WidgetTarget
 
-internal data class LauncherRequest(val screen: String = "start", val serial: Int = 0)
+import io.github.aimindseye.tenseven.runtime.LauncherRequest
 
-/** Presentation state is independent of Activity recreation and Android callback registration. */
+/** Compose presentation state; Android registrations and inventory work live in LauncherRuntime. */
 internal class LauncherHomeState {
     val appsState = mutableStateOf<List<AppEntry>>(emptyList())
 

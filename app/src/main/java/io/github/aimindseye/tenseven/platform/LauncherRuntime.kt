@@ -33,14 +33,16 @@ internal class LauncherRuntime(
     private val main = Handler(Looper.getMainLooper())
     private val executor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
         ArrayBlockingQueue(1), ThreadPoolExecutor.DiscardOldestPolicy())
+    private val profileExecutor = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+        ArrayBlockingQueue(4), ThreadPoolExecutor.DiscardOldestPolicy())
     private val coordinator = InventoryCoordinator(
         load = { LauncherInventory(inventory.loadApps(), inventory.privateSpace()?.let(inventory::isLocked), inventory.workProfilesPaused()) },
         execute = { executor.execute(it) },
         post = { main.post(it) },
         deliver = onInventory,
     )
-    private var started = false
-    private var closed = false
+    @Volatile private var started = false
+    @Volatile private var closed = false
     private var callbackRegistered = false
     private var profileRegistered = false
     private val callback = object : LauncherApps.Callback() {
@@ -104,6 +106,24 @@ internal class LauncherRuntime(
         }
     }
 
+    fun setPrivateLocked(locked: Boolean) = profileAction {
+        inventory.privateSpace()?.let { inventory.setLocked(it, locked) }
+    }
+
+    fun setWorkPaused(paused: Boolean) = profileAction { inventory.setWorkProfilesPaused(paused) }
+
+    private fun profileAction(action: () -> Unit) {
+        if (!started || closed) return
+        runCatching {
+            profileExecutor.execute {
+                if (!closed) {
+                    runCatching(action)
+                    refresh()
+                }
+            }
+        }
+    }
+
     fun stop() {
         if (!started) return
         started = false
@@ -124,6 +144,7 @@ internal class LauncherRuntime(
         closed = true
         coordinator.close()
         executor.shutdownNow()
+        profileExecutor.shutdownNow()
     }
 
     private companion object {

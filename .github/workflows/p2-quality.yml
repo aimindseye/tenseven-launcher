@@ -1,0 +1,56 @@
+name: P2 quality ratchet
+on:
+  pull_request:
+    branches: [main]
+    paths: ['app/**', 'design/**', 'tools/quality_ratchet.py', 'tests/test_quality_ratchet.py', '.github/workflows/p2-quality.yml']
+permissions:
+  contents: read
+concurrency:
+  group: p2-quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ratchet:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+      - name: Android SDK 36
+        run: |
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Formatting evidence for changed Kotlin sources
+        run: |
+          git diff --name-only 6036d24e2ceafc1af0b780e657a6b068d49b91f4 HEAD -- '*.kt' '*.kts' > /tmp/p2-format-paths
+          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false ktlintFormat
+          python3 - <<'PY'
+          import base64, pathlib, subprocess
+          paths = pathlib.Path('/tmp/p2-format-paths').read_text().splitlines()
+          patch = subprocess.check_output(['git', 'diff', '--binary', '--', *paths])
+          if patch:
+              pathlib.Path('/tmp/p2-format.patch').write_bytes(patch)
+              encoded = base64.b64encode(patch).decode()
+              for index in range(0, len(encoded), 16000):
+                  print('P2_FORMAT_PATCH:' + encoded[index:index+16000])
+          subprocess.run(['git', 'restore', '--worktree', '.'], check=True)
+          if patch:
+              raise SystemExit('Formatting changes required; apply the reported source-only patch.')
+          PY
+      - name: Baseline accepted version 15 reports
+        run: |
+          git worktree add --detach /tmp/tenseven-quality-base 6036d24e2ceafc1af0b780e657a6b068d49b91f4
+          cd /tmp/tenseven-quality-base
+          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false :app:lintDebug :design:lintDebug detekt ktlintCheck
+      - name: Current reports and enforcement
+        run: |
+          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false :app:lintDebug :design:lintDebug detekt ktlintCheck
+          python3 tools/quality_ratchet.py /tmp/tenseven-quality-base "$GITHUB_WORKSPACE"
+          python3 tests/test_quality_ratchet.py
