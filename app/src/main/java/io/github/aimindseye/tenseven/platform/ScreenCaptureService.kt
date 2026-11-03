@@ -38,14 +38,14 @@ class ScreenCaptureService : Service() {
     private var receiverRegistered = false
     private var stopped = false
     private val callback = object : MediaProjection.Callback() {
-        override fun onStop() { stopSelf() }
+        override fun onStop() { endSharing() }
         override fun onCapturedContentResize(width: Int, height: Int) {
             if (stopped || width < 1 || height < 1) return
             runCatching { resize(width, height) }.onFailure { fail() }
         }
     }
     private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) { stopSelf() }
+        override fun onReceive(context: Context, intent: Intent) { endSharing() }
     }
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -101,7 +101,7 @@ class ScreenCaptureService : Service() {
             source.acquireLatestImage()?.use { image ->
                 val now = SystemClock.elapsedRealtime()
                 val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
-                if (locked) { stopSelf(); return@use }
+                if (locked) { endSharing(); return@use }
                 if (stopped || !CapturePolicy.accept(ScreenCaptureState.homeVisible, locked, now, lastFrame)) return@use
                 val plane = image.planes[0]
                 val paddedWidth = plane.rowStride / plane.pixelStride
@@ -115,7 +115,13 @@ class ScreenCaptureService : Service() {
         } catch (_: RuntimeException) { fail() }
     }
 
-    private fun fail() { ScreenCaptureState.stopped(error = true); stopSelf() }
+    private fun endSharing() {
+        stopped = true
+        ScreenCaptureState.stopped()
+        stopSelf()
+    }
+
+    private fun fail() { stopped = true; ScreenCaptureState.stopped(error = true); stopSelf() }
 
     override fun onDestroy() {
         stopped = true

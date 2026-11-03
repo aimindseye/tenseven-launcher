@@ -802,7 +802,6 @@ fun SableStartScreen(
                                             },
                                             onSearch = { openSearch(SableStartDestination.Start) },
                                             snapshot = liveSnapshot,
-                                            widgets = glanceWidgets,
                                             refreshGeneration = refreshGeneration,
                                             frameSnapshot = frameSnapshot,
                                             active = settledPage == StartPages.HOME,

@@ -191,7 +191,7 @@ work and clears frame/image presentation. Destroy shuts down the executor.
 Snapshots are loaded only for composed cards, only while active and authorized,
 with stale completion rejection, closed HardwareBuffers and a 512-pixel bound.
 Android's non-real theme snapshots are not labelled Preview. The OS retains its
-secure-content restrictions; no MediaProjection or background capture is used.
+secure-content restrictions. A separate, explicitly consented MediaProjection session is described below.
 
 The pure `PlatformCapabilities` contract and Android `PlatformCapabilityProbe`
 are shared by frame settings and `RecentTasksRepository` operations. Native task
@@ -204,8 +204,10 @@ never invokes removeTask or force-stop. The underlying app remains intact.
 and appears for BB10. Supported persisted controls: actual TenSeven Calendar and
 Now playing summaries; opted-in personal-profile Hub counts; authorized snapshots;
 opening an app from a card; recording returned apps; and limits of 4/8/12. Live
-summaries are read-only tiles, not embedded app surfaces. They use enabled existing
-Glance sources when those sources report LIVE, and consume remaining frame slots.
+summaries appear inside matching personal-profile app cards, or as separate owned
+tiles when no matching card exists. They are independent of Glance widget settings.
+Live app cards are prioritized within the total 4/8/12 limit. Calendar reads the Hub's
+selected CalendarProvider calendars; media is matched to its active session package.
 Unsupported snapshot/new-message choices show the needed capability explanation;
 force-stop is always disabled. Existing Widgets page binding remains separate.
 
@@ -215,3 +217,18 @@ keyboard, layout, lifecycle and persistence tests on an Android 35 emulator with
 720×720 display at density 280. This is emulator evidence, not Titan 2 or privileged
 SableOS qualification. Outstanding combined architecture acceptance in #100 and
 physical-device acceptance in #99 remain tracked separately.
+
+
+### User-approved shared-screen preview
+
+ScreenCaptureActivity requests fresh Android MediaProjection consent. The non-exported
+ScreenCaptureService consumes a result once, starts its mediaProjection foreground
+notification before obtaining projection, registers callbacks before creating one virtual
+display, and resizes that display and ImageReader on captured-content changes.
+ScreenCaptureState holds only the latest in-memory thumbnail; no consent or pixels are
+persisted. The user-selected region is shown as a separate Shared screen card and is never
+attributed to a recent task, package or profile. Home visibility freezes updates before
+Home is drawn; lock, system revocation, Stop and process death end the session. A new
+session always needs fresh consent. No audio is captured. Thumbnail dimensions/throttle
+and Home/lock decisions are pure CapturePolicy logic. Physical consent and protected-screen
+qualification are tracked in P2B_LIVE_CAPTURE_ACCEPTANCE.md.

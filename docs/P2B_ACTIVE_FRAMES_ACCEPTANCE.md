@@ -1,5 +1,9 @@
 # P2-B Active Frames acceptance
 
+Update: version 10 live-summary and consented capture acceptance supersedes the
+version 9 live-tile/snapshot rows below; see [P2B_LIVE_CAPTURE_ACCEPTANCE.md](P2B_LIVE_CAPTURE_ACCEPTANCE.md).
+
+
 Branch: `feature/p2b-active-frames-20261102`; PR #109. One Full APK,
 versionCode **9**, versionName **0.2.0-p2b-frames.1**. Sign on the existing Mac
 with the registered key using `bash tools/build-full-consolidated-test.sh`.
