@@ -25,6 +25,7 @@ import android.os.SystemClock
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import io.github.aimindseye.tenseven.SableStartActivity
 import io.github.aimindseye.tenseven.frames.CapturePolicy
 
@@ -105,7 +106,7 @@ class ScreenCaptureService : Service() {
                 if (stopped || !CapturePolicy.accept(ScreenCaptureState.homeVisible, locked, now, lastFrame)) return@use
                 val plane = image.planes[0]
                 val paddedWidth = plane.rowStride / plane.pixelStride
-                val padded = Bitmap.createBitmap(paddedWidth, image.height, Bitmap.Config.ARGB_8888)
+                val padded = createBitmap(paddedWidth, image.height)
                 padded.copyPixelsFromBuffer(plane.buffer)
                 val thumbnail = Bitmap.createBitmap(padded, 0, 0, image.width, image.height)
                 if (thumbnail !== padded) padded.recycle()
