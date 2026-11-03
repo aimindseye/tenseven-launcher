@@ -151,7 +151,7 @@ internal fun buildRailRows(apps: List<AppEntry>): List<AppRailRow> {
     }
 }
 
-/**
+/*
  * Home apps before the user orders them: the screen design's list (Messages,
  * Mail, Calendar, Contacts, Phone, Camera), each the first installed app of
  * its group in the launcher's own profile.

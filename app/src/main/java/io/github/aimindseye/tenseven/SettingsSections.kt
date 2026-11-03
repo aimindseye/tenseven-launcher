@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven
 
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -362,7 +363,7 @@ internal fun LockLayerSection(state: StartStateRepository) {
     val capabilities =
         io.github.aimindseye.tenseven.ui
             .rememberPlatformCapabilities()
-    if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable) {
+    if (capabilities.hubNotifications == CapabilityStatus.Unavailable) {
         Text(
             stringResource(R.string.lock_layer_full_only),
             style = MaterialTheme.typography.bodyMedium,
@@ -372,9 +373,9 @@ internal fun LockLayerSection(state: StartStateRepository) {
     }
     var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
     val activity = context as? ComponentActivity
-    val overlayAllowed = capabilities.overlay == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+    val overlayAllowed = capabilities.overlay == CapabilityStatus.Ready
     // Do not prompt for a listener that is not available on this device.
-    val accessAllowed = capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+    val accessAllowed = capabilities.hubNotifications == CapabilityStatus.Ready
     SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
         lockLayer = it
         state.saveLockLayer(it)

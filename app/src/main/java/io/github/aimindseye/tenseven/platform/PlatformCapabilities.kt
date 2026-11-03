@@ -65,25 +65,30 @@ data class PlatformCapabilities(
                         listenerAllowed -> CapabilityStatus.Ready
                         else -> CapabilityStatus.PermissionRequired
                     },
-                usageRecents = if (usageAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-                calendarEvents = if (calendarAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-                overlay = if (overlayAllowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-                thirdPartySnapshots = if (trustedSnapshotBridge) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                usageRecents = permissionStatus(usageAllowed),
+                calendarEvents = permissionStatus(calendarAllowed),
+                overlay = permissionStatus(overlayAllowed),
+                thirdPartySnapshots = availability(trustedSnapshotBridge),
                 // Notes/Tasks/Remind local records never need Calendar or network permissions.
                 localTasks = CapabilityStatus.Ready,
-                taskEnumeration = if (frameAccess.tasks) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-                taskResume = if (frameAccess.resume) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-                taskRemoval = if (frameAccess.removal) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
-                widgetHosting = if (frameAccess.widgets) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                taskEnumeration = availability(frameAccess.tasks),
+                taskResume = availability(frameAccess.resume),
+                taskRemoval = availability(frameAccess.removal),
+                widgetHosting = availability(frameAccess.widgets),
                 hardwareKeyboard = frameAccess.keyboard,
-                contacts = if (frameAccess.contacts) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-                photos = if (frameAccess.photos) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
-                camera = if (frameAccess.camera) CapabilityStatus.Ready else CapabilityStatus.Unavailable,
+                contacts = permissionStatus(frameAccess.contacts),
+                photos = permissionStatus(frameAccess.photos),
+                camera = availability(frameAccess.camera),
                 secureKeyguard = frameAccess.secureKeyguard,
                 deviceLocked = frameAccess.deviceLocked,
                 lockServiceAvailable = frameAccess.lockService,
                 deviceLock = frameAccess.lock,
-                postNotifications = if (frameAccess.postNotifications) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired,
+                postNotifications = permissionStatus(frameAccess.postNotifications),
             )
+        private fun permissionStatus(allowed: Boolean): CapabilityStatus =
+            if (allowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired
+
+        private fun availability(available: Boolean): CapabilityStatus =
+            if (available) CapabilityStatus.Ready else CapabilityStatus.Unavailable
     }
 }

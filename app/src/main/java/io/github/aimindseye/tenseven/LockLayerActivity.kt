@@ -1,5 +1,8 @@
 package io.github.aimindseye.tenseven
 
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
+import io.github.aimindseye.tenseven.platform.PlatformCapabilities
+import io.github.aimindseye.tenseven.ui.rememberPlatformCapabilities
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -207,31 +210,12 @@ private fun LockLayerScreen(
     onCamera: () -> Unit,
 ) {
     val context = LocalContext.current
-    val capabilities =
-        io.github.aimindseye.tenseven.ui
-            .rememberPlatformCapabilities()
-    val counts =
-        if (capabilities.hubNotifications ==
-            io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
-        ) {
-            LockLayerState.counts
-        } else {
-            emptyMap()
-        }
+    val capabilities = rememberPlatformCapabilities()
+    val counts = lockLayerCounts(capabilities)
     val entries = remember(counts, enabled) { LockLayer.entries(counts, counts.keys - enabled) }
-    val preview =
-        remember(counts, enabled, showText, capabilities) {
-            if (showText && !capabilities.deviceLocked &&
-                capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
-            ) {
-                ConversationHub
-                    .conversations()
-                    .firstOrNull { conversation -> conversation.sourcePackages.any { it in enabled } }
-                    ?.let { it.name to it.latestMessage?.text.orEmpty() }
-            } else {
-                null
-            }
-        }
+    val preview = remember(counts, enabled, showText, capabilities) {
+        lockLayerPreview(enabled, showText, capabilities)
+    }
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -341,7 +325,7 @@ private fun LockLayerScreen(
                 .padding(end = 24.dp, bottom = 22.dp)
                 .size(44.dp)
                 .clickable(
-                    enabled = capabilities.camera == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+                    enabled = capabilities.camera == CapabilityStatus.Ready,
                     onClick = onCamera,
                 ),
         ) {
@@ -368,7 +352,7 @@ private fun LockIcon(
     val icon =
         remember(
             packageName,
-        ) { runCatching { packageManager.getApplicationIcon(packageName).toBitmap(96, 96).asImageBitmap() }.getOrNull() }
+        ) { runCatching { packageManager.getApplicationIcon(packageName).toBitmap(NOTIFICATION_ICON_BITMAP_SIZE, NOTIFICATION_ICON_BITMAP_SIZE).asImageBitmap() }.getOrNull() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -414,3 +398,19 @@ private fun LockPeekRow(
 }
 
 private const val UNLOCK_SWIPE_PX = 120f
+
+private const val NOTIFICATION_ICON_BITMAP_SIZE = 96
+
+private fun lockLayerCounts(capabilities: PlatformCapabilities): Map<String, Int> =
+    if (capabilities.hubNotifications == CapabilityStatus.Ready) LockLayerState.counts else emptyMap()
+
+private fun lockLayerPreview(
+    enabled: Set<String>,
+    showText: Boolean,
+    capabilities: PlatformCapabilities,
+): Pair<String, String>? {
+    if (!showText || capabilities.deviceLocked || capabilities.hubNotifications != CapabilityStatus.Ready) return null
+    return ConversationHub.conversations()
+        .firstOrNull { conversation -> conversation.sourcePackages.any { it in enabled } }
+        ?.let { it.name to it.latestMessage?.text.orEmpty() }
+}

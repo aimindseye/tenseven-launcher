@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -195,7 +196,7 @@ internal fun LiveGlanceFrame(
     // Calendar asks for a runtime permission; Now playing and the Hub need the notification listener, which the lite build lacks.
     val listenerMissing =
         widget == GlanceWidgets.MEDIA &&
-            rememberPlatformCapabilities().hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable
+            rememberPlatformCapabilities().hubNotifications == CapabilityStatus.Unavailable
     val needsAccess = datum.availability == LiveAvailability.PERMISSION_REQUIRED && !listenerMissing
     val headline =
         when {
@@ -405,7 +406,7 @@ internal fun GlanceCard(
     }
 }
 
-/**
+/*
  * Hub page (left of Active Frames; visual "5. Hub"): the one Sable Hub. Under the "Sable Hub"
  * title the unread bar (after the Ripe launcher's BB7 row: each app with unread notifications as
  * its small icon and count, "+N" for the rest, from Sable Hub's listener), then the All /

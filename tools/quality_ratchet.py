@@ -19,8 +19,33 @@ def anchor(root, filename, line):
     except (OSError, IndexError, ValueError):
         return "<no-source>"
     # Moving a declaration between cohesive files must not manufacture a new legacy finding.
+    declaration = re.match(
+        r"^\s*(?:(?:private|internal|public|protected|override|tailrec|inline|suspend|operator|infix|data|enum|sealed|abstract|open|final)\s+)*"
+        r"(fun|class|interface|object)\s+([^\s(<]+)", text)
+    if declaration:
+        return " ".join(declaration.groups())
     text = re.sub(r"\b(private|internal)\b", "<visibility>", text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+# Existing quantitative debt may improve, but may never worsen. Thresholds remain in the identity.
+METRICS = {
+    "detekt.LongMethod": r"(?<=too long \()\d+",
+    "detekt.CyclomaticComplexMethod": r"(?<=complexity: )\d+",
+}
+
+
+def finding(tool, rule, message, source):
+    if not rule or message is None:
+        raise ValueError("Malformed finding: missing rule or message")
+    expression = METRICS.get(rule) if tool == "detekt" else None
+    match = re.search(expression, message) if expression else None
+    if match:
+        value = int(match.group())
+        message = message[:match.start()] + "$METRIC$" + message[match.end():]
+    else:
+        value = None
+    return tool, rule, message, source, value
 
 
 def findings(root):
@@ -39,15 +64,14 @@ def findings(root):
                 if issue.get("severity") in {"Information", "Ignore"}:
                     continue
                 location = issue.find("location")
-                if location is not None:
-                    result[(tool, issue.get("id"), issue.get("message"),
-                            anchor(root, location.get("file", ""), location.get("line")))] += 1
+                source = anchor(root, location.get("file", ""), location.get("line")) if location is not None else "<project>"
+                result[finding(tool, issue.get("id"), issue.get("message"), source)] += 1
         elif document.tag == "checkstyle":
             seen.add(tool)
             for file in document.findall("file"):
                 for error in file.findall("error"):
-                    result[(tool, error.get("source"), error.get("message"),
-                            anchor(root, file.get("name", ""), error.get("line")))] += 1
+                    result[finding(tool, error.get("source"), error.get("message"),
+                                   anchor(root, file.get("name", ""), error.get("line")))] += 1
     missing = TOOLS - seen
     if missing:
         raise ValueError("Required reports missing: " + ", ".join(sorted(missing)))
@@ -55,7 +79,21 @@ def findings(root):
 
 
 def compare(baseline, current):
-    return current - baseline
+    matched = baseline & current
+    available = baseline - matched
+    pending = current - matched
+    added = Counter()
+    for key, count in sorted(pending.items(), key=lambda item: item[0][4] if len(item[0]) > 4 and item[0][4] is not None else -1, reverse=True):
+        for _ in range(count):
+            candidates = []
+            if len(key) > 4 and key[4] is not None:
+                candidates = [old for old in available if available[old] > 0 and len(old) > 4
+                              and old[:4] == key[:4] and old[4] is not None and old[4] >= key[4]]
+            if candidates:
+                available[min(candidates, key=lambda old: old[4])] -= 1
+            else:
+                added[key] += 1
+    return added
 
 
 def main():
@@ -70,8 +108,9 @@ def main():
         return 2
     added = compare(old, new)
     print(f"Baseline findings: {sum(old.values())}; current findings: {sum(new.values())}")
-    for (tool, rule, message, source), count in sorted(added.items()):
-        print(f"NEW {tool} {rule} ({count}): {message}\n  {source}")
+    for (tool, rule, message, source, metric), count in sorted(added.items()):
+        display = message.replace("$METRIC$", str(metric)) if metric is not None else message
+        print(f"NEW {tool} {rule} ({count}): {display}\n  {source}")
     if added:
         print("Quality ratchet FAILED: fix new findings; do not update the baseline to hide them.")
         return 1

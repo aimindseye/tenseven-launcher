@@ -23,6 +23,30 @@ class QualityRatchetTest(unittest.TestCase):
             (root / "new.kt").write_text("internal fun fixture() = 1\n")
             self.assertEqual(quality.anchor(root, "old.kt", 1), quality.anchor(root, "new.kt", 1))
 
+    def test_wrapped_declaration_preserves_identity_without_hiding_new_symbols(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "old.kt").write_text("private fun fixture(first: String, second: Int) = 1\n")
+            (root / "new.kt").write_text("internal fun fixture(\n    first: String,\n) = 1\n")
+            self.assertEqual(quality.anchor(root, "old.kt", 1), quality.anchor(root, "new.kt", 1))
+            (root / "new.kt").write_text("internal fun different() = 1\n")
+            self.assertNotEqual(quality.anchor(root, "old.kt", 1), quality.anchor(root, "new.kt", 1))
+
+    def test_existing_metrics_may_improve_but_regressions_or_new_debt_fail(self):
+        from collections import Counter
+        def metric(value, source="fun fixture"):
+            return quality.finding("detekt", "detekt.LongMethod",
+                                   f"The function fixture is too long ({value}). The maximum length is 60.", source)
+        old = Counter({metric(200): 1})
+        self.assertFalse(quality.compare(old, Counter({metric(180): 1})))
+        self.assertEqual(1, sum(quality.compare(old, Counter({metric(201): 1})).values()))
+        self.assertEqual(1, sum(quality.compare(old, Counter({metric(180, "fun newMethod"): 1})).values()))
+        self.assertEqual(1, sum(quality.compare(old, Counter({metric(180): 2})).values()))
+
+    def test_malformed_diagnostic_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Malformed finding"):
+            quality.finding("lint", None, "missing rule", "source")
+
     def test_missing_reports_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(ValueError, "Required reports missing"):

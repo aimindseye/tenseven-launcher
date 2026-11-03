@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -568,7 +569,7 @@ fun SableStartScreen(
                             showFrameOptions =
                                 !blankHomePage &&
                                     rememberPlatformCapabilities(refreshGeneration).hubNotifications ==
-                                    io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+                                    CapabilityStatus.Ready,
                             apps = apps,
                             initial =
                                 HomeEdit(
@@ -723,7 +724,7 @@ fun SableStartScreen(
     }
 }
 
-/**
+/*
  * The BB10 look over the Start pages, in the user's Dark theme and Sable accent: the
  * focus fill and rings are the accent ([startPalette]).
  */

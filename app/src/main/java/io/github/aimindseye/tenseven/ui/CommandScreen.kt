@@ -448,10 +448,9 @@ internal fun SearchScreen(
                     item { Spacer(Modifier.height(12.dp)) }
                 }
             }
-            if (filteredApps.isEmpty() && privacyMatches.isEmpty() && filteredCommands.isEmpty() && settingsResults.isEmpty() &&
-                quickRows.isEmpty() &&
-                peopleResults.isEmpty() && hubResults.isEmpty() && !lockedPrivate
-            ) {
+            val noMatches = listOf(filteredApps, privacyMatches, filteredCommands, settingsResults,
+                quickRows, peopleResults, hubResults).all { it.isEmpty() }
+            if (noMatches && !lockedPrivate) {
                 item {
                     EmptyState(
                         t("no_local_results_match_prefixes", term),

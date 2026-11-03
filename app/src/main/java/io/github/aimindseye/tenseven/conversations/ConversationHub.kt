@@ -4,12 +4,10 @@
 // memory and sent through the notification's own reply action; unread counts for the Hub bar added.
 package io.github.aimindseye.tenseven.conversations
 
-import android.app.Activity
 import android.app.ActivityOptions
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import io.github.aimindseye.tenseven.live.AppUnreadCount
 import java.util.concurrent.CopyOnWriteArrayList
@@ -127,18 +125,12 @@ object ConversationHub {
     ): Boolean {
         val pendingIntent = item.contentIntent ?: return false
         return runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                val options =
-                    ActivityOptions
-                        .makeBasic()
-                        .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                        .toBundle()
-                pendingIntent.send(context, 0, null, null, null, null, options)
-            } else if (context is Activity) {
-                context.startIntentSender(pendingIntent.intentSender, null, 0, 0, 0)
-            } else {
-                pendingIntent.send()
-            }
+            val options =
+                ActivityOptions
+                    .makeBasic()
+                    .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                    .toBundle()
+            pendingIntent.send(context, 0, null, null, null, null, options)
             true
         }.getOrDefault(false)
     }

@@ -136,8 +136,7 @@ private fun TasksWorkspace(intent: Intent, resumeRevision: Int) {
                     OutlinedButton(onClick = { tab = "remind" }) { Text("Remind") }
                     Button(onClick = { editing = TaskRecord(title = "New task"); newDraft = true }) { Text("New") }
                 }
-                if (android.os.Build.VERSION.SDK_INT >= 33 &&
-                    context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
                         android.content.pm.PackageManager.PERMISSION_GRANTED) {
                     OutlinedButton(onClick = {
                         (context as? android.app.Activity)?.requestPermissions(

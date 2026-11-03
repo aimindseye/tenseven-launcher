@@ -189,7 +189,7 @@ private fun HubSettings(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (!accessGranted && listenerAvailable && android.os.Build.VERSION.SDK_INT >= 33) {
+            if (!accessGranted && listenerAvailable) {
                 if (attemptedNotificationAccess) {
                     val context = androidx.compose.ui.platform.LocalContext.current
                     HubRow(

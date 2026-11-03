@@ -5,7 +5,6 @@ import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
-import android.os.Build
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -401,7 +400,7 @@ internal fun loadLauncherIcon(
         val drawable = packDrawable ?: activityInfo.getIcon(densityDpi)
         val monochrome =
             if (themedMonochrome && packDrawable == null &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable
+                drawable is AdaptiveIconDrawable
             ) {
                 drawable.monochrome
             } else {

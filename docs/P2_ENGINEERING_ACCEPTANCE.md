@@ -47,7 +47,10 @@ and multi-device keyboard/layout qualification belong to the subsequent P3 deliv
 The P2 quality workflow formats changed Kotlin sources and fails if a source-only formatter
 patch remains. It then generates Lint/detekt/ktlint reports for accepted version-15 commit
 6036d24e2ceafc1af0b780e657a6b068d49b91f4 and the candidate. The blocking comparison fails
-on added findings or missing/malformed reports. Finding fingerprints use rule/message/source
+on added findings, worsening measured debt or missing/malformed reports. Baseline reports
+use the same formatter on the corresponding changed paths before analysis; the accepted
+source commit stays fixed. Existing method-length/complexity values may decrease, but
+increases, new symbols and extra copies still fail. Finding fingerprints use rule/message/source
 anchors and multiplicity rather than paths/line numbers so moving legacy code neither hides
 findings nor manufactures new ones. Existing debt remains visible; it is not a license to add
 new debt. The baseline must not be advanced simply to make a failure disappear.

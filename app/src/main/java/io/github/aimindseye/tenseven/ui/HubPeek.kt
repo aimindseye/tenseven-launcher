@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.graphics.Rect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -151,7 +152,7 @@ private fun HubPeekPanel(
     val revision = rememberHubRevision()
     val conversations =
         remember(revision, capabilities) {
-            if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready && !deviceLocked) {
+            if (capabilities.hubNotifications == CapabilityStatus.Ready && !deviceLocked) {
                 ConversationHub.conversations().take(MAX_ROWS)
             } else {
                 emptyList()
@@ -354,4 +355,4 @@ private const val EDGE_DP = 20
 private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
-/** How opaque the peek panel is; the rest lets Home show through. */
+/* How opaque the peek panel is; the rest lets Home show through. */

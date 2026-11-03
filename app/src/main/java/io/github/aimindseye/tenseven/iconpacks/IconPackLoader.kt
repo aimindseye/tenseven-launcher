@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.util.Xml
 import androidx.core.content.ContextCompat
 import org.xmlpull.v1.XmlPullParser
@@ -57,11 +56,7 @@ object IconPackLoader {
     private fun queryThemeActivities(
         packageManager: PackageManager,
         action: String,
-    ) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        packageManager.queryIntentActivities(Intent(action), PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()))
-    } else {
-        packageManager.queryIntentActivities(Intent(action), PackageManager.MATCH_ALL)
-    }
+    ) = packageManager.queryIntentActivities(Intent(action), PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()))
 
     /** appfilter from resources (xml, then raw), then assets; a malformed first choice does not hide a valid fallback. */
     fun loadDefinition(

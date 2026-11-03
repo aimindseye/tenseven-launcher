@@ -41,8 +41,7 @@ object PlatformCapabilityProbe {
                     deviceLocked = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true,
                     lockService = Capabilities.hasLockService(context),
                     postNotifications =
-                        android.os.Build.VERSION.SDK_INT < 33 ||
-                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                             PackageManager.PERMISSION_GRANTED,
                 ),
         )

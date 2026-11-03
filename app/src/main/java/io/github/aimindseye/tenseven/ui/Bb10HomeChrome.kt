@@ -455,7 +455,7 @@ internal fun Bb10ThemeWithPeek(
     }
 }
 
-/**
+/*
  * The built-in widgets Launcher Settings turned on (Calendar, Alarm, Battery, Now playing) as cards at the top of the
  * Widgets page, in the user's order. No ambient polling: values refresh with Start's live snapshot.
  */

@@ -42,7 +42,7 @@ class RecentTasksRepository(
         return frames.filterNot { it.packageName in excludedPackages + appContext.packageName || it.userId in hiddenUsers }.distinctBy { it.taskId }.take(12)
     }
 
-    /** The task's last picture (low resolution first), or null when Android has none for it. */
+    /* The task's last picture (low resolution first), or null when Android has none for it. */
     /** Full resolution first: the low-resolution snapshot is too soft for text at Active Frame size. */
     fun snapshot(taskId: Int): Bitmap? = snapshot(taskId, lowResolution = false) ?: snapshot(taskId, lowResolution = true)
 

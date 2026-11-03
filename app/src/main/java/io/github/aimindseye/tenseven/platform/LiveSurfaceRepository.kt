@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
-import android.os.Build
 import android.provider.MediaStore
 import android.text.format.DateUtils
 import android.text.format.DateFormat
@@ -93,12 +92,7 @@ class LiveSurfaceRepository(
                 music = nowPlaying(),
                 photos =
                     mediaCount(
-                        permission =
-                            if (Build.VERSION.SDK_INT >= 33) {
-                                Manifest.permission.READ_MEDIA_IMAGES
-                            } else {
-                                Manifest.permission.READ_EXTERNAL_STORAGE
-                            },
+                        permission = Manifest.permission.READ_MEDIA_IMAGES,
                         uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                         title = t("photos"),
                         noun = "photo",
@@ -203,7 +197,7 @@ class LiveSurfaceRepository(
         return providerHubAppCounts()
     }
 
-    /**
+    /*
      * The Mail tile: the newest unread email, from the email notifications Tenseven's listener reads (Android has
      * no public mail data API). Without notification access the tile just opens the default email app. The text is
      * hidden while the phone is locked.

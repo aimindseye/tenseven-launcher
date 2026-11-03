@@ -376,7 +376,7 @@ internal fun PrivateSpaceSection(
     }
 }
 
-/**
+/*
  * Command / Search (sable-command-titan2). One field; a Best match row on top;
  * then grouped results (apps, permission matches, people, settings, Hub,
  * actions). Up/Down move through one result list, Left/Right on a result (or

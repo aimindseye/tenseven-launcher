@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.AppOpsManager
 import android.app.role.RoleManager
 import android.content.Context
-import android.os.Build
 import android.os.Process
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.platform.Capabilities
@@ -28,13 +27,8 @@ object SetupStatus {
         )
     }
 
-    /** READ_MEDIA_IMAGES from Android 13; READ_EXTERNAL_STORAGE before. */
-    fun photosPermission(): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_IMAGES
-        } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        }
+    /** Photo access for the Android 14 minimum. */
+    fun photosPermission(): String = Manifest.permission.READ_MEDIA_IMAGES
 
     fun isHomeRoleHeld(context: Context): Boolean =
         runCatching {

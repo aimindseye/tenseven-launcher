@@ -6,7 +6,6 @@ package io.github.aimindseye.tenseven.platform
 import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Context
-import android.os.Build
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 
@@ -33,7 +32,6 @@ class LockScreenAccessibilityService : AccessibilityService() {
         @Volatile private var connectedService: LockScreenAccessibilityService? = null
 
         fun lockScreen(): Boolean =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
                 connectedService?.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN) == true
 
         /** Whether the user has turned the service on in Accessibility settings. */

@@ -11,7 +11,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import io.github.aimindseye.tenseven.tasks.TaskRecord
 import io.github.aimindseye.tenseven.tasks.TaskStore
 import io.github.aimindseye.tenseven.tasks.TaskRepository
@@ -65,8 +64,7 @@ open class TaskAlarmReceiverBase : BroadcastReceiver() {
                     return
                 }
                 val manager = context.getSystemService(NotificationManager::class.java) ?: return
-                if (Build.VERSION.SDK_INT >= 33 &&
-                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+                if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
                 manager.createNotificationChannel(NotificationChannel("tenseven_tasks", "TenSeven Remind",
                     NotificationManager.IMPORTANCE_DEFAULT))
                 val open = Intent(context, TasksActivity::class.java).apply {

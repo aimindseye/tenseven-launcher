@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.app.KeyguardManager
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
@@ -39,7 +40,7 @@ internal fun HubCalendarPeek(
     val context = LocalContext.current
     val repository = remember(context) { HubCalendarRepository(context) }
     val capabilities = rememberPlatformCapabilities(refreshGeneration)
-    val permitted = capabilities.calendarEvents == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+    val permitted = capabilities.calendarEvents == CapabilityStatus.Ready
     val selectedIds = remember(refreshGeneration) { StartStateRepository(context).loadHubSelectedCalendarIds() }
     val deviceLocked = capabilities.deviceLocked
     var expanded by remember { mutableStateOf(false) }

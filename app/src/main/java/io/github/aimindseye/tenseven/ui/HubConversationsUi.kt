@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.model.HubBar
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -361,7 +363,7 @@ private fun IconHubFilterButton(
             )
             if (count > 0 || showLabel) {
                 Text(
-                    if (count > 99) "99+" else count.toString(),
+                    if (count > HubBar.MAX_COUNT) "99+" else count.toString(),
                     style = MaterialTheme.typography.labelSmall,
                     color = color,
                     maxLines = 1,
@@ -435,7 +437,7 @@ private fun ConversationRow(
                 runCatching {
                     context.packageManager
                         .getApplicationIcon(pkg)
-                        .toBitmap(96, 96)
+                        .toBitmap(NOTIFICATION_ICON_BITMAP_SIZE, NOTIFICATION_ICON_BITMAP_SIZE)
                         .asImageBitmap()
                 }.getOrNull()
             }
@@ -640,7 +642,7 @@ internal fun rememberHubConversationsUi(
 ): HubConversationsUi {
     val capabilities = rememberPlatformCapabilities(refreshGeneration)
     val revision = rememberHubRevision()
-    val accessGranted = capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+    val accessGranted = capabilities.hubNotifications == CapabilityStatus.Ready
     val locked = capabilities.deviceLocked
     remember(context) { ConversationHub.ensureStateLoaded(context) }
     val conversations =
@@ -658,24 +660,10 @@ internal fun rememberHubConversationsUi(
                     .list(),
             )
         }
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var sourcePackage by remember { mutableStateOf<String?>(null) }
     val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
     val state = remember(refreshGeneration, revision, accessGranted) { ConversationHub.state() }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle, state, conversations) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                now = System.currentTimeMillis()
-                val nextWake =
-                    conversations
-                        .mapNotNull { state.snoozedUntilOf(it.id) }
-                        .filter { it > now }
-                        .minOrNull()
-                delay(nextWake?.let { (it - now).coerceIn(1L, 60_000L) } ?: 60_000L)
-            }
-        }
-    }
+    val now = rememberHubTime(state, conversations)
     return remember(
         capabilities,
         accessGranted,
@@ -691,7 +679,7 @@ internal fun rememberHubConversationsUi(
     ) {
         HubConversationsUi(
             accessGranted = accessGranted,
-            canAllowAccess = capabilities.hubNotifications != io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
+            canAllowAccess = capabilities.hubNotifications != CapabilityStatus.Unavailable,
             enabledAppCount = enabledAppCount,
             onChooseApps = onChooseApps,
             deviceLocked = locked,
@@ -753,4 +741,27 @@ internal fun rememberHubConversationsUi(
             },
         )
     }
+}
+
+private const val NOTIFICATION_ICON_BITMAP_SIZE = 96
+
+/** Advances snooze eligibility only while the Hub is started. */
+@Composable
+private fun rememberHubTime(state: ConversationState, conversations: List<HubConversation>): Long {
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle, state, conversations) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                now = System.currentTimeMillis()
+                val nextWake =
+                    conversations
+                        .mapNotNull { state.snoozedUntilOf(it.id) }
+                        .filter { it > now }
+                        .minOrNull()
+                delay(nextWake?.let { (it - now).coerceIn(1L, 60_000L) } ?: 60_000L)
+            }
+        }
+    }
+    return now
 }

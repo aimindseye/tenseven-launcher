@@ -199,4 +199,4 @@ internal fun GridCell(
     }
 }
 
-/** A live datum's line, or how to reach its app when there is nothing live to show. */
+/* A live datum's line, or how to reach its app when there is nothing live to show. */

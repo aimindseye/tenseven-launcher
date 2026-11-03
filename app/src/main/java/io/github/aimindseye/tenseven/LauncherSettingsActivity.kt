@@ -54,11 +54,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                     state = state,
                     onLanguage = {
                         val intent =
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(android.net.Uri.parse("package:$packageName"))
-                            } else {
-                                Intent(Settings.ACTION_LOCALE_SETTINGS)
-                            }
+                            Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(android.net.Uri.parse("package:$packageName"))
                         runCatching { startActivity(intent) }
                     },
                     onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },

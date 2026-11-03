@@ -5,7 +5,6 @@ package io.github.aimindseye.tenseven.extras.profiles
 
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.ui.graphics.toArgb
@@ -261,11 +260,7 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-        } else {
-            data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-        }
+        val uri = data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
         if (resultCode != RESULT_OK || uri == null) return
         val s = store.settings(editing)
         save(
@@ -375,7 +370,7 @@ class MainActivity : Activity() {
     }
 }
 
-/** The colours of the Sound Profiles screen: pure black with a blue accent, like the other Tenseven extras. */
+/* The colours of the Sound Profiles screen: pure black with a blue accent, like the other Tenseven extras. */
 /** The colours of this screen: the launcher's chosen theme, the same palette the Hub and Launcher Settings use. */
 private class ProfilesPalette(
     val window: Int,
@@ -401,7 +396,7 @@ private class ProfilesPalette(
                     AppearanceMode.Dark -> true
                 }
             val p =
-                if (accent == AccentPreset.Phone && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (accent == AccentPreset.Phone) {
                     phonePalette(if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context))
                 } else {
                     startPalette(dark, accent)

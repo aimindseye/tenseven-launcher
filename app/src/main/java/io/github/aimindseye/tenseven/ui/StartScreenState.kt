@@ -71,4 +71,4 @@ internal fun backDestination(
         else -> SableStartDestination.Start
     }
 
-/** A Glance or Home module card; the focused card is filled with the accent. */
+/* A Glance or Home module card; the focused card is filled with the accent. */

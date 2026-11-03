@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.ScreenCaptureActivity
+import io.github.aimindseye.tenseven.FrameIntegrationsActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -154,7 +156,7 @@ private fun ScreenCaptureControls() {
             confirmButton = {
                 TextButton(onClick = {
                     explain = false
-                    context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.ScreenCaptureActivity::class.java))
+                    context.startActivity(android.content.Intent(context, ScreenCaptureActivity::class.java))
                 }) { Text("Continue") }
             },
             dismissButton = { TextButton(onClick = { explain = false }) { Text("Cancel") } },
@@ -170,7 +172,7 @@ private fun FrameIntegrationControls() {
         "Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar access. TenSeven local summaries do not need notification access.",
     )
     Button(onClick = {
-        context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.FrameIntegrationsActivity::class.java))
+        context.startActivity(android.content.Intent(context, FrameIntegrationsActivity::class.java))
     }) {
         Text("Configure app summaries")
     }

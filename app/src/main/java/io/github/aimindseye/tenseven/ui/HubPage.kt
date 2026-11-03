@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.Manifest
 import android.content.Intent
 import android.provider.CallLog
@@ -107,7 +108,7 @@ internal fun HubPage(
     // The Hub works from Tenseven's own notification listener, or from Sable Hub's snapshot when that is installed.
     val hubInstalled =
         snapshot.messages.availability != LiveAvailability.UNAVAILABLE ||
-            capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+            capabilities.hubNotifications == CapabilityStatus.Ready
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
     // The listener tells us which notifications are conversations (including email).
@@ -131,7 +132,7 @@ internal fun HubPage(
         }
     val peopleRepository = remember(context) { PeopleRepository(context) }
     val contactsTab = filter == HubFilter.Contacts
-    val canReadContacts = capabilities.contacts == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready
+    val canReadContacts = capabilities.contacts == CapabilityStatus.Ready
     // Kept across reloads (live refreshes, Start coming back) so the list never blinks empty.
     var people by remember { mutableStateOf(emptyList<HubPerson>()) }
     var peopleLoaded by remember { mutableStateOf(false) }
@@ -565,7 +566,7 @@ internal fun HubPersonAction(
     )
 }
 
-/**
+/*
  * Quick slot options (Long press / Menu / Fn+Enter on a slot): the Hub slot
  * offers its filters, the Phone slot Dial pad, Recent calls and Contacts, every
  * slot Edit Home (reorder, replace, reset).

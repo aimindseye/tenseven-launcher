@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager
@@ -70,7 +69,7 @@ class SableStartActivity : ComponentActivity() {
                 screen.workPausedState.value = inventory.workPaused
             },
             onRefresh = {
-                screen.liveRefreshGeneration.value += 1
+                screen.liveRefreshGeneration.intValue += 1
                 if (::activeFrames.isInitialized) activeFrames.coordinator.refresh()
             },
         )
@@ -98,7 +97,7 @@ class SableStartActivity : ComponentActivity() {
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
                     if (screen.canNavigateBack) {
-                        screen.backGeneration.value += 1
+                        screen.backGeneration.intValue += 1
                     }
                     // HOME root deliberately consumes Back.
                 }
@@ -140,16 +139,16 @@ class SableStartActivity : ComponentActivity() {
                 Bb7HomeScreen(
                     apps = screen.appsState.value,
                     favoriteKeys = screen.bb7Favorites.value,
-                    homeRows = screen.bb7HomeRows.value,
+                    homeRows = screen.bb7HomeRows.intValue,
                     liveSurfaceRepository = liveSurfaceRepository,
                     appearance = appearance,
-                    refreshGeneration = screen.liveRefreshGeneration.value,
-                    homeGeneration = screen.homeGeneration.value,
+                    refreshGeneration = screen.liveRefreshGeneration.intValue,
+                    homeGeneration = screen.homeGeneration.intValue,
                     onLaunchApp = { entry -> launcherAppsRepository.launch(entry) },
                     onOpenAppInfo = { entry -> launcherAppsRepository.openAppDetails(entry) },
                     onOpenHub = {
                         screen.hubRequestFilter.value = null
-                        screen.hubGeneration.value += 1
+                        screen.hubGeneration.intValue += 1
                         startBb10Detour(returnOnHome = true)
                     },
                     onFavoritesChanged = { keys ->
@@ -157,7 +156,7 @@ class SableStartActivity : ComponentActivity() {
                         startStateRepository.saveHomeApps(keys)
                     },
                     onHomeRowsChanged = { rows ->
-                        screen.bb7HomeRows.value = rows
+                        screen.bb7HomeRows.intValue = rows
                         startStateRepository.saveBb7HomeRows(rows)
                     },
                     desktopKeys = screen.bb7Desktop.value,
@@ -168,18 +167,18 @@ class SableStartActivity : ComponentActivity() {
                     onOpenMenu = ::showBb7Menu,
                     onOpenCommand = ::openCommandFromBb7,
                     iconSize = screen.bb7IconSize.value,
-                    gridColumns = screen.gridColumns.value,
+                    gridColumns = screen.gridColumns.intValue,
                     showLabels = screen.gridLabels.value,
                     widgets = screen.homeWidgets.value,
                     onDoubleTapEmpty = doubleTapLockCallback(),
                     panels = screen.bb7Panels.value,
-                    scrimLevel = screen.bb7Scrim.value,
+                    scrimLevel = screen.bb7Scrim.intValue,
                     onPanelsChanged = { panels ->
                         screen.bb7Panels.value = panels
                         startStateRepository.saveBb7Panels(panels)
                     },
                     onScrimChanged = { level ->
-                        screen.bb7Scrim.value = level
+                        screen.bb7Scrim.intValue = level
                         startStateRepository.saveBb7Scrim(level)
                     },
                     onOpenWallpaper = {
@@ -206,9 +205,9 @@ class SableStartActivity : ComponentActivity() {
                     onToggleWorkProfile = ::toggleWorkProfile,
                     liveSurfaceRepository = liveSurfaceRepository,
                     appearance = appearance,
-                    refreshGeneration = screen.liveRefreshGeneration.value,
-                    homeGeneration = screen.homeGeneration.value,
-                    backGeneration = screen.backGeneration.value,
+                    refreshGeneration = screen.liveRefreshGeneration.intValue,
+                    homeGeneration = screen.homeGeneration.intValue,
+                    backGeneration = screen.backGeneration.intValue,
                     initialScreen = request.screen,
                     blankHomePage = screen.homeStyle.value == HomeStyle.Bb7,
                     onBackToHomePage = {
@@ -233,9 +232,9 @@ class SableStartActivity : ComponentActivity() {
                     widgetIds = screen.widgetIds.value,
                     homeWidgetIds = screen.homeWidgetIds.value,
                     wallpaperBehind = screen.homeWallpaper.value,
-                    widgetsGeneration = screen.widgetsGeneration.value,
+                    widgetsGeneration = screen.widgetsGeneration.intValue,
                     showIconLabels = screen.gridLabels.value,
-                    gridColumnsSetting = screen.gridColumns.value,
+                    gridColumnsSetting = screen.gridColumns.intValue,
                     gridIconSize = screen.bb7IconSize.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
@@ -282,9 +281,9 @@ class SableStartActivity : ComponentActivity() {
                     },
                     onRequestLivePermissions = ::requestLivePermissions,
                     onRefreshLive = {
-                        screen.liveRefreshGeneration.value += 1
+                        screen.liveRefreshGeneration.intValue += 1
                     },
-                    hubGeneration = screen.hubGeneration.value,
+                    hubGeneration = screen.hubGeneration.intValue,
                     hubRequestFilter = screen.hubRequestFilter.value,
                     onRequestContactsPermission = ::requestContactsPermission,
                 )
@@ -315,7 +314,7 @@ class SableStartActivity : ComponentActivity() {
         }
         scheduleInventoryRefresh()
         activeFrames.coordinator.onResume()
-        screen.liveRefreshGeneration.value += 1
+        screen.liveRefreshGeneration.intValue += 1
     }
 
     // Widget binding and setup report back through the framework's request codes.
@@ -336,9 +335,9 @@ class SableStartActivity : ComponentActivity() {
             ACTION_EDIT_QUICK_BAR, ACTION_EDIT_HOME -> {
                 // The Screen is recomposed fresh for the request: its Home/Back effects act only on
                 // counts above zero, so they restart from zero rather than undo the request at once.
-                screen.homeGeneration.value = 0
-                screen.backGeneration.value = 0
-                screen.hubGeneration.value = 0
+                screen.homeGeneration.intValue = 0
+                screen.backGeneration.intValue = 0
+                screen.hubGeneration.intValue = 0
                 screen.startRequest.value =
                     io.github.aimindseye.tenseven.runtime
                         .LauncherRequest(screenFor(intent), screen.startRequest.value.serial + 1)
@@ -348,7 +347,7 @@ class SableStartActivity : ComponentActivity() {
             // Home, and the Recents key (Active Frames are the BB10 Recents): close anything open
             // over the pages and show Active Frames.
             Intent.ACTION_MAIN, ACTION_SHOW_ACTIVE_FRAMES -> {
-                screen.homeGeneration.value += 1
+                screen.homeGeneration.intValue += 1
                 activeFrames.coordinator.onResume()
                 // On the BlackBerry 7 home, Home goes back to it; Recents shows the Active Frames.
                 if (intent.action == ACTION_SHOW_ACTIVE_FRAMES &&
@@ -398,7 +397,7 @@ class SableStartActivity : ComponentActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LIVE_PERMISSION_REQUEST_CODE || requestCode == CONTACTS_PERMISSION_REQUEST_CODE) {
-            screen.liveRefreshGeneration.value += 1
+            screen.liveRefreshGeneration.intValue += 1
         }
     }
 
@@ -444,7 +443,7 @@ class SableStartActivity : ComponentActivity() {
             listOf<Pair<String, () -> Unit>>(
                 t("hub") to {
                     screen.hubRequestFilter.value = null
-                    screen.hubGeneration.value += 1
+                    screen.hubGeneration.intValue += 1
                     startBb10Detour(returnOnHome = true)
                 },
                 getString(R.string.bb7_command) to ::openCommandFromBb7,
@@ -519,7 +518,7 @@ class SableStartActivity : ComponentActivity() {
         menuDialog.show()
         menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.argb(225, 22, 31, 47)))
         menuDialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.88f).toInt(),
+            (resources.displayMetrics.widthPixels * MENU_WIDTH_FRACTION).toInt(),
             WindowManager.LayoutParams.WRAP_CONTENT,
         )
         layout.getChildAt(0)?.requestFocus()
@@ -533,11 +532,7 @@ class SableStartActivity : ComponentActivity() {
 
     private fun requestLivePermissions() {
         val permissions =
-            if (Build.VERSION.SDK_INT >= 33) {
-                arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
-            } else {
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-            }
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
 
         requestPermissions(
             permissions,
@@ -555,9 +550,9 @@ class SableStartActivity : ComponentActivity() {
      * screen like Hub and Edit Home, and Back returns to the BlackBerry 7 home.
      */
     private fun openCommandFromBb7() {
-        screen.homeGeneration.value = 0
-        screen.backGeneration.value = 0
-        screen.hubGeneration.value = 0
+        screen.homeGeneration.intValue = 0
+        screen.backGeneration.intValue = 0
+        screen.hubGeneration.intValue = 0
         screen.startRequest.value =
             io.github.aimindseye.tenseven.runtime
                 .LauncherRequest(SCREEN_SEARCH, screen.startRequest.value.serial + 1)
@@ -570,10 +565,10 @@ class SableStartActivity : ComponentActivity() {
             runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
             return
         }
-        screen.homeGeneration.value = 0
-        screen.backGeneration.value = 0
-        screen.hubGeneration.value = 0
-        screen.widgetsGeneration.value += 1
+        screen.homeGeneration.intValue = 0
+        screen.backGeneration.intValue = 0
+        screen.hubGeneration.intValue = 0
+        screen.widgetsGeneration.intValue += 1
         startBb10Detour(returnOnHome = true)
     }
 
@@ -589,10 +584,12 @@ class SableStartActivity : ComponentActivity() {
 
     private fun requestHub(intent: Intent) {
         screen.hubRequestFilter.value = intent.getStringExtra(EXTRA_HUB_FILTER)
-        screen.hubGeneration.value += 1
+        screen.hubGeneration.intValue += 1
     }
 
     companion object {
+        private const val MENU_WIDTH_FRACTION = 0.88f
+
         const val LIVE_PERMISSION_REQUEST_CODE = 0x534D
         const val CONTACTS_PERMISSION_REQUEST_CODE = 0x534E
 

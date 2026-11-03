@@ -30,7 +30,7 @@ internal fun rememberPlatformCapabilities(refreshGeneration: Int = 0): PlatformC
             try {
                 while (true) {
                     value = withContext(Dispatchers.IO) { PlatformCapabilityProbe.detect(app) }
-                    delay(2_000)
+                    delay(CAPABILITY_REFRESH_INTERVAL_MS)
                 }
             } finally {
                 value = value.copy(deviceLocked = true)
@@ -39,3 +39,5 @@ internal fun rememberPlatformCapabilities(refreshGeneration: Int = 0): PlatformC
     }
     return value
 }
+
+private const val CAPABILITY_REFRESH_INTERVAL_MS = 2_000L

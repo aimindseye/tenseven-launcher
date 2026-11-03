@@ -187,8 +187,8 @@ def launcher_files(icon_name=ICON_NAME, glyph=ICON_GLYPH):
         "drawable/%s_background.xml" % icon_name: background,
         "drawable/%s_foreground.xml" % icon_name: vector(108, glyph_group(ICON_FG, glyph) + accent),
         "drawable/%s_monochrome.xml" % icon_name: vector(108, glyph_group("#FF000000", glyph)),
-        "mipmap-anydpi-v26/%s.xml" % icon_name: adaptive,
-        "mipmap-anydpi-v26/%s_round.xml" % icon_name: adaptive,
+        "mipmap-anydpi/%s.xml" % icon_name: adaptive,
+        "mipmap-anydpi/%s_round.xml" % icon_name: adaptive,
     }
 
 
