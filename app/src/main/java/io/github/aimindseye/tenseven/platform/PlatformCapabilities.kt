@@ -31,8 +31,8 @@ data class PlatformCapabilities(
 ) {
     val frameFallbackReason: String get() = when {
         thirdPartySnapshots == CapabilityStatus.Ready -> "Preview uses an OS-authorized task snapshot; protected content stays hidden."
-        usageRecents == CapabilityStatus.Ready -> "Recent apps combine launcher history and usage access. Automatic app snapshots are unavailable for this install."
-        else -> "Recent apps use launcher history. Usage access adds apps opened elsewhere. Automatic app snapshots are unavailable for this install."
+        usageRecents == CapabilityStatus.Ready -> "Opened frames use launcher records and usage access; only the latest eight are kept. Automatic app snapshots are unavailable for this install."
+        else -> "Open an app to create a frame. Usage access adds new openings outside TenSeven. Automatic app snapshots are unavailable for this install."
     }
 
     companion object {

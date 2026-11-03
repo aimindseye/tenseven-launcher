@@ -13,7 +13,10 @@ class OfficeFrameDocuments(private val context: Context) {
     private val preferences = FrameIntegrationPreferences(context)
     private val cached = mutableMapOf<String, Pair<Long, AppSummary>>()
     fun summaries(now: Long): List<AppSummary> = KINDS.mapNotNull { kind ->
-        val raw = preferences.document(kind) ?: return@mapNotNull null
+        val raw = preferences.document(kind) ?: run {
+            cached.keys.removeAll { it.startsWith(kind + ":") }
+            return@mapNotNull null
+        }
         val uri = raw.toUri()
         val key = kind + ":" + raw
         cached[key]?.takeIf { now - it.first in 0..30_000 }?.let { return@mapNotNull it.second }
@@ -23,7 +26,8 @@ class OfficeFrameDocuments(private val context: Context) {
             } ?: "Selected file"
             val extension = name.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT)
             val expected = mapOf("word" to "docx", "excel" to "xlsx", "powerpoint" to "pptx")[kind]
-            val excerpt = if (extension == expected) runCatching {
+            val supported = extension == expected || context.contentResolver.getType(uri) == MIME[kind]
+            val excerpt = if (supported) runCatching {
                 context.contentResolver.openInputStream(uri)?.use { OfficeArchive.excerpt(it, kind, ::xmlText) }
                     ?: "Preview unavailable"
             }.getOrDefault("Preview unavailable; open the selected file") else "File selected · content preview unavailable for this format"

@@ -118,4 +118,26 @@ class ActiveFramesUiTest {
         compose.onNodeWithTag("owned:4").assertDoesNotExist()
     }
 
+    @Test fun notificationsCalendarDocumentsAndLocalDataNeverCreateFrames() {
+        io.github.aimindseye.tenseven.platform.ScreenCaptureState.stopped()
+        val live = snapshot.copy(calendar = LiveDatum("Calendar", "Old calendar event", LiveAvailability.LIVE),
+            appSummaries = listOf(
+                AppSummary("messages:mail", "Mail", "Old mail text", SummarySource.Notification, "mail"),
+                AppSummary("office:word", "Word", "Saved file", SummarySource.Document, "com.microsoft.office.word"),
+                AppSummary("local:notes", "Notes", "Old note", SummarySource.Local)))
+        compose.setContent {
+            MaterialTheme {
+                ActiveFramesPage(FramesState(usageAllowed = true, calendarAllowed = true, notificationsAllowed = true),
+                    emptyList(), setOf(io.github.aimindseye.tenseven.model.HomeLayout.STATUS_RINGS,
+                        io.github.aimindseye.tenseven.model.HomeLayout.WEATHER, io.github.aimindseye.tenseven.model.HomeLayout.SEARCH_ROW),
+                    {}, {}, live, 0, { _, _ -> null }, true, {}, {}, {}, {})
+            }
+        }
+        compose.onNodeWithTag("frames-empty").assertIsDisplayed()
+        compose.onNodeWithText("Old calendar event").assertDoesNotExist()
+        compose.onNodeWithText("Old mail text").assertDoesNotExist()
+        compose.onNodeWithText("Saved file").assertDoesNotExist()
+        compose.onNodeWithText("Old note").assertDoesNotExist()
+    }
+
 }

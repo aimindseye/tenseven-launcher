@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.platform.*
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,13 @@ class FrameIntegrationsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         picking = savedInstanceState?.getString("picking") ?: "word"
-        setContent { LauncherTheme(window = window) { Content() } }
+        setContent { LauncherTheme(window = window) {
+            Surface(Modifier.fillMaxSize().testTag("frame-integrations-surface"), color = MaterialTheme.colorScheme.background) { Content() }
+        } }
+        if (savedInstanceState == null) intent.getStringExtra("choose_document")?.takeIf { it in OfficeFrameDocuments.KINDS }?.let { kind ->
+            picking = kind
+            picker.launch(arrayOf(OfficeFrameDocuments.MIME.getValue(kind)))
+        }
     }
     private fun forget(kind: String, replacement: String? = null) {
         val prior = choices.document(kind)
@@ -62,7 +69,7 @@ class FrameIntegrationsActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Active Frames · App integrations", style = MaterialTheme.typography.headlineSmall)
-            Text("Summaries appear on unlocked Home with Live tiles enabled. They describe exposed data, not another app's private screen.")
+            Text("Only apps you open get frames. The last eight are kept; opening a ninth replaces the oldest. Summaries enrich those frames and never add cards on their own.")
             TextButton(onClick = { startActivity(Intent(this@FrameIntegrationsActivity, HubSettingsActivity::class.java)) }) { Text("Hub notification and Calendar access") }
             Text("Media, podcasts, audiobooks and FM Radio", style = MaterialTheme.typography.titleMedium)
             Text("Media-session summaries work with notification access. For FM Radio or a player without metadata, opt in to its notification text below. Station/frequency appears only if the app includes it. These selections do not enable Hub message counts.")

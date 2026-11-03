@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Instrumentation-only fixed document fixture. Contains no user files. -->
+        <provider android:name="io.github.aimindseye.tenseven.FrameDocumentFixtureProvider"
+            android:authorities="io.github.aimindseye.tenseven.test.documents" android:exported="true" />
+    </application>
+</manifest>

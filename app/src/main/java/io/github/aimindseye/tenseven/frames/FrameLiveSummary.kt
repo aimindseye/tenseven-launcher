@@ -18,7 +18,8 @@ object FrameLiveSummary {
     fun summary(state: FramesState, item: FrameItem, snapshot: LiveSurfaceSnapshot, personalUser: Int): AppSummary? =
         if (!state.settings.liveSummaries || item.app.userId != personalUser) null
         else snapshot.appSummaries.firstOrNull {
-            it.packageName == item.app.packageName && AppSummaryPolicy.allowed(it, state.notificationsAllowed)
+            ((item.app.activityClass != null && it.source == SummarySource.Local && LocalFrameApps.key(item.app.activityClass) == it.key) ||
+                (item.app.activityClass == null && it.packageName == item.app.packageName)) && AppSummaryPolicy.allowed(it, state.notificationsAllowed)
         }
 
 }

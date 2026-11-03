@@ -9,6 +9,7 @@ interface FrameSource {
     fun saveDismissals(value: Map<String, Long>)
     fun resume(item: FrameItem): Boolean
     fun launch(app: FrameApp)
+    fun closed(item: FrameItem) {}
 }
 
 class FramesCoordinator(
@@ -60,6 +61,7 @@ class FramesCoordinator(
         dismissed = (dismissed + (item.key to now())).entries.sortedByDescending { it.value }
             .take(FrameDismissals.MAX).associate { it.toPair() }
         source.saveDismissals(dismissed)
+        source.closed(item)
         // Closing a launcher card never force-stops an app or removes someone else's task.
         ++epoch
         publish(state.copy(items = state.items.filterNot { it.key == item.key }, generation = epoch))

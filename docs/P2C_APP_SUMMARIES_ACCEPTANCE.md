@@ -56,3 +56,31 @@ five-second resumed lifecycle loop. No summaries are supplied while the device i
 
 Automated checks and exact-commit CI evidence are recorded in the PR. No physical FM tuner,
 Microsoft Office UI, account/cloud or Titan 2 hardware qualification is implied by emulator tests.
+
+## Version 12 repair: opened-app window
+
+The app grid now contains at most eight app frames, created only by actual openings in the
+new frame session. The ninth distinct app replaces the oldest retained frame. Reopening an
+app moves its existing frame to the newest position; it never duplicates that app. Evicted or
+closed entries cannot be recreated by repeatedly reading old usage history. Clear app frames
+or reboot starts a fresh window; process recreation preserves the current window. Version 12
+starts fresh rather than importing version 11's twelve-hour history.
+
+Calendar, notifications, selected files and local records enrich existing app frames; they
+never create cards by themselves. Media uses that same rule. The consented shared-screen
+preview is displayed separately, outside the app grid, and does not consume one of eight slots.
+TenSeven Notes/Tasks/Calculator are tracked by their individual activity identities.
+
+An unlinked Word/Excel/PowerPoint frame now explains that a saved file must be chosen and
+provides a Choose file action. This opens Android's picker directly. The normal card-open
+action remains available. Word is not a private-editor screen API: unsaved editor contents
+still cannot be read automatically. A real Android content-provider test verifies the selected
+DOCX loader; MIME type can identify OOXML when the provider omits its filename extension.
+The integration Activity now draws a full themed Surface matching Launcher Settings.
+
+Titan 2: after update, open nine apps in sequence. Only apps 2–9 should remain. Close one:
+no old app should refill its place. Notifications or calendar changes must not add entries.
+Reopen the closed app and verify it returns. Clear frames and confirm an empty grid until
+another app is opened. Reboot/recreate the Activity and verify the documented window behavior.
+Open Word, use Choose file, pick a saved DOCX and return Home. Confirm the selected-file
+summary and themed setup screen. Media metadata and capture Stop controls must still work.

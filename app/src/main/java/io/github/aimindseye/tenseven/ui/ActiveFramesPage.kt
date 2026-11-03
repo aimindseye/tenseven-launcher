@@ -66,25 +66,7 @@ internal fun ActiveFramesPage(
     val enabledApps = remember(refreshGeneration) { display.loadHubEnabledApps() }
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
     val capture by io.github.aimindseye.tenseven.platform.ScreenCaptureState.state.collectAsState()
-    val owned = buildList {
-        if (capture.running) add(FrameTileView("tile:capture", "Shared screen", "Last captured preview · frozen on Home",
-            capture.bitmap, { context.stopService(android.content.Intent(context, io.github.aimindseye.tenseven.platform.ScreenCaptureService::class.java)) }))
-        if (state.settings.liveSummaries) {
-        if (state.calendarAllowed && snapshot.calendar.availability == LiveAvailability.LIVE &&
-            state.items.none { it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName in snapshot.calendarPackages })
-            add(FrameTileView("tile:calendar", "Calendar", snapshot.calendar.detail))
-        if (snapshot.appSummaries.none { it.source == SummarySource.Media } && state.notificationsAllowed && snapshot.music.availability == LiveAvailability.LIVE &&
-            state.items.none { it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName == snapshot.music.sourcePackage })
-            add(FrameTileView("tile:media", "Now playing", snapshot.music.detail))
-        snapshot.appSummaries.filter { AppSummaryPolicy.allowed(it, state.notificationsAllowed) }.forEach { summary ->
-            val matched = summary.packageName != null && state.items.any {
-                it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName == summary.packageName
-            }
-            if (!matched) add(FrameTileView("tile:" + summary.key, summary.title, summary.detail,
-                onOpen = { summaryActions.open(summary.key) }, badge = summary.source.label))
-        }
-        }
-    }
+    val owned = emptyList<FrameTileView>()
     Column(Modifier.fillMaxSize()) {
         if (shown(HomeLayout.STATUS_RINGS) && dials.isNotEmpty()) StatusDialsRow(onOpenSettings, dials)
         if (shown(HomeLayout.WEATHER)) {
@@ -95,6 +77,15 @@ internal fun ActiveFramesPage(
         if (shown(HomeLayout.SEARCH_ROW)) Box(Modifier.padding(horizontal = 6.dp)) { SearchLaunchButton(onClick = onSearch) }
         // Put the access offer outside the grid so it never displaces one of its two visible rows.
         if (!state.usageAllowed) UsageAccessHint(onAllowUsageAccess)
+        if (capture.running) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Shared screen · separate capture preview", color = Bb10Text, modifier = Modifier.weight(1f))
+                androidx.compose.material3.TextButton(onClick = { context.stopService(android.content.Intent(context,
+                    io.github.aimindseye.tenseven.platform.ScreenCaptureService::class.java)) }) { Text("Stop sharing") }
+            }
+            capture.bitmap?.let { picture -> Image(picture.asImageBitmap(), "Shared screen preview",
+                Modifier.fillMaxWidth().height(96.dp), contentScale = ContentScale.Fit) }
+        }
         ActiveFramesGrid(state, apps, snapshot, enabledApps, owned, frameSnapshot, active, onResume, onClose,
             Modifier.weight(1f).fillMaxWidth(), onOpenSummary = summaryActions::open)
     }
@@ -159,7 +150,7 @@ internal fun ActiveFramesGrid(
                             RecentFrameCard(state, item, apps, snapshot, enabledApps, frameSnapshot, active,
                                 {
                                     val summary = FrameLiveSummary.summary(state, item, snapshot, personalUser)
-                                    if (summary?.source == SummarySource.Document) onOpenSummary(summary.key) else onResume(item)
+                                    if (summary != null && summary.source in setOf(SummarySource.Document, SummarySource.Local)) onOpenSummary(summary.key) else onResume(item)
                                 }, {
                                     val index = keys.indexOf(key)
                                     nextFocus = keys.filterNot { it == key }.getOrNull(index.coerceAtMost(keys.size - 2).coerceAtLeast(0))
@@ -180,7 +171,8 @@ private fun RecentFrameCard(
     enabledApps: Set<String>, frameSnapshot: (FrameItem, Long) -> Bitmap?, active: Boolean,
     onOpen: () -> Unit, onClose: () -> Unit, modifier: Modifier,
 ) {
-    val app = apps.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId }
+    val app = apps.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId &&
+        (item.app.activityClass == null || it.component.className == item.app.activityClass) }
     val picture by produceState<Bitmap?>(null, item.key, state.generation, active, state.snapshotsAllowed) {
         value = null
         if (active && state.snapshotsAllowed) value = withContext(Dispatchers.IO) { frameSnapshot(item, state.generation) }
@@ -188,9 +180,14 @@ private fun RecentFrameCard(
     val count = FrameMessages.count(state, item, snapshot.hubApps, enabledApps, android.os.Process.myUserHandle().hashCode())
     val summary = FrameLiveSummary.detail(state, item, snapshot, android.os.Process.myUserHandle().hashCode())
     val badge = FrameLiveSummary.summary(state, item, snapshot, android.os.Process.myUserHandle().hashCode())?.source?.label ?: "Live summary"
-    FrameTile(item.key, app?.label ?: item.app.packageName, if (summary != null) badge else if (picture == null) "Recent app" else "Preview",
-        listOfNotNull(summary, if (count > 0) "$count new" else null).joinToString(" · "), true, onOpen, onClose, modifier, picture, state.settings.openApps,
-        icon = { if (app != null) AppMark(app, 28) })
+    val context = LocalContext.current
+    val kind = io.github.aimindseye.tenseven.platform.OfficeFrameDocuments.PACKAGES.entries.firstOrNull { it.value == item.app.packageName }?.key
+    val needsFile = kind != null && summary == null && state.settings.liveSummaries && item.app.userId == android.os.Process.myUserHandle().hashCode()
+    FrameTile(item.key, app?.label ?: item.app.packageName, if (needsFile) "File setup needed" else if (summary != null) badge else if (picture == null) "Recent app" else "Preview",
+        listOfNotNull(if (needsFile) "Choose a saved file for a summary" else summary, if (count > 0) "$count new" else null).joinToString(" · "), true, onOpen, onClose, modifier, picture, state.settings.openApps,
+        icon = { if (app != null) AppMark(app, 28) },
+        onConfigure = if (needsFile) ({ context.startActivity(android.content.Intent(context,
+            io.github.aimindseye.tenseven.FrameIntegrationsActivity::class.java).putExtra("choose_document", kind)) }) else null)
 }
 
 /** Shared card used by the real grid and Compose keyboard/layout tests. */
@@ -200,6 +197,7 @@ internal fun FrameTile(
     closable: Boolean, onOpen: () -> Unit, onClose: () -> Unit,
     modifier: Modifier = Modifier, picture: Bitmap? = null, openEnabled: Boolean = true,
     icon: @Composable () -> Unit = {},
+    onConfigure: (() -> Unit)? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
@@ -227,7 +225,9 @@ internal fun FrameTile(
             else Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
                 icon()
                 Text(badge, color = Bb10Text, style = MaterialTheme.typography.labelSmall)
-                if (detail.isNotBlank()) Text(detail, color = Bb10Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (detail.isNotBlank()) Text(detail, color = Bb10Muted, maxLines = if (onConfigure == null) 2 else 1, overflow = TextOverflow.Ellipsis)
+                if (onConfigure != null) androidx.compose.material3.TextButton(onClick = onConfigure,
+                    modifier = Modifier.testTag("configure:$key")) { Text("Choose file") }
             }
         }
         Row(Modifier.fillMaxWidth().heightIn(min = 36.dp).background(if (focused) Bb10Blue else Bb10BarTop).padding(start = 6.dp),

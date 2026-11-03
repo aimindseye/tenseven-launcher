@@ -50,4 +50,19 @@ class AppFrameIntegrationsTest {
             calc.edit().putString("last_result", oldCalc).commit()
         }
     }
+    @Test fun selectedWordFileLoadsThroughAndroidProviderAndRemoveClearsIt() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = FrameIntegrationPreferences(context)
+        val prior = preferences.document("word")
+        try {
+            preferences.document("word", "content://io.github.aimindseye.tenseven.test.documents/fixture.docx")
+            val documents = OfficeFrameDocuments(context)
+            val summary = documents.summaries(System.currentTimeMillis()).first { it.key == "office:word" }
+            assertTrue(summary.detail, summary.detail.contains("Verified saved Word content"))
+            assertEquals("com.microsoft.office.word", summary.packageName)
+            preferences.document("word", null)
+            assertFalse(documents.summaries(System.currentTimeMillis()).any { it.key == "office:word" })
+        } finally { preferences.document("word", prior) }
+    }
+
 }

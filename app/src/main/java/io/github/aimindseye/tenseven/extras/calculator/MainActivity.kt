@@ -79,6 +79,10 @@ private object HardwareKeypad {
 }
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        io.github.aimindseye.tenseven.platform.FrameWindowRepository.local(this, javaClass.name)
+    }
     // Overrides the public Activity method; androidx re-declares it as restricted, which lint misreports.
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
