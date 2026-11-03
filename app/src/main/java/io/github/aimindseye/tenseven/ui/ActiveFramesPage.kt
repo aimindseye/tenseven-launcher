@@ -136,7 +136,7 @@ internal fun ActiveFramesGrid(
         val fontScale = HomeViewport.textScale(
             androidx.compose.ui.platform.LocalDensity.current.fontScale)
         val columns = HomeViewport.frameColumns(maxWidth.value.toInt(), fontScale)
-        val height = ((maxHeight - 18.dp) / 2).coerceAtLeast(72.dp * fontScale)
+        val height = ((maxHeight - 18.dp) / 2).coerceAtLeast(HomeViewport.minimumFrameHeight(fontScale).dp)
         if (keys.isEmpty()) {
             Text(state.fallbackReason, color = Bb10Muted, modifier = Modifier.padding(12.dp)
                 .focusRequester(first).focusable().testTag("frames-empty"))

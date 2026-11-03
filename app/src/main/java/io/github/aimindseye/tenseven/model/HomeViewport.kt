@@ -6,6 +6,13 @@ object HomeViewport {
     private const val MIN_FRAME_WIDTH_DP = 152
     private const val FRAME_COLUMNS = 2
     private const val MAX_FONT_SCALE = 3f
+    private const val FRAME_CONTENT_DP = 96
+    private const val FRAME_FOOTER_DP = 48
+    private const val DEFAULT_FRAME_MIN_DP = 72
+
+    fun minimumFrameHeight(fontScale: Float): Int =
+        if (textScale(fontScale) > 1f) (FRAME_CONTENT_DP * textScale(fontScale) + FRAME_FOOTER_DP).toInt()
+        else DEFAULT_FRAME_MIN_DP
 
     fun textScale(fontScale: Float): Float = if (fontScale.isFinite()) fontScale.coerceIn(1f, MAX_FONT_SCALE) else 1f
 

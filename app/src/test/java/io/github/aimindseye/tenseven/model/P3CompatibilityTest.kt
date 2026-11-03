@@ -37,6 +37,8 @@ class P3CompatibilityTest {
         assertEquals(2, HomeViewport.frameColumns(411, 1f))
         assertEquals(1, HomeViewport.frameColumns(320, 2f))
         assertEquals(1f, HomeViewport.textScale(Float.NaN))
+        assertEquals(72, HomeViewport.minimumFrameHeight(1f))
+        assertEquals(240, HomeViewport.minimumFrameHeight(2f))
         for (width in listOf(1, 240, 320, 411, 600, 840)) {
             for (scale in listOf(1f, 1.3f, 2f, 3f)) {
                 assertTrue(HomeViewport.columns(width, GridColumns.AUTO, scale) > 0)
