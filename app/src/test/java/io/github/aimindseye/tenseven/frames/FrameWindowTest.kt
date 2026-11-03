@@ -29,6 +29,9 @@ class FrameWindowTest {
         assertEquals(3, restored.openings().size)
         assertEquals("local:notes", LocalFrameApps.key(notes.activityClass))
         assertNull(LocalFrameApps.key("unknown"))
+        assertEquals("local:tasks", LocalFrameApps.key("io.github.aimindseye.tenseven.tasks.TasksLauncherActivity"))
+        assertEquals("Tasks / Remind", LocalFrameApps.title("io.github.aimindseye.tenseven.tasks.TasksActivity"))
+        assertNull(LocalFrameApps.title("unknown"))
     }
     @Test fun freshSessionIgnoresOldHistoryAndBoundsTombstones() {
         assertTrue(FrameWindow().record((1..8).map { event(it) }, 100).active.isEmpty())

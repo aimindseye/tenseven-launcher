@@ -172,7 +172,7 @@ private fun RecentFrameCard(
     onOpen: () -> Unit, onClose: () -> Unit, modifier: Modifier,
 ) {
     val app = apps.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId &&
-        (item.app.activityClass == null || it.component.className == item.app.activityClass) }
+        (item.app.activityClass == null || LocalFrameApps.canonical(it.component.className) == item.app.activityClass) }
     val picture by produceState<Bitmap?>(null, item.key, state.generation, active, state.snapshotsAllowed) {
         value = null
         if (active && state.snapshotsAllowed) value = withContext(Dispatchers.IO) { frameSnapshot(item, state.generation) }
@@ -183,7 +183,13 @@ private fun RecentFrameCard(
     val context = LocalContext.current
     val kind = io.github.aimindseye.tenseven.platform.OfficeFrameDocuments.PACKAGES.entries.firstOrNull { it.value == item.app.packageName }?.key
     val needsFile = kind != null && summary == null && state.settings.liveSummaries && item.app.userId == android.os.Process.myUserHandle().hashCode()
-    FrameTile(item.key, app?.label ?: item.app.packageName, if (needsFile) "File setup needed" else if (summary != null) badge else if (picture == null) "Recent app" else "Preview",
+    val renderedBadge = when {
+        needsFile -> "File setup needed"
+        summary != null -> badge
+        picture != null -> "Preview"
+        else -> "Recent app"
+    }
+    FrameTile(item.key, app?.label ?: LocalFrameApps.title(item.app.activityClass) ?: item.app.packageName, renderedBadge,
         listOfNotNull(if (needsFile) "Choose a saved file for a summary" else summary, if (count > 0) "$count new" else null).joinToString(" · "), true, onOpen, onClose, modifier, picture, state.settings.openApps,
         icon = { if (app != null) AppMark(app, 28) },
         onConfigure = if (needsFile) ({ context.startActivity(android.content.Intent(context,
@@ -217,6 +223,23 @@ internal fun FrameTile(
             else Modifier.focusable()
         ).semantics { contentDescription = "$title, $badge" }) {
         Box(Modifier.weight(1f).fillMaxWidth().background(Bb10Background), contentAlignment = Alignment.Center) {
+            FrameContent(key, badge, detail, picture, icon, onConfigure)
+        }
+        Row(Modifier.fillMaxWidth().heightIn(min = 36.dp).background(if (focused) Bb10Blue else Bb10BarTop).padding(start = 6.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Text(title, color = if (focused) Bb10OnBlue else Bb10Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+            if (closable) Box(Modifier.size(44.dp, 36.dp).testTag("close:$key").clickable(onClick = onClose)
+                .semantics { contentDescription = "Close $title card" }, contentAlignment = Alignment.Center) {
+                Text("×", color = if (focused) Bb10OnBlue else Bb10Text)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.FrameContent(key: String, badge: String, detail: String, picture: Bitmap?,
+    icon: @Composable () -> Unit, onConfigure: (() -> Unit)?) {
             if (picture != null) {
                 Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 Text("Preview", color = Bb10Text, style = MaterialTheme.typography.labelSmall,
@@ -229,15 +252,4 @@ internal fun FrameTile(
                 if (onConfigure != null) androidx.compose.material3.TextButton(onClick = onConfigure,
                     modifier = Modifier.testTag("configure:$key")) { Text("Choose file") }
             }
-        }
-        Row(Modifier.fillMaxWidth().heightIn(min = 36.dp).background(if (focused) Bb10Blue else Bb10BarTop).padding(start = 6.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = if (focused) Bb10OnBlue else Bb10Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            if (closable) Box(Modifier.size(44.dp, 36.dp).testTag("close:$key").clickable(onClick = onClose)
-                .semantics { contentDescription = "Close $title card" }, contentAlignment = Alignment.Center) {
-                Text("×", color = if (focused) Bb10OnBlue else Bb10Text)
-            }
-        }
-    }
 }

@@ -28,5 +28,13 @@ object LocalFrameApps {
     private const val ROOT = "io.github.aimindseye.tenseven."
     val activities = mapOf("local:notes" to ROOT + "extras.notes.MainActivity",
         "local:tasks" to ROOT + "tasks.TasksActivity", "local:calculator" to ROOT + "extras.calculator.MainActivity")
-    fun key(activity: String?): String? = activities.entries.firstOrNull { it.value == activity }?.key
+    fun canonical(activity: String?): String? = if (activity == ROOT + "tasks.TasksLauncherActivity")
+        ROOT + "tasks.TasksActivity" else activity
+    fun key(activity: String?): String? = activities.entries.firstOrNull { it.value == canonical(activity) }?.key
+    fun title(activity: String?): String? = when (key(activity)) {
+        "local:notes" -> "TenSeven Notes"
+        "local:tasks" -> "Tasks / Remind"
+        "local:calculator" -> "TenSeven Calculator"
+        else -> null
+    }
 }

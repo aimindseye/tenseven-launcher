@@ -64,8 +64,8 @@ object FramePolicy {
             FrameItem(app, native.firstOrNull { it.packageName == app.packageName && it.userId == app.userId })
         } + native.map { FrameItem(FrameApp(it.packageName, it.userId), it) })
         val shown = items.filter { item ->
-            item.app in input.availableApps &&
-                ((dismissals[item.key] ?: dismissals[item.app.key])?.let { closed -> (opened[item.app.key] ?: 0L) > closed } ?: true)
+            val closed = dismissals[item.key] ?: dismissals[item.app.key]
+            item.app in input.availableApps && (closed == null || opened.getOrDefault(item.app.key, 0L) > closed)
         }.distinctBy { it.key }.take(settings.maximum)
         return FramesState(shown, generation, settings,
             usageAllowed = input.capabilities.usageRecents == CapabilityStatus.Ready,

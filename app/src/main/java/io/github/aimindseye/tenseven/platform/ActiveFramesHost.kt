@@ -29,13 +29,17 @@ class ActiveFramesHost(context: Context) {
     val coordinator = FramesCoordinator(object : FrameSource {
         override fun read(): FrameInput {
             val caps = PlatformCapabilityProbe.detect(app)
-            entries = inventory.loadApps().filter(::available)
+            val loaded = inventory.loadApps()
+            val taskClass = LocalFrameApps.activities.getValue("local:tasks")
+            val supplement = if (loaded.any { LocalFrameApps.canonical(it.component.className) == taskClass }) emptyList() else
+                listOf(AppEntry("Tasks / Remind", android.content.ComponentName(app, taskClass), Process.myUserHandle()))
+            entries = (loaded + supplement).filter(::available)
             val settings = store.loadFrameSettings()
             val recents = if (settings.rememberReturnedApps) usage.recentEvents() else emptyList()
             val openings = window.update(recents.map { FrameOpening(FrameApp(it.packageName, Process.myUserHandle().hashCode()), it.timeMs) })
             return FrameInput(native.loadFrames(), recents,
                 entries.flatMap { listOf(FrameApp(it.component.packageName, it.user.hashCode()),
-                    FrameApp(it.component.packageName, it.user.hashCode(), it.component.className)) }.toSet(),
+                    FrameApp(it.component.packageName, it.user.hashCode(), LocalFrameApps.canonical(it.component.className))) }.toSet(),
                 Process.myUserHandle().hashCode(), caps, settings, if (settings.rememberReturnedApps) openings else emptyList())
         }
         override fun closed(item: FrameItem) = window.close(item.app)
@@ -46,7 +50,13 @@ class ActiveFramesHost(context: Context) {
             return item.task?.let { task -> native.loadFrames().any { it == task } && native.resume(task.taskId) } ?: false
         }
         override fun launch(app: FrameApp) {
-            entries.firstOrNull { it.component.packageName == app.packageName && it.user.hashCode() == app.userId && (app.activityClass == null || it.component.className == app.activityClass) && available(it) }
+            val activity = app.activityClass
+            if (app.packageName == this@ActiveFramesHost.app.packageName && activity != null && LocalFrameApps.key(activity) != null) {
+                runCatching { this@ActiveFramesHost.app.startActivity(android.content.Intent().setComponent(
+                    android.content.ComponentName(this@ActiveFramesHost.app, activity)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                return
+            }
+            entries.firstOrNull { it.component.packageName == app.packageName && it.user.hashCode() == app.userId && (app.activityClass == null || LocalFrameApps.canonical(it.component.className) == app.activityClass) && available(it) }
                 ?.let(inventory::launch)
         }
     }, background = { work -> runCatching { executor.execute(work) } }, foreground = { work -> main.post { work() } },

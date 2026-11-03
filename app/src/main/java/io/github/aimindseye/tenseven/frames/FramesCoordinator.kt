@@ -9,7 +9,7 @@ interface FrameSource {
     fun saveDismissals(value: Map<String, Long>)
     fun resume(item: FrameItem): Boolean
     fun launch(app: FrameApp)
-    fun closed(item: FrameItem) {}
+    fun closed(item: FrameItem) { /* In-memory sources have no additional window store to update. */ }
 }
 
 class FramesCoordinator(
