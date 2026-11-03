@@ -397,7 +397,7 @@ internal fun SearchScreen(
             }
             if (bestApp != null || bestOther != null) {
                 item(key = "best") {
-                    SearchBestMatch {
+                    searchBestMatch {
                         if (bestApp != null) AppResult(bestApp) else bestOther?.let { CommandResult(it) }
                     }
                 }
@@ -920,7 +920,7 @@ internal fun assignRows(
 }
 
 @Composable
-private fun SearchBestMatch(content: @Composable () -> Unit) {
+private fun searchBestMatch(content: @Composable () -> Unit) {
     SectionLabel(t("best_match"))
     Box(
         Modifier

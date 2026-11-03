@@ -225,7 +225,7 @@ private fun HubPeekPanel(
                         modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(0.dp),
                     ) {
-                        PeekConversations(conversations, showText && !deviceLocked, onClose)
+                        peekConversations(conversations, showText && !deviceLocked, onClose)
                     }
                     PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
                 }
@@ -330,7 +330,7 @@ private const val MAX_ROWS = 8
 // How opaque the peek panel is; the rest lets Home show through.
 
 @Composable
-private fun PeekConversations(
+private fun peekConversations(
     conversations: List<HubConversation>,
     showText: Boolean,
     onClose: () -> Unit,

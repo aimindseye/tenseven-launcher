@@ -91,7 +91,7 @@ internal fun HubCalendarPeek(
                     )
                 } else {
                     events.forEach { event ->
-                        CalendarPeekEvent(event, onOpenCalendar)
+                        calendarPeekEvent(event, onOpenCalendar)
                     }
                 }
             }
@@ -100,7 +100,7 @@ internal fun HubCalendarPeek(
 }
 
 @Composable
-private fun CalendarPeekEvent(
+private fun calendarPeekEvent(
     event: HubCalendarEvent,
     onOpenCalendar: () -> Unit,
 ) {
