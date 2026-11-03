@@ -43,12 +43,12 @@ android {
 
     defaultConfig {
         applicationId = "io.github.aimindseye.tenseven"
-        minSdk = 30
+        minSdk = 34
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Full-only P1 qualification build; update code and name for every distributed test APK.
-        versionCode = 15
-        versionName = "0.2.0-p2c-summaries.5"
+        versionCode = 16
+        versionName = "0.2.0-p2-architecture.1"
     }
 
     signingConfigs {
@@ -149,10 +149,14 @@ if (releaseSigned) {
             val file = rootProject.file(releaseStoreFile!!)
             check(file.isFile) { "Signing keystore is missing" }
             val keystore = KeyStore.getInstance(file, releaseStorePassword!!.toCharArray())
-            val certificate = keystore.getCertificate(releaseKeyAlias!!)
-                ?: error("Release key alias was not found")
-            val actual = MessageDigest.getInstance("SHA-256").digest(certificate.encoded)
-                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+            val certificate =
+                keystore.getCertificate(releaseKeyAlias!!)
+                    ?: error("Release key alias was not found")
+            val actual =
+                MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(certificate.encoded)
+                    .joinToString("") { "%02x".format(it.toInt() and 0xff) }
             check(actual == registeredTensevenCertificateSha256) {
                 "Wrong release signing certificate: expected registered SHA-256; got $actual"
             }

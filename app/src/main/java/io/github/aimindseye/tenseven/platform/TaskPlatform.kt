@@ -11,38 +11,53 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
+import io.github.aimindseye.tenseven.tasks.TaskAlarmReceiver
 import io.github.aimindseye.tenseven.tasks.TaskRecord
-import io.github.aimindseye.tenseven.tasks.TaskStore
 import io.github.aimindseye.tenseven.tasks.TaskRepository
 import io.github.aimindseye.tenseven.tasks.TaskScheduler
-import io.github.aimindseye.tenseven.tasks.TaskAlarmReceiver
+import io.github.aimindseye.tenseven.tasks.TaskStore
 import io.github.aimindseye.tenseven.tasks.TasksActivity
 
 /** Android wiring only; task persistence, deduplication and completion stay in the tested domain. */
 fun taskRepository(context: Context): TaskRepository {
     val app = context.applicationContext
-    return TaskRepository(TaskStore(app.filesDir.resolve("tasks-v1")), object : TaskScheduler {
-        override fun cancel(id: String) = TaskAlarms.cancel(app, id)
-        override fun schedule(task: TaskRecord) = TaskAlarms.schedule(app, task)
-    })
+    return TaskRepository(
+        TaskStore(app.filesDir.resolve("tasks-v1")),
+        object : TaskScheduler {
+            override fun cancel(id: String) = TaskAlarms.cancel(app, id)
+
+            override fun schedule(task: TaskRecord) = TaskAlarms.schedule(app, task)
+        },
+    )
 }
 
 /** Android inexact, deferrable wake-ups. In-app overdue reminders never require notification access. */
 object TaskAlarms {
-    private fun intent(context: Context, id: String): PendingIntent {
-        val i = Intent(context, TaskAlarmReceiver::class.java).apply {
-            action = "io.github.aimindseye.tenseven.TASK_DUE"
-            data = Uri.parse("tenseven-task://remind/" + id)
-            putExtra("id", id)
-        }
+    private fun intent(
+        context: Context,
+        id: String,
+    ): PendingIntent {
+        val i =
+            Intent(context, TaskAlarmReceiver::class.java).apply {
+                action = "io.github.aimindseye.tenseven.TASK_DUE"
+                data = Uri.parse("tenseven-task://remind/" + id)
+                putExtra("id", id)
+            }
         return PendingIntent.getBroadcast(context, 0, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
-    fun cancel(context: Context, id: String) {
+
+    fun cancel(
+        context: Context,
+        id: String,
+    ) {
         val alarm = context.getSystemService(AlarmManager::class.java)
         alarm?.cancel(intent(context, id))
     }
-    fun schedule(context: Context, task: TaskRecord) {
+
+    fun schedule(
+        context: Context,
+        task: TaskRecord,
+    ) {
         if (task.completed || task.remindAtEpochMs == null || task.remindAtEpochMs <= System.currentTimeMillis()) return
         val alarm = context.getSystemService(AlarmManager::class.java) ?: return
         // setAndAllowWhileIdle is not an exact-alarm API and needs no SCHEDULE_EXACT_ALARM grant.
@@ -51,11 +66,15 @@ object TaskAlarms {
 }
 
 open class TaskAlarmReceiverBase : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> {
                 taskRepository(context).rescheduleAll()
             }
+
             "io.github.aimindseye.tenseven.TASK_DUE" -> {
                 val id = intent.getStringExtra("id") ?: return
                 val task = taskRepository(context).list().firstOrNull { it.id == id } ?: return
@@ -65,25 +84,39 @@ open class TaskAlarmReceiverBase : BroadcastReceiver() {
                     return
                 }
                 val manager = context.getSystemService(NotificationManager::class.java) ?: return
-                if (Build.VERSION.SDK_INT >= 33 &&
-                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
-                manager.createNotificationChannel(NotificationChannel("tenseven_tasks", "TenSeven Remind",
-                    NotificationManager.IMPORTANCE_DEFAULT))
-                val open = Intent(context, TasksActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    putExtra(TasksActivity.EXTRA_MODE, "remind")
-                }
-                val pending = PendingIntent.getActivity(context, 0, open,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                val notification = Notification.Builder(context, "tenseven_tasks")
-                    .setSmallIcon(io.github.aimindseye.tenseven.R.mipmap.ic_tenseven)
-                    .setContentTitle("TenSeven Remind")
-                    // No user-entered or source-app text on a lock screen.
-                    .setContentText("You have a follow-up to review")
-                    .setVisibility(Notification.VISIBILITY_PRIVATE)
-                    .setContentIntent(pending)
-                    .setAutoCancel(true)
-                    .build()
+                val permission = Manifest.permission.POST_NOTIFICATIONS
+                val granted = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+                if (!granted) return
+                manager.createNotificationChannel(
+                    NotificationChannel(
+                        "tenseven_tasks",
+                        "TenSeven Remind",
+                        NotificationManager.IMPORTANCE_DEFAULT,
+                    ),
+                )
+                val open =
+                    Intent(context, TasksActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        putExtra(TasksActivity.EXTRA_MODE, "remind")
+                    }
+                val pending =
+                    PendingIntent.getActivity(
+                        context,
+                        0,
+                        open,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    )
+                val notification =
+                    Notification
+                        .Builder(context, "tenseven_tasks")
+                        .setSmallIcon(io.github.aimindseye.tenseven.R.mipmap.ic_tenseven)
+                        .setContentTitle("TenSeven Remind")
+                        // No user-entered or source-app text on a lock screen.
+                        .setContentText("You have a follow-up to review")
+                        .setVisibility(Notification.VISIBILITY_PRIVATE)
+                        .setContentIntent(pending)
+                        .setAutoCancel(true)
+                        .build()
                 manager.notify(task.id.hashCode(), notification)
             }
         }

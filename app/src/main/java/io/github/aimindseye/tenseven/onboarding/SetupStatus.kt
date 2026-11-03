@@ -4,34 +4,32 @@ import android.Manifest
 import android.app.AppOpsManager
 import android.app.role.RoleManager
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Process
-import androidx.core.content.ContextCompat
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.platform.Capabilities
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 
 /** Reads what has been granted, from Android. Cheap; call it again when the user comes back from Settings. */
 object SetupStatus {
-    fun read(context: Context): SetupState =
-        SetupState(
+    fun read(context: Context): SetupState {
+        val capabilities =
+            io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe
+                .detect(context)
+        return SetupState(
             homeRoleHeld = isHomeRoleHeld(context),
-            contactsGranted = granted(context, Manifest.permission.READ_CONTACTS),
-            photosGranted = granted(context, photosPermission()),
-            notificationAccess = Capabilities.hasConversationService(context) && ConversationAccess.isGranted(context),
-            usageAccess = hasUsageAccess(context),
+            contactsGranted = capabilities.contacts == CapabilityStatus.Ready,
+            photosGranted = capabilities.photos == CapabilityStatus.Ready,
+            notificationAccess = capabilities.hubNotifications == CapabilityStatus.Ready,
+            usageAccess = capabilities.usageRecents == CapabilityStatus.Ready,
             extrasChosen = ExtraAppsControl.enabledIds(context).isNotEmpty(),
-            notificationListenerAvailable = Capabilities.hasConversationService(context),
+            notificationListenerAvailable =
+                capabilities.hubNotifications != CapabilityStatus.Unavailable,
         )
+    }
 
-    /** READ_MEDIA_IMAGES from Android 13; READ_EXTERNAL_STORAGE before. */
-    fun photosPermission(): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_IMAGES
-        } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        }
+    /** Photo access for the Android 14 minimum. */
+    fun photosPermission(): String = Manifest.permission.READ_MEDIA_IMAGES
 
     fun isHomeRoleHeld(context: Context): Boolean =
         runCatching {
@@ -50,9 +48,4 @@ object SetupStatus {
         runCatching {
             context.packageManager.getInstallSourceInfo(context.packageName).installingPackageName
         }.getOrNull()
-
-    private fun granted(
-        context: Context,
-        permission: String,
-    ): Boolean = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }

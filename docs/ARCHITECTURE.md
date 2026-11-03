@@ -118,8 +118,8 @@ event viewer in Sable Keyboard, then add a row here:
 | Device | Keyboard name (`InputDevice`) | Trackpad | Sym | Menu | Convenience key | Verified |
 |---|---|---|---|---|---|---|
 | Zinwa Q25 | `Q25_keyboard` | D-pad keys (kernel mode 1) or pointer (mode 0); SableOS wants D-pad | Right Alt | `KEYCODE_MENU` (kl 139) | scan code unknown | no |
+| Zinwa P26 | not captured | not captured | not captured | not captured | not captured | no |
 | Unihertz Titan 2 | not captured | Touch-sensitive keyboard (not captured in detail) | not captured | No Menu key: Alt+Enter opens the menu | not captured | Alt+Space (Command) and Alt+Enter (menu) work in hand testing |
-| BlackBerry KEY2 | not captured | touch-sensitive keyboard | not captured | not captured | programmable | no |
 
 The Q25 row is from SableOS's `device-profile/KEYMAP.md` and `docs/KEYBOARD_AND_INPUT.md` (device tree and
 kernel source, not measured on hardware).
@@ -232,3 +232,25 @@ Home is drawn; lock, system revocation, Stop and process death end the session. 
 session always needs fresh consent. No audio is captured. Thumbnail dimensions/throttle
 and Home/lock decisions are pure CapturePolicy logic. Physical consent and protected-screen
 qualification are tracked in P2B_LIVE_CAPTURE_ACCEPTANCE.md.
+
+## P2 engineering boundaries (2026-11-03)
+
+The current source replaces the historical monolithic layout described above: SableStartScreen
+is the navigation/composition host; HubPage, CommandScreen, AppsScreen, HomeAppGrid,
+EditHomeScreen, AppPrivacyScreen, AppearanceScreen, HomeActionBar, HomeWidgets and
+Bb10HomeChrome are separate presenters with immutable inputs and callbacks. Shared palette,
+argument models, layout tokens and primitives have their own files.
+
+LauncherRuntime owns inventory I/O, package/profile/privacy signals and their lifecycle cleanup;
+InventoryCoordinator owns generation-based stale-result rejection. LauncherHomeState owns
+Compose preference/session state. PlatformCapabilityState supplies lifecycle-refreshed typed
+capabilities; HubRevision supplies a lifecycle-bound notification revision to inbox and Peek.
+
+See P2_ENGINEERING_ACCEPTANCE.md for tests, accepted legacy static baseline, blocking quality
+ratchet and the distinction between synthetic/emulator evidence and P3 hardware qualification.
+P3 follows P2; KEY2 is removed from the active device list. The owner tests the Full APK once
+both phases are delivered.
+
+Owner scope update: Full APK minimum is Android 14 (API 34). P3 also includes Zinwa P26;
+its OS, key events and display metrics remain to be captured. API-35 profile actions are
+registered only behind an Android 15+ version guard. Emulator CI covers API 34 and 35.

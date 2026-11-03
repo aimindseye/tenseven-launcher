@@ -21,10 +21,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
-import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
@@ -55,6 +54,8 @@ import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.ThemePresets
 import io.github.aimindseye.tenseven.model.WallpaperSet
 import io.github.aimindseye.tenseven.model.WallpaperSets
+import io.github.aimindseye.tenseven.platform.Capabilities
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.LockLayerLauncher
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WallpaperArt
@@ -133,8 +134,9 @@ internal fun IconGridSection(state: StartStateRepository) {
     }
     // This icon scale is shared by both grids. Label it with the currently selected
     // Home style rather than presenting it as a BB7-only option on BB10.
-    val iconSizeLabel = stringResource(R.string.ls_icon_size) + " · " +
-        stringResource(if (bb7) R.string.ls_bb7_title else R.string.ls_bb10_title)
+    val iconSizeLabel =
+        stringResource(R.string.ls_icon_size) + " · " +
+            stringResource(if (bb7) R.string.ls_bb7_title else R.string.ls_bb10_title)
     Text(iconSizeLabel, style = MaterialTheme.typography.bodyLarge)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Bb7IconSize.entries.forEach { size ->
@@ -190,8 +192,13 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
     }
     if (dials.isNotEmpty()) {
         listOf(
-            "wifi" to "Wi-Fi", "mobile" to "Mobile", "cpu" to "CPU",
-            "ram" to "RAM", "battery" to "Battery", "cell" to "Cell", "storage" to "Storage",
+            "wifi" to "Wi-Fi",
+            "mobile" to "Mobile",
+            "cpu" to "CPU",
+            "ram" to "RAM",
+            "battery" to "Battery",
+            "cell" to "Cell",
+            "storage" to "Storage",
         ).forEach { (key, title) ->
             SwitchRow(title, "Show $title dial", key in dials) { enabled ->
                 dials = if (enabled) dials + key else dials - key
@@ -272,6 +279,7 @@ internal fun WallpaperSection(state: StartStateRepository) {
             state.saveHomeWallpaper(it)
         }
     }
+
     fun apply(target: WallpaperTarget) {
         status = R.string.ls_wallpaper_working
         val set = WallpaperSets.byId(wallpaperId)
@@ -303,9 +311,14 @@ internal fun IconPresentationSection(state: StartStateRepository) {
         "Off: show installed apps' original icons or your selected icon pack. On: apply TenSeven's Tabler-based style where available. TenSeven's bundled apps keep their own icons.",
         style == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven,
     ) { enabled ->
-        style = if (enabled) io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
-            else io.github.aimindseye.tenseven.model.IconPresentation.Original
-        io.github.aimindseye.tenseven.iconpacks.IconPresentationState.choose(context, style)
+        style =
+            if (enabled) {
+                io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+            } else {
+                io.github.aimindseye.tenseven.model.IconPresentation.Original
+            }
+        io.github.aimindseye.tenseven.iconpacks.IconPresentationState
+            .choose(context, style)
     }
 }
 
@@ -347,7 +360,10 @@ internal fun HubSection() {
 internal fun LockLayerSection(state: StartStateRepository) {
     val context = LocalContext.current
     // Automatic lock-layer wake requires the optional notification listener service.
-    if (!Capabilities.hasConversationService(context)) {
+    val capabilities =
+        io.github.aimindseye.tenseven.ui
+            .rememberPlatformCapabilities()
+    if (capabilities.hubNotifications == CapabilityStatus.Unavailable) {
         Text(
             stringResource(R.string.lock_layer_full_only),
             style = MaterialTheme.typography.bodyMedium,
@@ -356,17 +372,10 @@ internal fun LockLayerSection(state: StartStateRepository) {
         return
     }
     var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
-    var tick by remember { mutableIntStateOf(0) }
     val activity = context as? ComponentActivity
-    DisposableEffect(activity) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) tick++ }
-        activity?.lifecycle?.addObserver(observer)
-        onDispose { activity?.lifecycle?.removeObserver(observer) }
-    }
-    val overlayAllowed = tick >= 0 && LockLayerLauncher.canDrawOverlays(context)
+    val overlayAllowed = capabilities.overlay == CapabilityStatus.Ready
     // Do not prompt for a listener that is not available on this device.
-    val accessAvailable = Capabilities.hasConversationService(context)
-    val accessAllowed = tick >= 0 && accessAvailable && ConversationAccess.isGranted(context)
+    val accessAllowed = capabilities.hubNotifications == CapabilityStatus.Ready
     SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
         lockLayer = it
         state.saveLockLayer(it)

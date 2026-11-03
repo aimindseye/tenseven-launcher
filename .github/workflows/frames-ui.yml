@@ -13,6 +13,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   instrumented:
+    name: instrumented (API ${{ matrix.api }})
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [34, 35]
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -35,13 +40,23 @@ jobs:
           sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           test -n "$sdkmanager"
           yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-35;default;x86_64'
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-${{ matrix.api }};default;x86_64'
           mkdir -p "$ANDROID_AVD_HOME"
           avdmanager="$(dirname "$sdkmanager")/avdmanager"
-          echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-35;default;x86_64' --force
+          echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-${{ matrix.api }};default;x86_64' --force
           sudo chown "$(id -u)" /dev/kvm
       - name: Compile instrumentation APKs
-        run: ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+        run: |
+          set -euo pipefail
+          build=(./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest)
+          if "${build[@]}" 2>&1 | tee /tmp/p2-test-compile.log; then
+            exit 0
+          fi
+          # A repository miss can be cached by Gradle. Retry resolution once, preserving failures.
+          if ! grep -Eq 'Could not (find|resolve) ' /tmp/p2-test-compile.log; then
+            exit 1
+          fi
+          "${build[@]}" --refresh-dependencies
       - name: Run frame layout, keyboard and persistence tests
         run: |
           set -euo pipefail
@@ -58,13 +73,27 @@ jobs:
           adb shell settings put global animator_duration_scale 0
           adb shell input keyevent 82
           ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest
+          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/androidTest/debug/*.apk; do
+            test -f "$apk"
+            adb install -r -t "$apk"
+          done
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase seed io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-seed.log
+          adb shell am force-stop io.github.aimindseye.tenseven.debug
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase verify io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-verify.log
+          python3 - <<'PYTEST'
+          from pathlib import Path
+          for phase in ('seed', 'verify'):
+              assert 'OK (1 test)' in Path(f'/tmp/p2-process-{phase}.log').read_text(), phase
+          print('P2_PROCESS_REENTRY=PASS: persisted frame/style verified across force-stop and a different PID')
+          PYTEST
       - name: Upload UI test evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: frames-ui-reports
+          name: frames-ui-reports-api-${{ matrix.api }}
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
             /tmp/frames-emulator.log
+            /tmp/p2-process-*.log
           if-no-files-found: ignore

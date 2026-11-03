@@ -85,3 +85,18 @@ request is a feature.
 - Physical acceptance remains open in #99; combined architecture/device gates stay
   in #100. See `docs/P2B_ACTIVE_FRAMES_ACCEPTANCE.md`. No broader device completion
   or privileged bridge qualification is claimed.
+
+## Delivery order — owner revision 2026-11-03
+
+- Next deliverable: finish remaining P2 screen/Activity boundaries, central capability lifecycle,
+  lifecycle/Compose parity tests and progressive blocking quality gates. Candidate work is PR #111.
+- Following deliverable: P3 compatibility and device polish for Titan 2, Titan 2 Slim, Zinwa Q25, Zinwa P26
+  and a touchscreen Android device. KEY2 is out of active P3 scope.
+- Owner Full-APK build/device testing is deferred until P2 and P3 are ready; do not require a
+  new phone test to deliver P2 engineering or claim untested devices qualified.
+- Detailed engineering acceptance/evidence: docs/P2_ENGINEERING_ACCEPTANCE.md.
+
+Owner update: current Full APK minimum is Android 14 (API 34). Zinwa P26 joins the P3
+qualification matrix; its actual OS/build, keyboard events and display metrics must be
+recorded from hardware before qualification. Product reference:
+https://zinwa.com/product/p26-full-device-pre-order/

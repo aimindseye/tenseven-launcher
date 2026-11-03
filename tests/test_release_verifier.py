@@ -20,7 +20,7 @@ if sys.argv[2] == 'badging':
     pkg = os.getenv('TEST_PACKAGE', 'io.github.aimindseye.tenseven')
     code = os.getenv('TEST_FULL_CODE', '3')
     print(f"package: name='{pkg}' versionCode='{code}' versionName='0.1.0'")
-    print("sdkVersion:'30'")
+    print("sdkVersion:'" + os.getenv("TEST_MIN_SDK", "34") + "'")
 elif kind == 'full':
     print('ConversationListenerService')
     if not os.getenv('TEST_MISSING_ACCESS'):
@@ -70,6 +70,9 @@ class VerifyApkReleaseTest(unittest.TestCase):
         self.assertEqual(completed.returncode == 0, expected_success,
                          completed.stdout + "\n" + completed.stderr)
         return completed.stdout
+
+    def test_android_11_minimum_is_rejected_after_android_14_floor(self):
+        self.gate(expected_success=False, TEST_MIN_SDK="30")
 
     def test_v2_only(self):
         self.assertIn("verified v2 signature", self.gate())

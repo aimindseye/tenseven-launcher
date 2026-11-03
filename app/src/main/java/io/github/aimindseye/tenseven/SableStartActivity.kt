@@ -2,21 +2,12 @@ package io.github.aimindseye.tenseven
 
 import android.Manifest
 import android.app.AlertDialog
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.LauncherApps
-import android.database.ContentObserver
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.UserHandle
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -24,40 +15,25 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import io.github.aimindseye.tenseven.model.StartText
-import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.applySableSystemBars
 import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
 import io.github.aimindseye.tenseven.design.writeGlobalSableAppearance
-import io.github.aimindseye.tenseven.model.ActiveFrame
-import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Detour
-import io.github.aimindseye.tenseven.model.Bb7IconSize
-import io.github.aimindseye.tenseven.model.Bb7Panels
-import io.github.aimindseye.tenseven.model.Bb7Scrim
-import io.github.aimindseye.tenseven.model.GlanceWidgets
-import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeStyle
-import io.github.aimindseye.tenseven.conversations.ConversationHub
+import io.github.aimindseye.tenseven.model.StartText
+import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.LauncherAppsRepository
-import io.github.aimindseye.tenseven.platform.UsageRecentsRepository
-import io.github.aimindseye.tenseven.platform.PermissionChangeSignal
-import io.github.aimindseye.tenseven.platform.identifier
 import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
-import io.github.aimindseye.tenseven.platform.RecentTasksRepository
-import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.LockScreenAccessibilityService
+import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
 import io.github.aimindseye.tenseven.platform.WidgetTarget
 import io.github.aimindseye.tenseven.ui.Bb7HomeScreen
 import io.github.aimindseye.tenseven.ui.SableStartScreen
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Standalone SableOS HOME.
@@ -73,146 +49,31 @@ class SableStartActivity : ComponentActivity() {
     private lateinit var startStateRepository: StartStateRepository
     private lateinit var activeFrames: io.github.aimindseye.tenseven.platform.ActiveFramesHost
 
-    private val appsState = mutableStateOf<List<AppEntry>>(emptyList())
-
-    /** null: no private space; true: locked; false: unlocked. */
-    private val privateSpaceLockedState = mutableStateOf<Boolean?>(null)
-    private val workPausedState = mutableStateOf<Boolean?>(null)
-    private val doubleTapLockState = mutableStateOf(false)
-    private val liveRefreshGeneration = mutableStateOf(0)
-    private val homeGeneration = mutableStateOf(0)
-    private val backGeneration = mutableStateOf(0)
-
-    /** "Show the Hub page" requests (ACTION_SHOW_HUB) and the tab each asked for. */
-    private val hubGeneration = mutableStateOf(0)
-    private val hubRequestFilter = mutableStateOf<String?>(null)
-
-    /** Screen asked for by Settings (EDIT_HOME, EDIT_QUICK_BAR), and a serial so a repeat opens it again. */
-    private val startRequest = mutableStateOf(StartRequest(SCREEN_START, 0))
-
-    /**
-     * The home style chosen in Sable Setup (BlackBerry 10 or 7). The BlackBerry 7 home has no Hub,
-     * Active Frames or Edit Home of its own, so those requests show the BlackBerry 10 screen
-     * ([bb10Detour]) until Home is pressed again.
-     */
-    private val homeStyle = mutableStateOf(HomeStyle.DEFAULT)
-    private val bb10Detour = mutableStateOf(false)
-    private var bb7Detour = Bb7Detour()
-
-    /** The BlackBerry 7 home's favourites (the Home apps) and its rows of icons, read in onCreate. */
-    private val bb7Favorites = mutableStateOf<List<String>?>(null)
-    private val bb7HomeRows = mutableStateOf(1)
-    private val bb7Desktop = mutableStateOf<List<String>>(emptyList())
-    private val bb7Panels = mutableStateOf(Bb7Panels.DEFAULT)
-    private val bb7Scrim = mutableStateOf(Bb7Scrim.DEFAULT)
-    private val bb7IconSize = mutableStateOf(Bb7IconSize.DEFAULT)
-    private val typeToSearch = mutableStateOf(true)
-    private val gridColumns = mutableStateOf(GridColumns.AUTO)
-    private val gridLabels = mutableStateOf(true)
-    private val widgetsPageEnabled = mutableStateOf(true)
-    private val widgetIds = mutableStateOf<List<Int>>(emptyList())
-    private val widgetsGeneration = mutableStateOf(0)
-    private val homeWidgetIds = mutableStateOf<List<Int>>(emptyList())
-    private val homeWallpaper = mutableStateOf(true)
+    private val screen =
+        io.github.aimindseye.tenseven.ui
+            .LauncherHomeState()
     private val widgetController by lazy {
         WidgetHostController(this, startStateRepository) { target, ids ->
-            if (target == WidgetTarget.HOME) homeWidgetIds.value = ids else widgetIds.value = ids
+            if (target == WidgetTarget.HOME) screen.homeWidgetIds.value = ids else screen.widgetIds.value = ids
         }
     }
-    private val homeWidgets = mutableStateOf(GlanceWidgets.DEFAULT)
     private var opaqueWindowBackground: Drawable? = null
 
-    private var callbackRegistered = false
-    private var canNavigateBack = false
-    private val inventoryGeneration = AtomicLong(0L)
-    private val inventoryExecutor = Executors.newSingleThreadExecutor()
-
-    private val launcherCallback =
-        object : LauncherApps.Callback() {
-            override fun onPackageRemoved(packageName: String, user: UserHandle) = onPackageEvent(packageName, user)
-
-            override fun onPackageAdded(packageName: String, user: UserHandle) = onPackageEvent(packageName, user)
-
-            override fun onPackageChanged(packageName: String, user: UserHandle) = onPackageEvent(packageName, user)
-
-            private fun onPackageEvent(
-                packageName: String,
-                user: UserHandle,
-            ) {
-                launcherAppsRepository.invalidatePrivacy(packageName, user)
-                scheduleInventoryRefresh()
-            }
-
-            override fun onPackagesAvailable(
-                vararg packageNames: String,
-                user: UserHandle,
-                replacing: Boolean,
-            ) {
-                packageNames.forEach { launcherAppsRepository.invalidatePrivacy(it, user) }
-                scheduleInventoryRefresh()
-            }
-
-            override fun onPackagesUnavailable(
-                packageNames: Array<out String>,
-                user: UserHandle,
-                replacing: Boolean,
-            ) {
-                packageNames.forEach { launcherAppsRepository.invalidatePrivacy(it, user) }
-                scheduleInventoryRefresh()
-            }
-
-            override fun onPackagesSuspended(
-                vararg packageNames: String,
-                user: UserHandle,
-            ) = scheduleInventoryRefresh()
-
-            override fun onPackagesUnsuspended(
-                vararg packageNames: String,
-                user: UserHandle,
-            ) = scheduleInventoryRefresh()
-        }
-
-    /** Runtime-permission grant/revoke anywhere (signal carries a uid); only a platform-signed build gets it. */
-    private val permissionChangeSignal by lazy {
-        PermissionChangeSignal(packageManager) { uid ->
-            launcherAppsRepository.invalidatePrivacyForUid(uid)
-            runOnUiThread { scheduleInventoryRefresh() }
-        }
+    private val runtime by lazy {
+        io.github.aimindseye.tenseven.platform.LauncherRuntime(
+            this,
+            launcherAppsRepository,
+            onInventory = { inventory ->
+                screen.appsState.value = inventory.apps
+                screen.privateSpaceLockedState.value = inventory.privateSpaceLocked
+                screen.workPausedState.value = inventory.workPaused
+            },
+            onRefresh = {
+                screen.liveRefreshGeneration.intValue += 1
+                if (::activeFrames.isInitialized) activeFrames.coordinator.refresh()
+            },
+        )
     }
-
-    /** Work/private profile added, removed, paused or unlocked: drop that user's snapshots. */
-    private val profileReceiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(
-                context: Context,
-                intent: Intent,
-            ) {
-                @Suppress("DEPRECATION")
-                val user = intent.getParcelableExtra<UserHandle>(Intent.EXTRA_USER)
-                launcherAppsRepository.invalidatePrivacyForUser(user)
-                scheduleInventoryRefresh()
-            }
-        }
-    private var profileReceiverRegistered = false
-
-    private val liveContentObserver =
-        object : ContentObserver(Handler(Looper.getMainLooper())) {
-            override fun onChange(selfChange: Boolean) {
-                liveRefreshGeneration.value += 1
-            }
-        }
-
-    /** Tenseven's own notification listener changed what the Hub bar shows. */
-    private val conversationsListener: () -> Unit = {
-        runOnUiThread { liveRefreshGeneration.value += 1 }
-    }
-
-    private val appInventoryObserver =
-        object : ContentObserver(Handler(Looper.getMainLooper())) {
-            override fun onChange(selfChange: Boolean) {
-                scheduleInventoryRefresh()
-            }
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -225,63 +86,33 @@ class SableStartActivity : ComponentActivity() {
         launcherAppsRepository = LauncherAppsRepository(this)
         liveSurfaceRepository = LiveSurfaceRepository(this)
         startStateRepository = StartStateRepository(this)
-        bb7Favorites.value = startStateRepository.loadHomeApps()
-        bb7HomeRows.value = startStateRepository.loadBb7HomeRows()
-        bb7Panels.value = startStateRepository.loadBb7Panels()
-        bb7Desktop.value = startStateRepository.loadBb7Desktop()
-        bb7Scrim.value = startStateRepository.loadBb7Scrim()
-        bb7IconSize.value = startStateRepository.loadBb7IconSize()
-        typeToSearch.value = startStateRepository.loadTypeToSearch()
-        gridColumns.value = startStateRepository.loadGridColumns()
-        gridLabels.value = startStateRepository.loadGridLabels()
-        widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
-        widgetIds.value = widgetController.load()
-        homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
-        homeWallpaper.value = startStateRepository.loadHomeWallpaper()
-        homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
-        activeFrames = io.github.aimindseye.tenseven.platform.ActiveFramesHost(this)
-        homeStyle.value = startStateRepository.loadHomeStyle()
+        screen.reload(startStateRepository, widgetController)
+        activeFrames =
+            io.github.aimindseye.tenseven.platform
+                .ActiveFramesHost(this)
         opaqueWindowBackground = window.decorView.background
 
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if (canNavigateBack) {
-                        backGeneration.value += 1
+                    if (screen.canNavigateBack) {
+                        screen.backGeneration.intValue += 1
                     }
                     // HOME root deliberately consumes Back.
                 }
             },
         )
 
-        LiveSurfaceRepository.OBSERVED_URIS.forEach { uri ->
-            runCatching {
-                contentResolver.registerContentObserver(
-                    uri,
-                    true,
-                    liveContentObserver,
-                )
-            }
-        }
-        runCatching {
-            contentResolver.registerContentObserver(
-                LauncherAppsRepository.HIDDEN_APPS_URI,
-                false,
-                appInventoryObserver,
-            )
-        }
-
-        ConversationHub.addChangeListener(conversationsListener)
-        registerPrivacySignals()
-        scheduleInventoryRefresh()
         // A recreated activity keeps its own place instead of reopening the requested screen.
         if (savedInstanceState == null) {
             // Once, on first run: the home role and each optional permission, with the reason for it.
             if (!startStateRepository.loadOnboardingDone()) {
                 runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
             }
-            startRequest.value = StartRequest(screenFor(intent), 0)
+            screen.startRequest.value =
+                io.github.aimindseye.tenseven.runtime
+                    .LauncherRequest(screenFor(intent), 0)
             if (intent?.action == ACTION_SHOW_HUB) requestHub(intent)
             if (intent?.action in BB10_ONLY_ACTIONS) {
                 startBb10Detour(returnOnHome = intent?.action != ACTION_SHOW_ACTIVE_FRAMES)
@@ -302,52 +133,52 @@ class SableStartActivity : ComponentActivity() {
                 )
             }
 
-            val bb7 = homeStyle.value == HomeStyle.Bb7 && !bb10Detour.value
-            SideEffect { showWallpaper(bb7 || homeWallpaper.value) }
+            val bb7 = screen.homeStyle.value == HomeStyle.Bb7 && !screen.bb10Detour.value
+            SideEffect { showWallpaper(bb7 || screen.homeWallpaper.value) }
             if (bb7) {
                 Bb7HomeScreen(
-                    apps = appsState.value,
-                    favoriteKeys = bb7Favorites.value,
-                    homeRows = bb7HomeRows.value,
+                    apps = screen.appsState.value,
+                    favoriteKeys = screen.bb7Favorites.value,
+                    homeRows = screen.bb7HomeRows.intValue,
                     liveSurfaceRepository = liveSurfaceRepository,
                     appearance = appearance,
-                    refreshGeneration = liveRefreshGeneration.value,
-                    homeGeneration = homeGeneration.value,
+                    refreshGeneration = screen.liveRefreshGeneration.intValue,
+                    homeGeneration = screen.homeGeneration.intValue,
                     onLaunchApp = { entry -> launcherAppsRepository.launch(entry) },
                     onOpenAppInfo = { entry -> launcherAppsRepository.openAppDetails(entry) },
                     onOpenHub = {
-                        hubRequestFilter.value = null
-                        hubGeneration.value += 1
+                        screen.hubRequestFilter.value = null
+                        screen.hubGeneration.intValue += 1
                         startBb10Detour(returnOnHome = true)
                     },
                     onFavoritesChanged = { keys ->
-                        bb7Favorites.value = keys
+                        screen.bb7Favorites.value = keys
                         startStateRepository.saveHomeApps(keys)
                     },
                     onHomeRowsChanged = { rows ->
-                        bb7HomeRows.value = rows
+                        screen.bb7HomeRows.intValue = rows
                         startStateRepository.saveBb7HomeRows(rows)
                     },
-                    desktopKeys = bb7Desktop.value,
+                    desktopKeys = screen.bb7Desktop.value,
                     onDesktopChanged = { keys ->
-                        bb7Desktop.value = keys
+                        screen.bb7Desktop.value = keys
                         startStateRepository.saveBb7Desktop(keys)
                     },
                     onOpenMenu = ::showBb7Menu,
                     onOpenCommand = ::openCommandFromBb7,
-                    iconSize = bb7IconSize.value,
-                    gridColumns = gridColumns.value,
-                    showLabels = gridLabels.value,
-                    widgets = homeWidgets.value,
+                    iconSize = screen.bb7IconSize.value,
+                    gridColumns = screen.gridColumns.intValue,
+                    showLabels = screen.gridLabels.value,
+                    widgets = screen.homeWidgets.value,
                     onDoubleTapEmpty = doubleTapLockCallback(),
-                    panels = bb7Panels.value,
-                    scrimLevel = bb7Scrim.value,
+                    panels = screen.bb7Panels.value,
+                    scrimLevel = screen.bb7Scrim.intValue,
                     onPanelsChanged = { panels ->
-                        bb7Panels.value = panels
+                        screen.bb7Panels.value = panels
                         startStateRepository.saveBb7Panels(panels)
                     },
                     onScrimChanged = { level ->
-                        bb7Scrim.value = level
+                        screen.bb7Scrim.intValue = level
                         startStateRepository.saveBb7Scrim(level)
                     },
                     onOpenWallpaper = {
@@ -361,32 +192,32 @@ class SableStartActivity : ComponentActivity() {
                 return@setContent
             }
 
-            val request = startRequest.value
-            key(request.serial, widgetsPageEnabled.value) {
+            val request = screen.startRequest.value
+            key(request.serial, screen.widgetsPageEnabled.value) {
                 SableStartScreen(
-                    apps = appsState.value,
+                    apps = screen.appsState.value,
                     speedDial = speedDialRepository,
                     letterShortcuts = letterShortcutRepository,
-                    privateSpaceLocked = privateSpaceLockedState.value,
+                    privateSpaceLocked = screen.privateSpaceLockedState.value,
                     onTogglePrivateSpace = ::togglePrivateSpace,
-                    workProfilePaused = workPausedState.value,
+                    workProfilePaused = screen.workPausedState.value,
                     onDoubleTapEmpty = doubleTapLockCallback(),
                     onToggleWorkProfile = ::toggleWorkProfile,
                     liveSurfaceRepository = liveSurfaceRepository,
                     appearance = appearance,
-                    refreshGeneration = liveRefreshGeneration.value,
-                    homeGeneration = homeGeneration.value,
-                    backGeneration = backGeneration.value,
+                    refreshGeneration = screen.liveRefreshGeneration.intValue,
+                    homeGeneration = screen.homeGeneration.intValue,
+                    backGeneration = screen.backGeneration.intValue,
                     initialScreen = request.screen,
-                    blankHomePage = homeStyle.value == HomeStyle.Bb7,
+                    blankHomePage = screen.homeStyle.value == HomeStyle.Bb7,
                     onBackToHomePage = {
                         // Back from the Hub to a BlackBerry 7 home: show it now instead of after the slide.
-                        if (bb10Detour.value && bb7Detour.returnOnHome && bb7Detour.leftHome) endBb10Detour()
+                        if (screen.bb10Detour.value && screen.bb7Detour.endsAt(false)) endBb10Detour()
                     },
                     onCanNavigateBackChanged = { value ->
-                        canNavigateBack = value
-                        bb7Detour = bb7Detour.onCanNavigateBack(value)
-                        if (bb10Detour.value && bb7Detour.endsAt(value)) endBb10Detour()
+                        screen.canNavigateBack = value
+                        screen.bb7Detour = screen.bb7Detour.onCanNavigateBack(value)
+                        if (screen.bb10Detour.value && screen.bb7Detour.endsAt(value)) endBb10Detour()
                     },
                     initialStartTileKeys = startStateRepository.loadStartTileKeys(),
                     initialHomeApps = startStateRepository.loadHomeApps(),
@@ -395,16 +226,16 @@ class SableStartActivity : ComponentActivity() {
                     initialQuickBar = startStateRepository.loadQuickBar(),
                     onQuickBarChanged = startStateRepository::saveQuickBar,
                     initialGlanceWidgets = startStateRepository.loadGlanceWidgets(),
-                    typeToSearch = typeToSearch.value,
-                    widgetsPage = widgetsPageEnabled.value,
+                    typeToSearch = screen.typeToSearch.value,
+                    widgetsPage = screen.widgetsPageEnabled.value,
                     widgetsController = widgetController,
-                    widgetIds = widgetIds.value,
-                    homeWidgetIds = homeWidgetIds.value,
-                    wallpaperBehind = homeWallpaper.value,
-                    widgetsGeneration = widgetsGeneration.value,
-                    showIconLabels = gridLabels.value,
-                    gridColumnsSetting = gridColumns.value,
-                    gridIconSize = bb7IconSize.value,
+                    widgetIds = screen.widgetIds.value,
+                    homeWidgetIds = screen.homeWidgetIds.value,
+                    wallpaperBehind = screen.homeWallpaper.value,
+                    widgetsGeneration = screen.widgetsGeneration.intValue,
+                    showIconLabels = screen.gridLabels.value,
+                    gridColumnsSetting = screen.gridColumns.intValue,
+                    gridIconSize = screen.bb7IconSize.value,
                     onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
                     initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
                     onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
@@ -428,7 +259,8 @@ class SableStartActivity : ComponentActivity() {
                         startStateRepository.saveAppearance(null, null)
                         writeGlobalSableAppearance(
                             this@SableStartActivity,
-                            io.github.aimindseye.tenseven.design.SableAppearance(),
+                            io.github.aimindseye.tenseven.design
+                                .SableAppearance(),
                         )
                     },
                     onLaunchApp = { entry ->
@@ -449,10 +281,10 @@ class SableStartActivity : ComponentActivity() {
                     },
                     onRequestLivePermissions = ::requestLivePermissions,
                     onRefreshLive = {
-                        liveRefreshGeneration.value += 1
+                        screen.liveRefreshGeneration.intValue += 1
                     },
-                    hubGeneration = hubGeneration.value,
-                    hubRequestFilter = hubRequestFilter.value,
+                    hubGeneration = screen.hubGeneration.intValue,
+                    hubRequestFilter = screen.hubRequestFilter.value,
                     onRequestContactsPermission = ::requestContactsPermission,
                 )
             }
@@ -462,10 +294,7 @@ class SableStartActivity : ComponentActivity() {
     override fun onStart() {
         io.github.aimindseye.tenseven.platform.ScreenCaptureState.homeVisible = true
         super.onStart()
-        if (!callbackRegistered) {
-            launcherAppsRepository.registerCallback(launcherCallback)
-            callbackRegistered = true
-        }
+        runtime.start()
         widgetController.startListening()
         scheduleInventoryRefresh()
     }
@@ -474,31 +303,18 @@ class SableStartActivity : ComponentActivity() {
         super.onResume()
         // Android may leave a sideloaded listener disconnected after an update even if access
         // remains granted. Recover without prompting or changing the user's source choices.
-        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
-        doubleTapLockState.value = startStateRepository.loadDoubleTapLock()
-        val style = startStateRepository.loadHomeStyle()
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+            .onLauncherResume(this)
+        val priorStyle = screen.homeStyle.value
+        screen.reload(startStateRepository, widgetController)
+        val style = screen.homeStyle.value
         if (style == HomeStyle.Bb7) stopService(Intent(this, io.github.aimindseye.tenseven.platform.ScreenCaptureService::class.java))
-        if (style != homeStyle.value) {
-            homeStyle.value = style
+        if (style != priorStyle) {
             endBb10Detour()
         }
-        // Edit Home on the BlackBerry 10 screen edits the same list.
-        bb7Favorites.value = startStateRepository.loadHomeApps()
-        bb7Panels.value = startStateRepository.loadBb7Panels()
-        bb7Desktop.value = startStateRepository.loadBb7Desktop()
-        bb7Scrim.value = startStateRepository.loadBb7Scrim()
-        bb7IconSize.value = startStateRepository.loadBb7IconSize()
-        typeToSearch.value = startStateRepository.loadTypeToSearch()
-        gridColumns.value = startStateRepository.loadGridColumns()
-        gridLabels.value = startStateRepository.loadGridLabels()
-        widgetsPageEnabled.value = startStateRepository.loadWidgetsPage()
-        widgetIds.value = widgetController.load()
-        homeWidgetIds.value = widgetController.load(WidgetTarget.HOME)
-        homeWallpaper.value = startStateRepository.loadHomeWallpaper()
-        homeWidgets.value = GlanceWidgets.normalize(startStateRepository.loadGlanceWidgets())
         scheduleInventoryRefresh()
         activeFrames.coordinator.onResume()
-        liveRefreshGeneration.value += 1
+        screen.liveRefreshGeneration.intValue += 1
     }
 
     // Widget binding and setup report back through the framework's request codes.
@@ -519,24 +335,31 @@ class SableStartActivity : ComponentActivity() {
             ACTION_EDIT_QUICK_BAR, ACTION_EDIT_HOME -> {
                 // The Screen is recomposed fresh for the request: its Home/Back effects act only on
                 // counts above zero, so they restart from zero rather than undo the request at once.
-                homeGeneration.value = 0
-                backGeneration.value = 0
-                hubGeneration.value = 0
-                startRequest.value = StartRequest(screenFor(intent), startRequest.value.serial + 1)
+                screen.homeGeneration.intValue = 0
+                screen.backGeneration.intValue = 0
+                screen.hubGeneration.intValue = 0
+                screen.startRequest.value =
+                    io.github.aimindseye.tenseven.runtime
+                        .LauncherRequest(screenFor(intent), screen.startRequest.value.serial + 1)
                 startBb10Detour(returnOnHome = true)
             }
+
             // Home, and the Recents key (Active Frames are the BB10 Recents): close anything open
             // over the pages and show Active Frames.
             Intent.ACTION_MAIN, ACTION_SHOW_ACTIVE_FRAMES -> {
-                homeGeneration.value += 1
+                screen.homeGeneration.intValue += 1
                 activeFrames.coordinator.onResume()
                 // On the BlackBerry 7 home, Home goes back to it; Recents shows the Active Frames.
-                if (intent.action == ACTION_SHOW_ACTIVE_FRAMES && io.github.aimindseye.tenseven.frames.FrameAvailability.frames(homeStyle.value == HomeStyle.Bb10)) {
+                if (intent.action == ACTION_SHOW_ACTIVE_FRAMES &&
+                    io.github.aimindseye.tenseven.frames.FrameAvailability
+                        .frames(screen.homeStyle.value == HomeStyle.Bb10)
+                ) {
                     startBb10Detour(returnOnHome = false)
                 } else {
                     endBb10Detour()
                 }
             }
+
             // The one Hub is Start's Hub page (the Sable Hub app has no launcher entry).
             ACTION_SHOW_HUB -> {
                 requestHub(intent)
@@ -549,7 +372,8 @@ class SableStartActivity : ComponentActivity() {
         activeFrames.coordinator.onStop()
         // Leaving from a BlackBerry 10 screen (Hub, Recents, Command) would leave that screen as the last frame, and
         // it flashes while Home animates back in. Go back to the BlackBerry 7 home as the window leaves.
-        if (homeStyle.value == HomeStyle.Bb7 && bb10Detour.value && !isChangingConfigurations) endBb10Detour()
+        val leavingBb7Detour = screen.homeStyle.value == HomeStyle.Bb7 && screen.bb10Detour.value
+        if (leavingBb7Detour && !isChangingConfigurations) endBb10Detour()
         super.onPause()
     }
 
@@ -557,28 +381,12 @@ class SableStartActivity : ComponentActivity() {
         io.github.aimindseye.tenseven.platform.ScreenCaptureState.homeVisible = false
         activeFrames.coordinator.onStop()
         widgetController.stopListening()
-        if (callbackRegistered) {
-            launcherAppsRepository.unregisterCallback(launcherCallback)
-            callbackRegistered = false
-        }
+        runtime.stop()
         super.onStop()
     }
 
     override fun onDestroy() {
-        if (callbackRegistered) {
-            launcherAppsRepository.unregisterCallback(launcherCallback)
-            callbackRegistered = false
-        }
-        runCatching {
-            contentResolver.unregisterContentObserver(liveContentObserver)
-        }
-        runCatching {
-            contentResolver.unregisterContentObserver(appInventoryObserver)
-        }
-        ConversationHub.removeChangeListener(conversationsListener)
-        unregisterPrivacySignals()
-        inventoryGeneration.incrementAndGet()
-        inventoryExecutor.shutdownNow()
+        runtime.close()
         activeFrames.destroy()
         super.onDestroy()
     }
@@ -590,79 +398,21 @@ class SableStartActivity : ComponentActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LIVE_PERMISSION_REQUEST_CODE || requestCode == CONTACTS_PERMISSION_REQUEST_CODE) {
-            liveRefreshGeneration.value += 1
+            screen.liveRefreshGeneration.intValue += 1
         }
     }
 
-    private fun scheduleInventoryRefresh() {
-        if (::activeFrames.isInitialized) activeFrames.coordinator.refresh()
-        val generation = inventoryGeneration.incrementAndGet()
-        runCatching {
-            inventoryExecutor.execute {
-                val apps = launcherAppsRepository.loadApps()
-                val privateSpaceLocked =
-                    launcherAppsRepository.privateSpace()?.let(launcherAppsRepository::isLocked)
-                val workPaused = launcherAppsRepository.workProfilesPaused()
-                runOnUiThread {
-                    if (
-                        !isDestroyed &&
-                        inventoryGeneration.get() == generation
-                    ) {
-                        appsState.value = apps
-                        privateSpaceLockedState.value = privateSpaceLocked
-                        workPausedState.value = workPaused
-                    }
-                }
-            }
-        }
-    }
-
-    private fun registerPrivacySignals() {
-        permissionChangeSignal.register()
-        if (!profileReceiverRegistered) {
-            val filter =
-                IntentFilter().apply {
-                    addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
-                    addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
-                    addAction(Intent.ACTION_MANAGED_PROFILE_AVAILABLE)
-                    addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
-                    addAction(Intent.ACTION_MANAGED_PROFILE_UNLOCKED)
-                    addAction(Intent.ACTION_PROFILE_ACCESSIBLE)
-                    addAction(Intent.ACTION_PROFILE_INACCESSIBLE)
-                    addAction(Intent.ACTION_PROFILE_AVAILABLE)
-                    addAction(Intent.ACTION_PROFILE_UNAVAILABLE)
-                    addAction(Intent.ACTION_PROFILE_ADDED)
-                    addAction(Intent.ACTION_PROFILE_REMOVED)
-                }
-            profileReceiverRegistered =
-                runCatching {
-                    registerReceiver(profileReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-                    true
-                }.getOrDefault(false)
-        }
-    }
-
-    private fun unregisterPrivacySignals() {
-        permissionChangeSignal.unregister()
-        if (profileReceiverRegistered) {
-            runCatching { unregisterReceiver(profileReceiver) }
-            profileReceiverRegistered = false
-        }
-    }
+    private fun scheduleInventoryRefresh() = runtime.refresh()
 
     /** Lock or unlock the private space; the profile broadcasts refresh All Apps. */
     private fun togglePrivateSpace() {
-        val locked = privateSpaceLockedState.value ?: return
-        inventoryExecutor.execute {
-            val user = launcherAppsRepository.privateSpace() ?: return@execute
-            launcherAppsRepository.setLocked(user, !locked)
-            runOnUiThread { scheduleInventoryRefresh() }
-        }
+        val locked = screen.privateSpaceLockedState.value ?: return
+        runtime.setPrivateLocked(!locked)
     }
 
     /** The lock action for a double tap on empty Home space; null while the setting or the service is off. */
     private fun doubleTapLockCallback(): (() -> Unit)? =
-        if (doubleTapLockState.value) {
+        if (screen.doubleTapLockState.value) {
             { LockScreenAccessibilityService.lockScreen() }
         } else {
             null
@@ -670,11 +420,8 @@ class SableStartActivity : ComponentActivity() {
 
     /** Pause or resume work apps; the profile broadcasts refresh All Apps. */
     private fun toggleWorkProfile() {
-        val paused = workPausedState.value ?: return
-        inventoryExecutor.execute {
-            launcherAppsRepository.setWorkProfilesPaused(!paused)
-            runOnUiThread { scheduleInventoryRefresh() }
-        }
+        val paused = screen.workPausedState.value ?: return
+        runtime.setWorkPaused(!paused)
     }
 
     /** The BlackBerry 7 home draws on the wallpaper; the BlackBerry 10 screen paints its own. */
@@ -696,8 +443,8 @@ class SableStartActivity : ComponentActivity() {
         val global =
             listOf<Pair<String, () -> Unit>>(
                 t("hub") to {
-                    hubRequestFilter.value = null
-                    hubGeneration.value += 1
+                    screen.hubRequestFilter.value = null
+                    screen.hubGeneration.intValue += 1
                     startBb10Detour(returnOnHome = true)
                 },
                 getString(R.string.bb7_command) to ::openCommandFromBb7,
@@ -721,45 +468,60 @@ class SableStartActivity : ComponentActivity() {
         // BB7 menu is a translucent on-wallpaper surface, never a system-white dialog.
         // Views retain native D-pad/trackpad focus and accessibility click actions.
         val density = resources.displayMetrics.density
+
         fun dp(value: Int) = (value * density).toInt()
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            setBackgroundColor(Color.argb(215, 22, 31, 47))
-        }
+        val layout =
+            android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+                setBackgroundColor(Color.argb(215, 22, 31, 47))
+            }
         var dialog: AlertDialog? = null
         items.forEach { (title, action) ->
-            layout.addView(android.widget.TextView(this).apply {
-                text = title
-                setTextColor(Color.WHITE)
-                textSize = 16f
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(dp(14), dp(11), dp(12), dp(11))
-                isFocusable = true
-                isClickable = true
-                background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
-                setOnClickListener { dialog?.dismiss(); action() }
-                setOnKeyListener { _, keyCode, event ->
-                    if (event.action == android.view.KeyEvent.ACTION_DOWN &&
-                        (keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
-                            keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER)) {
-                        performClick()
-                        true
-                    } else false
-                }
-            })
+            layout.addView(
+                android.widget.TextView(this).apply {
+                    text = title
+                    setTextColor(Color.WHITE)
+                    textSize = 16f
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(dp(14), dp(11), dp(12), dp(11))
+                    isFocusable = true
+                    isClickable = true
+                    background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+                    setOnClickListener {
+                        dialog?.dismiss()
+                        action()
+                    }
+                    setOnKeyListener { _, keyCode, event ->
+                        if (event.action == android.view.KeyEvent.ACTION_DOWN &&
+                            (
+                                keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+                                    keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER
+                            )
+                        ) {
+                            performClick()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                },
+            )
         }
-        val scroll = android.widget.ScrollView(this).apply {
-            isFillViewport = false
-            addView(layout)
-        }
+        val scroll =
+            android.widget.ScrollView(this).apply {
+                isFillViewport = false
+                addView(layout)
+            }
         val menuDialog = AlertDialog.Builder(this).setView(scroll).create()
         dialog = menuDialog
         menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         menuDialog.show()
         menuDialog.window?.setBackgroundDrawable(ColorDrawable(Color.argb(225, 22, 31, 47)))
-        menuDialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88f).toInt(),
-            WindowManager.LayoutParams.WRAP_CONTENT)
+        menuDialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * MENU_WIDTH_FRACTION).toInt(),
+            WindowManager.LayoutParams.WRAP_CONTENT,
+        )
         layout.getChildAt(0)?.requestFocus()
     }
 
@@ -771,11 +533,7 @@ class SableStartActivity : ComponentActivity() {
 
     private fun requestLivePermissions() {
         val permissions =
-            if (Build.VERSION.SDK_INT >= 33) {
-                arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
-            } else {
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-            }
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
 
         requestPermissions(
             permissions,
@@ -793,47 +551,46 @@ class SableStartActivity : ComponentActivity() {
      * screen like Hub and Edit Home, and Back returns to the BlackBerry 7 home.
      */
     private fun openCommandFromBb7() {
-        homeGeneration.value = 0
-        backGeneration.value = 0
-        hubGeneration.value = 0
-        startRequest.value = StartRequest(SCREEN_SEARCH, startRequest.value.serial + 1)
+        screen.homeGeneration.intValue = 0
+        screen.backGeneration.intValue = 0
+        screen.hubGeneration.intValue = 0
+        screen.startRequest.value =
+            io.github.aimindseye.tenseven.runtime
+                .LauncherRequest(SCREEN_SEARCH, screen.startRequest.value.serial + 1)
         startBb10Detour(returnOnHome = true)
     }
 
     /** The Widgets page from the BlackBerry 7 home: shown on the BlackBerry 10 screen like Hub, Back returns. */
     private fun openWidgetsFromBb7() {
-        if (!widgetsPageEnabled.value) {
+        if (!screen.widgetsPageEnabled.value) {
             runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
             return
         }
-        homeGeneration.value = 0
-        backGeneration.value = 0
-        hubGeneration.value = 0
-        widgetsGeneration.value += 1
+        screen.homeGeneration.intValue = 0
+        screen.backGeneration.intValue = 0
+        screen.hubGeneration.intValue = 0
+        screen.widgetsGeneration.intValue += 1
         startBb10Detour(returnOnHome = true)
     }
 
     private fun startBb10Detour(returnOnHome: Boolean) {
-        bb10Detour.value = true
-        bb7Detour = Bb7Detour(returnOnHome = returnOnHome)
+        screen.bb10Detour.value = true
+        screen.bb7Detour = Bb7Detour(returnOnHome = returnOnHome)
     }
 
     private fun endBb10Detour() {
-        bb10Detour.value = false
-        bb7Detour = Bb7Detour()
+        screen.bb10Detour.value = false
+        screen.bb7Detour = Bb7Detour()
     }
 
     private fun requestHub(intent: Intent) {
-        hubRequestFilter.value = intent.getStringExtra(EXTRA_HUB_FILTER)
-        hubGeneration.value += 1
+        screen.hubRequestFilter.value = intent.getStringExtra(EXTRA_HUB_FILTER)
+        screen.hubGeneration.intValue += 1
     }
 
-    private data class StartRequest(
-        val screen: String,
-        val serial: Int,
-    )
-
     companion object {
+        private const val MENU_WIDTH_FRACTION = 0.88f
+
         const val LIVE_PERMISSION_REQUEST_CODE = 0x534D
         const val CONTACTS_PERMISSION_REQUEST_CODE = 0x534E
 

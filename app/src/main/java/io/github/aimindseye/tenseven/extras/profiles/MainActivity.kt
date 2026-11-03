@@ -3,20 +3,11 @@
 // English only (no string resources); no Quick Settings tile.
 package io.github.aimindseye.tenseven.extras.profiles
 
-import android.content.Context
-import android.content.res.Configuration
-import android.os.Build
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.ui.graphics.toArgb
-import io.github.aimindseye.tenseven.design.AccentPreset
-import io.github.aimindseye.tenseven.design.AppearanceMode
-import io.github.aimindseye.tenseven.platform.StartStateRepository
-import io.github.aimindseye.tenseven.ui.phonePalette
-import io.github.aimindseye.tenseven.ui.startPalette
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.media.RingtoneManager
@@ -29,10 +20,18 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.ui.graphics.toArgb
+import io.github.aimindseye.tenseven.design.AccentPreset
+import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.extras.profiles.core.ProfileSettings
 import io.github.aimindseye.tenseven.extras.profiles.core.ProfilesText.t
 import io.github.aimindseye.tenseven.extras.profiles.core.SoundProfile
 import io.github.aimindseye.tenseven.extras.profiles.core.SoundProfiles
+import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.ui.phonePalette
+import io.github.aimindseye.tenseven.ui.startPalette
 
 /**
  * BlackBerry sound profiles in the Sable look of the other platform apps, laid out as the
@@ -54,16 +53,17 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         store = SoundProfileStore(this)
         editing = store.current ?: SoundProfile.NORMAL
-        body = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(px(PAD), px(PAD), px(PAD), px(PAD))
-        }
+        body =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(px(PAD), px(PAD), px(PAD), px(PAD))
+            }
         setContentView(
             ScrollView(this).apply {
                 setBackgroundColor(palette.window)
                 isFocusable = false
                 addView(body)
-            }
+            },
         )
     }
 
@@ -72,21 +72,25 @@ class MainActivity : Activity() {
         render()
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+    override fun onKeyDown(
+        keyCode: Int,
+        event: KeyEvent,
+    ): Boolean {
         val plain = !event.isAltPressed && !event.isCtrlPressed
         val profile = focusedProfile()
-        val handled = plain && when (keyCode) {
-            KeyEvent.KEYCODE_MENU -> true.also { showMenu() }
-            KeyEvent.KEYCODE_E -> profile != null && true.also { edit(profile) }
-            KeyEvent.KEYCODE_T -> true.also { focusRow(first = true) }
-            KeyEvent.KEYCODE_B -> true.also { focusRow(first = false) }
-            else -> false
-        }
+        val handled =
+            plain &&
+                when (keyCode) {
+                    KeyEvent.KEYCODE_MENU -> true.also { showMenu() }
+                    KeyEvent.KEYCODE_E -> profile != null && true.also { edit(profile) }
+                    KeyEvent.KEYCODE_T -> true.also { focusRow(first = true) }
+                    KeyEvent.KEYCODE_B -> true.also { focusRow(first = false) }
+                    else -> false
+                }
         return handled || super.onKeyDown(keyCode, event)
     }
 
-    private fun focusedProfile(): SoundProfile? =
-        (currentFocus?.tag as? String)?.let(SoundProfile::fromName)
+    private fun focusedProfile(): SoundProfile? = (currentFocus?.tag as? String)?.let(SoundProfile::fromName)
 
     private fun focusRow(first: Boolean) {
         val rows = (0 until body.childCount).map(body::getChildAt).filter { it.isFocusable }
@@ -96,16 +100,18 @@ class MainActivity : Activity() {
     /** The full menu: the focused profile's actions first, then the screen's, Close last. */
     private fun showMenu() {
         val profile = focusedProfile() ?: editing
-        val items = listOf(
-            t("use", profile.title) to { use(profile) },
-            t("edit", profile.title) to { edit(profile) },
-            t("quick_settings_tile") to {
-                status = t("pull_down_the_shade_choose")
-                render()
-            },
-            t("close") to { finish() }
-        )
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        val items =
+            listOf(
+                t("use", profile.title) to { use(profile) },
+                t("edit", profile.title) to { edit(profile) },
+                t("quick_settings_tile") to {
+                    status = t("pull_down_the_shade_choose")
+                    render()
+                },
+                t("close") to { finish() },
+            )
+        AlertDialog
+            .Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setItems(items.map { it.first }.toTypedArray()) { _, which -> items[which].second() }
             .show()
     }
@@ -115,7 +121,7 @@ class MainActivity : Activity() {
         body.removeAllViews()
         body.addView(text(t("sound_profiles"), TITLE_SP, palette.text, bold = true))
         body.addView(
-            text(t("enter_uses_a_profile_e"), SMALL_SP, palette.muted)
+            text(t("enter_uses_a_profile_e"), SMALL_SP, palette.muted),
         )
         status?.let { body.addView(text(it, SMALL_SP, palette.warn).apply { pad(0, GAP, 0, 0) }) }
         body.addView(gap())
@@ -127,8 +133,8 @@ class MainActivity : Activity() {
                     title = (if (profile == current) "● " else "○ ") + profile.title,
                     detail = profile.summary,
                     on = profile == current,
-                    onClick = { use(profile) }
-                ).onLong { edit(profile) }
+                    onClick = { use(profile) },
+                ).onLong { edit(profile) },
             )
         }
         body.addView(gap())
@@ -137,15 +143,14 @@ class MainActivity : Activity() {
             text(
                 t("quick_settings_pull_down_the"),
                 SMALL_SP,
-                palette.muted
-            ).apply { pad(0, GAP * 2, 0, 0) }
+                palette.muted,
+            ).apply { pad(0, GAP * 2, 0, 0) },
         )
         // The last focused row again, else the first profile (BlackBerry 7: one item always has focus).
         (
             focusKey?.let { body.findViewWithTag<View>(it) }
                 ?: body.findViewWithTag(SoundProfile.entries.first().name)
-            )
-            ?.requestFocus()
+        )?.requestFocus()
     }
 
     private fun editor() {
@@ -159,71 +164,74 @@ class MainActivity : Activity() {
                     key = "volume",
                     title = t("volume", volume),
                     detail = t("enter_adds_10_shift_enter"),
-                    onClick = { step(profile, s, volume, +STEP) }
+                    onClick = { step(profile, s, volume, +STEP) },
                 ).onLong { step(profile, s, volume, -STEP) }.apply {
                     setOnKeyListener { _, code, ev ->
                         val down = code == KeyEvent.KEYCODE_ENTER && ev.isShiftPressed
                         if (down && ev.action == KeyEvent.ACTION_UP) step(profile, s, volume, -STEP)
                         down
                     }
-                }
+                },
             )
         }
         body.addView(
             row("ringtone", t("ringtone"), toneName(s.ringtone), onClick = {
                 pickTone(RingtoneManager.TYPE_RINGTONE, s.ringtone)
-            })
+            }),
         )
         body.addView(
             row("notification", t("notification_tone"), toneName(s.notificationTone), onClick = {
                 pickTone(RingtoneManager.TYPE_NOTIFICATION, s.notificationTone)
-            })
+            }),
         )
         body.addView(
             row(
                 "vibrate",
                 check(
                     plan.vibrateWhenRinging,
-                    t("vibrate_for_calls")
+                    t("vibrate_for_calls"),
                 ),
                 t("space_turns_it_on_or"),
                 onClick = {
                     save(profile, s.copy(vibrate = !plan.vibrateWhenRinging))
-                }
-            )
+                },
+            ),
         )
         body.addView(
             row(
                 "light",
                 check(
                     plan.light,
-                    t("notification_light")
+                    t("notification_light"),
                 ),
                 t("space_turns_it_on_or"),
                 onClick = {
                     save(profile, s.copy(light = !plan.light))
-                }
-            )
+                },
+            ),
         )
     }
 
     private fun use(profile: SoundProfile) {
         editing = profile
-        status = when (SoundProfileApplier(this).apply(profile)) {
-            SoundProfileApplier.Result.APPLIED -> null
+        status =
+            when (SoundProfileApplier(this).apply(profile)) {
+                SoundProfileApplier.Result.APPLIED -> {
+                    null
+                }
 
-            SoundProfileApplier.Result.PARTIAL -> {
-                startActivity(
-                    Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName"))
-                )
-                t("is_on_allow_changing_system", profile.title)
-            }
+                SoundProfileApplier.Result.PARTIAL -> {
+                    startActivity(
+                        Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")),
+                    )
+                    t("is_on_allow_changing_system", profile.title)
+                }
 
-            SoundProfileApplier.Result.NEEDS_DND_ACCESS -> {
-                startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
-                t("allow_do_not_disturb_access_2", profile.title)
+                SoundProfileApplier.Result.NEEDS_DND_ACCESS -> {
+                    startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+                    t("allow_do_not_disturb_access_2", profile.title)
+                }
             }
-        }
         render()
     }
 
@@ -236,11 +244,19 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun step(profile: SoundProfile, s: ProfileSettings, volume: Int, by: Int) {
+    private fun step(
+        profile: SoundProfile,
+        s: ProfileSettings,
+        volume: Int,
+        by: Int,
+    ) {
         save(profile, s.copy(volumePercent = (volume + by).coerceIn(0, FULL)))
     }
 
-    private fun save(profile: SoundProfile, settings: ProfileSettings) {
+    private fun save(
+        profile: SoundProfile,
+        settings: ProfileSettings,
+    ) {
         store.save(profile, settings)
         if (store.current == profile) SoundProfileApplier(this).apply(profile)
         render()
@@ -248,24 +264,28 @@ class MainActivity : Activity() {
 
     // startActivityForResult: a plain Activity, no AndroidX result API here.
     @Suppress("DEPRECATION")
-    private fun pickTone(type: Int, current: String?) {
-        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
-            .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, type)
-            .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
-            .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
-            .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, current?.let(Uri::parse))
+    private fun pickTone(
+        type: Int,
+        current: String?,
+    ) {
+        val intent =
+            Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, type)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
+                .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, current?.let(Uri::parse))
         startActivityForResult(intent, type)
     }
 
     @Deprecated("Activity result API of a plain Activity")
     @Suppress("DEPRECATION")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?,
+    ) {
         super.onActivityResult(requestCode, resultCode, data)
-        val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-        } else {
-            data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-        }
+        val uri = data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
         if (resultCode != RESULT_OK || uri == null) return
         val s = store.settings(editing)
         save(
@@ -274,15 +294,19 @@ class MainActivity : Activity() {
                 s.copy(ringtone = uri.toString())
             } else {
                 s.copy(notificationTone = uri.toString())
-            }
+            },
         )
     }
 
-    private fun toneName(uri: String?): String = uri?.let {
-        runCatching { RingtoneManager.getRingtone(this, Uri.parse(it))?.getTitle(this) }.getOrNull()
-    } ?: t("phone_s_current_tone")
+    private fun toneName(uri: String?): String =
+        uri?.let {
+            runCatching { RingtoneManager.getRingtone(this, Uri.parse(it))?.getTitle(this) }.getOrNull()
+        } ?: t("phone_s_current_tone")
 
-    private fun check(on: Boolean, label: String) = (if (on) "☑ " else "☐ ") + label
+    private fun check(
+        on: Boolean,
+        label: String,
+    ) = (if (on) "☑ " else "☐ ") + label
 
     /** A focusable two-line row: accent border when focused, accent text when it is the active one. */
     private fun row(
@@ -290,61 +314,71 @@ class MainActivity : Activity() {
         title: String,
         detail: String,
         on: Boolean = false,
-        onClick: () -> Unit
-    ): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        tag = key
-        isFocusable = true
-        isClickable = true
-        pad(GAP * 2, GAP, GAP * 2, GAP)
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = px(GAP / 2) }
-        val titleView = text(title, BODY_SP, palette.text, bold = on)
-        val detailView = text(detail, SMALL_SP, palette.muted)
-        addView(titleView)
-        addView(detailView)
-        // Focus: accent fill and its text colour, the same font (BlackBerry 7 highlight).
-        val paint = { has: Boolean ->
-            background =
-                box(
-                    if (has) palette.accent else palette.surface,
-                    if (on) palette.accent else palette.surface
+        onClick: () -> Unit,
+    ): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            tag = key
+            isFocusable = true
+            isClickable = true
+            pad(GAP * 2, GAP, GAP * 2, GAP)
+            layoutParams =
+                LinearLayout
+                    .LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { topMargin = px(GAP / 2) }
+            val titleView = text(title, BODY_SP, palette.text, bold = on)
+            val detailView = text(detail, SMALL_SP, palette.muted)
+            addView(titleView)
+            addView(detailView)
+            // Focus: accent fill and its text colour, the same font (BlackBerry 7 highlight).
+            val paint = { has: Boolean ->
+                background =
+                    box(
+                        if (has) palette.accent else palette.surface,
+                        if (on) palette.accent else palette.surface,
+                    )
+                titleView.setTextColor(
+                    if (has) {
+                        palette.onAccent
+                    } else if (on) {
+                        palette.accent
+                    } else {
+                        palette.text
+                    },
                 )
-            titleView.setTextColor(
-                if (has) {
-                    palette.onAccent
-                } else if (on) {
-                    palette.accent
-                } else {
-                    palette.text
-                }
-            )
-            detailView.setTextColor(if (has) palette.onAccent else palette.muted)
+                detailView.setTextColor(if (has) palette.onAccent else palette.muted)
+            }
+            paint(false)
+            setOnFocusChangeListener { _, has -> paint(has) }
+            setOnKeyListener { _, code, ev ->
+                val space = code == KeyEvent.KEYCODE_SPACE && ev.action == KeyEvent.ACTION_UP
+                if (space) onClick()
+                code == KeyEvent.KEYCODE_SPACE
+            }
+            setOnClickListener { onClick() }
         }
-        paint(false)
-        setOnFocusChangeListener { _, has -> paint(has) }
-        setOnKeyListener { _, code, ev ->
-            val space = code == KeyEvent.KEYCODE_SPACE && ev.action == KeyEvent.ACTION_UP
-            if (space) onClick()
-            code == KeyEvent.KEYCODE_SPACE
+
+    private fun LinearLayout.onLong(action: () -> Unit) =
+        apply {
+            setOnLongClickListener {
+                action()
+                true
+            }
         }
-        setOnClickListener { onClick() }
-    }
 
-    private fun LinearLayout.onLong(action: () -> Unit) = apply {
-        setOnLongClickListener {
-            action()
-            true
+    private fun gap() =
+        View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(1, px(GAP))
         }
-    }
 
-    private fun gap() = View(this).apply {
-        layoutParams = LinearLayout.LayoutParams(1, px(GAP))
-    }
-
-    private fun text(s: String, sp: Float, color: Int, bold: Boolean = false): TextView =
+    private fun text(
+        s: String,
+        sp: Float,
+        color: Int,
+        bold: Boolean = false,
+    ): TextView =
         TextView(this).apply {
             text = s
             textSize = sp
@@ -352,13 +386,21 @@ class MainActivity : Activity() {
             if (bold) typeface = Typeface.DEFAULT_BOLD
         }
 
-    private fun box(fill: Int, stroke: Int) = GradientDrawable().apply {
+    private fun box(
+        fill: Int,
+        stroke: Int,
+    ) = GradientDrawable().apply {
         setColor(fill)
         cornerRadius = CORNER * dp
         setStroke(px(STROKE), stroke)
     }
 
-    private fun View.pad(l: Int, t: Int, r: Int, b: Int) = setPadding(px(l), px(t), px(r), px(b))
+    private fun View.pad(
+        l: Int,
+        t: Int,
+        r: Int,
+        b: Int,
+    ) = setPadding(px(l), px(t), px(r), px(b))
 
     private fun px(v: Int): Int = (v * dp).toInt()
 
@@ -375,7 +417,8 @@ class MainActivity : Activity() {
     }
 }
 
-/** The colours of the Sound Profiles screen: pure black with a blue accent, like the other Tenseven extras. */
+// The colours of the Sound Profiles screen: pure black with a blue accent, like the other Tenseven extras.
+
 /** The colours of this screen: the launcher's chosen theme, the same palette the Hub and Launcher Settings use. */
 private class ProfilesPalette(
     val window: Int,
@@ -401,7 +444,7 @@ private class ProfilesPalette(
                     AppearanceMode.Dark -> true
                 }
             val p =
-                if (accent == AccentPreset.Phone && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (accent == AccentPreset.Phone) {
                     phonePalette(if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context))
                 } else {
                     startPalette(dark, accent)

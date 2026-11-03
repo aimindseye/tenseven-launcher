@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.util.Xml
 import androidx.core.content.ContextCompat
 import org.xmlpull.v1.XmlPullParser
@@ -30,6 +29,7 @@ object IconPackLoader {
                             staticMappings[component] = IconPackDrawable.Static(drawable)
                         }
                     }
+
                     "calendar" -> {
                         val prefix = parser.getAttributeValue(null, "prefix")
                         if (component != null && !prefix.isNullOrBlank()) {
@@ -57,10 +57,9 @@ object IconPackLoader {
     private fun queryThemeActivities(
         packageManager: PackageManager,
         action: String,
-    ) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        packageManager.queryIntentActivities(Intent(action), PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()))
-    } else {
-        packageManager.queryIntentActivities(Intent(action), PackageManager.MATCH_ALL)
+    ): List<android.content.pm.ResolveInfo> {
+        val flags = PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
+        return packageManager.queryIntentActivities(Intent(action), flags)
     }
 
     /** appfilter from resources (xml, then raw), then assets; a malformed first choice does not hide a valid fallback. */
@@ -77,7 +76,9 @@ object IconPackLoader {
                     resources.getIdentifier(name, "xml", packageName).takeIf { it != 0 }?.let { parseXml(resources, it) }
                 },
                 {
-                    resources.getIdentifier(name, "raw", packageName).takeIf { it != 0 }
+                    resources
+                        .getIdentifier(name, "raw", packageName)
+                        .takeIf { it != 0 }
                         ?.let { resources.openRawResource(it).use(::parseStream) }
                 },
                 { resources.assets.open("$name.xml").use(::parseStream) },

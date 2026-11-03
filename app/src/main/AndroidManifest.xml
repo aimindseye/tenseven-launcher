@@ -103,6 +103,7 @@
 
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_tenseven"
         android:roundIcon="@mipmap/ic_tenseven_round"
         android:label="@string/tenseven_app_name"

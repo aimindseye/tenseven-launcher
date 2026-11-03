@@ -56,17 +56,19 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationHub
+import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.design.sableFocusRing
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlin.math.abs
 
@@ -117,7 +119,11 @@ internal fun HubPeekHost(
                             onPeekChange(true)
                         }
                         // Once the peek opens, keep the rest of this drag from also scrolling the page underneath.
-                        if (opened) change.consume() else if (abs(change.position.y - down.position.y) > slop * 2) break
+                        if (opened) {
+                            change.consume()
+                        } else if (abs(change.position.y - down.position.y) > slop * 2) {
+                            break
+                        }
                     }
                 }
             },
@@ -142,8 +148,17 @@ private fun HubPeekPanel(
 ) {
     val context = LocalContext.current
     val showText = remember { StartStateRepository(context).loadHubPeekText() }
-    val deviceLocked = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
-    val conversations = ConversationHub.conversations().take(MAX_ROWS)
+    val capabilities = rememberPlatformCapabilities()
+    val deviceLocked = capabilities.deviceLocked
+    val revision = rememberHubRevision()
+    val conversations =
+        remember(revision, capabilities) {
+            if (capabilities.hubNotifications == CapabilityStatus.Ready && !deviceLocked) {
+                ConversationHub.conversations().take(MAX_ROWS)
+            } else {
+                emptyList()
+            }
+        }
     val focus = remember { FocusRequester() }
     // The panel slides in from the left edge while the rest of Home dims.
     val slide = remember { Animatable(0f) }
@@ -210,36 +225,7 @@ private fun HubPeekPanel(
                         modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(0.dp),
                     ) {
-                        if (conversations.isEmpty()) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 22.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                            ) {
-                                Text("\u2713", style = MaterialTheme.typography.headlineMedium, color = accent)
-                                Text(
-                                    stringResource(R.string.peek_empty),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        conversations.forEach { conversation ->
-                            PeekRow(
-                                name = conversation.name,
-                                detail =
-                                    if (showText && !deviceLocked) {
-                                        conversation.latestMessage?.text.orEmpty()
-                                    } else {
-                                        stringResource(R.string.peek_count, conversation.notifications.size)
-                                    },
-                                count = if (showText) conversation.notifications.size else 0,
-                                packageName = conversation.sourcePackages.firstOrNull(),
-                            ) {
-                                ConversationHub.open(context, conversation.openTarget)
-                                onClose()
-                            }
-                        }
+                        PeekConversations(conversations, showText && !deviceLocked, onClose)
                     }
                     PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
                 }
@@ -341,4 +327,46 @@ private const val EDGE_DP = 20
 private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
-/** How opaque the peek panel is; the rest lets Home show through. */
+// How opaque the peek panel is; the rest lets Home show through.
+
+// Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
+@Suppress("FunctionNaming")
+@Composable
+private fun PeekConversations(
+    conversations: List<HubConversation>,
+    showText: Boolean,
+    onClose: () -> Unit,
+) {
+    val context = LocalContext.current
+    val accent = MaterialTheme.colorScheme.primary
+    if (conversations.isEmpty()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text("\u2713", style = MaterialTheme.typography.headlineMedium, color = accent)
+            Text(
+                stringResource(R.string.peek_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    conversations.forEach { conversation ->
+        PeekRow(
+            name = conversation.name,
+            detail =
+                if (showText) {
+                    conversation.latestMessage?.text.orEmpty()
+                } else {
+                    stringResource(R.string.peek_count, conversation.notifications.size)
+                },
+            count = if (showText) conversation.notifications.size else 0,
+            packageName = conversation.sourcePackages.firstOrNull(),
+        ) {
+            ConversationHub.open(context, conversation.openTarget)
+            onClose()
+        }
+    }
+}

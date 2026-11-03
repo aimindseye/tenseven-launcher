@@ -5,7 +5,7 @@
 [![Security](https://github.com/aimindseye/tenseven-launcher/actions/workflows/security.yml/badge.svg)](https://github.com/aimindseye/tenseven-launcher/actions/workflows/security.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=aimindseye_tenseven-launcher&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=aimindseye_tenseven-launcher)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Platform: Android 11+](https://img.shields.io/badge/Platform-Android_11+-167C80.svg)](docs/ARCHITECTURE.md)
+[![Platform: Android 14+](https://img.shields.io/badge/Platform-Android_14+-167C80.svg)](docs/ARCHITECTURE.md)
 
 Tenseven is a privacy-focused, keyboard-first Android home screen for phones with a physical keyboard.
 It gives you two classic layouts to choose from, **a BlackBerry 10 style** (Hub, Active Frames and app
@@ -15,7 +15,7 @@ ordinary app you install and set as your home app; no root and no custom ROM.
 
 The launcher comes from **Sable Start**, the home screen of
 [SableOS for the Zinwa Q25](https://github.com/aimindseye/zinwaq25-sableos), rebuilt here as a standalone
-Gradle project so it can run on any Android 11+ phone, with new icons
+Gradle project so it can run on any Android 14+ phone, with new icons
 ([Tabler](https://github.com/tabler/tabler-icons)) and the missing pieces filled in from
 [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch).
 
@@ -133,16 +133,17 @@ The lock-layer Peek never replaces Android's secure keyguard.
 
 ## Supported devices
 
-Tenseven needs Android 11 or newer. A physical keyboard is the point, but nothing stops it running on a
+Tenseven needs Android 14 or newer. A physical keyboard is the point, but nothing stops it running on a
 touch-only phone.
 
 | Device | Keyboard | Status |
 |---|---|---|
 | Zinwa Q25 (SableOS or stock Android) | QWERTY, trackpad | Layouts designed for it; not yet run |
+| Zinwa P26 (Passport-based) | Hardware profile pending | Planned for P3; not tested |
 | Unihertz Titan 2 | QWERTY, trackpad; no Menu key (use Alt+Enter) | Debug build runs and is tried by hand; not every feature confirmed |
 | Unihertz Titan Pocket | QWERTY | Not yet run |
-| BlackBerry KEY2, KEYone | QWERTY | Not yet run |
-| Any other Android 11+ phone | on-screen or Bluetooth keyboard | Not yet run |
+| BlackBerry KEYone | QWERTY | Historical target, not tested and outside current P3 scope |
+| Any other Android 14+ phone | on-screen or Bluetooth keyboard | Not yet run |
 
 To add a device, capture its keys with the event viewer in Sable Keyboard (`KeyProbeActivity`) or
 `adb shell getevent -lt`, and add the result to the key map in
@@ -262,12 +263,12 @@ need checking. What is done and what is next: [`ROADMAP.md`](ROADMAP.md).
 | Launcher Settings, Setup (first run and overview) | Run on the Titan 2 |
 | Themes, wallpapers (Home, Lock, BB10 see-through), lock layer and its preview | Run on the Titan 2 |
 | Widgets page and widget tiles, Hub peek, Hub settings, icon grid options, Edit Home bar | Written and in CI; not yet confirmed on a phone |
-| Other devices (Q25, Titan Pocket, KEY2, plain phones) | Not run |
+| Other devices (Q25, Titan 2 Slim, touchscreen phones) | Not run |
 
 ```text
 APP=Tenseven Launcher (io.github.aimindseye.tenseven)
 PHASE=beta: both layouts, Hub, Command, extras, Launcher Settings, Setup, themes, wallpapers and lock layer built
-BASE=Android 11+ (minSdk 30), compileSdk and targetSdk 36, ordinary install, no platform signature
+BASE=Android 14+ (minSdk 34), compileSdk and targetSdk 36, ordinary install, no platform signature
 HOME_STYLES=BlackBerry 10 style, BlackBerry 7 style (chosen in Launcher Settings or Setup)
 ICONS=Tabler Icons outline 3.50.0 (MIT), generated into the app by tools/tabler_icons.py
 WALLPAPERS=eight, drawn in code by Tenseven; no image files, no BlackBerry artwork
@@ -280,3 +281,12 @@ SABLE_KEYBOARD=separate companion app, not in this repository yet (docs/ARCHITEC
 RELEASES=none published; release signing supported (docs/BUILD.md)
 INTERNET=none (no INTERNET permission)
 ```
+
+### Current P2/P3 delivery order
+
+P2 engineering is being completed in PR #111 (screen boundaries, lifecycle orchestration,
+capability snapshots and blocking quality ratchet). See
+[engineering acceptance](docs/P2_ENGINEERING_ACCEPTANCE.md). P3 follows P2 and targets Titan 2,
+Titan 2 Slim, Zinwa Q25, Zinwa P26 and a touchscreen Android device; KEY2 is removed from active scope.
+The owner will build/test the single Full APK when both deliveries are ready. Current minimum
+Android version remains Android 14 (API 34).

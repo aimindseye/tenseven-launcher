@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven
 
-import io.github.aimindseye.tenseven.ui.FrameSettingsSection
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
@@ -29,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.ui.FrameSettingsSection
 
 /**
  * Launcher Settings: one screen for the choices people reach for most, laid out like the settings of a
@@ -37,10 +37,12 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
  */
 class LauncherSettingsActivity : ComponentActivity() {
     private val resumeGeneration = androidx.compose.runtime.mutableIntStateOf(0)
+
     override fun onResume() {
         super.onResume()
         resumeGeneration.intValue += 1
-        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+            .onLauncherResume(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,21 +52,19 @@ class LauncherSettingsActivity : ComponentActivity() {
         val state = StartStateRepository(this)
         setContent {
             LauncherTheme(window = window) {
-                androidx.compose.runtime.key(resumeGeneration.intValue) { LauncherSettings(
-                    state = state,
-                    onLanguage = {
-                        val intent =
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                androidx.compose.runtime.key(resumeGeneration.intValue) {
+                    LauncherSettings(
+                        state = state,
+                        onLanguage = {
+                            val intent =
                                 Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(android.net.Uri.parse("package:$packageName"))
-                            } else {
-                                Intent(Settings.ACTION_LOCALE_SETTINGS)
-                            }
-                        runCatching { startActivity(intent) }
-                    },
-                    onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },
-                    onSetup = { runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) } },
-                    onAndroidSettings = { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } },
-                ) }
+                            runCatching { startActivity(intent) }
+                        },
+                        onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },
+                        onSetup = { runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) } },
+                        onAndroidSettings = { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } },
+                    )
+                }
             }
         }
     }
@@ -82,59 +82,64 @@ private fun LauncherSettings(
     var typeToSearch by remember { mutableStateOf(state.loadTypeToSearch()) }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
-            modifier = Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(stringResource(R.string.launcher_settings), style = MaterialTheme.typography.titleLarge)
 
             ProvideHomeStyle(state) {
-            Section(stringResource(R.string.ls_section_style))
-            HomeStyleSection(state, first)
-            HomeDisplaySection(state)
+                Section(stringResource(R.string.ls_section_style))
+                HomeStyleSection(state, first)
+                HomeDisplaySection(state)
 
-            Section(stringResource(R.string.ls_section_home))
-            SwitchRow(stringResource(R.string.ls_type_to_search), stringResource(R.string.ls_type_to_search_detail), typeToSearch) {
-                typeToSearch = it
-                state.saveTypeToSearch(it)
-            }
+                Section(stringResource(R.string.ls_section_home))
+                SwitchRow(stringResource(R.string.ls_type_to_search), stringResource(R.string.ls_type_to_search_detail), typeToSearch) {
+                    typeToSearch = it
+                    state.saveTypeToSearch(it)
+                }
 
-            Section(stringResource(R.string.ls_section_grid))
-            IconGridSection(state)
-            IconPresentationSection(state)
+                Section(stringResource(R.string.ls_section_grid))
+                IconGridSection(state)
+                IconPresentationSection(state)
 
-            Section(stringResource(R.string.ls_section_theme))
-            ThemeSection(state)
+                Section(stringResource(R.string.ls_section_theme))
+                ThemeSection(state)
 
-            Section(stringResource(R.string.ls_section_wallpaper))
-            WallpaperSection(state)
+                Section(stringResource(R.string.ls_section_wallpaper))
+                WallpaperSection(state)
 
-            Section(stringResource(R.string.ls_section_widgets))
-            WidgetsSection(state)
+                Section(stringResource(R.string.ls_section_widgets))
+                WidgetsSection(state)
 
-            Section(stringResource(R.string.ls_section_hub))
-            HubSection()
-            FrameSettingsSection(state)
+                Section(stringResource(R.string.ls_section_hub))
+                HubSection()
+                FrameSettingsSection(state)
 
-            Section(stringResource(R.string.ls_section_lock))
-            LockLayerSection(state)
+                Section(stringResource(R.string.ls_section_lock))
+                LockLayerSection(state)
 
-            Section(stringResource(R.string.ls_section_device))
-            Card(stringResource(R.string.ls_language), stringResource(R.string.ls_language_detail), false, onClick = onLanguage)
-            Card(stringResource(R.string.ls_backup), stringResource(R.string.ls_backup_detail), false, onClick = onBackup)
-            Card(stringResource(R.string.ls_setup), stringResource(R.string.ls_setup_detail), false, onClick = onSetup)
-            Card(
-                stringResource(R.string.ls_android_settings),
-                stringResource(R.string.ls_android_settings_detail),
-                false,
-                onClick = onAndroidSettings,
-            )
+                Section(stringResource(R.string.ls_section_device))
+                Card(stringResource(R.string.ls_language), stringResource(R.string.ls_language_detail), false, onClick = onLanguage)
+                Card(stringResource(R.string.ls_backup), stringResource(R.string.ls_backup_detail), false, onClick = onBackup)
+                Card(stringResource(R.string.ls_setup), stringResource(R.string.ls_setup_detail), false, onClick = onSetup)
+                Card(
+                    stringResource(R.string.ls_android_settings),
+                    stringResource(R.string.ls_android_settings_detail),
+                    false,
+                    onClick = onAndroidSettings,
+                )
 
-            Section(stringResource(R.string.ls_section_privacy))
-            Text(
-                stringResource(R.string.ls_privacy_detail),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                Section(stringResource(R.string.ls_section_privacy))
+                Text(
+                    stringResource(R.string.ls_privacy_detail),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

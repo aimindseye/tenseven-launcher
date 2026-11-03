@@ -4,24 +4,23 @@ import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
-import android.os.Build
+import android.net.Uri
 import android.provider.MediaStore
-import android.text.format.DateUtils
 import android.text.format.DateFormat
-import io.github.aimindseye.tenseven.model.StartText.t
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import android.text.format.DateUtils
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationHub
-import io.github.aimindseye.tenseven.conversations.MailSummary
 import io.github.aimindseye.tenseven.conversations.ConversationListenerService
+import io.github.aimindseye.tenseven.conversations.MailSummary
 import io.github.aimindseye.tenseven.live.AppUnreadCount
 import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
+import io.github.aimindseye.tenseven.model.StartText.t
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Date
 
 class LiveSurfaceRepository(
@@ -31,9 +30,7 @@ class LiveSurfaceRepository(
     private val resolver = appContext.contentResolver
     private val frameSummaries = AppFrameSummaryRepository(appContext)
 
-    fun initialSnapshot(
-        nowEpochMs: Long = System.currentTimeMillis(),
-    ): LiveSurfaceSnapshot {
+    fun initialSnapshot(nowEpochMs: Long = System.currentTimeMillis()): LiveSurfaceSnapshot {
         val loading =
             LiveDatum(
                 title = t("loading"),
@@ -44,10 +41,12 @@ class LiveSurfaceRepository(
 
         return LiveSurfaceSnapshot(
             dateText =
-                DateFormat.getMediumDateFormat(appContext)
+                DateFormat
+                    .getMediumDateFormat(appContext)
                     .format(Date(nowEpochMs)),
             timeText =
-                DateFormat.getTimeFormat(appContext)
+                DateFormat
+                    .getTimeFormat(appContext)
                     .format(Date(nowEpochMs)),
             weather = loading.copy(title = t("weather")),
             calendar = loading.copy(title = t("calendar")),
@@ -59,16 +58,16 @@ class LiveSurfaceRepository(
         )
     }
 
-    suspend fun snapshot(
-        nowEpochMs: Long = System.currentTimeMillis(),
-    ): LiveSurfaceSnapshot =
+    suspend fun snapshot(nowEpochMs: Long = System.currentTimeMillis()): LiveSurfaceSnapshot =
         withContext(Dispatchers.IO) {
             LiveSurfaceSnapshot(
                 dateText =
-                    DateFormat.getMediumDateFormat(appContext)
+                    DateFormat
+                        .getMediumDateFormat(appContext)
                         .format(Date(nowEpochMs)),
                 timeText =
-                    DateFormat.getTimeFormat(appContext)
+                    DateFormat
+                        .getTimeFormat(appContext)
                         .format(Date(nowEpochMs)),
                 // Android has no weather source of its own: the tile opens the default weather app.
                 weather =
@@ -93,12 +92,7 @@ class LiveSurfaceRepository(
                 music = nowPlaying(),
                 photos =
                     mediaCount(
-                        permission =
-                            if (Build.VERSION.SDK_INT >= 33) {
-                                Manifest.permission.READ_MEDIA_IMAGES
-                            } else {
-                                Manifest.permission.READ_EXTERNAL_STORAGE
-                            },
+                        permission = Manifest.permission.READ_MEDIA_IMAGES,
                         uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                         title = t("photos"),
                         noun = "photo",
@@ -129,12 +123,21 @@ class LiveSurfaceRepository(
                     if (allDay) {
                         DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_ABBREV_ALL
                     } else {
-                        DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_ABBREV_ALL
+                        DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_WEEKDAY or
+                            DateUtils.FORMAT_ABBREV_ALL
                     }
                 // An all-day event's times are midnight UTC, so format it in UTC to keep its date.
                 val whenText =
                     if (allDay) {
-                        DateUtils.formatDateRange(appContext, java.util.Formatter(StringBuilder(), java.util.Locale.getDefault()), begin, begin, flags, "UTC").toString()
+                        DateUtils
+                            .formatDateRange(
+                                appContext,
+                                java.util.Formatter(StringBuilder(), java.util.Locale.getDefault()),
+                                begin,
+                                begin,
+                                flags,
+                                "UTC",
+                            ).toString()
                     } else {
                         DateUtils.formatDateTime(appContext, begin, flags)
                     }
@@ -147,12 +150,15 @@ class LiveSurfaceRepository(
         }
     }
 
-    private fun calendarPackages(): Set<String> = runCatching {
-        appContext.packageManager.queryIntentActivities(
-            android.content.Intent.makeMainSelectorActivity(android.content.Intent.ACTION_MAIN, DefaultApps.CALENDAR),
-            PackageManager.MATCH_ALL,
-        ).map { it.activityInfo.packageName }.toSet()
-    }.getOrDefault(emptySet())
+    private fun calendarPackages(): Set<String> =
+        runCatching {
+            appContext.packageManager
+                .queryIntentActivities(
+                    android.content.Intent.makeMainSelectorActivity(android.content.Intent.ACTION_MAIN, DefaultApps.CALENDAR),
+                    PackageManager.MATCH_ALL,
+                ).map { it.activityInfo.packageName }
+                .toSet()
+        }.getOrDefault(emptySet())
 
     /**
      * What is playing, from the active media sessions. Android only lists them to an app that holds notification
@@ -174,7 +180,13 @@ class LiveSurfaceRepository(
             } else {
                 val line = if (artist.isBlank()) track else "$track · $artist"
                 val playing = active.playbackState?.state == PlaybackState.STATE_PLAYING
-                LiveDatum(title, if (playing) line else "Paused: $line", LiveAvailability.LIVE, System.currentTimeMillis(), active.packageName)
+                LiveDatum(
+                    title,
+                    if (playing) line else "Paused: $line",
+                    LiveAvailability.LIVE,
+                    System.currentTimeMillis(),
+                    active.packageName,
+                )
             }
         } catch (_: SecurityException) {
             LiveDatum(title, t("permission_required"), LiveAvailability.PERMISSION_REQUIRED)
@@ -192,22 +204,24 @@ class LiveSurfaceRepository(
         // One listener-backed count source for BB7, BB10, Hub badges and the lock layer.
         // On a platform with no listener, retain Sable Hub's existing provider fallback.
         if (ConversationAccess.isGranted(appContext)) {
-            val lockCounts = LockLayerState.counts.entries
-                .filter { it.value > 0 }
-                .map { AppUnreadCount(it.key, it.value) }
-                .sortedWith(compareByDescending<AppUnreadCount> { it.count }.thenBy { it.packageName })
-                .take(MAX_HUB_APPS)
+            val lockCounts =
+                LockLayerState.counts.entries
+                    .filter { it.value > 0 }
+                    .map { AppUnreadCount(it.key, it.value) }
+                    .sortedWith(compareByDescending<AppUnreadCount> { it.count }.thenBy { it.packageName })
+                    .take(MAX_HUB_APPS)
             if (lockCounts.isNotEmpty()) return lockCounts
             return ConversationHub.unreadCounts(MAX_HUB_APPS)
         }
         return providerHubAppCounts()
     }
 
-    /**
+    /*
      * The Mail tile: the newest unread email, from the email notifications Tenseven's listener reads (Android has
      * no public mail data API). Without notification access the tile just opens the default email app. The text is
      * hidden while the phone is locked.
      */
+
     /** The Hub's messages line when Sable Hub is not installed: unread message conversations from Tenseven's listener. */
     private fun ownMessages(
         nowEpochMs: Long,
@@ -269,51 +283,54 @@ class LiveSurfaceRepository(
         fallbackTitle: String,
     ): LiveDatum =
         runCatching {
-            resolver.query(
-                uri,
-                arrayOf(
-                    "title",
-                    "detail",
-                    "availability",
-                    "observed_at",
-                ),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                if (!cursor.moveToFirst()) return@use null
+            resolver
+                .query(
+                    uri,
+                    arrayOf(
+                        "title",
+                        "detail",
+                        "availability",
+                        "observed_at",
+                    ),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (!cursor.moveToFirst()) return@use null
 
-                val title =
-                    cursor.getString(
-                        cursor.getColumnIndexOrThrow("title"),
-                    )
-                        ?.trim()
-                        .orEmpty()
-                        .ifEmpty { fallbackTitle }
-                val detail =
-                    cursor.getString(
-                        cursor.getColumnIndexOrThrow("detail"),
-                    )
-                        ?.trim()
-                        .orEmpty()
-                        .ifEmpty { "unavailable" }
-                val availability =
-                    cursor.getString(
-                        cursor.getColumnIndexOrThrow("availability"),
-                    ).toLiveAvailability()
-                val observedAt =
-                    cursor.getColumnIndex("observed_at")
-                        .takeIf { it >= 0 }
-                        ?.let(cursor::getLong)
-                        ?: 0L
+                    val title =
+                        cursor
+                            .getString(
+                                cursor.getColumnIndexOrThrow("title"),
+                            )?.trim()
+                            .orEmpty()
+                            .ifEmpty { fallbackTitle }
+                    val detail =
+                        cursor
+                            .getString(
+                                cursor.getColumnIndexOrThrow("detail"),
+                            )?.trim()
+                            .orEmpty()
+                            .ifEmpty { "unavailable" }
+                    val availability =
+                        cursor
+                            .getString(
+                                cursor.getColumnIndexOrThrow("availability"),
+                            ).toLiveAvailability()
+                    val observedAt =
+                        cursor
+                            .getColumnIndex("observed_at")
+                            .takeIf { it >= 0 }
+                            ?.let(cursor::getLong)
+                            ?: 0L
 
-                LiveDatum(
-                    title = title,
-                    detail = detail,
-                    availability = availability,
-                    observedAtEpochMs = observedAt,
-                )
-            }
+                    LiveDatum(
+                        title = title,
+                        detail = detail,
+                        availability = availability,
+                        observedAtEpochMs = observedAt,
+                    )
+                }
         }.getOrNull()
             ?: LiveDatum(
                 title = fallbackTitle,
@@ -339,7 +356,7 @@ class LiveSurfaceRepository(
     ): LiveDatum {
         if (
             appContext.checkSelfPermission(permission) !=
-                PackageManager.PERMISSION_GRANTED
+            PackageManager.PERMISSION_GRANTED
         ) {
             return LiveDatum(
                 title = title,
@@ -350,13 +367,14 @@ class LiveSurfaceRepository(
 
         return try {
             val count =
-                resolver.query(
-                    uri,
-                    arrayOf(MediaStore.MediaColumns._ID),
-                    null,
-                    null,
-                    null,
-                )?.use { cursor -> cursor.count } ?: 0
+                resolver
+                    .query(
+                        uri,
+                        arrayOf(MediaStore.MediaColumns._ID),
+                        null,
+                        null,
+                        null,
+                    )?.use { cursor -> cursor.count } ?: 0
 
             LiveDatum(
                 title = title,

@@ -15,8 +15,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +27,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,8 +58,11 @@ import androidx.core.view.WindowCompat
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.LockLayer
 import io.github.aimindseye.tenseven.model.LockPeek
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.LockLayerState
+import io.github.aimindseye.tenseven.platform.PlatformCapabilities
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.ui.rememberPlatformCapabilities
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -140,15 +143,24 @@ class LockLayerActivity : ComponentActivity() {
                 unlock(null)
                 true
             }
+
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 peekStage = LockPeek.next(peekStage)
                 true
             }
+
             KeyEvent.KEYCODE_BACK -> {
-                if (peekStage == LockPeek.Stage.COUNTS) super.onKeyDown(keyCode, event)
-                else { peekStage = LockPeek.previous(peekStage); true }
+                if (peekStage == LockPeek.Stage.COUNTS) {
+                    super.onKeyDown(keyCode, event)
+                } else {
+                    peekStage = LockPeek.previous(peekStage)
+                    true
+                }
             }
-            else -> super.onKeyDown(keyCode, event)
+
+            else -> {
+                super.onKeyDown(keyCode, event)
+            }
         }
 
     /** Asks Android to dismiss the real lock screen, then opens [then] (if any) and closes this cover. */
@@ -198,18 +210,12 @@ private fun LockLayerScreen(
     onCamera: () -> Unit,
 ) {
     val context = LocalContext.current
-    val counts = LockLayerState.counts
+    val capabilities = rememberPlatformCapabilities()
+    val counts = lockLayerCounts(capabilities)
     val entries = remember(counts, enabled) { LockLayer.entries(counts, counts.keys - enabled) }
     val preview =
-        remember(counts, enabled, showText) {
-            if (showText) {
-                ConversationHub
-                    .conversations()
-                    .firstOrNull { conversation -> conversation.sourcePackages.any { it in enabled } }
-                    ?.let { it.name to it.latestMessage?.text.orEmpty() }
-            } else {
-                null
-            }
+        remember(counts, enabled, showText, capabilities) {
+            lockLayerPreview(enabled, showText, capabilities)
         }
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
@@ -252,9 +258,22 @@ private fun LockLayerScreen(
             Text(date, color = Color.White.copy(alpha = 0.9f), fontSize = 20.sp)
             if (preview != null) {
                 Spacer(Modifier.height(14.dp))
-                Text(preview.first, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    preview.first,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 if (preview.second.isNotBlank()) {
-                    Text(preview.second, color = Color.White.copy(alpha = 0.85f), fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        preview.second,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
             Spacer(Modifier.height(18.dp))
@@ -282,9 +301,12 @@ private fun LockLayerScreen(
                     entries.forEach { entry ->
                         LockPeekRow(entry.packageName, entry.count) { onOpenApp(entry.packageName) }
                     }
-                    Text("Unlock to read message details",
+                    Text(
+                        "Unlock to read message details",
                         color = Color.White.copy(alpha = 0.65f),
-                        fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
                 }
             }
         }
@@ -303,7 +325,10 @@ private fun LockLayerScreen(
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 22.dp)
                 .size(44.dp)
-                .clickable(onClick = onCamera),
+                .clickable(
+                    enabled = capabilities.camera == CapabilityStatus.Ready,
+                    onClick = onCamera,
+                ),
         ) {
             val stroke = Stroke(width = 3.dp.toPx())
             drawRoundRect(
@@ -325,7 +350,18 @@ private fun LockIcon(
     onClick: () -> Unit,
 ) {
     val packageManager = LocalContext.current.packageManager
-    val icon = remember(packageName) { runCatching { packageManager.getApplicationIcon(packageName).toBitmap(96, 96).asImageBitmap() }.getOrNull() }
+    val icon =
+        remember(
+            packageName,
+        ) {
+            runCatching {
+                packageManager
+                    .getApplicationIcon(
+                        packageName,
+                    ).toBitmap(NOTIFICATION_ICON_BITMAP_SIZE, NOTIFICATION_ICON_BITMAP_SIZE)
+                    .asImageBitmap()
+            }.getOrNull()
+        }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -341,12 +377,17 @@ private fun LockIcon(
 
 /** Borderless source rows. Only counts and app names are visible while the device is locked. */
 @Composable
-private fun LockPeekRow(packageName: String, count: Int, onOpen: () -> Unit) {
+private fun LockPeekRow(
+    packageName: String,
+    count: Int,
+    onOpen: () -> Unit,
+) {
     val packageManager = LocalContext.current.packageManager
-    val appName = remember(packageName) {
-        runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString() }
-            .getOrDefault("App")
-    }
+    val appName =
+        remember(packageName) {
+            runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString() }
+                .getOrDefault("App")
+        }
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -355,11 +396,31 @@ private fun LockPeekRow(packageName: String, count: Int, onOpen: () -> Unit) {
         LockIcon(packageName, "", onClick = onOpen)
         Column(modifier = Modifier.weight(1f)) {
             Text(appName, color = Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(if (count == 1) "1 notification" else count.toString() + " notifications",
-                color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+            Text(
+                if (count == 1) "1 notification" else count.toString() + " notifications",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 13.sp,
+            )
         }
         Text(LockLayer.countLabel(count), color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
     }
 }
 
 private const val UNLOCK_SWIPE_PX = 120f
+
+private const val NOTIFICATION_ICON_BITMAP_SIZE = 96
+
+private fun lockLayerCounts(capabilities: PlatformCapabilities): Map<String, Int> =
+    if (capabilities.hubNotifications == CapabilityStatus.Ready) LockLayerState.counts else emptyMap()
+
+private fun lockLayerPreview(
+    enabled: Set<String>,
+    showText: Boolean,
+    capabilities: PlatformCapabilities,
+): Pair<String, String>? {
+    if (!showText || capabilities.deviceLocked || capabilities.hubNotifications != CapabilityStatus.Ready) return null
+    return ConversationHub
+        .conversations()
+        .firstOrNull { conversation -> conversation.sourcePackages.any { it in enabled } }
+        ?.let { it.name to it.latestMessage?.text.orEmpty() }
+}

@@ -39,10 +39,15 @@ class RecentTasksRepository(
                     running = info.isRunning,
                 )
             }
-        return frames.filterNot { it.packageName in excludedPackages + appContext.packageName || it.userId in hiddenUsers }.distinctBy { it.taskId }.take(12)
+        return frames
+            .filterNot {
+                it.packageName in excludedPackages + appContext.packageName || it.userId in hiddenUsers
+            }.distinctBy { it.taskId }
+            .take(12)
     }
 
-    /** The task's last picture (low resolution first), or null when Android has none for it. */
+    // The task's last picture (low resolution first), or null when Android has none for it.
+
     /** Full resolution first: the low-resolution snapshot is too soft for text at Active Frame size. */
     fun snapshot(taskId: Int): Bitmap? = snapshot(taskId, lowResolution = false) ?: snapshot(taskId, lowResolution = true)
 
@@ -108,18 +113,26 @@ class RecentTasksRepository(
                 val hardware = Bitmap.wrapHardwareBuffer(it, colorSpace) ?: return@runCatching null
                 val software = hardware.copy(Bitmap.Config.ARGB_8888, false)
                 hardware.recycle()
-                if (software.width <= 512 && software.height <= 512) software else {
+                if (software.width <= 512 && software.height <= 512) {
+                    software
+                } else {
                     val scale = 512f / maxOf(software.width, software.height)
-                    Bitmap.createScaledBitmap(software, (software.width * scale).toInt().coerceAtLeast(1),
-                        (software.height * scale).toInt().coerceAtLeast(1), true).also { software.recycle() }
+                    Bitmap
+                        .createScaledBitmap(
+                            software,
+                            (software.width * scale).toInt().coerceAtLeast(1),
+                            (software.height * scale).toInt().coerceAtLeast(1),
+                            true,
+                        ).also { software.recycle() }
                 }
             }
         }.getOrNull()
 
     /** Capability probing shares this bridge; no second hidden-API entry point in the UI probe. */
-    internal fun hasTaskMethod(name: String): Boolean = runCatching {
-        taskService()?.javaClass?.methods?.any { it.name == name } == true
-    }.getOrDefault(false)
+    internal fun hasTaskMethod(name: String): Boolean =
+        runCatching {
+            taskService()?.javaClass?.methods?.any { it.name == name } == true
+        }.getOrDefault(false)
 
     private fun taskService(): Any? =
         runCatching {
@@ -129,7 +142,11 @@ class RecentTasksRepository(
     /** TaskInfo.userId is hidden; without it the frame belongs to Start's own user. */
     private fun userIdOf(info: ActivityManager.RecentTaskInfo): Int =
         runCatching { info.javaClass.getField("userId").getInt(info) }
-            .getOrElse { android.os.Process.myUserHandle().hashCode() }
+            .getOrElse {
+                android.os.Process
+                    .myUserHandle()
+                    .hashCode()
+            }
 
     companion object {
         /** More than [ActiveFrames.MAX], since some recent tasks are filtered out. */

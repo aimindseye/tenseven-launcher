@@ -1,6 +1,6 @@
 package io.github.aimindseye.tenseven.model
 
-/**
+/*
  * Sable Start in the BlackBerry 10 layout (owner request, after the BB10 UI
  * Guidelines): Hub | Active Frames | app grid pages, with Phone · Search ·
  * Camera along the bottom. Pure policy, unit tested in
@@ -291,7 +291,7 @@ object AppProfiles {
 }
 
 /** Where a finished vertical drag on the BlackBerry 10 home goes. */
-enum class Bb10Swipe { Command }
+enum class Bb10Swipe { Command, }
 
 object Bb10Gestures {
     /** A drag down of at least [threshold] px (positive = finger moved down) opens Command; anything else does nothing. */
