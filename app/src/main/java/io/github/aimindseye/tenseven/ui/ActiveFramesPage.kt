@@ -62,6 +62,7 @@ internal fun ActiveFramesPage(
     val dials = remember(refreshGeneration) { display.loadHomeDials(HomeStyle.Bb10) }
     val strip = remember(refreshGeneration) { display.loadHomeNotificationStrip(HomeStyle.Bb10) }
     val expanded = remember(refreshGeneration) { display.loadHomeNotificationExpanded(HomeStyle.Bb10) }
+    val summaryActions = remember(context) { io.github.aimindseye.tenseven.platform.AppFrameSummaryRepository(context) }
     val enabledApps = remember(refreshGeneration) { display.loadHubEnabledApps() }
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
     val capture by io.github.aimindseye.tenseven.platform.ScreenCaptureState.state.collectAsState()
@@ -72,9 +73,16 @@ internal fun ActiveFramesPage(
         if (state.calendarAllowed && snapshot.calendar.availability == LiveAvailability.LIVE &&
             state.items.none { it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName in snapshot.calendarPackages })
             add(FrameTileView("tile:calendar", "Calendar", snapshot.calendar.detail))
-        if (state.notificationsAllowed && snapshot.music.availability == LiveAvailability.LIVE &&
+        if (snapshot.appSummaries.none { it.source == SummarySource.Media } && state.notificationsAllowed && snapshot.music.availability == LiveAvailability.LIVE &&
             state.items.none { it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName == snapshot.music.sourcePackage })
             add(FrameTileView("tile:media", "Now playing", snapshot.music.detail))
+        snapshot.appSummaries.filter { AppSummaryPolicy.allowed(it, state.notificationsAllowed) }.forEach { summary ->
+            val matched = summary.packageName != null && state.items.any {
+                it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName == summary.packageName
+            }
+            if (!matched) add(FrameTileView("tile:" + summary.key, summary.title, summary.detail,
+                onOpen = { summaryActions.open(summary.key) }, badge = summary.source.label))
+        }
         }
     }
     Column(Modifier.fillMaxSize()) {
@@ -88,12 +96,13 @@ internal fun ActiveFramesPage(
         // Put the access offer outside the grid so it never displaces one of its two visible rows.
         if (!state.usageAllowed) UsageAccessHint(onAllowUsageAccess)
         ActiveFramesGrid(state, apps, snapshot, enabledApps, owned, frameSnapshot, active, onResume, onClose,
-            Modifier.weight(1f).fillMaxWidth())
+            Modifier.weight(1f).fillMaxWidth(), onOpenSummary = summaryActions::open)
     }
 }
 
 internal data class FrameTileView(val key: String, val title: String, val detail: String,
-    val picture: Bitmap? = null, val onClose: (() -> Unit)? = null)
+    val picture: Bitmap? = null, val onClose: (() -> Unit)? = null,
+    val onOpen: (() -> Unit)? = null, val badge: String = "Live tile")
 
 @Composable
 internal fun ActiveFramesGrid(
@@ -107,6 +116,7 @@ internal fun ActiveFramesGrid(
     onResume: (FrameItem) -> Unit,
     onClose: (FrameItem) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSummary: (String) -> Unit = {},
 ) {
     val requesters = remember { mutableMapOf<String, FocusRequester>() }
     var nextFocus by remember { mutableStateOf<String?>(null) }
@@ -140,11 +150,14 @@ internal fun ActiveFramesGrid(
                         val slot = Modifier.weight(1f).height(height).focusRequester(requester(key))
                         if (item == null) {
                             val tile = tiles.first { it.key == key }
-                            FrameTile(tile.key, tile.title, if (tile.picture != null) "Shared preview" else "Live tile", tile.detail, tile.onClose != null, {},
-                                { tile.onClose?.invoke() }, slot, tile.picture, openEnabled = false)
+                            FrameTile(tile.key, tile.title, if (tile.picture != null) "Shared preview" else tile.badge, tile.detail, tile.onClose != null, { tile.onOpen?.invoke() },
+                                { tile.onClose?.invoke() }, slot, tile.picture, openEnabled = tile.onOpen != null && state.settings.openApps)
                         } else {
                             RecentFrameCard(state, item, apps, snapshot, enabledApps, frameSnapshot, active,
-                                { onResume(item) }, {
+                                {
+                                    val summary = FrameLiveSummary.summary(state, item, snapshot, personalUser)
+                                    if (summary?.source == SummarySource.Document) onOpenSummary(summary.key) else onResume(item)
+                                }, {
                                     val index = keys.indexOf(key)
                                     nextFocus = keys.filterNot { it == key }.getOrNull(index.coerceAtMost(keys.size - 2).coerceAtLeast(0))
                                     onClose(item)
@@ -171,7 +184,8 @@ private fun RecentFrameCard(
     }
     val count = FrameMessages.count(state, item, snapshot.hubApps, enabledApps, android.os.Process.myUserHandle().hashCode())
     val summary = FrameLiveSummary.detail(state, item, snapshot, android.os.Process.myUserHandle().hashCode())
-    FrameTile(item.key, app?.label ?: item.app.packageName, if (summary != null) "Live summary" else if (picture == null) "Recent app" else "Preview",
+    val badge = FrameLiveSummary.summary(state, item, snapshot, android.os.Process.myUserHandle().hashCode())?.source?.label ?: "Live summary"
+    FrameTile(item.key, app?.label ?: item.app.packageName, if (summary != null) badge else if (picture == null) "Recent app" else "Preview",
         listOfNotNull(summary, if (count > 0) "$count new" else null).joinToString(" · "), true, onOpen, onClose, modifier, picture, state.settings.openApps,
         icon = { if (app != null) AppMark(app, 28) })
 }

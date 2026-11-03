@@ -19,6 +19,7 @@ internal fun FrameSettingsSection(repository: StartStateRepository) {
     var value by remember { mutableStateOf(repository.loadFrameSettings()) }
     val context = LocalContext.current
     val capabilities = remember { PlatformCapabilityProbe.detect(context) }
+    FrameIntegrationControls()
     ScreenCaptureControls()
     FrameSettingsPanel(value, capabilities) { value = it.normalized(); repository.saveFrameSettings(value) }
 }
@@ -28,14 +29,14 @@ internal fun FrameSettingsSection(repository: StartStateRepository) {
 internal fun FrameSettingsPanel(value: FrameSettings, capabilities: PlatformCapabilities, onChange: (FrameSettings) -> Unit) {
     Text("Active Frames", style = MaterialTheme.typography.titleLarge)
     Text(capabilities.frameFallbackReason, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    SwitchRow("Live tiles", "Show Calendar and Now playing summaries in matching personal-profile app cards, or separate tiles when no matching card exists.",
+    SwitchRow("Live tiles", "Show available media, Calendar, selected documents and local summaries. Notification excerpts require a separate opt-in.",
         value.liveSummaries) { onChange(value.copy(liveSummaries = it)) }
     FrameCapabilitySwitch("New messages", "Counts from apps you enabled in Hub.",
         value.newMessages, capabilities.hubNotifications, "Enable notification access to show opted-in counts.") {
         onChange(value.copy(newMessages = it))
     }
     FrameCapabilitySwitch("Snapshots", "Show a protected-content-safe Preview when supplied by an authorized OS task bridge.",
-        value.snapshots, capabilities.thirdPartySnapshots, "Android does not authorize other-app snapshots for this install.") {
+        value.snapshots, capabilities.thirdPartySnapshots, "Automatic app snapshots are unavailable for this install.") {
         onChange(value.copy(snapshots = it))
     }
     SwitchRow("Open apps from a frame", "Enter or tap opens the exact app and profile. Closing a card remains available.",
@@ -87,4 +88,14 @@ private fun ScreenCaptureControls() {
             context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.ScreenCaptureActivity::class.java))
         }) { Text("Continue") } },
         dismissButton = { TextButton(onClick = { explain = false }) { Text("Cancel") } })
+}
+
+@Composable
+private fun FrameIntegrationControls() {
+    val context = LocalContext.current
+    Text("App integrations", style = MaterialTheme.typography.titleMedium)
+    Text("Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar access. Selected documents and TenSeven local summaries do not need notification access.")
+    Button(onClick = { context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.FrameIntegrationsActivity::class.java)) }) {
+        Text("Configure app summaries")
+    }
 }

@@ -50,6 +50,9 @@
     -->
 
     <queries>
+        <package android:name="com.microsoft.office.word" />
+        <package android:name="com.microsoft.office.excel" />
+        <package android:name="com.microsoft.office.powerpoint" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -433,5 +436,6 @@
             android:theme="@android:style/Theme.Material.NoActionBar" android:resizeableActivity="true" />
         <service android:name=".platform.ScreenCaptureService" android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+        <activity android:name=".FrameIntegrationsActivity" android:exported="false" />
     </application>
 </manifest>

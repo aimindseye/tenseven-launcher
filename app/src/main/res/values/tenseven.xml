@@ -179,7 +179,7 @@
     <string name="ls_current">Current</string>
     <string name="ls_type_to_search">Type to search</string>
     <string name="ls_type_to_search_detail">Typing on the home screen starts a search</string>
-    <string name="ls_icon_size">Icon size (BlackBerry 7)</string>
+    <string name="ls_icon_size">Icon size</string>
     <string name="ls_widget_calendar">Calendar events</string>
     <string name="ls_widget_calendar_detail">Your next event</string>
     <string name="ls_widget_battery">Battery</string>
