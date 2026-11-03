@@ -44,8 +44,8 @@ import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeApps
-import io.github.aimindseye.tenseven.model.HomeViewport
 import io.github.aimindseye.tenseven.model.HomeLayout
+import io.github.aimindseye.tenseven.model.HomeViewport
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.StartPages

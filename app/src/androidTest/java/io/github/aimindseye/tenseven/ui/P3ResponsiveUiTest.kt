@@ -16,7 +16,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onNode
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -47,9 +50,18 @@ class P3ResponsiveUiTest {
             val density = LocalDensity.current.density
             CompositionLocalProvider(LocalDensity provides Density(density, 2f)) {
                 MaterialTheme {
-                    ActiveFramesGrid(state.value, emptyList(), snapshot, emptySet(), emptyList(), { _, _ -> null },
-                        true, {}, { item -> state.value = state.value.copy(items = state.value.items - item) },
-                        Modifier.size(300.dp, 300.dp))
+                    ActiveFramesGrid(
+                        state.value,
+                        emptyList(),
+                        snapshot,
+                        emptySet(),
+                        emptyList(),
+                        { _, _ -> null },
+                        true,
+                        {},
+                        { item -> state.value = state.value.copy(items = state.value.items - item) },
+                        Modifier.size(300.dp, 300.dp),
+                    )
                 }
             }
         }
@@ -57,7 +69,8 @@ class P3ResponsiveUiTest {
         val next = compose.onNodeWithTag(items[1].key).fetchSemanticsNode().boundsInRoot
         assertEquals(first.left, next.left, 1f)
         assertTrue(next.top > first.top)
-        compose.onNodeWithTag(items.last().key).performScrollTo().assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasTestTag(items.last().key))
+        compose.onNodeWithTag(items.last().key).assertIsDisplayed()
         compose.onNodeWithTag("close:${items.last().key}", useUnmergedTree = true).performClick()
         compose.runOnIdle { assertEquals(7, state.value.items.size) }
     }
@@ -70,8 +83,18 @@ class P3ResponsiveUiTest {
             CompositionLocalProvider(LocalDensity provides Density(density, 2f)) {
                 MaterialTheme {
                     Box(Modifier.size(300.dp, 180.dp)) {
-                        AppGridPage(apps, HomeViewport.rows(180, 74, 2f), HomeViewport.columns(300, GridColumns.AUTO, 2f),
-                            1f, apps.map { it.label }.toSet(), true, { launches++ }, {}, {}, {})
+                        AppGridPage(
+                            apps,
+                            HomeViewport.rows(180, 74, 2f),
+                            HomeViewport.columns(300, GridColumns.AUTO, 2f),
+                            1f,
+                            apps.map { it.label }.toSet(),
+                            true,
+                            { launches++ },
+                            {},
+                            {},
+                            {},
+                        )
                     }
                 }
             }
@@ -85,22 +108,54 @@ class P3ResponsiveUiTest {
         var menus = 0
         compose.setContent {
             MaterialTheme {
-                val pager = androidx.compose.foundation.pager.rememberPagerState { 1 }
+                val pager =
+                    androidx.compose.foundation.pager
+                        .rememberPagerState { 1 }
                 StartStrip(
-                    state = pager, pageCount = 1, pageLead = 0, quickSlots = emptyList(),
-                    onMovePage = {}, onShowPage = {}, onQuickSlot = {}, onSlotOptions = {}, onHubPeek = {},
-                    onDial = {}, onTypeToSearch = {}, speedDialLetters = emptySet(), onSpeedDial = {},
-                    onCommand = {}, onEditHome = { menus++ }, page = {},
+                    state = pager,
+                    pageCount = 1,
+                    pageLead = 0,
+                    quickSlots = emptyList(),
+                    onMovePage = {},
+                    onShowPage = {},
+                    onQuickSlot = {},
+                    onSlotOptions = {},
+                    onHubPeek = {},
+                    onDial = {},
+                    onTypeToSearch = {},
+                    speedDialLetters = emptySet(),
+                    onSpeedDial = {},
+                    onCommand = {},
+                    onEditHome = { menus++ },
+                    page = {},
                 )
             }
         }
         compose.waitForIdle()
-        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        val instrumentation =
+            androidx.test.platform.app.InstrumentationRegistry
+                .getInstrumentation()
         val now = android.os.SystemClock.uptimeMillis()
-        instrumentation.sendKeySync(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN,
-            android.view.KeyEvent.KEYCODE_ENTER, 0, android.view.KeyEvent.META_FUNCTION_ON))
-        instrumentation.sendKeySync(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP,
-            android.view.KeyEvent.KEYCODE_ENTER, 0, android.view.KeyEvent.META_FUNCTION_ON))
+        instrumentation.sendKeySync(
+            android.view.KeyEvent(
+                now,
+                now,
+                android.view.KeyEvent.ACTION_DOWN,
+                android.view.KeyEvent.KEYCODE_ENTER,
+                0,
+                android.view.KeyEvent.META_FUNCTION_ON,
+            ),
+        )
+        instrumentation.sendKeySync(
+            android.view.KeyEvent(
+                now,
+                now,
+                android.view.KeyEvent.ACTION_UP,
+                android.view.KeyEvent.KEYCODE_ENTER,
+                0,
+                android.view.KeyEvent.META_FUNCTION_ON,
+            ),
+        )
         compose.runOnIdle { assertEquals(1, menus) }
     }
 }

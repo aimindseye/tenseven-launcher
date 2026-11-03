@@ -124,16 +124,7 @@ private fun LauncherSettings(
                 LockLayerSection(state)
 
                 Section(stringResource(R.string.ls_section_device))
-                DeviceCompatibilityLink()
-                Card(stringResource(R.string.ls_language), stringResource(R.string.ls_language_detail), false, onClick = onLanguage)
-                Card(stringResource(R.string.ls_backup), stringResource(R.string.ls_backup_detail), false, onClick = onBackup)
-                Card(stringResource(R.string.ls_setup), stringResource(R.string.ls_setup_detail), false, onClick = onSetup)
-                Card(
-                    stringResource(R.string.ls_android_settings),
-                    stringResource(R.string.ls_android_settings_detail),
-                    false,
-                    onClick = onAndroidSettings,
-                )
+                DeviceSettingsLinks(onLanguage, onBackup, onSetup, onAndroidSettings)
 
                 Section(stringResource(R.string.ls_section_privacy))
                 Text(
@@ -155,4 +146,25 @@ private fun DeviceCompatibilityLink() {
     Card("Device compatibility", "Window, keyboard profile and key-event probe", false, onClick = {
         context.startActivity(Intent(context, DeviceCompatibilityActivity::class.java))
     })
+}
+
+// Compose Unit renderers require PascalCase; this exception is limited to this renderer.
+@Suppress("FunctionNaming")
+@Composable
+private fun DeviceSettingsLinks(
+    onLanguage: () -> Unit,
+    onBackup: () -> Unit,
+    onSetup: () -> Unit,
+    onAndroidSettings: () -> Unit,
+) {
+    DeviceCompatibilityLink()
+    Card(stringResource(R.string.ls_language), stringResource(R.string.ls_language_detail), false, onClick = onLanguage)
+    Card(stringResource(R.string.ls_backup), stringResource(R.string.ls_backup_detail), false, onClick = onBackup)
+    Card(stringResource(R.string.ls_setup), stringResource(R.string.ls_setup_detail), false, onClick = onSetup)
+    Card(
+        stringResource(R.string.ls_android_settings),
+        stringResource(R.string.ls_android_settings_detail),
+        false,
+        onClick = onAndroidSettings,
+    )
 }

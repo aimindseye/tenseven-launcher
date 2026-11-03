@@ -26,61 +26,81 @@ class WidgetHostIntegrationTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
 
-    @Test fun realProviderBindSizeReorderRecreateAndRemove() = withHost { scenario ->
-        var ids = emptyList<Int>()
-        scenario.onActivity { activity ->
-            val state = StartStateRepository(activity)
-            val host = controller(activity)
-            val provider = provider(host, false)
-            repeat(2) { host.begin(provider) }
-            ids = state.loadWidgetIds()
-            assertEquals(2, ids.size)
-            host.move(ids.last(), -1)
-            assertEquals(ids.reversed(), state.loadWidgetIds())
-            val view = host.createView(ids.first())
-            assertNotNull(view)
-            view!!.updateAppWidgetSize(null, listOf(SizeF(240f, 160f)))
-            assertTrue(AppWidgetManager.getInstance(activity).getAppWidgetOptions(ids.first())
-                .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) > 0)
-            val resized = host.resize(ids.first(), 110, 1)
-            assertTrue(resized > 110)
+    @Test fun realProviderBindSizeReorderRecreateAndRemove() =
+        withHost { scenario ->
+            var ids = emptyList<Int>()
+            var rendered: android.appwidget.AppWidgetHostView? = null
+            scenario.onActivity { activity ->
+                val state = StartStateRepository(activity)
+                val host = controller(activity)
+                host.startListening()
+                val provider = provider(host, false)
+                repeat(2) { host.begin(provider) }
+                ids = state.loadWidgetIds()
+                assertEquals(2, ids.size)
+                host.move(ids.last(), -1)
+                assertEquals(ids.reversed(), state.loadWidgetIds())
+                val view = host.createView(ids.first())
+                assertNotNull(view)
+                rendered = view
+                view!!.updateAppWidgetSize(android.os.Bundle(), listOf(SizeF(240f, 160f)))
+                assertTrue(
+                    AppWidgetManager
+                        .getInstance(activity)
+                        .getAppWidgetOptions(ids.first())
+                        .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) > 0,
+                )
+                val resized = WidgetHostStore(activity).resize(ids.first(), 110, 1)
+                assertTrue(resized > 110)
+            }
+            await {
+                var visible = false
+                instrumentation.runOnMainSync {
+                    visible = rendered?.findViewById<android.widget.TextView>(android.R.id.text1)?.text
+                        ?.contains("P3 widget") == true
+                }
+                visible
+            }
+            scenario.recreate()
+            scenario.onActivity { activity ->
+                val host = controller(activity)
+                assertEquals(ids.reversed(), host.load())
+                assertTrue(WidgetHostStore(activity).height(ids.first(), 110) > 110)
+                // Android may delete an allocated id independently of the saved launcher list.
+                AppWidgetHost(activity, HOST_ID).deleteAppWidgetId(ids.first())
+                assertFalse(ids.first() in host.load())
+                host.remove(ids.last())
+                assertTrue(StartStateRepository(activity).loadWidgetIds().isEmpty())
+            }
         }
-        scenario.recreate()
-        scenario.onActivity { activity ->
-            val host = controller(activity)
-            assertEquals(ids.reversed(), host.load())
-            assertTrue(host.height(ids.first(), 110) > 110)
-            // Android may delete an allocated id independently of the saved launcher list.
-            AppWidgetHost(activity, HOST_ID).deleteAppWidgetId(ids.first())
-            assertFalse(ids.first() in host.load())
-            host.remove(ids.last())
-            assertTrue(StartStateRepository(activity).loadWidgetIds().isEmpty())
-        }
-    }
 
-    @Test fun configureCancelAndSaveUsePersistedTransactionAndExactId() = withHost { scenario ->
-        var pendingId = -1
-        scenario.onActivity { activity ->
-            val host = controller(activity)
-            host.begin(provider(host, true), WidgetTarget.HOME)
-            pendingId = WidgetHostStore(activity).pending()!!.id
-            // A new controller recovers the journal; a stale result must not commit this widget.
-            controller(activity).onActivityResult(WidgetHostController.REQUEST_CONFIGURE, Activity.RESULT_OK,
-                Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, pendingId + 1))
-            assertTrue(StartStateRepository(activity).loadHomeWidgetIds().isEmpty())
+    @Test fun configureCancelAndSaveUsePersistedTransactionAndExactId() =
+        withHost { scenario ->
+            var pendingId = -1
+            scenario.onActivity { activity ->
+                val host = controller(activity)
+                host.begin(provider(host, true), WidgetTarget.HOME)
+                pendingId = WidgetHostStore(activity).pending()!!.id
+                // A new controller recovers the journal; a stale result must not commit this widget.
+                controller(activity).onActivityResult(
+                    WidgetHostController.REQUEST_CONFIGURE,
+                    Activity.RESULT_OK,
+                    Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, pendingId + 1),
+                )
+                assertTrue(StartStateRepository(activity).loadHomeWidgetIds().isEmpty())
+            }
+            clickConfiguration("P3 cancel widget")
+            await { WidgetHostStore(context).pending() == null }
+            assertNull(AppWidgetManager.getInstance(context).getAppWidgetInfo(pendingId))
+            scenario.onActivity { activity ->
+                val host = controller(activity)
+                host.begin(provider(host, true), WidgetTarget.HOME)
+                pendingId = WidgetHostStore(activity).pending()!!.id
+            }
+            clickConfiguration("P3 save widget")
+            await { WidgetHostStore(context).pending() == null }
+            assertEquals(listOf(pendingId), StartStateRepository(context).loadHomeWidgetIds())
         }
-        clickConfiguration("P3 cancel widget")
-        await { WidgetHostStore(context).pending() == null }
-        assertNull(AppWidgetManager.getInstance(context).getAppWidgetInfo(pendingId))
-        scenario.onActivity { activity ->
-            val host = controller(activity)
-            host.begin(provider(host, true), WidgetTarget.HOME)
-            pendingId = WidgetHostStore(activity).pending()!!.id
-        }
-        clickConfiguration("P3 save widget")
-        await { WidgetHostStore(context).pending() == null }
-        assertEquals(listOf(pendingId), StartStateRepository(context).loadHomeWidgetIds())
-    }
 
     private fun withHost(test: (ActivityScenario<SableStartActivity>) -> Unit) {
         val state = StartStateRepository(context)
@@ -92,7 +112,9 @@ class WidgetHostIntegrationTest {
         instrumentation.uiAutomation.adoptShellPermissionIdentity(Manifest.permission.BIND_APPWIDGET)
         try {
             ActivityScenario.launch(SableStartActivity::class.java).use { scenario ->
-                try { test(scenario) } finally {
+                try {
+                    test(scenario)
+                } finally {
                     scenario.onActivity { activity ->
                         val host = controller(activity)
                         (state.loadWidgetIds() + state.loadHomeWidgetIds()).forEach(host::remove)
@@ -110,17 +132,24 @@ class WidgetHostIntegrationTest {
         }
     }
 
-    private fun controller(activity: Activity) = WidgetHostController(activity, StartStateRepository(activity)) { _, _ -> }
+    private fun controller(activity: Activity): WidgetHostController {
+        return WidgetHostController(activity, StartStateRepository(activity)) { _, _ -> }
+    }
 
-    private fun provider(host: WidgetHostController, configured: Boolean): AppWidgetProviderInfo {
+    private fun provider(
+        host: WidgetHostController,
+        configured: Boolean,
+    ): AppWidgetProviderInfo {
         val name = if (configured) P3ConfiguredWidgetProvider::class.java.name else P3WidgetProvider::class.java.name
         return host.providers().first { it.provider.className == name }
     }
 
     private fun clickConfiguration(text: String) {
         await {
-            instrumentation.uiAutomation.rootInActiveWindow?.findAccessibilityNodeInfosByText(text)
-                ?.firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+            instrumentation.uiAutomation.rootInActiveWindow
+                ?.findAccessibilityNodeInfosByText(text)
+                ?.firstOrNull()
+                ?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
         }
         instrumentation.waitForIdleSync()
     }

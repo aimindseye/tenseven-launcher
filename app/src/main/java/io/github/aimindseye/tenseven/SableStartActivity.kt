@@ -11,9 +11,9 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import io.github.aimindseye.tenseven.design.DesignText
@@ -58,9 +58,10 @@ class SableStartActivity : ComponentActivity() {
             if (target == WidgetTarget.HOME) screen.homeWidgetIds.value = ids else screen.widgetIds.value = ids
         }
     }
-    private val permissionResults = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        screen.liveRefreshGeneration.intValue += 1
-    }
+    private val permissionResults =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            screen.liveRefreshGeneration.intValue += 1
+        }
     private var opaqueWindowBackground: Drawable? = null
 
     private val runtime by lazy {
@@ -581,7 +582,6 @@ class SableStartActivity : ComponentActivity() {
 
     companion object {
         private const val MENU_WIDTH_FRACTION = 0.88f
-
 
         /** Show the Hub page; [EXTRA_HUB_FILTER] picks the tab ("all", "messages", "calls", "contacts"). */
         const val ACTION_SHOW_HUB = "org.sableos.start.action.SHOW_HUB"

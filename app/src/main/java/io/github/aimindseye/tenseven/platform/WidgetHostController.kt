@@ -9,8 +9,8 @@ import android.content.Intent
 import android.os.Process
 import android.os.UserManager
 import io.github.aimindseye.tenseven.model.WidgetBinding
-import io.github.aimindseye.tenseven.model.WidgetRecovery
 import io.github.aimindseye.tenseven.model.WidgetList
+import io.github.aimindseye.tenseven.model.WidgetRecovery
 
 /**
  * Hosts other apps' Android widgets, on the Widgets page and as tiles on the home screen. One host serves both lists
@@ -94,8 +94,14 @@ class WidgetHostController(
         if (PlatformCapabilityProbe.detect(activity).widgetHosting != CapabilityStatus.Ready) return
         cancelPending()
         val id = runCatching { host.allocateAppWidgetId() }.getOrNull() ?: return
-        val pending = WidgetBinding(id, info.provider.flattenToString(), users.getSerialNumberForUser(info.profile),
-            target.name, WidgetBinding.Stage.Bind)
+        val pending =
+            WidgetBinding(
+                id,
+                info.provider.flattenToString(),
+                users.getSerialNumberForUser(info.profile),
+                target.name,
+                WidgetBinding.Stage.Bind,
+            )
         if (!journal.save(pending)) {
             release(id)
             return
@@ -119,14 +125,17 @@ class WidgetHostController(
         resultCode: Int,
         data: Intent? = null,
     ): Boolean {
-        val stage = when (requestCode) {
-            REQUEST_BIND -> WidgetBinding.Stage.Bind
-            REQUEST_CONFIGURE -> WidgetBinding.Stage.Configure
-            else -> return false
-        }
+        val stage =
+            when (requestCode) {
+                REQUEST_BIND -> WidgetBinding.Stage.Bind
+                REQUEST_CONFIGURE -> WidgetBinding.Stage.Configure
+                else -> return false
+            }
         val pending = journal.pending() ?: return true
-        val returned = data?.takeIf { it.hasExtra(AppWidgetManager.EXTRA_APPWIDGET_ID) }
-            ?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, NO_ID)
+        val returned =
+            data
+                ?.takeIf { it.hasExtra(AppWidgetManager.EXTRA_APPWIDGET_ID) }
+                ?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, NO_ID)
         when (pending.result(stage, returned, resultCode == Activity.RESULT_OK)) {
             WidgetBinding.Result.Ignore -> Unit
             WidgetBinding.Result.Cancel -> cancelPending()
@@ -148,10 +157,6 @@ class WidgetHostController(
         WidgetTarget.entries.filter { id in idsOf(it) }.forEach { save(it, WidgetList.move(idsOf(it), id, delta)) }
     }
 
-    fun height(id: Int, fallback: Int): Int = journal.height(id, fallback)
-
-    fun resize(id: Int, suggested: Int, delta: Int): Int = journal.resize(id, suggested, delta)
-
     private fun configureOrFinish() {
         val pending = journal.pending() ?: return
         val info = bindingInfo(pending)
@@ -164,9 +169,10 @@ class WidgetHostController(
                 cancelPending()
                 return
             }
-            val started = runCatching {
-                host.startAppWidgetConfigureActivityForResult(activity, pending.id, 0, REQUEST_CONFIGURE, null)
-            }
+            val started =
+                runCatching {
+                    host.startAppWidgetConfigureActivityForResult(activity, pending.id, 0, REQUEST_CONFIGURE, null)
+                }
             if (started.isFailure) cancelPending()
         }
     }

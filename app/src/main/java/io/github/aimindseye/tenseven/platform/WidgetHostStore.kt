@@ -5,7 +5,9 @@ import io.github.aimindseye.tenseven.model.WidgetBinding
 import io.github.aimindseye.tenseven.model.WidgetSizing
 
 /** Device-local host transactions and sizes; excluded from backup with all launcher data. */
-internal class WidgetHostStore(context: Context) {
+internal class WidgetHostStore(
+    context: Context,
+) {
     private val preferences = context.getSharedPreferences("widget_host_state", Context.MODE_PRIVATE)
 
     fun pending(): WidgetBinding? =
@@ -24,19 +26,33 @@ internal class WidgetHostStore(context: Context) {
     fun save(value: WidgetBinding?): Boolean {
         val editor = preferences.edit()
         if (value == null) {
-            editor.remove("pending_id").remove("pending_provider").remove("pending_profile")
-                .remove("pending_target").remove("pending_stage")
+            editor
+                .remove("pending_id")
+                .remove("pending_provider")
+                .remove("pending_profile")
+                .remove("pending_target")
+                .remove("pending_stage")
         } else {
-            editor.putInt("pending_id", value.id).putString("pending_provider", value.provider)
-                .putLong("pending_profile", value.profileSerial).putString("pending_target", value.target)
+            editor
+                .putInt("pending_id", value.id)
+                .putString("pending_provider", value.provider)
+                .putLong("pending_profile", value.profileSerial)
+                .putString("pending_target", value.target)
                 .putString("pending_stage", value.stage.name)
         }
         return editor.commit()
     }
 
-    fun height(id: Int, fallback: Int): Int = preferences.getInt("height_$id", fallback)
+    fun height(
+        id: Int,
+        fallback: Int,
+    ): Int = preferences.getInt("height_$id", fallback)
 
-    fun resize(id: Int, suggested: Int, delta: Int): Int {
+    fun resize(
+        id: Int,
+        suggested: Int,
+        delta: Int,
+    ): Int {
         val height = WidgetSizing.resize(height(id, suggested), delta)
         preferences.edit().putInt("height_$id", height).apply()
         return height

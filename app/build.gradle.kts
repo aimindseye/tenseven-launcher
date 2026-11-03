@@ -85,7 +85,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-
     lint {
         abortOnError = rootProject.extra["strictQuality"] as Boolean
         ignoreTestSources = true

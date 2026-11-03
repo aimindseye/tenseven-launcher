@@ -12,8 +12,12 @@ class P3CompatibilityTest {
         assertEquals(WidgetBinding.Result.Ignore, pending.result(WidgetBinding.Stage.Configure, 7, true))
         assertEquals(WidgetBinding.Result.Cancel, pending.result(WidgetBinding.Stage.Bind, 7, false))
         assertEquals(WidgetBinding.Result.Configure, pending.result(WidgetBinding.Stage.Bind, null, true))
-        assertEquals(WidgetBinding.Result.Commit, pending.copy(stage = WidgetBinding.Stage.Configure)
-            .result(WidgetBinding.Stage.Configure, 7, true))
+        assertEquals(
+            WidgetBinding.Result.Commit,
+            pending
+                .copy(stage = WidgetBinding.Stage.Configure)
+                .result(WidgetBinding.Stage.Configure, 7, true),
+        )
     }
 
     @Test fun lockedOrTemporarilyUnavailableProviderNeverDestroysSavedWidgetIds() {

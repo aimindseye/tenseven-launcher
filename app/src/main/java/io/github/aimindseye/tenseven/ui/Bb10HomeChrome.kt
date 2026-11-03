@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.platform.DeviceCompatibility
-import io.github.aimindseye.tenseven.model.LauncherKeys
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,11 +62,13 @@ import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.Bb10Gestures
 import io.github.aimindseye.tenseven.model.HomeHeader
+import io.github.aimindseye.tenseven.model.LauncherKeys
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.SpeedDialKeys
 import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.StartTypeToSearch
+import io.github.aimindseye.tenseven.platform.DeviceCompatibility
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -83,12 +83,17 @@ internal fun startGridWidthDp(): Int {
     val density = LocalDensity.current
     val width = LocalWindowInfo.current.containerSize.width
     val insets = WindowInsets.safeDrawing
-    val available = if (width > 0) {
-        with(density) { (width - insets.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr) -
-            insets.getRight(density, androidx.compose.ui.unit.LayoutDirection.Ltr)).toDp().value.toInt() }
-    } else {
-        LocalConfiguration.current.screenWidthDp
-    }
+    val available =
+        if (width > 0) {
+            with(density) {
+                (
+                    width - insets.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr) -
+                        insets.getRight(density, androidx.compose.ui.unit.LayoutDirection.Ltr)
+                ).toDp().value.toInt()
+            }
+        } else {
+            LocalConfiguration.current.screenWidthDp
+        }
     return (available - (GRID_PADDING.value * 2).toInt()).coerceAtLeast(1)
 }
 

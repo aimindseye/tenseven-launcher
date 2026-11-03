@@ -1,9 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.platform.DeviceCompatibility
-import io.github.aimindseye.tenseven.model.LauncherKeys
-import android.widget.Toast
 import android.view.KeyEvent
+import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,8 +20,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
@@ -69,18 +67,20 @@ import io.github.aimindseye.tenseven.design.SableTheme
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
-import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
+import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.model.LauncherKeys
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.inLauncherUser
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
+import io.github.aimindseye.tenseven.platform.DeviceCompatibility
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
@@ -229,10 +229,19 @@ fun Bb7HomeScreen(
         val key = app.stableKey()
         val next = Bb7Home.addDesktopShortcut(desktopKeys, key)
         when {
-            key in desktopKeys -> Toast.makeText(context, "Already on Home", Toast.LENGTH_SHORT).show()
-            key !in next -> Toast.makeText(
-                context, "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts", Toast.LENGTH_LONG,
-            ).show()
+            key in desktopKeys -> {
+                Toast.makeText(context, "Already on Home", Toast.LENGTH_SHORT).show()
+            }
+
+            key !in next -> {
+                Toast
+                    .makeText(
+                        context,
+                        "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts",
+                        Toast.LENGTH_LONG,
+                    ).show()
+            }
+
             else -> {
                 onDesktopChanged(next)
                 open = false
@@ -288,8 +297,16 @@ fun Bb7HomeScreen(
                     val text = context.getString(if (p in panels) R.string.bb7_panel_hide else R.string.bb7_panel_show, p.title)
                     add(text to { onPanelsChanged(Bb7Panels.toggle(panels, p)) })
                 }
-                if (scrimLevel > Bb7Scrim.MIN) add(context.getString(R.string.bb7_clearer) to { onScrimChanged(Bb7Scrim.step(scrimLevel, -1)) })
-                if (scrimLevel < Bb7Scrim.MAX) add(context.getString(R.string.bb7_darker) to { onScrimChanged(Bb7Scrim.step(scrimLevel, 1)) })
+                if (scrimLevel >
+                    Bb7Scrim.MIN
+                ) {
+                    add(context.getString(R.string.bb7_clearer) to { onScrimChanged(Bb7Scrim.step(scrimLevel, -1)) })
+                }
+                if (scrimLevel <
+                    Bb7Scrim.MAX
+                ) {
+                    add(context.getString(R.string.bb7_darker) to { onScrimChanged(Bb7Scrim.step(scrimLevel, 1)) })
+                }
                 add(context.getString(R.string.bb7_wallpaper) to onOpenWallpaper)
             }
         }
@@ -328,12 +345,17 @@ fun Bb7HomeScreen(
                                             onOpenMenu(menuFor(desktopApps[deskIndex], true))
                                             true
                                         }
-                                        alt -> false
+
+                                        alt -> {
+                                            false
+                                        }
+
                                         key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                             val dx = if (key == KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
                                             deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, dx, 0)
                                             true
                                         }
+
                                         key == KeyEvent.KEYCODE_DPAD_UP -> {
                                             if (deskIndex >= columns) {
                                                 deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, 0, -1)
@@ -345,6 +367,7 @@ fun Bb7HomeScreen(
                                             }
                                             true
                                         }
+
                                         key == KeyEvent.KEYCODE_DPAD_DOWN -> {
                                             if (deskIndex + columns < desktopApps.size) {
                                                 deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, 0, 1)
@@ -354,74 +377,103 @@ fun Bb7HomeScreen(
                                             }
                                             true
                                         }
+
                                         key == KeyEvent.KEYCODE_ENTER || key == KeyEvent.KEYCODE_DPAD_CENTER -> {
                                             onLaunchApp(desktopApps[deskIndex])
                                             true
                                         }
+
                                         key == KeyEvent.KEYCODE_MENU -> {
                                             onOpenMenu(menuFor(desktopApps[deskIndex], true))
                                             true
                                         }
+
                                         key == KeyEvent.KEYCODE_ESCAPE || key == KeyEvent.KEYCODE_BACK -> {
                                             inDesktopZone = false
                                             true
                                         }
-                                        else -> false
+
+                                        else -> {
+                                            false
+                                        }
                                     }
                                 if (done) return@onPreviewKeyEvent true
                             }
                             when {
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && native.isAltPressed ->
+                                native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && native.isAltPressed -> {
                                     if (open || searching) {
                                         panel = Bb7Home.step(panel, -1, panels)
                                         selected = 0
                                     } else {
                                         onOpenHub()
                                     }
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && native.isAltPressed ->
+                                }
+
+                                native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && native.isAltPressed -> {
                                     if (open || searching) {
                                         panel = Bb7Home.step(panel, 1, panels)
                                         selected = 0
                                     } else {
                                         openApps()
                                     }
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ->
+                                }
+
+                                native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> {
                                     selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, -1, 0)
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ->
+                                }
+
+                                native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                     selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 1, 0)
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_UP ->
+                                }
+
+                                native.keyCode == KeyEvent.KEYCODE_DPAD_UP -> {
                                     if (open || searching || selected >= columns) {
                                         selected = Bb7Home.move(selected, visible, columns, 0, -1)
                                     } else if (desktopApps.isNotEmpty()) {
                                         // Up from the tray's first row goes to the icons above it, in the same column.
                                         inDesktopZone = true
                                         deskSelected =
-                                            (desktopApps.lastIndex / columns * columns + selected % columns).coerceAtMost(desktopApps.lastIndex)
+                                            (desktopApps.lastIndex / columns * columns + selected % columns).coerceAtMost(
+                                                desktopApps.lastIndex,
+                                            )
                                     } else {
                                         open = true
                                     }
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ->
+                                }
+
+                                native.keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
                                     if (open && selected + columns >= visible) {
                                         open = false
                                         selected = -1
                                     } else {
                                         selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 0, 1)
                                     }
-                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu ->
+                                }
+
+                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu -> {
                                     onOpenMenu(menuFor(shown.getOrNull(selected), false))
+                                }
+
                                 native.keyCode == KeyEvent.KEYCODE_ENTER ||
-                                    native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ->
+                                    native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER -> {
                                     shown.getOrNull(selected)?.let { onLaunchApp(it) }
-                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Command -> onOpenCommand()
+                                }
+
+                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Command -> {
+                                    onOpenCommand()
+                                }
+
                                 native.keyCode == KeyEvent.KEYCODE_SPACE && !searching -> {
                                     panel = Bb7Home.step(panel, 1, panels)
                                     selected = 0
                                 }
+
                                 native.keyCode == KeyEvent.KEYCODE_DEL && searching -> {
                                     query = query.dropLast(1)
                                     selected = 0
                                 }
-                                native.keyCode == KeyEvent.KEYCODE_ESCAPE || native.keyCode == KeyEvent.KEYCODE_BACK ->
+
+                                native.keyCode == KeyEvent.KEYCODE_ESCAPE || native.keyCode == KeyEvent.KEYCODE_BACK -> {
                                     if (searching || open) {
                                         query = ""
                                         open = false
@@ -429,7 +481,12 @@ fun Bb7HomeScreen(
                                     } else {
                                         return@onPreviewKeyEvent false
                                     }
-                                native.keyCode == KeyEvent.KEYCODE_MENU -> onOpenMenu(menuFor(shown.getOrNull(selected), false))
+                                }
+
+                                native.keyCode == KeyEvent.KEYCODE_MENU -> {
+                                    onOpenMenu(menuFor(shown.getOrNull(selected), false))
+                                }
+
                                 else -> {
                                     val ch = native.unicodeChar.takeIf { it > 0 }?.toChar()
                                     if (ch == null || !(ch.isLetterOrDigit() || (ch == ' ' && searching))) {
@@ -448,28 +505,30 @@ fun Bb7HomeScreen(
                 val rowPx = with(LocalDensity.current) { ROW_DP.dp.toPx() }
                 Column(
                     modifier =
-                        Modifier.fillMaxSize().pointerInput(swipe) {
-                            var dragged = 0f
-                            detectHorizontalDragGestures(
-                                onDragStart = { dragged = 0f },
-                                onDragEnd = {
-                                    when (Bb7Home.swipe(dragged, swipe)) {
-                                        Bb7Swipe.Hub -> onOpenHub()
-                                        Bb7Swipe.Apps -> openApps()
-                                        null -> Unit
-                                    }
-                                },
-                            ) { _, amount -> dragged += amount }
-                        }.pointerInput(onDoubleTapEmpty, open) {
-                            // Only empty space: taps on icons and rows are consumed by them first.
-                            // Long-press empty space: open All to pick icons for the home screen.
-                            if (!open) {
-                                detectTapGestures(
-                                    onDoubleTap = { onDoubleTapEmpty?.invoke() },
-                                    onLongPress = { openApps() },
-                                )
-                            }
-                        },
+                        Modifier
+                            .fillMaxSize()
+                            .pointerInput(swipe) {
+                                var dragged = 0f
+                                detectHorizontalDragGestures(
+                                    onDragStart = { dragged = 0f },
+                                    onDragEnd = {
+                                        when (Bb7Home.swipe(dragged, swipe)) {
+                                            Bb7Swipe.Hub -> onOpenHub()
+                                            Bb7Swipe.Apps -> openApps()
+                                            null -> Unit
+                                        }
+                                    },
+                                ) { _, amount -> dragged += amount }
+                            }.pointerInput(onDoubleTapEmpty, open) {
+                                // Only empty space: taps on icons and rows are consumed by them first.
+                                // Long-press empty space: open All to pick icons for the home screen.
+                                if (!open) {
+                                    detectTapGestures(
+                                        onDoubleTap = { onDoubleTapEmpty?.invoke() },
+                                        onLongPress = { openApps() },
+                                    )
+                                }
+                            },
                 ) {
                     Bb7Banner(
                         dateText = DateFormat.getDateInstance(DateFormat.FULL).format(Date(today)),
@@ -482,7 +541,9 @@ fun Bb7HomeScreen(
                         compact = open || searching,
                         scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
                         onOpenHub = onOpenHub,
-                        onOpenNotificationApp = { pkg -> apps.firstOrNull { it.inLauncherUser && it.component.packageName == pkg }?.let(onLaunchApp) },
+                        onOpenNotificationApp = { pkg ->
+                            apps.firstOrNull { it.inLauncherUser && it.component.packageName == pkg }?.let(onLaunchApp)
+                        },
                     )
                     if (!open && !searching) {
                         Bb7Desktop(
@@ -584,7 +645,11 @@ private fun Bb7Banner(
                 .background(scrim)
                 .padding(horizontal = 12.dp, vertical = if (compact) 4.dp else 8.dp),
     ) {
-        if (!compact && enabledDials.isNotEmpty()) SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp, visible = enabledDials)
+        if (!compact &&
+            enabledDials.isNotEmpty()
+        ) {
+            SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp, visible = enabledDials)
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f).padding(top = if (compact) 0.dp else 6.dp)) {
                 Text(
@@ -599,10 +664,15 @@ private fun Bb7Banner(
             Spacer(Modifier.width(6.dp))
             if (!showStrip) UnreadBadge(unread, onOpenHub)
         }
-        if (showStrip && !compact) HomeNotificationStrip(
-            counts = notificationCounts, enabledPackages = hubSources,
-            expanded = stripExpanded, onOpenHub = onOpenHub, onOpenApp = onOpenNotificationApp,
-        )
+        if (showStrip && !compact) {
+            HomeNotificationStrip(
+                counts = notificationCounts,
+                enabledPackages = hubSources,
+                expanded = stripExpanded,
+                onOpenHub = onOpenHub,
+                onOpenApp = onOpenNotificationApp,
+            )
+        }
     }
 }
 
@@ -754,17 +824,19 @@ private fun Bb7IconCell(
     ) {
         AppMark(app = app, size = iconDp)
         if (showLabel) Spacer(Modifier.height(2.dp))
-        if (showLabel) Text(
-            text = app.label,
-            color = Color.White,
-            fontSize = 11.sp,
-            // The wallpaper shows behind these icons, so the name gets a shadow to stay readable.
-            style = TextStyle(shadow = Shadow(Color.Black, blurRadius = 6f)),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 2.dp),
-        )
+        if (showLabel) {
+            Text(
+                text = app.label,
+                color = Color.White,
+                fontSize = 11.sp,
+                // The wallpaper shows behind these icons, so the name gets a shadow to stay readable.
+                style = TextStyle(shadow = Shadow(Color.Black, blurRadius = 6f)),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 2.dp),
+            )
+        }
     }
 }
 
@@ -783,10 +855,15 @@ private fun Bb7Desktop(
     onEmptyTap: () -> Unit,
 ) {
     if (apps.isEmpty()) {
-        Box(modifier.fillMaxWidth().clickable(onClick = onEmptyTap),
-            contentAlignment = Alignment.Center) {
-            Text("+ Add shortcuts", color = Color.White.copy(alpha = 0.65f),
-                style = MaterialTheme.typography.labelLarge)
+        Box(
+            modifier.fillMaxWidth().clickable(onClick = onEmptyTap),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "+ Add shortcuts",
+                color = Color.White.copy(alpha = 0.65f),
+                style = MaterialTheme.typography.labelLarge,
+            )
         }
         return
     }
@@ -797,8 +874,11 @@ private fun Bb7Desktop(
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         state = grid,
-        modifier = modifier.fillMaxWidth().clickable(onClick = onEmptyTap)
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(onClick = onEmptyTap)
+                .padding(horizontal = 4.dp, vertical = 6.dp),
         userScrollEnabled = false,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -839,8 +919,14 @@ private const val ROW_DP = 64
 private val BANNER_MUTED = Color(0xFFC9D1DA)
 
 @Composable
-private fun bb7Columns(chosen: Int, widthDp: Int, cellDp: Int): Int {
+private fun bb7Columns(
+    chosen: Int,
+    widthDp: Int,
+    cellDp: Int,
+): Int {
     val normal = GridColumns.resolve(chosen, widthDp, Bb7Home.columns(widthDp, cellDp))
-    return normal.coerceAtMost(io.github.aimindseye.tenseven.model.HomeViewport.columns(
-        widthDp, chosen, LocalDensity.current.fontScale))
+    return normal.coerceAtMost(
+        io.github.aimindseye.tenseven.model.HomeViewport
+            .columns(widthDp, chosen, LocalDensity.current.fontScale),
+    )
 }
