@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import android.app.KeyguardManager
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -92,40 +91,48 @@ internal fun HubCalendarPeek(
                     )
                 } else {
                     events.forEach { event ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenCalendar).padding(vertical = 5.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    event.title,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    event.calendarName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            Text(
-                                DateUtils
-                                    .getRelativeTimeSpanString(
-                                        event.beginsAt,
-                                        System.currentTimeMillis(),
-                                        DateUtils.MINUTE_IN_MILLIS,
-                                    ).toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        CalendarPeekEvent(event, onOpenCalendar)
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CalendarPeekEvent(
+    event: HubCalendarEvent,
+    onOpenCalendar: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenCalendar).padding(vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                event.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                event.calendarName,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            DateUtils
+                .getRelativeTimeSpanString(
+                    event.beginsAt,
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS,
+                ).toString(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

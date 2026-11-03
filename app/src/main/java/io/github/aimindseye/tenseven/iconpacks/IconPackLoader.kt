@@ -57,7 +57,10 @@ object IconPackLoader {
     private fun queryThemeActivities(
         packageManager: PackageManager,
         action: String,
-    ) = packageManager.queryIntentActivities(Intent(action), PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()))
+    ): List<android.content.pm.ResolveInfo> {
+        val flags = PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong())
+        return packageManager.queryIntentActivities(Intent(action), flags)
+    }
 
     /** appfilter from resources (xml, then raw), then assets; a malformed first choice does not hide a valid fallback. */
     fun loadDefinition(

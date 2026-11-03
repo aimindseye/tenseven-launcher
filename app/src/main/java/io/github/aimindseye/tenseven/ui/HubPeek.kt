@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationHub
+import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.StartStateRepository
@@ -224,36 +225,7 @@ private fun HubPeekPanel(
                         modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(0.dp),
                     ) {
-                        if (conversations.isEmpty()) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 22.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                            ) {
-                                Text("\u2713", style = MaterialTheme.typography.headlineMedium, color = accent)
-                                Text(
-                                    stringResource(R.string.peek_empty),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        conversations.forEach { conversation ->
-                            PeekRow(
-                                name = conversation.name,
-                                detail =
-                                    if (showText && !deviceLocked) {
-                                        conversation.latestMessage?.text.orEmpty()
-                                    } else {
-                                        stringResource(R.string.peek_count, conversation.notifications.size)
-                                    },
-                                count = if (showText) conversation.notifications.size else 0,
-                                packageName = conversation.sourcePackages.firstOrNull(),
-                            ) {
-                                ConversationHub.open(context, conversation.openTarget)
-                                onClose()
-                            }
-                        }
+                        PeekConversations(conversations, showText && !deviceLocked, onClose)
                     }
                     PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
                 }
@@ -356,3 +328,43 @@ private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
 // How opaque the peek panel is; the rest lets Home show through.
+
+@Composable
+private fun PeekConversations(
+    conversations: List<HubConversation>,
+    showText: Boolean,
+    onClose: () -> Unit,
+) {
+    val context = LocalContext.current
+    val accent = MaterialTheme.colorScheme.primary
+    if (conversations.isEmpty()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text("\u2713", style = MaterialTheme.typography.headlineMedium, color = accent)
+            Text(
+                stringResource(R.string.peek_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    conversations.forEach { conversation ->
+        PeekRow(
+            name = conversation.name,
+            detail =
+                if (showText) {
+                    conversation.latestMessage?.text.orEmpty()
+                } else {
+                    stringResource(R.string.peek_count, conversation.notifications.size)
+                },
+            count = if (showText) conversation.notifications.size else 0,
+            packageName = conversation.sourcePackages.firstOrNull(),
+        ) {
+            ConversationHub.open(context, conversation.openTarget)
+            onClose()
+        }
+    }
+}

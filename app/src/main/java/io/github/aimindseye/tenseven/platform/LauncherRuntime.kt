@@ -167,7 +167,9 @@ internal class LauncherRuntime(
         LiveSurfaceRepository.OBSERVED_URIS.forEach { uri ->
             runCatching { app.contentResolver.registerContentObserver(uri, true, liveObserver) }
         }
-        runCatching { app.contentResolver.registerContentObserver(LauncherAppsRepository.HIDDEN_APPS_URI, false, appObserver) }
+        runCatching {
+            app.contentResolver.registerContentObserver(LauncherAppsRepository.HIDDEN_APPS_URI, false, appObserver)
+        }
         ConversationHub.addChangeListener(conversationsChanged)
         coordinator.start()
         onRefresh()

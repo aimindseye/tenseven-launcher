@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.repeatOnLifecycle
 import io.github.aimindseye.tenseven.HubSettingsActivity
 import io.github.aimindseye.tenseven.LauncherSettingsActivity
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
@@ -159,27 +158,8 @@ fun SableStartScreen(
     var editBackGeneration by remember { mutableStateOf(0) }
     // Survives Peek / App info / Search round trips (FOCUS_RESTORATION=REQUIRED).
     val focusMemory = remember { SableFocusMemory() }
-    var liveSnapshot by remember {
-        mutableStateOf(liveSurfaceRepository.initialSnapshot())
-    }
-    var liveRefreshing by remember {
-        mutableStateOf(false)
-    }
-
-    val liveLifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(refreshGeneration, homeGeneration, liveLifecycle) {
-        liveLifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            while (true) {
-                liveRefreshing = true
-                try {
-                    liveSnapshot = liveSurfaceRepository.snapshot()
-                } finally {
-                    liveRefreshing = false
-                }
-                kotlinx.coroutines.delay(5000)
-            }
-        }
-    }
+    val (liveSnapshot, liveRefreshing) =
+        rememberLiveSurface(liveSurfaceRepository, refreshGeneration, homeGeneration)
 
     val appByKey = apps.associateBy { it.stableKey() }
     // The grid holds every app except Private Space ones, which stay in All Apps behind its lock.

@@ -84,7 +84,9 @@ open class TaskAlarmReceiverBase : BroadcastReceiver() {
                     return
                 }
                 val manager = context.getSystemService(NotificationManager::class.java) ?: return
-                if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+                val permission = Manifest.permission.POST_NOTIFICATIONS
+                val granted = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+                if (!granted) return
                 manager.createNotificationChannel(
                     NotificationChannel(
                         "tenseven_tasks",

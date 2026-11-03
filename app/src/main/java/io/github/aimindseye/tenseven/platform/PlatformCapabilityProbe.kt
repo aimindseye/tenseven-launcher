@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.platform
 
 import android.Manifest
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.Settings
@@ -37,8 +38,8 @@ object PlatformCapabilityProbe {
                     contacts = granted(context, Manifest.permission.READ_CONTACTS),
                     photos = granted(context, SetupStatus.photosPermission()),
                     camera = DefaultApps.cameraPackage(context) != null,
-                    secureKeyguard = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceSecure == true,
-                    deviceLocked = context.getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true,
+                    secureKeyguard = context.getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true,
+                    deviceLocked = context.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true,
                     lockService = Capabilities.hasLockService(context),
                     postNotifications =
                         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==

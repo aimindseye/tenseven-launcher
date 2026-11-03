@@ -212,7 +212,7 @@ class SableStartActivity : ComponentActivity() {
                     blankHomePage = screen.homeStyle.value == HomeStyle.Bb7,
                     onBackToHomePage = {
                         // Back from the Hub to a BlackBerry 7 home: show it now instead of after the slide.
-                        if (screen.bb10Detour.value && screen.bb7Detour.returnOnHome && screen.bb7Detour.leftHome) endBb10Detour()
+                        if (screen.bb10Detour.value && screen.bb7Detour.endsAt(false)) endBb10Detour()
                     },
                     onCanNavigateBackChanged = { value ->
                         screen.canNavigateBack = value
@@ -372,7 +372,8 @@ class SableStartActivity : ComponentActivity() {
         activeFrames.coordinator.onStop()
         // Leaving from a BlackBerry 10 screen (Hub, Recents, Command) would leave that screen as the last frame, and
         // it flashes while Home animates back in. Go back to the BlackBerry 7 home as the window leaves.
-        if (screen.homeStyle.value == HomeStyle.Bb7 && screen.bb10Detour.value && !isChangingConfigurations) endBb10Detour()
+        val leavingBb7Detour = screen.homeStyle.value == HomeStyle.Bb7 && screen.bb10Detour.value
+        if (leavingBb7Detour && !isChangingConfigurations) endBb10Detour()
         super.onPause()
     }
 

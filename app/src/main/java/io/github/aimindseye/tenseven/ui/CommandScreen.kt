@@ -397,18 +397,9 @@ internal fun SearchScreen(
             }
             if (bestApp != null || bestOther != null) {
                 item(key = "best") {
-                    SectionLabel(t("best_match"))
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 6.dp),
-                    ) {
-                        Column {
-                            if (bestApp != null) AppResult(bestApp) else bestOther?.let { CommandResult(it) }
-                        }
+                    SearchBestMatch {
+                        if (bestApp != null) AppResult(bestApp) else bestOther?.let { CommandResult(it) }
                     }
-                    Spacer(Modifier.height(12.dp))
                 }
             }
             val apps1 = filteredApps.filterNot { it == bestApp }
@@ -926,4 +917,18 @@ internal fun assignRows(
                 }
         }
     }
+}
+
+@Composable
+private fun SearchBestMatch(content: @Composable () -> Unit) {
+    SectionLabel(t("best_match"))
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+            .padding(horizontal = 6.dp),
+    ) {
+        Column { content() }
+    }
+    Spacer(Modifier.height(12.dp))
 }

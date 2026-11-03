@@ -111,18 +111,7 @@ internal fun HubPage(
             capabilities.hubNotifications == CapabilityStatus.Ready
     val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
-    // The listener tells us which notifications are conversations (including email).
-    // The counts-only snapshot supplies totals; disabled and zero-count apps never get a chip.
-    val conversationSources = remember(refreshGeneration) { ConversationHub.notifications() }
-    val sourceGroups =
-        remember(snapshot.hubApps, enabledHubApps, conversationSources) {
-            HubSourceGroups.summarize(
-                counts = snapshot.hubApps,
-                enabledPackages = enabledHubApps,
-                emailSources = conversationSources.filter { it.isEmail }.map { it.packageName }.toSet(),
-                messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
-            )
-        }
+    val sourceGroups = rememberHubSourceGroups(snapshot, enabledHubApps, refreshGeneration)
     val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
     val barItems =
         remember(snapshot.hubApps, personalApps, enabledHubApps) {
@@ -130,18 +119,9 @@ internal fun HubPage(
             // Do not reuse its aggregate redacted count: it may include disabled apps.
             HubBar.items(snapshot.hubApps.filter { it.packageName in enabledHubApps }) { it in personalApps }
         }
-    val peopleRepository = remember(context) { PeopleRepository(context) }
     val contactsTab = filter == HubFilter.Contacts
     val canReadContacts = capabilities.contacts == CapabilityStatus.Ready
-    // Kept across reloads (live refreshes, Start coming back) so the list never blinks empty.
-    var people by remember { mutableStateOf(emptyList<HubPerson>()) }
-    var peopleLoaded by remember { mutableStateOf(false) }
-    LaunchedEffect(contactsTab, canReadContacts, refreshGeneration) {
-        if (contactsTab) {
-            people = if (canReadContacts) peopleRepository.load() else emptyList()
-            peopleLoaded = true
-        }
-    }
+    val (people, peopleLoaded) = rememberHubPeople(contactsTab, canReadContacts, refreshGeneration)
     val tabFocus = remember { FocusRequester() }
     val personFocus = remember { mutableMapOf<Long, FocusRequester>() }
     val listState = rememberLazyListState()
@@ -571,3 +551,41 @@ internal fun HubPersonAction(
  * offers its filters, the Phone slot Dial pad, Recent calls and Contacts, every
  * slot Edit Home (reorder, replace, reset).
  */
+
+@Composable
+private fun rememberHubSourceGroups(
+    snapshot: LiveSurfaceSnapshot,
+    enabledHubApps: Set<String>,
+    refreshGeneration: Int,
+): HubSourceGroups.Summary {
+    // The listener tells us which notifications are conversations (including email).
+    // The counts-only snapshot supplies totals; disabled and zero-count apps never get a chip.
+    val conversationSources = remember(refreshGeneration) { ConversationHub.notifications() }
+    return remember(snapshot.hubApps, enabledHubApps, conversationSources) {
+        HubSourceGroups.summarize(
+            counts = snapshot.hubApps,
+            enabledPackages = enabledHubApps,
+            emailSources = conversationSources.filter { it.isEmail }.map { it.packageName }.toSet(),
+            messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
+        )
+    }
+}
+
+@Composable
+private fun rememberHubPeople(
+    contactsTab: Boolean,
+    canReadContacts: Boolean,
+    refreshGeneration: Int,
+): Pair<List<HubPerson>, Boolean> {
+    val context = LocalContext.current
+    val repository = remember(context) { PeopleRepository(context) }
+    var people by remember { mutableStateOf(emptyList<HubPerson>()) }
+    var loaded by remember { mutableStateOf(false) }
+    LaunchedEffect(contactsTab, canReadContacts, refreshGeneration) {
+        if (contactsTab) {
+            people = if (canReadContacts) repository.load() else emptyList()
+            loaded = true
+        }
+    }
+    return people to loaded
+}

@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Process
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.platform.Capabilities
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 
 /** Reads what has been granted, from Android. Cheap; call it again when the user comes back from Settings. */
@@ -17,13 +18,13 @@ object SetupStatus {
                 .detect(context)
         return SetupState(
             homeRoleHeld = isHomeRoleHeld(context),
-            contactsGranted = capabilities.contacts == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
-            photosGranted = capabilities.photos == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
-            notificationAccess = capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
-            usageAccess = capabilities.usageRecents == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+            contactsGranted = capabilities.contacts == CapabilityStatus.Ready,
+            photosGranted = capabilities.photos == CapabilityStatus.Ready,
+            notificationAccess = capabilities.hubNotifications == CapabilityStatus.Ready,
+            usageAccess = capabilities.usageRecents == CapabilityStatus.Ready,
             extrasChosen = ExtraAppsControl.enabledIds(context).isNotEmpty(),
             notificationListenerAvailable =
-                capabilities.hubNotifications != io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
+                capabilities.hubNotifications != CapabilityStatus.Unavailable,
         )
     }
 
