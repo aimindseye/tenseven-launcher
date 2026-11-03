@@ -95,6 +95,7 @@ class WidgetHostIntegrationTest {
             clickConfiguration("P3 cancel widget")
             await { WidgetHostStore(context).pending() == null }
             assertNull(AppWidgetManager.getInstance(context).getAppWidgetInfo(pendingId))
+            awaitFocusedWindow(scenario)
             scenario.onActivity { activity ->
                 val host = controller(activity)
                 host.begin(provider(host, true), WidgetTarget.HOME)
@@ -127,6 +128,7 @@ class WidgetHostIntegrationTest {
         try {
             ActivityScenario.launch(SableStartActivity::class.java).use { scenario ->
                 try {
+                    awaitFocusedWindow(scenario)
                     test(scenario)
                 } finally {
                     scenario.onActivity { activity ->
@@ -155,6 +157,15 @@ class WidgetHostIntegrationTest {
     ): AppWidgetProviderInfo {
         val name = if (configured) P3ConfiguredWidgetProvider::class.java.name else P3WidgetProvider::class.java.name
         return host.providers().first { it.provider.className == name }
+    }
+
+    private fun awaitFocusedWindow(scenario: ActivityScenario<SableStartActivity>) {
+        instrumentation.waitForIdleSync()
+        await {
+            var focused = false
+            scenario.onActivity { focused = it.hasWindowFocus() }
+            focused
+        }
     }
 
     private fun clickConfiguration(text: String) {

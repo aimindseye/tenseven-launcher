@@ -82,6 +82,7 @@ hardware results pending. Merge authorization does not turn pending physical res
 The P3 integration preserves the original heads of PRs #90, #91 and #9 as merge parents
 and reapplies their intended changes to the current Full-only architecture: AGP built-in
 Kotlin/new DSL, explicit resValues, removed obsolete flags/report toggles, modern runtime
-permission callbacks and AppOps calls, modern widget sizes, and AGP 9.5.0 with its required Gradle 9.6.0 (official distribution checksum pinned). API-30 widget
+permission callbacks and AppOps calls, modern widget sizes, and AGP 9.5.0 with Gradle 9.8.2 (official distribution checksum pinned). Lifecycle 2.11.0
+keeps its bundled lint checks compatible with the upgraded AGP. API-30 widget
 fallback from the old draft is unnecessary at the approved API-34 floor. The final combined
 tree must pass CI before mainline merge; original heads are retained in Git history.

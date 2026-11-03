@@ -201,24 +201,7 @@ internal fun ActiveFramesGrid(
                         val slot = Modifier.weight(1f).height(height).focusRequester(requester(key))
                         if (item == null) {
                             val tile = tiles.first { it.key == key }
-                            FrameTile(
-                                tile.key,
-                                tile.title,
-                                if (tile.picture !=
-                                    null
-                                ) {
-                                    "Shared preview"
-                                } else {
-                                    tile.badge
-                                },
-                                tile.detail,
-                                tile.onClose != null,
-                                { tile.onOpen?.invoke() },
-                                { tile.onClose?.invoke() },
-                                slot,
-                                tile.picture,
-                                openEnabled = tile.onOpen != null && state.settings.openApps,
-                            )
+                            OwnedFrameCard(tile, state.settings.openApps, slot)
                         } else {
                             RecentFrameCard(
                                 state,
@@ -252,6 +235,28 @@ internal fun ActiveFramesGrid(
             }
         }
     }
+}
+
+// Compose Unit renderers require PascalCase; the naming exception is local.
+@Suppress("FunctionNaming")
+@Composable
+private fun OwnedFrameCard(
+    tile: FrameTileView,
+    openApps: Boolean,
+    modifier: Modifier,
+) {
+    FrameTile(
+        tile.key,
+        tile.title,
+        if (tile.picture != null) "Shared preview" else tile.badge,
+        tile.detail,
+        tile.onClose != null,
+        { tile.onOpen?.invoke() },
+        { tile.onClose?.invoke() },
+        modifier,
+        tile.picture,
+        openEnabled = tile.onOpen != null && openApps,
+    )
 }
 
 @Composable

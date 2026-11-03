@@ -9,7 +9,7 @@ sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
 export ANDROID_HOME=/path/to/android-sdk     # or write sdk.dir=... into local.properties (not committed)
 ```
 
-The first Gradle run downloads Gradle 9.6.0 (checksum pinned in `gradle/wrapper/gradle-wrapper.properties`),
+The first Gradle run downloads Gradle 9.8.2 (checksum pinned in `gradle/wrapper/gradle-wrapper.properties`),
 the Android Gradle Plugin 8.13.2, Kotlin 2.3.10 and the Compose BOM 2026.02.01. These are the versions
 SableOS builds the same sources with.
 

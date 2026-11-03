@@ -139,7 +139,7 @@ internal fun WidgetItem(
                         modifier = Modifier.fillMaxSize(),
                         factory = { context -> controller.createView(id) ?: FrameLayout(context) },
                         update = { view ->
-                            // Tell the widget how much room it has, so one that lays itself out by size picks the right layout.
+                            // Report available space so the widget can choose its layout.
                             if (view is AppWidgetHostView) {
                                 runCatching { updateHostedWidgetSize(view, widthDp, height) }
                             }

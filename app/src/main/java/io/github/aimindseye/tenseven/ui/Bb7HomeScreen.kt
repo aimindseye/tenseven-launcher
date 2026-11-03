@@ -250,7 +250,8 @@ fun Bb7HomeScreen(
                 query = ""
                 pickingDesktop = false
                 selected = -1
-                Toast.makeText(context, resources.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
+                val message = resources.getString(R.string.bb7_added_home, app.label)
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -300,7 +301,8 @@ fun Bb7HomeScreen(
                 // Panels: show or hide each one (the last one stays); the banner and tray can be more see-through.
                 Bb7Panel.entries.forEach { p ->
                     if (p in panels && panels.size == 1) return@forEach
-                    val text = resources.getString(if (p in panels) R.string.bb7_panel_hide else R.string.bb7_panel_show, p.title)
+                    val label = if (p in panels) R.string.bb7_panel_hide else R.string.bb7_panel_show
+                    val text = resources.getString(label, p.title)
                     add(text to { onPanelsChanged(Bb7Panels.toggle(panels, p)) })
                 }
                 if (scrimLevel >

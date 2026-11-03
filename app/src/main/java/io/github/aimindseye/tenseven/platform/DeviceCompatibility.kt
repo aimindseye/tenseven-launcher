@@ -10,7 +10,8 @@ import io.github.aimindseye.tenseven.model.LauncherKeys
 
 /** Read-only, local compatibility facts. No serial, descriptor, accounts or typed characters. */
 object DeviceCompatibility {
-    fun keyAction(event: KeyEvent): LauncherKeys.Action = LauncherKeys.action(event.keyCode, event.metaState, event.repeatCount > 0)
+    fun keyAction(event: KeyEvent): LauncherKeys.Action =
+        LauncherKeys.action(event.keyCode, event.metaState, event.repeatCount > 0)
 
     fun report(activity: Activity): String {
         val metrics = activity.windowManager.currentWindowMetrics

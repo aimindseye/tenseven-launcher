@@ -102,10 +102,14 @@ class WidgetHostController(
                 target.name,
                 WidgetBinding.Stage.Bind,
             )
-        if (!journal.save(pending)) {
-            release(id)
-            return
-        }
+        if (journal.save(pending)) bind(pending, info) else release(id)
+    }
+
+    private fun bind(
+        pending: WidgetBinding,
+        info: AppWidgetProviderInfo,
+    ) {
+        val id = pending.id
         val bound = runCatching { manager.bindAppWidgetIdIfAllowed(id, info.profile, info.provider, null) }.getOrDefault(false)
         if (bound) {
             configureOrFinish()
@@ -131,7 +135,16 @@ class WidgetHostController(
                 REQUEST_CONFIGURE -> WidgetBinding.Stage.Configure
                 else -> return false
             }
-        val pending = journal.pending() ?: return true
+        journal.pending()?.let { handleResult(it, stage, resultCode, data) }
+        return true
+    }
+
+    private fun handleResult(
+        pending: WidgetBinding,
+        stage: WidgetBinding.Stage,
+        resultCode: Int,
+        data: Intent?,
+    ) {
         val returned =
             data
                 ?.takeIf { it.hasExtra(AppWidgetManager.EXTRA_APPWIDGET_ID) }
@@ -142,7 +155,6 @@ class WidgetHostController(
             WidgetBinding.Result.Configure -> configureOrFinish()
             WidgetBinding.Result.Commit -> finish()
         }
-        return true
     }
 
     fun remove(id: Int) {
