@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
@@ -227,6 +229,7 @@ private fun ConversationCard(
  * The six-icon Hub navigation is stable on a square Q25, even when dozens of apps are enabled.
  * Message/mail counts roll up; only other apps with live notifications appear under More.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HubUnifiedNavigation(
     ui: HubConversationsUi,
@@ -236,6 +239,7 @@ internal fun HubUnifiedNavigation(
     sources: List<Triple<String, String, Int>>,
     messageCount: Int,
     emailCount: Int,
+    showAllSources: Boolean = false,
 ) {
     var searchOpen by remember { mutableStateOf(false) }
     var moreOpen by rememberSaveable { mutableStateOf(false) }
@@ -301,11 +305,20 @@ internal fun HubUnifiedNavigation(
                         select(HubFilter.All, ConversationFilter(snoozed = true))
                     }
                 }
-                sources.forEach { (pkg, name, count) ->
+                if (!showAllSources) sources.forEach { (pkg, name, count) ->
                     AppSourceFilterButton(pkg, name, count,
                         currentTab == HubFilter.All && ui.sourcePackage == pkg) {
                         select(HubFilter.All, pkg = pkg)
                     }
+                }
+            }
+        }
+        if (showAllSources) {
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                sources.forEach { (pkg, name, count) ->
+                    AppSourceFilterButton(pkg, name, count,
+                        currentTab == HubFilter.All && ui.sourcePackage == pkg) { select(HubFilter.All, pkg = pkg) }
                 }
             }
         }

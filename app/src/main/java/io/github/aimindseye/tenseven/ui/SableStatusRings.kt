@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -63,11 +65,12 @@ private const val SAMPLE_INTERVAL_MS = 3_000L
  * and Cell. Samples every three seconds while HOME is started and stops when
  * it is not, so the rings cost nothing behind another app.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SableStatusRings(
     modifier: Modifier = Modifier,
     ringSize: Dp = 36.dp,
-    visible: Set<String> = io.github.aimindseye.tenseven.model.HomeDisplayPolicy.ALL_DIALS,
+    visible: Set<String> = io.github.aimindseye.tenseven.model.HomeDisplayPolicy.DEFAULT_DIALS,
 ) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -86,10 +89,10 @@ fun SableStatusRings(
     val st = stats ?: return
     val primary = MaterialTheme.colorScheme.primary
     val error = MaterialTheme.colorScheme.error
-    Row(
+    FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if ("wifi" in visible) NetRing(label = "Wi-Fi", up = st.wifiUp, down = st.wifiDown, size = ringSize)
         if ("mobile" in visible) NetRing(label = t("mobile"), up = st.mobileUp, down = st.mobileDown, size = ringSize)
@@ -106,6 +109,10 @@ fun SableStatusRings(
             color = if (st.battery <= 0.2f && !st.charging) error else RingGreen,
             size = ringSize,
             hotAbove = 2f,
+        )
+        if ("storage" in visible) StatRing(
+            label = t("storage"), fraction = st.storage, color = RingPurple, size = ringSize,
+            center = listOf(st.storage?.let { "${(it * 100).roundToInt()}%" } ?: "–"),
         )
         if ("cell" in visible) StatRing(
             label = t("cell"),

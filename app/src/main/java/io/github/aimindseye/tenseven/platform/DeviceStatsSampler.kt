@@ -1,6 +1,6 @@
 // Ported from Titan AI (https://github.com/andrehafner/aiassistant,
 // util/SystemStats.kt), Copyright (c) 2026 Andre Hafner, MIT License.
-// See THIRD_PARTY_NOTICES.md. Trimmed for Sable Start: no storage ring, no
+// See THIRD_PARTY_NOTICES.md. Trimmed for Sable Start: no
 // network-type label (it needs READ_PHONE_STATE), battery from BatteryManager
 // properties instead of the sticky broadcast.
 
@@ -9,6 +9,8 @@ package io.github.aimindseye.tenseven.platform
 import android.app.ActivityManager
 import android.content.Context
 import android.net.TrafficStats
+import android.os.Environment
+import android.os.StatFs
 import android.os.BatteryManager
 import android.os.SystemClock
 import android.telephony.TelephonyManager
@@ -25,6 +27,8 @@ import kotlin.math.log10
 data class DeviceStats(
     val cpu: Float?,
     val ram: Float,
+    /** Used fraction of internal data storage; null if unavailable. */
+    val storage: Float? = null,
     val wifiUp: Long? = null,
     val wifiDown: Long? = null,
     val mobileUp: Long? = null,
@@ -39,6 +43,10 @@ data class DeviceStats(
 
 /** Pure formatting for the rings, kept separate so it can be unit tested on the JVM. */
 object DeviceStatsFormat {
+    fun usedStorage(total: Long, available: Long): Float? =
+        if (total <= 0 || available < 0) null
+        else (1.0 - available.coerceAtMost(total).toDouble() / total.toDouble()).toFloat().coerceIn(0f, 1f)
+
     /** Throughput on a log scale: 0 below 1 KiB/s, 1 at about 30 MiB/s. */
     fun heat(bytesPerSec: Long?): Float {
         val kib = (bytesPerSec ?: 0L) / 1024.0
@@ -90,6 +98,10 @@ class DeviceStatsSampler {
         return DeviceStats(
             cpu = procStat() ?: cpuFreq(),
             ram = ram(context),
+            storage = runCatching {
+                val disk = StatFs(Environment.getDataDirectory().absolutePath)
+                DeviceStatsFormat.usedStorage(disk.totalBytes, disk.availableBytes)
+            }.getOrNull(),
             wifiUp = net?.get(0),
             wifiDown = net?.get(1),
             mobileUp = net?.get(2),

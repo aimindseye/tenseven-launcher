@@ -49,6 +49,8 @@ object LauncherBackup {
             "home_notification_strip_bb10" to Type.NUMBER,
             "home_notification_expanded_bb7" to Type.NUMBER,
             "home_notification_expanded_bb10" to Type.NUMBER,
+            "hub_all_icons_bb7" to Type.NUMBER,
+            "hub_all_icons_bb10" to Type.NUMBER,
             "type_to_search" to Type.NUMBER,
             "bb7_icon_size" to Type.NUMBER,
             "widgets_page" to Type.NUMBER,

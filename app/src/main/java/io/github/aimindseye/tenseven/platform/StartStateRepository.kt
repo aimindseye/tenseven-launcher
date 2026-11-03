@@ -326,7 +326,7 @@ class StartStateRepository(
     fun loadHomeDials(style: HomeStyle): Set<String> =
         HomeDisplayPolicy.normalizedDials(
             preferences.getStringSet(HomeDisplayPolicy.dialPreference(style), null)
-                ?: HomeDisplayPolicy.ALL_DIALS,
+                ?: HomeDisplayPolicy.DEFAULT_DIALS,
         )
 
     fun saveHomeDials(style: HomeStyle, selected: Set<String>) {
@@ -340,6 +340,13 @@ class StartStateRepository(
 
     fun saveHomeNotificationStrip(style: HomeStyle, enabled: Boolean) {
         preferences.edit().putInt(HomeDisplayPolicy.stripPreference(style), if (enabled) 1 else 0).apply()
+    }
+
+    fun loadHubAllIcons(style: HomeStyle): Boolean =
+        preferences.getInt(HomeDisplayPolicy.hubIconsPreference(style), 0) != 0
+
+    fun saveHubAllIcons(style: HomeStyle, all: Boolean) {
+        preferences.edit().putInt(HomeDisplayPolicy.hubIconsPreference(style), if (all) 1 else 0).apply()
     }
 
     fun loadHomeNotificationExpanded(style: HomeStyle): Boolean =

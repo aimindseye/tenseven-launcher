@@ -182,6 +182,7 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
     var dials by remember(style) { mutableStateOf(state.loadHomeDials(style)) }
     var strip by remember(style) { mutableStateOf(state.loadHomeNotificationStrip(style)) }
     var expanded by remember(style) { mutableStateOf(state.loadHomeNotificationExpanded(style)) }
+    var hubAll by remember(style) { mutableStateOf(state.loadHubAllIcons(style)) }
 
     Text("Home status and notifications", style = MaterialTheme.typography.titleMedium)
     SwitchRow("Performance dials", "Show the performance gauges on this home style", dials.isNotEmpty()) { shown ->
@@ -191,7 +192,7 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
     if (dials.isNotEmpty()) {
         listOf(
             "wifi" to "Wi-Fi", "mobile" to "Mobile", "cpu" to "CPU",
-            "ram" to "RAM", "battery" to "Battery", "cell" to "Cell",
+            "ram" to "RAM", "battery" to "Battery", "cell" to "Cell", "storage" to "Storage",
         ).forEach { (key, title) ->
             SwitchRow(title, "Show $title dial", key in dials) { enabled ->
                 dials = if (enabled) dials + key else dials - key
@@ -204,10 +205,14 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
         state.saveHomeNotificationStrip(style, it)
     }
     if (strip) {
-        SwitchRow("Expanded notification bar", "Show all opted-in notification sources in a scrollable strip", expanded) {
+        SwitchRow("Show all notification icons on Home", "Wrap all enabled apps with unread notifications onto additional rows", expanded) {
             expanded = it
             state.saveHomeNotificationExpanded(style, it)
         }
+    }
+    SwitchRow("Show all notification icons in Hub", "Show each enabled app with unread notifications, including mail and messaging apps", hubAll) {
+        hubAll = it
+        state.saveHubAllIcons(style, it)
     }
 }
 

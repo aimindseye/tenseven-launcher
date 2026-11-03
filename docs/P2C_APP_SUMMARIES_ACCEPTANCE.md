@@ -1,6 +1,6 @@
 # P2-C app summaries
 
-Current: version 13 / 0.2.0-p2c-summaries.3. File linking and Office previews have been removed. The version-13 rules below supersede the historical version-11/12 sections.
+Current: version 14 / 0.2.0-p2c-summaries.4. File linking and Office previews have been removed. The version-13 rules below supersede the historical version-11/12 sections.
 
 One Full APK: version 11 / 0.2.0-p2c-summaries.1. Builds on accepted Titan 2
 version 10 from PR #109. No signing key or network permission is added.
@@ -108,3 +108,26 @@ setup; frame controls must follow the granted notification section and disappear
 Switch BB10 to BB7 in Launcher Settings and setup: frame settings and the frame grid must
 be absent. Invoke the prior Recents route and verify BB7 stays on BB7 Home. Switch back to
 BB10 and verify normal eight-frame behavior and media/Calendar/Hub/local summaries.
+
+## Version 14: notification icons and storage dial
+
+Launcher Settings → Home status and notifications applies to the selected Home style.
+BB7 and BB10 keep separate choices, including backup/restore:
+
+- Horizontal notification bar → Show all notification icons on Home: wraps every enabled
+  app with unread notifications onto additional rows. Off keeps four icons plus a +N Hub link.
+- Show all notification icons in Hub: shows each enabled, active app directly, including mail
+  and messaging clients rather than only their category totals. Icons wrap; selecting one
+  filters Hub to that app. Off retains the existing compact categories/More menu.
+- Each individual Home notification icon opens its matching personal-profile app directly.
+  The +N link opens Hub. No notification content is added to Home.
+- Performance dials → Storage: optional percentage of internal data storage used, calculated
+  from Android StatFs total/available bytes. No storage permission or media/file access is used.
+  Existing dial selections remain unchanged. Dials wrap on narrow screens.
+
+Titan 2 acceptance: on each Home style, enable both all-icon choices and create unread
+notifications from at least six enabled apps. Verify every app is visible, disabled/zero-count
+apps are absent, each Home icon opens the correct app, and each Hub icon filters its app.
+Turn the options off and confirm compact behavior; switch styles/restart and verify independent
+saved choices. Enable Storage, compare its used percentage to system internal storage, disable
+it, and verify the other selected dials remain visible. Recheck notification-access revocation.

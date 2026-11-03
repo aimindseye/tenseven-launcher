@@ -6,6 +6,17 @@ import org.junit.Test
 
 /** Header status rings: the labels and arc fill shown on the Start header. */
 class DeviceStatsFormatTest {
+    @Test fun usedStorageHandlesEmptyFullAndUnavailableVolumes() {
+        assertEquals(null, DeviceStatsFormat.usedStorage(0, 0))
+        assertEquals(null, DeviceStatsFormat.usedStorage(-1, 0))
+        assertEquals(null, DeviceStatsFormat.usedStorage(100, -1))
+        assertEquals(0f, DeviceStatsFormat.usedStorage(100, 100))
+        assertEquals(0f, DeviceStatsFormat.usedStorage(100, 200))
+        assertEquals(1f, DeviceStatsFormat.usedStorage(100, 0))
+        assertEquals(0.25f, DeviceStatsFormat.usedStorage(100, 75))
+        assertEquals(0.5f, DeviceStatsFormat.usedStorage(Long.MAX_VALUE, Long.MAX_VALUE / 2))
+    }
+
     @Test
     fun rateIsShortEnoughForARing() {
         assertEquals("–", DeviceStatsFormat.rate(null))

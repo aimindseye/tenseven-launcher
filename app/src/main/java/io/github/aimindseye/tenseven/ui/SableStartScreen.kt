@@ -1966,8 +1966,13 @@ private fun HubPage(
             messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
         )
     }
-    val selectedSources = remember(sourceGroups, personalApps) {
-        sourceGroups.otherApps.mapNotNull { source ->
+    val showAllSourceIcons = remember(refreshGeneration) {
+        val preferences = StartStateRepository(context)
+        preferences.loadHubAllIcons(preferences.loadHomeStyle())
+    }
+    val selectedSources = remember(sourceGroups, personalApps, showAllSourceIcons, snapshot.hubApps, enabledHubApps) {
+        val sources = if (showAllSourceIcons) HubSourceGroups.individualSources(snapshot.hubApps, enabledHubApps) else sourceGroups.otherApps
+        sources.mapNotNull { source ->
             personalApps[source.packageName]?.let { app ->
                 Triple(source.packageName, app.label, source.count)
             }
@@ -2077,6 +2082,7 @@ private fun HubPage(
                 sources = selectedSources,
                 messageCount = sourceGroups.messages,
                 emailCount = sourceGroups.email,
+                showAllSources = showAllSourceIcons,
             )
         }
         // Calendar data requires a second, explicit opt-in (separate from notification sources).
