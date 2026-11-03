@@ -133,16 +133,18 @@ internal fun WidgetItem(
         ) {
             val widthDp = maxWidth.value.toInt()
             androidx.compose.runtime.key(info?.provider, info?.profile) {
-                if (info != null) AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { context -> controller.createView(id) ?: FrameLayout(context) },
-                    update = { view ->
-                        // Tell the widget how much room it has, so one that lays itself out by size picks the right layout.
-                        if (view is AppWidgetHostView) {
-                            runCatching { updateHostedWidgetSize(view, widthDp, height) }
-                        }
-                    },
-                )
+                if (info != null) {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { context -> controller.createView(id) ?: FrameLayout(context) },
+                        update = { view ->
+                            // Tell the widget how much room it has, so one that lays itself out by size picks the right layout.
+                            if (view is AppWidgetHostView) {
+                                runCatching { updateHostedWidgetSize(view, widthDp, height) }
+                            }
+                        },
+                    )
+                }
             }
             if (info == null) Text("Widget unavailable · unlock its profile or remove it", Modifier.padding(8.dp))
             // While editing, touches must not reach the widget underneath.
@@ -318,6 +320,10 @@ private fun WidgetEditControls(
     }
 }
 
-private fun updateHostedWidgetSize(view: AppWidgetHostView, widthDp: Int, heightDp: Int) {
+private fun updateHostedWidgetSize(
+    view: AppWidgetHostView,
+    widthDp: Int,
+    heightDp: Int,
+) {
     view.updateAppWidgetSize(android.os.Bundle(), listOf(android.util.SizeF(widthDp.toFloat(), heightDp.toFloat())))
 }

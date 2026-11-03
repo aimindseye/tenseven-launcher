@@ -56,7 +56,9 @@ class WidgetHostIntegrationTest {
             await {
                 var visible = false
                 instrumentation.runOnMainSync {
-                    visible = rendered?.findViewById<android.widget.TextView>(android.R.id.text1)?.text
+                    visible = rendered
+                        ?.findViewById<android.widget.TextView>(android.R.id.text1)
+                        ?.text
                         ?.contains("P3 widget") == true
                 }
                 visible
@@ -132,9 +134,8 @@ class WidgetHostIntegrationTest {
         }
     }
 
-    private fun controller(activity: Activity): WidgetHostController {
-        return WidgetHostController(activity, StartStateRepository(activity)) { _, _ -> }
-    }
+    private fun controller(activity: Activity): WidgetHostController =
+        WidgetHostController(activity, StartStateRepository(activity)) { _, _ -> }
 
     private fun provider(
         host: WidgetHostController,

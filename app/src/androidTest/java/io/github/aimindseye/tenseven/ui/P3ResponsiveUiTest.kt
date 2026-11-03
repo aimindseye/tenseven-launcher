@@ -11,18 +11,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.hasScrollAction
-import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.onNode
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.test.core.app.ActivityScenario
+import androidx.test.platform.app.InstrumentationRegistry
+import io.github.aimindseye.tenseven.DeviceCompatibilityActivity
+import io.github.aimindseye.tenseven.LauncherSettingsActivity
 import io.github.aimindseye.tenseven.frames.FrameApp
 import io.github.aimindseye.tenseven.frames.FrameItem
 import io.github.aimindseye.tenseven.frames.FramesState
@@ -158,4 +163,23 @@ class P3ResponsiveUiTest {
         )
         compose.runOnIdle { assertEquals(1, menus) }
     }
+
+    @Test fun settingsDeviceEntryRemainsReachableOnSmallOrLargeTextWindows() {
+        ActivityScenario.launch(LauncherSettingsActivity::class.java).use {
+            compose.onNodeWithText("Device compatibility").performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test fun foregroundKeyProbeStopsCaptureWhenItsActivityPauses() {
+        ActivityScenario.launch(DeviceCompatibilityActivity::class.java).use { scenario ->
+            compose.onNodeWithText("Start key capture").performScrollTo().performClick()
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_A)
+            compose.onNodeWithText("key=29", substring = true).performScrollTo().assertIsDisplayed()
+            scenario.moveToState(Lifecycle.State.CREATED)
+            scenario.moveToState(Lifecycle.State.RESUMED)
+            compose.onNodeWithText("Start key capture").performScrollTo().assertIsDisplayed()
+        }
+    }
+
 }
