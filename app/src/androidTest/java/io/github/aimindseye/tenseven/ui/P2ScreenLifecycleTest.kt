@@ -62,6 +62,67 @@ class P2ScreenLifecycleTest {
             null,
         )
 
+    @Test
+    fun commandSearchStillLaunchesTheSelectedApp() {
+        val app = AppEntry("P2 Browser fixture", ComponentName("fixture", "Browser"), Process.myUserHandle())
+        var opened: AppEntry? = null
+        compose.setContent {
+            MaterialTheme {
+                SearchScreen(
+                    apps = listOf(app),
+                    recentKeys = emptyList(),
+                    letterShortcuts = null,
+                    initialQuery = "P2 Browser",
+                    privateSpaceLocked = null,
+                    onTogglePrivateSpace = {},
+                    workProfilePaused = null,
+                    onToggleWorkProfile = {},
+                    onBack = {},
+                    onLaunchApp = { opened = it },
+                    secondInstanceOf = { null },
+                    onOpenAppInfo = {},
+                    onOpenPeek = {},
+                    onAllApps = {},
+                    onAppearance = {},
+                    onFrames = null,
+                    onGrid = {},
+                    onHub = {},
+                    onEditHome = {},
+                    onOpenSettings = {},
+                    onStartIntent = {},
+                )
+            }
+        }
+        compose.onNodeWithText(app.label).performClick()
+        compose.runOnIdle { assertEquals(app, opened) }
+    }
+
+    @Test
+    fun editHomeDonePreservesTheExistingLayoutSnapshot() {
+        val initial = HomeEdit(emptyList(), QuickBar.DEFAULT, emptyList(), emptySet())
+        var saved: HomeEdit? = null
+        compose.setContent {
+            MaterialTheme {
+                EditHomeScreen(false, emptyList(), initial, initial, 0, {}, { saved = it }, {})
+            }
+        }
+        compose.onNodeWithText("Done").performClick()
+        compose.runOnIdle { assertEquals(initial, saved) }
+    }
+
+    @Test
+    fun extractedAppGridKeepsItsDirectLaunchCallback() {
+        val app = AppEntry("Grid fixture", ComponentName("fixture", "Grid"), Process.myUserHandle())
+        var opened: AppEntry? = null
+        compose.setContent {
+            MaterialTheme {
+                AppGridPage(listOf(app), 2, 2, 1f, setOf(app.label), true, { opened = it }, {}, {}, {})
+            }
+        }
+        compose.onNodeWithText(app.label).performClick()
+        compose.runOnIdle { assertEquals(app, opened) }
+    }
+
     @Test fun hubAndPeekReactToPermissionRevocationAndNotificationReplacement() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val store = StartStateRepository(context)

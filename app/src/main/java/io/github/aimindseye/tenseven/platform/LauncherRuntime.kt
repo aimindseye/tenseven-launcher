@@ -26,7 +26,7 @@ internal data class LauncherInventory(
 internal class LauncherRuntime(
     context: Context,
     private val inventory: LauncherAppsRepository,
-    onInventory: (LauncherInventory) -> Unit,
+    private val onInventory: (LauncherInventory) -> Unit,
     private val onRefresh: () -> Unit,
 ) {
     private val app = context.applicationContext
@@ -129,7 +129,12 @@ internal class LauncherRuntime(
                 @Suppress("DEPRECATION")
                 val user = intent.getParcelableExtra<UserHandle>(Intent.EXTRA_USER)
                 inventory.invalidatePrivacyForUser(user)
-                refresh()
+                if (started && !closed) {
+                    coordinator.stop()
+                    onInventory(LauncherInventory(emptyList(), null, null))
+                    onRefresh()
+                    coordinator.start()
+                }
             }
         }
     private val liveObserver =
