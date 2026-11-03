@@ -44,13 +44,13 @@ class FrameRepairUiTest {
         }
     }
     @Test fun hubPeekClipsItsOuterCorners() {
-        compose.setContent { LauncherTheme {
+        compose.setContent { androidx.compose.material3.MaterialTheme(colorScheme = androidx.compose.material3.darkColorScheme(surface = Color.Black)) {
             Box(Modifier.fillMaxSize().background(Color.Red)) {
                 HubPeekHost(peekOpen = true, edgeEnabled = false, onPeekChange = {}, onOpenHub = {}) {}
             }
         } }
         compose.waitForIdle()
-        val pixels = compose.onNodeWithTag("hub-peek-panel").captureToImage().toPixelMap()
+        val pixels = compose.onNodeWithTag("hub-peek-panel", useUnmergedTree = true).captureToImage().toPixelMap()
         val corner = pixels[0, 0]
         val panel = pixels[pixels.width / 2, 10]
         assertTrue("Rounded outer corner must expose the scrim instead of the panel background",
