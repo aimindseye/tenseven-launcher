@@ -2,14 +2,12 @@ package io.github.aimindseye.tenseven.platform
 
 import android.Manifest
 import android.content.ComponentName
-import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Build
-import android.provider.CalendarContract
 import android.provider.MediaStore
 import android.text.format.DateUtils
 import android.text.format.DateFormat
@@ -106,6 +104,7 @@ class LiveSurfaceRepository(
                     ),
                 observedAtEpochMs = nowEpochMs,
                 hubApps = hubAppCounts(),
+                calendarPackages = calendarPackages(),
             )
         }
 
@@ -116,34 +115,14 @@ class LiveSurfaceRepository(
             return LiveDatum(title, t("permission_required"), LiveAvailability.PERMISSION_REQUIRED)
         }
         return try {
-            val window = CalendarContract.Instances.CONTENT_URI.buildUpon()
-            ContentUris.appendId(window, nowEpochMs)
-            ContentUris.appendId(window, nowEpochMs + CALENDAR_WINDOW_MS)
-            val event =
-                resolver.query(
-                    window.build(),
-                    arrayOf(
-                        CalendarContract.Instances.TITLE,
-                        CalendarContract.Instances.BEGIN,
-                        CalendarContract.Instances.END,
-                        CalendarContract.Instances.ALL_DAY,
-                    ),
-                    null,
-                    null,
-                    CalendarContract.Instances.BEGIN + " ASC",
-                )?.use { cursor ->
-                    var found: Triple<String, Long, Boolean>? = null
-                    while (found == null && cursor.moveToNext()) {
-                        if (cursor.getLong(2) > nowEpochMs) {
-                            found = Triple(cursor.getString(0).orEmpty().ifBlank { t("calendar") }, cursor.getLong(1), cursor.getInt(3) != 0)
-                        }
-                    }
-                    found
-                }
+            val selected = StartStateRepository(appContext).loadHubSelectedCalendarIds()
+            val event = HubCalendarRepository(appContext).upcoming(nowEpochMs, selected).firstOrNull()
             if (event == null) {
                 LiveDatum(title, NO_EVENTS, LiveAvailability.EMPTY, nowEpochMs)
             } else {
-                val (name, begin, allDay) = event
+                val name = event.title
+                val begin = event.beginsAt
+                val allDay = event.allDay
                 val flags =
                     if (allDay) {
                         DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_ABBREV_ALL
@@ -166,6 +145,13 @@ class LiveSurfaceRepository(
         }
     }
 
+    private fun calendarPackages(): Set<String> = runCatching {
+        appContext.packageManager.queryIntentActivities(
+            android.content.Intent.makeMainSelectorActivity(android.content.Intent.ACTION_MAIN, DefaultApps.CALENDAR),
+            PackageManager.MATCH_ALL,
+        ).map { it.activityInfo.packageName }.toSet()
+    }.getOrDefault(emptySet())
+
     /**
      * What is playing, from the active media sessions. Android only lists them to an app that holds notification
      * access, which Tenseven's own listener provides once the user turns it on.
@@ -186,7 +172,7 @@ class LiveSurfaceRepository(
             } else {
                 val line = if (artist.isBlank()) track else "$track · $artist"
                 val playing = active.playbackState?.state == PlaybackState.STATE_PLAYING
-                LiveDatum(title, if (playing) line else "Paused: $line", LiveAvailability.LIVE, System.currentTimeMillis())
+                LiveDatum(title, if (playing) line else "Paused: $line", LiveAvailability.LIVE, System.currentTimeMillis(), active.packageName)
             }
         } catch (_: SecurityException) {
             LiveDatum(title, t("permission_required"), LiveAvailability.PERMISSION_REQUIRED)
@@ -413,7 +399,6 @@ class LiveSurfaceRepository(
         val HUB_APPS_URI: Uri =
             Uri.parse("content://org.sableos.hub.snapshot/apps")
         private const val MAX_HUB_APPS = 32
-        private const val CALENDAR_WINDOW_MS = 7L * 24 * 60 * 60 * 1000
         private const val NO_EVENTS = "no events this week"
         private const val NOTHING_PLAYING = "nothing playing"
         val MAIL_URI: Uri =

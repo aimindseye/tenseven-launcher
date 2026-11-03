@@ -14,6 +14,7 @@ data class LiveDatum(
     val detail: String,
     val availability: LiveAvailability,
     val observedAtEpochMs: Long = 0L,
+    val sourcePackage: String? = null,
 )
 
 /**
@@ -43,6 +44,7 @@ data class LiveSurfaceSnapshot(
     val observedAtEpochMs: Long,
     /** The Hub page's unread bar, most unread first; empty when Hub has nothing or is missing. */
     val hubApps: List<AppUnreadCount> = emptyList(),
+    val calendarPackages: Set<String> = emptySet(),
 ) {
     init {
         require(dateText.isNotBlank())

@@ -75,4 +75,33 @@ class ActiveFramesUiTest {
         compose.onNodeWithTag(item.key).assertDoesNotExist()
         compose.runOnIdle { assertTrue(captures <= 1) }
     }
+    @Test fun liveSummaryReplacesRecentBadgeOnMatchingAppEvenWithFullGrid() {
+        val media = snapshot.copy(music = LiveDatum("Music", "Song by Artist", LiveAvailability.LIVE, sourcePackage = "yt.music"))
+        val items = listOf(FrameItem(FrameApp("yt.music", android.os.Process.myUserHandle().hashCode()))) +
+            (1..3).map { FrameItem(FrameApp("app$it", 0)) }
+        compose.setContent {
+            MaterialTheme {
+                ActiveFramesGrid(FramesState(items, notificationsAllowed = true, settings = FrameSettings(maximum = 4)),
+                    emptyList(), media, emptySet(), emptyList(), { _, _ -> null }, true, {}, {}, Modifier.size(360.dp))
+            }
+        }
+        compose.onNodeWithText("Song by Artist", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Live summary", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test fun sharedCaptureRetainsSlotAndCloseInvokesStop() {
+        var stopped = false
+        compose.setContent {
+            MaterialTheme {
+                ActiveFramesGrid(FramesState((1..4).map { FrameItem(FrameApp("app$it", 0)) }, settings = FrameSettings(maximum = 4)),
+                    emptyList(), snapshot, emptySet(), listOf(FrameTileView("tile:capture", "Shared screen", "Frozen", onClose = { stopped = true })),
+                    { _, _ -> null }, true, {}, {}, Modifier.size(360.dp))
+            }
+        }
+        compose.onNodeWithTag("tile:capture").assertIsDisplayed()
+        compose.onNodeWithTag("0:app4:recent").assertDoesNotExist()
+        compose.onNodeWithTag("close:tile:capture", useUnmergedTree = true).performClick()
+        compose.runOnIdle { assertTrue(stopped) }
+    }
+
 }

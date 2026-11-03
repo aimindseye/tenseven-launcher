@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
+import androidx.lifecycle.repeatOnLifecycle
+
 import android.Manifest
 import android.app.SearchManager
 import android.content.Context
@@ -515,10 +517,16 @@ fun SableStartScreen(
         mutableStateOf(false)
     }
 
-    LaunchedEffect(refreshGeneration, homeGeneration) {
-        liveRefreshing = true
-        liveSnapshot = liveSurfaceRepository.snapshot()
-        liveRefreshing = false
+    val liveLifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(refreshGeneration, homeGeneration, liveLifecycle) {
+        liveLifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (true) {
+                liveRefreshing = true
+                try { liveSnapshot = liveSurfaceRepository.snapshot() }
+                finally { liveRefreshing = false }
+                kotlinx.coroutines.delay(5000)
+            }
+        }
     }
 
     val appByKey = apps.associateBy { it.stableKey() }

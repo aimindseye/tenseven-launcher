@@ -19,6 +19,7 @@ internal fun FrameSettingsSection(repository: StartStateRepository) {
     var value by remember { mutableStateOf(repository.loadFrameSettings()) }
     val context = LocalContext.current
     val capabilities = remember { PlatformCapabilityProbe.detect(context) }
+    ScreenCaptureControls()
     FrameSettingsPanel(value, capabilities) { value = it.normalized(); repository.saveFrameSettings(value) }
 }
 
@@ -27,7 +28,7 @@ internal fun FrameSettingsSection(repository: StartStateRepository) {
 internal fun FrameSettingsPanel(value: FrameSettings, capabilities: PlatformCapabilities, onChange: (FrameSettings) -> Unit) {
     Text("Active Frames", style = MaterialTheme.typography.titleLarge)
     Text(capabilities.frameFallbackReason, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    SwitchRow("Live tiles", "Show available TenSeven Calendar and Now playing summaries. These are not embedded app screens.",
+    SwitchRow("Live tiles", "Show Calendar and Now playing summaries in matching personal-profile app cards, or separate tiles when no matching card exists.",
         value.liveSummaries) { onChange(value.copy(liveSummaries = it)) }
     FrameCapabilitySwitch("New messages", "Counts from apps you enabled in Hub.",
         value.newMessages, capabilities.hubNotifications, "Enable notification access to show opted-in counts.") {
@@ -64,4 +65,26 @@ private fun FrameCapabilitySwitch(title: String, detail: String, value: Boolean,
             Switch(checked = false, onCheckedChange = null, enabled = false)
         }
     }
+}
+
+@Composable
+private fun ScreenCaptureControls() {
+    val context = LocalContext.current
+    val preview by ScreenCaptureState.state.collectAsState()
+    var explain by remember { mutableStateOf(false) }
+    Text("User-approved screen capture", style = MaterialTheme.typography.titleMedium)
+    Text("One shared-screen preview, separate from app snapshots. Images stay in memory and freeze while Home is visible. No audio is captured.")
+    if (preview.error) Text("Capture ended or could not start. Start again to request fresh consent.")
+    Button(onClick = {
+        if (preview.running) context.stopService(android.content.Intent(context, ScreenCaptureService::class.java))
+        else explain = true
+    }) { Text(if (preview.running) "Stop sharing and clear preview" else "Start screen capture") }
+    if (explain) AlertDialog(onDismissRequest = { explain = false },
+        title = { Text("Share a screen with Active Frames?") },
+        text = { Text("Android will ask what to share. Choose a single app when available. Whole-screen sharing can include anything visible while away from Home. Return to Home to see the last preview. Stop from this setting or the sharing notification; locking the phone also ends capture. Protected screens may appear blank.") },
+        confirmButton = { TextButton(onClick = {
+            explain = false
+            context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.ScreenCaptureActivity::class.java))
+        }) { Text("Continue") } },
+        dismissButton = { TextButton(onClick = { explain = false }) { Text("Cancel") } })
 }

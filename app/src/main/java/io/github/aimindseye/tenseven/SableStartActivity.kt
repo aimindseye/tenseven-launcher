@@ -460,6 +460,7 @@ class SableStartActivity : ComponentActivity() {
     }
 
     override fun onStart() {
+        io.github.aimindseye.tenseven.platform.ScreenCaptureState.homeVisible = true
         super.onStart()
         if (!callbackRegistered) {
             launcherAppsRepository.registerCallback(launcherCallback)
@@ -552,6 +553,7 @@ class SableStartActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        io.github.aimindseye.tenseven.platform.ScreenCaptureState.homeVisible = false
         activeFrames.coordinator.onStop()
         widgetController.stopListening()
         if (callbackRegistered) {
