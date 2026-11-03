@@ -13,12 +13,27 @@ import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.platform.*
 
 @Composable
-internal fun FrameSettingsSection(repository: StartStateRepository) {
-    val style by homeStyleState(repository)
-    if (style != HomeStyle.Bb10) return
-    var value by remember { mutableStateOf(repository.loadFrameSettings()) }
+internal fun FrameSettingsSection(repository: StartStateRepository, notificationAccess: Boolean? = null) {
+    val styleHolder = homeStyleState(repository)
+    val style by styleHolder
     val context = LocalContext.current
+    var observedAccess by remember(context) { mutableStateOf(io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)) }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, repository) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                styleHolder.value = repository.loadHomeStyle()
+                observedAccess = io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    val granted = notificationAccess ?: observedAccess
+    if (!io.github.aimindseye.tenseven.frames.FrameAvailability.setup(style == HomeStyle.Bb10, granted)) return
+    var value by remember { mutableStateOf(repository.loadFrameSettings()) }
     val capabilities = remember { PlatformCapabilityProbe.detect(context) }
+    FrameIntegrationControls()
     ScreenCaptureControls()
     FrameSettingsPanel(value, capabilities) { value = it.normalized(); repository.saveFrameSettings(value) }
 }
@@ -28,26 +43,24 @@ internal fun FrameSettingsSection(repository: StartStateRepository) {
 internal fun FrameSettingsPanel(value: FrameSettings, capabilities: PlatformCapabilities, onChange: (FrameSettings) -> Unit) {
     Text("Active Frames", style = MaterialTheme.typography.titleLarge)
     Text(capabilities.frameFallbackReason, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    SwitchRow("Live tiles", "Show Calendar and Now playing summaries in matching personal-profile app cards, or separate tiles when no matching card exists.",
+    SwitchRow("Live tiles", "Show available media, Calendar and local summaries. Notification excerpts require a separate opt-in.",
         value.liveSummaries) { onChange(value.copy(liveSummaries = it)) }
     FrameCapabilitySwitch("New messages", "Counts from apps you enabled in Hub.",
         value.newMessages, capabilities.hubNotifications, "Enable notification access to show opted-in counts.") {
         onChange(value.copy(newMessages = it))
     }
     FrameCapabilitySwitch("Snapshots", "Show a protected-content-safe Preview when supplied by an authorized OS task bridge.",
-        value.snapshots, capabilities.thirdPartySnapshots, "Android does not authorize other-app snapshots for this install.") {
+        value.snapshots, capabilities.thirdPartySnapshots, "Automatic app snapshots are unavailable for this install.") {
         onChange(value.copy(snapshots = it))
     }
     SwitchRow("Open apps from a frame", "Enter or tap opens the exact app and profile. Closing a card remains available.",
         value.openApps) { onChange(value.copy(openApps = it)) }
     SwitchRow("Minimise into a frame", "Keep recent-app cards when returning to Home. Does not minimise or control another app.",
         value.rememberReturnedApps) { onChange(value.copy(rememberReturnedApps = it)) }
-    Text("Maximum frames", style = MaterialTheme.typography.titleMedium)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FrameSettings.LIMITS.forEach { limit ->
-            FilterChip(selected = value.maximum == limit, onClick = { onChange(value.copy(maximum = limit)) }, label = { Text("$limit") })
-        }
-    }
+    Text("Last 8 opened apps", style = MaterialTheme.typography.titleMedium)
+    Text("Opening a ninth app replaces the oldest frame. Summaries never create extra app frames.")
+    val context = LocalContext.current
+    Button(onClick = { FrameWindowRepository(context).clear() }) { Text("Clear app frames") }
     FrameCapabilitySwitch("Force-stop when closing", "Close removes only the TenSeven card; the underlying app keeps its data and tasks.",
         false, CapabilityStatus.Unavailable, "Force-stop of other apps is not supported by this launcher.") {}
 }
@@ -87,4 +100,14 @@ private fun ScreenCaptureControls() {
             context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.ScreenCaptureActivity::class.java))
         }) { Text("Continue") } },
         dismissButton = { TextButton(onClick = { explain = false }) { Text("Cancel") } })
+}
+
+@Composable
+private fun FrameIntegrationControls() {
+    val context = LocalContext.current
+    Text("App integrations", style = MaterialTheme.typography.titleMedium)
+    Text("Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar access. TenSeven local summaries do not need notification access.")
+    Button(onClick = { context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.FrameIntegrationsActivity::class.java)) }) {
+        Text("Configure app summaries")
+    }
 }

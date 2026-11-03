@@ -44,6 +44,7 @@ class ConversationListenerService : NotificationListenerService() {
 
     private fun importActiveNotifications() {
         val active = readActiveNotifications()
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.replace(this, active)
         // Parse before choosing summaries: a malformed/empty child must not hide usable mail content.
         val parsed = active.mapNotNull { sbn -> safeHubNotification(sbn)?.let { sbn to it } }
         val visible = NotificationGroupSelection.visibleKeys(parsed.map { (sbn, item) ->
@@ -82,6 +83,7 @@ class ConversationListenerService : NotificationListenerService() {
     override fun onListenerDisconnected() {
         live.clear()
         NotificationConnection.onDisconnected()
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.clear()
         ConversationHub.clear()
         LockLayerState.update(emptyMap())
         if (screenOnRegistered) {
@@ -95,7 +97,8 @@ class ConversationListenerService : NotificationListenerService() {
         if (live.get() === this) {
             live.clear()
             NotificationConnection.onDisconnected()
-            ConversationHub.clear()
+            io.github.aimindseye.tenseven.platform.FrameMediaNotifications.clear()
+        ConversationHub.clear()
             LockLayerState.update(emptyMap())
         }
         if (screenOnRegistered) {
@@ -134,6 +137,7 @@ class ConversationListenerService : NotificationListenerService() {
     private fun refreshLockCounts() {
         val enabled = startState.loadHubEnabledApps()
         val current = readActiveNotifications()
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.replace(this, current)
         NotificationConnection.onSnapshot(current.size)
         val waiting =
             current.filter { it.packageName in enabled }.map {
@@ -148,6 +152,7 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     private fun toHubNotification(sbn: StatusBarNotification): HubNotification? {
+        if (sbn.user != android.os.Process.myUserHandle()) return null
         // Enforce per-app consent before reading notification message extras or recovering styles.
         if (!HubApps.isIncluded(startState.loadHubEnabledApps(), sbn.packageName)) return null
         val notification = sbn.notification ?: return null

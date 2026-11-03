@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -34,6 +37,7 @@ import io.github.aimindseye.tenseven.model.HubBar
  * explicitly opted-in app counts are the same source as Hub and the lock layer.
  * This is counts only: no message text appears on the Home surface.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HomeNotificationStrip(
     counts: List<AppUnreadCount>,
@@ -41,6 +45,7 @@ internal fun HomeNotificationStrip(
     expanded: Boolean,
     onOpenHub: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenApp: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
@@ -50,21 +55,26 @@ internal fun HomeNotificationStrip(
     if (items.isEmpty()) return
     val shown = if (expanded) items else items.take(4)
     val hidden = (items.size - shown.size).coerceAtLeast(0)
-    Row(
-        modifier = modifier.fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .sableFocusRing()
-            .clickable(onClick = onOpenHub)
-            .semantics { contentDescription = "Notifications: " + items.sumOf { it.count } + " unread. Open Hub" }
-            .padding(horizontal = 8.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
-    ) {
+    val icons: @Composable () -> Unit = {
         shown.forEach { item ->
             val icon = remember(item.packageName) {
                 runCatching { pm.getApplicationIcon(item.packageName).toBitmap(72, 72).asImageBitmap() }.getOrNull()
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            val label = remember(item.packageName) {
+                runCatching { pm.getApplicationLabel(pm.getApplicationInfo(item.packageName, 0)).toString() }.getOrDefault(item.packageName)
+            }
+            Row(
+                modifier = Modifier.testTag("home-notification-${item.packageName}").sableFocusRing()
+                    .clickable {
+                        if (onOpenApp != null) onOpenApp(item.packageName)
+                        else runCatching {
+                            pm.getLaunchIntentForPackage(item.packageName)?.let { context.startActivity(it) }
+                        }
+                    }
+                    .semantics { contentDescription = "Open $label: ${item.count} unread" }
+                    .padding(vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 if (icon != null) {
                     Image(icon, contentDescription = item.packageName,
                         modifier = Modifier.size(23.dp).clip(RoundedCornerShape(5.dp)))
@@ -75,6 +85,16 @@ internal fun HomeNotificationStrip(
                     style = MaterialTheme.typography.labelMedium, color = Color.White)
             }
         }
-        if (hidden > 0) Text("+$hidden", color = Color.White, style = MaterialTheme.typography.labelSmall)
+        if (hidden > 0) Text("+$hidden", color = Color.White, style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.sableFocusRing().clickable(onClick = onOpenHub)
+                .semantics { contentDescription = "$hidden more apps. Open Hub" }.padding(vertical = 5.dp))
+    }
+    if (expanded) {
+        FlowRow(modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(13.dp), content = { icons() })
+    } else {
+        Row(modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(13.dp), content = { icons() })
     }
 }

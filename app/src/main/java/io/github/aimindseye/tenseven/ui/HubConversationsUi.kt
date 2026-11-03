@@ -39,7 +39,6 @@ import io.github.aimindseye.tenseven.tasks.ReminderPolicy
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +46,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.draw.clip
@@ -74,7 +74,6 @@ import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.model.HubStreamSelection
 import io.github.aimindseye.tenseven.model.HubFilter
-import io.github.aimindseye.tenseven.model.HubNavigationPolicy
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
@@ -225,7 +224,7 @@ private fun ConversationCard(
 
 /**
  * The six-icon Hub navigation is stable on a square Q25, even when dozens of apps are enabled.
- * Message/mail counts roll up; only other apps with live notifications appear under More.
+ * Message/mail counts roll up; utility shortcuts remain visible together without per-app filter chips.
  */
 @Composable
 internal fun HubUnifiedNavigation(
@@ -233,90 +232,61 @@ internal fun HubUnifiedNavigation(
     currentTab: HubFilter,
     onTabChange: (HubFilter) -> Unit,
     firstTab: FocusRequester,
-    sources: List<Triple<String, String, Int>>,
     messageCount: Int,
     emailCount: Int,
+    onOpenCalendar: () -> Unit,
 ) {
     var searchOpen by remember { mutableStateOf(false) }
-    var moreOpen by rememberSaveable { mutableStateOf(false) }
-    val moreVisible = HubNavigationPolicy.showSecondaryControls(
-        expanded = moreOpen, currentTab = currentTab, snoozed = ui.filter.snoozed,
-        reminders = ui.remindersSelected, sourcePackage = ui.sourcePackage,
-    )
-    val context = LocalContext.current
-    fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter(), pkg: String? = null) {
+    fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter()) {
         onTabChange(tab)
         ui.onFilterChange(next)
-        ui.onSourceChange(pkg)
-        moreOpen = false
+        ui.onSourceChange(null)
     }
     BackHandler(enabled = ui.remindersSelected || ui.filter.snoozed) { select(HubFilter.All) }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconHubFilterButton(
-                "Hub", "folder",
+            IconHubFilterButton("Hub", "folder",
                 currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null && !ui.remindersSelected,
-                modifier = Modifier.focusRequester(firstTab),
-            ) { select(HubFilter.All) }
-            IconHubFilterButton("Messages", "message-dots", currentTab == HubFilter.Messages,
-                count = messageCount) {
+                modifier = Modifier.focusRequester(firstTab)) { select(HubFilter.All) }
+            IconHubFilterButton("Messages", "message-dots", currentTab == HubFilter.Messages, count = messageCount) {
                 select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
             }
             IconHubFilterButton("Email", "mail",
-                currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email,
-                count = emailCount) {
+                currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email, count = emailCount) {
                 select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
             }
             IconHubFilterButton("Unread", "list-check", currentTab == HubFilter.All && ui.filter.unreadOnly && !ui.remindersSelected) {
                 select(HubFilter.All, ConversationFilter(unreadOnly = true))
             }
             IconHubFilterButton("Search", "search", searchOpen) { searchOpen = !searchOpen }
-            IconHubFilterButton("More categories and active apps", "apps", moreVisible) { moreOpen = !moreOpen }
         }
-        if (moreVisible) {
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconHubFilterButton("Calls", "phone-call", currentTab == HubFilter.Calls) {
-                    select(HubFilter.Calls)
-                }
-                IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) {
-                    select(HubFilter.Contacts)
-                }
-                IconHubFilterButton("Remind", "clock", ui.remindersSelected,
-                    count = ReminderPolicy.pendingCount(ui.reminders), showLabel = true) {
-                    onTabChange(HubFilter.All)
-                    ui.onShowReminders()
-                }
-                val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
-                if (snoozedCount > 0 || ui.filter.snoozed) {
-                    IconHubFilterButton("Snoozed", "clock",
-                        currentTab == HubFilter.All && ui.filter.snoozed, count = snoozedCount, showLabel = true) {
-                        select(HubFilter.All, ConversationFilter(snoozed = true))
-                    }
-                }
-                sources.forEach { (pkg, name, count) ->
-                    AppSourceFilterButton(pkg, name, count,
-                        currentTab == HubFilter.All && ui.sourcePackage == pkg) {
-                        select(HubFilter.All, pkg = pkg)
-                    }
-                }
+        Row(
+            modifier = Modifier.fillMaxWidth().testTag("hub-shortcuts").horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconHubFilterButton("Calls", "phone-call", currentTab == HubFilter.Calls) { select(HubFilter.Calls) }
+            IconHubFilterButton("Calendar", "calendar", false, onClick = onOpenCalendar)
+            val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
+            IconHubFilterButton("Snoozed", "clock", currentTab == HubFilter.All && ui.filter.snoozed, count = snoozedCount) {
+                select(HubFilter.All, ConversationFilter(snoozed = true))
             }
+            IconHubFilterButton("Remind", "list-check", ui.remindersSelected,
+                count = ReminderPolicy.pendingCount(ui.reminders)) {
+                onTabChange(HubFilter.All)
+                ui.onShowReminders()
+            }
+            IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) { select(HubFilter.Contacts) }
         }
         if (searchOpen && currentTab != HubFilter.Calls && currentTab != HubFilter.Contacts) {
-            OutlinedTextField(
-                value = ui.filter.person,
+            OutlinedTextField(value = ui.filter.person,
                 onValueChange = { ui.onFilterChange(ui.filter.copy(person = it)) },
                 modifier = Modifier.fillMaxWidth().sableFocusRing(),
-                placeholder = { Text(stringResource(R.string.hub_filter_person_hint)) },
-                singleLine = true,
-            )
+                placeholder = { Text(stringResource(R.string.hub_filter_person_hint)) }, singleLine = true)
         }
     }
 }
@@ -366,35 +336,6 @@ private fun IconHubFilterButton(
     }
 }
 
-/** Actual source icon disambiguates clients with similar names, including multiple mail apps. */
-@Composable
-private fun AppSourceFilterButton(
-    packageName: String,
-    label: String,
-    count: Int,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val context = LocalContext.current
-    val appIcon = remember(packageName) {
-        runCatching { context.packageManager.getApplicationIcon(packageName).toBitmap(72, 72).asImageBitmap() }.getOrNull()
-    }
-    Row(
-        modifier = Modifier.clip(RoundedCornerShape(6.dp))
-            .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-            .sableFocusRing().clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (appIcon != null) Image(appIcon, contentDescription = label,
-            modifier = Modifier.size(21.dp).clip(RoundedCornerShape(4.dp)))
-        Text("$label · $count", maxLines = 1, style = MaterialTheme.typography.labelMedium,
-            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-/** Compact action glyph with explicit screen-reader text and a keyboard focus ring. */
 @Composable
 private fun HubActionIcon(
     label: String,

@@ -30,14 +30,33 @@ class FramePersistenceTest {
         val original = first.loadFrameSettings()
         val dismissals = first.loadFrameDismissals()
         try {
-            first.saveFrameSettings(FrameSettings(false, false, false, false, false, 12))
+            first.saveFrameSettings(FrameSettings(false, false, false, false, false, 8))
             first.saveFrameDismissals(mapOf("0:mail" to 123L))
             val recreated = StartStateRepository(context)
-            assertEquals(FrameSettings(false, false, false, false, false, 12), recreated.loadFrameSettings())
+            assertEquals(FrameSettings(false, false, false, false, false, 8), recreated.loadFrameSettings())
             assertEquals(mapOf("0:mail" to 123L), recreated.loadFrameDismissals())
         } finally {
             first.saveFrameSettings(original)
             first.saveFrameDismissals(dismissals)
         }
     }
+    @Test fun openedWindowPersistsAndClearDoesNotReadOldUsageHistory() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val first = io.github.aimindseye.tenseven.platform.FrameWindowRepository(context)
+        first.clear()
+        try {
+            val now = System.currentTimeMillis()
+            val values = (1..9).map { io.github.aimindseye.tenseven.frames.FrameOpening(
+                io.github.aimindseye.tenseven.frames.FrameApp("fixture$it", 0), now + it) }
+            assertEquals(8, first.update(values).size)
+            val recreated = io.github.aimindseye.tenseven.platform.FrameWindowRepository(context)
+            assertEquals("fixture9", recreated.update(values).first().app.packageName)
+            assertFalse(recreated.update(values).any { it.app.packageName == "fixture1" })
+            recreated.close(io.github.aimindseye.tenseven.frames.FrameApp("fixture9", 0))
+            assertEquals(7, recreated.update(values).size)
+            recreated.clear()
+            assertTrue(recreated.update(emptyList()).isEmpty())
+        } finally { first.clear() }
+    }
+
 }

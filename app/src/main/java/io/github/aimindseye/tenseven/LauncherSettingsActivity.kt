@@ -91,7 +91,6 @@ private fun LauncherSettings(
             Section(stringResource(R.string.ls_section_style))
             HomeStyleSection(state, first)
             HomeDisplaySection(state)
-            FrameSettingsSection(state)
 
             Section(stringResource(R.string.ls_section_home))
             SwitchRow(stringResource(R.string.ls_type_to_search), stringResource(R.string.ls_type_to_search_detail), typeToSearch) {
@@ -114,6 +113,7 @@ private fun LauncherSettings(
 
             Section(stringResource(R.string.ls_section_hub))
             HubSection()
+            FrameSettingsSection(state)
 
             Section(stringResource(R.string.ls_section_lock))
             LockLayerSection(state)

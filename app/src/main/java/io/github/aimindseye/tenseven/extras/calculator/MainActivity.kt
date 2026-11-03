@@ -3,6 +3,7 @@
 package io.github.aimindseye.tenseven.extras.calculator
 
 import io.github.aimindseye.tenseven.LauncherTheme
+import androidx.core.content.edit
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.KeyEvent
@@ -78,6 +79,10 @@ private object HardwareKeypad {
 }
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        io.github.aimindseye.tenseven.platform.FrameWindowRepository.local(this, javaClass.name)
+    }
     // Overrides the public Activity method; androidx re-declares it as restricted, which lint misreports.
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -243,6 +248,11 @@ private fun CalculatorPad(
     var operation by remember { mutableStateOf<Int?>(null) }
     var replaceInput by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf(initialStatus(scientific)) }
+    val summaryContext = androidx.compose.ui.platform.LocalContext.current
+    fun publishSummary(text: String) {
+        summaryContext.getSharedPreferences("calculator_frame", android.content.Context.MODE_PRIVATE)
+            .edit { putString("last_result", text.take(240)) }
+    }
 
     fun clear() {
         display = "0"
@@ -286,6 +296,7 @@ private fun CalculatorPad(
                 ),
             )
         return if (response.error == null) {
+            publishSummary(left + " " + operationLabels[op] + " " + right + " = " + response.value)
             status = t("exact_result")
             response.value
         } else {
@@ -354,6 +365,7 @@ private fun CalculatorPad(
             )
 
         if (response.error == null) {
+            publishSummary(choice.label + "(" + display + ") = " + response.value)
             display = response.value
             leftOperand = null
             operation = null

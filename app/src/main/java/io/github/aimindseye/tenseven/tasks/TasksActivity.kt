@@ -52,6 +52,7 @@ class TasksActivity : ComponentActivity() {
     private var resumeRevision by mutableIntStateOf(0)
     override fun onResume() {
         super.onResume()
+        io.github.aimindseye.tenseven.platform.FrameWindowRepository.local(this, javaClass.name)
         resumeRevision++
     }
     override fun onCreate(savedInstanceState: Bundle?) {

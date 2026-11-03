@@ -29,6 +29,7 @@ class LiveSurfaceRepository(
 ) {
     private val appContext = context.applicationContext
     private val resolver = appContext.contentResolver
+    private val frameSummaries = AppFrameSummaryRepository(appContext)
 
     fun initialSnapshot(
         nowEpochMs: Long = System.currentTimeMillis(),
@@ -105,6 +106,7 @@ class LiveSurfaceRepository(
                 observedAtEpochMs = nowEpochMs,
                 hubApps = hubAppCounts(),
                 calendarPackages = calendarPackages(),
+                appSummaries = frameSummaries.snapshot(nowEpochMs),
             )
         }
 

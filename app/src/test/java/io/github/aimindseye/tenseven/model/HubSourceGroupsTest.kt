@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class HubSourceGroupsTest {
-    private fun row(pkg: String, count: Int) = AppUnreadCount(pkg, count)
+    private fun row(packageName: String, count: Int) = AppUnreadCount(packageName, count)
 
     @Test fun activeMessagesAndMailAreSummedWithoutDuplicatingAppChips() {
         val summary = HubSourceGroups.summarize(

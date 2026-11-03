@@ -104,4 +104,38 @@ class ActiveFramesUiTest {
         compose.runOnIdle { assertTrue(stopped) }
     }
 
+    @Test fun ownedIntegrationsDoNotDisplaceLiveAppFromFullGrid() {
+        val media = snapshot.copy(music = LiveDatum("Music", "Playing track", LiveAvailability.LIVE, sourcePackage = "yt.music"))
+        val item = FrameItem(FrameApp("yt.music", android.os.Process.myUserHandle().hashCode()))
+        compose.setContent {
+            MaterialTheme {
+                ActiveFramesGrid(FramesState(listOf(item), notificationsAllowed = true, settings = FrameSettings(maximum = 4)),
+                    emptyList(), media, emptySet(), (1..4).map { FrameTileView("owned:$it", "Local $it", "Saved data") },
+                    { _, _ -> null }, true, {}, {}, Modifier.size(360.dp))
+            }
+        }
+        compose.onNodeWithText("Playing track", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("owned:4").assertDoesNotExist()
+    }
+
+    @Test fun notificationsCalendarAndLocalDataNeverCreateFrames() {
+        io.github.aimindseye.tenseven.platform.ScreenCaptureState.stopped()
+        val live = snapshot.copy(calendar = LiveDatum("Calendar", "Old calendar event", LiveAvailability.LIVE),
+            appSummaries = listOf(
+                AppSummary("messages:mail", "Mail", "Old mail text", SummarySource.Notification, "mail"),
+                AppSummary("local:notes", "Notes", "Old note", SummarySource.Local)))
+        compose.setContent {
+            MaterialTheme {
+                ActiveFramesPage(FramesState(usageAllowed = true, calendarAllowed = true, notificationsAllowed = true),
+                    emptyList(), setOf(io.github.aimindseye.tenseven.model.HomeLayout.STATUS_RINGS,
+                        io.github.aimindseye.tenseven.model.HomeLayout.WEATHER, io.github.aimindseye.tenseven.model.HomeLayout.SEARCH_ROW),
+                    {}, {}, live, 0, { _, _ -> null }, true, {}, {}, {}, {})
+            }
+        }
+        compose.onNodeWithTag("frames-empty").assertIsDisplayed()
+        compose.onNodeWithText("Old calendar event").assertDoesNotExist()
+        compose.onNodeWithText("Old mail text").assertDoesNotExist()
+        compose.onNodeWithText("Old note").assertDoesNotExist()
+    }
+
 }

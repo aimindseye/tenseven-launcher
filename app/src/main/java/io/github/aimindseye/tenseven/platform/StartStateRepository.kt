@@ -326,7 +326,7 @@ class StartStateRepository(
     fun loadHomeDials(style: HomeStyle): Set<String> =
         HomeDisplayPolicy.normalizedDials(
             preferences.getStringSet(HomeDisplayPolicy.dialPreference(style), null)
-                ?: HomeDisplayPolicy.ALL_DIALS,
+                ?: HomeDisplayPolicy.DEFAULT_DIALS,
         )
 
     fun saveHomeDials(style: HomeStyle, selected: Set<String>) {

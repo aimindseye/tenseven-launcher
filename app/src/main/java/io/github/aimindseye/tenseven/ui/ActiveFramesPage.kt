@@ -56,44 +56,45 @@ internal fun ActiveFramesPage(
     onClose: (FrameItem) -> Unit,
     onShowHub: () -> Unit,
     onAllowUsageAccess: () -> Unit,
+    onOpenNotificationApp: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val display = remember(context) { StartStateRepository(context) }
     val dials = remember(refreshGeneration) { display.loadHomeDials(HomeStyle.Bb10) }
     val strip = remember(refreshGeneration) { display.loadHomeNotificationStrip(HomeStyle.Bb10) }
     val expanded = remember(refreshGeneration) { display.loadHomeNotificationExpanded(HomeStyle.Bb10) }
+    val summaryActions = remember(context) { io.github.aimindseye.tenseven.platform.AppFrameSummaryRepository(context) }
     val enabledApps = remember(refreshGeneration) { display.loadHubEnabledApps() }
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
     val capture by io.github.aimindseye.tenseven.platform.ScreenCaptureState.state.collectAsState()
-    val owned = buildList {
-        if (capture.running) add(FrameTileView("tile:capture", "Shared screen", "Last captured preview · frozen on Home",
-            capture.bitmap, { context.stopService(android.content.Intent(context, io.github.aimindseye.tenseven.platform.ScreenCaptureService::class.java)) }))
-        if (state.settings.liveSummaries) {
-        if (state.calendarAllowed && snapshot.calendar.availability == LiveAvailability.LIVE &&
-            state.items.none { it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName in snapshot.calendarPackages })
-            add(FrameTileView("tile:calendar", "Calendar", snapshot.calendar.detail))
-        if (state.notificationsAllowed && snapshot.music.availability == LiveAvailability.LIVE &&
-            state.items.none { it.app.userId == android.os.Process.myUserHandle().hashCode() && it.app.packageName == snapshot.music.sourcePackage })
-            add(FrameTileView("tile:media", "Now playing", snapshot.music.detail))
-        }
-    }
+    val owned = emptyList<FrameTileView>()
     Column(Modifier.fillMaxSize()) {
         if (shown(HomeLayout.STATUS_RINGS) && dials.isNotEmpty()) StatusDialsRow(onOpenSettings, dials)
         if (shown(HomeLayout.WEATHER)) {
             DateHeader(refreshGeneration, snapshot.hubApps.filter { it.packageName in enabledApps }.sumOf { it.count },
                 onShowHub, !strip, if (dials.isEmpty()) onOpenSettings else null)
-            if (strip) HomeNotificationStrip(snapshot.hubApps, enabledApps, expanded, onShowHub)
+            if (strip) HomeNotificationStrip(snapshot.hubApps, enabledApps, expanded, onShowHub, onOpenApp = onOpenNotificationApp)
         }
         if (shown(HomeLayout.SEARCH_ROW)) Box(Modifier.padding(horizontal = 6.dp)) { SearchLaunchButton(onClick = onSearch) }
         // Put the access offer outside the grid so it never displaces one of its two visible rows.
         if (!state.usageAllowed) UsageAccessHint(onAllowUsageAccess)
+        if (capture.running) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Shared screen · separate capture preview", color = Bb10Text, modifier = Modifier.weight(1f))
+                androidx.compose.material3.TextButton(onClick = { context.stopService(android.content.Intent(context,
+                    io.github.aimindseye.tenseven.platform.ScreenCaptureService::class.java)) }) { Text("Stop sharing") }
+            }
+            capture.bitmap?.let { picture -> Image(picture.asImageBitmap(), "Shared screen preview",
+                Modifier.fillMaxWidth().height(96.dp), contentScale = ContentScale.Fit) }
+        }
         ActiveFramesGrid(state, apps, snapshot, enabledApps, owned, frameSnapshot, active, onResume, onClose,
-            Modifier.weight(1f).fillMaxWidth())
+            Modifier.weight(1f).fillMaxWidth(), onOpenSummary = summaryActions::open)
     }
 }
 
 internal data class FrameTileView(val key: String, val title: String, val detail: String,
-    val picture: Bitmap? = null, val onClose: (() -> Unit)? = null)
+    val picture: Bitmap? = null, val onClose: (() -> Unit)? = null,
+    val onOpen: (() -> Unit)? = null, val badge: String = "Live tile")
 
 @Composable
 internal fun ActiveFramesGrid(
@@ -107,13 +108,17 @@ internal fun ActiveFramesGrid(
     onResume: (FrameItem) -> Unit,
     onClose: (FrameItem) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSummary: (String) -> Unit = {},
 ) {
     val requesters = remember { mutableMapOf<String, FocusRequester>() }
     var nextFocus by remember { mutableStateOf<String?>(null) }
-    val tiles = ownedTiles.take(state.settings.maximum)
     val personalUser = android.os.Process.myUserHandle().hashCode()
-    val visibleItems = state.items.sortedBy { if (FrameLiveSummary.detail(state, it, snapshot, personalUser) != null) 0 else 1 }
-        .take((state.settings.maximum - tiles.size).coerceAtLeast(0))
+    val sortedItems = state.items.sortedBy { if (FrameLiveSummary.detail(state, it, snapshot, personalUser) != null) 0 else 1 }
+    val liveCount = sortedItems.count { FrameLiveSummary.detail(state, it, snapshot, personalUser) != null }
+    val captureCount = ownedTiles.count { it.key == "tile:capture" }
+    val reserved = liveCount.coerceAtMost((state.settings.maximum - captureCount).coerceAtLeast(0))
+    val tiles = ownedTiles.take((state.settings.maximum - reserved).coerceAtLeast(0))
+    val visibleItems = sortedItems.take((state.settings.maximum - tiles.size).coerceAtLeast(0))
     val keys = tiles.map { it.key } + visibleItems.map { it.key }
     val first = remember { FocusRequester() }
     fun requester(key: String) = requesters.getOrPut(key) { FocusRequester() }
@@ -140,11 +145,14 @@ internal fun ActiveFramesGrid(
                         val slot = Modifier.weight(1f).height(height).focusRequester(requester(key))
                         if (item == null) {
                             val tile = tiles.first { it.key == key }
-                            FrameTile(tile.key, tile.title, if (tile.picture != null) "Shared preview" else "Live tile", tile.detail, tile.onClose != null, {},
-                                { tile.onClose?.invoke() }, slot, tile.picture, openEnabled = false)
+                            FrameTile(tile.key, tile.title, if (tile.picture != null) "Shared preview" else tile.badge, tile.detail, tile.onClose != null, { tile.onOpen?.invoke() },
+                                { tile.onClose?.invoke() }, slot, tile.picture, openEnabled = tile.onOpen != null && state.settings.openApps)
                         } else {
                             RecentFrameCard(state, item, apps, snapshot, enabledApps, frameSnapshot, active,
-                                { onResume(item) }, {
+                                {
+                                    val summary = FrameLiveSummary.summary(state, item, snapshot, personalUser)
+                                    if (summary != null && summary.source == SummarySource.Local) onOpenSummary(summary.key) else onResume(item)
+                                }, {
                                     val index = keys.indexOf(key)
                                     nextFocus = keys.filterNot { it == key }.getOrNull(index.coerceAtMost(keys.size - 2).coerceAtLeast(0))
                                     onClose(item)
@@ -164,14 +172,21 @@ private fun RecentFrameCard(
     enabledApps: Set<String>, frameSnapshot: (FrameItem, Long) -> Bitmap?, active: Boolean,
     onOpen: () -> Unit, onClose: () -> Unit, modifier: Modifier,
 ) {
-    val app = apps.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId }
+    val app = apps.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId &&
+        (item.app.activityClass == null || LocalFrameApps.canonical(it.component.className) == item.app.activityClass) }
     val picture by produceState<Bitmap?>(null, item.key, state.generation, active, state.snapshotsAllowed) {
         value = null
         if (active && state.snapshotsAllowed) value = withContext(Dispatchers.IO) { frameSnapshot(item, state.generation) }
     }
     val count = FrameMessages.count(state, item, snapshot.hubApps, enabledApps, android.os.Process.myUserHandle().hashCode())
     val summary = FrameLiveSummary.detail(state, item, snapshot, android.os.Process.myUserHandle().hashCode())
-    FrameTile(item.key, app?.label ?: item.app.packageName, if (summary != null) "Live summary" else if (picture == null) "Recent app" else "Preview",
+    val badge = FrameLiveSummary.summary(state, item, snapshot, android.os.Process.myUserHandle().hashCode())?.source?.label ?: "Live summary"
+    val renderedBadge = when {
+        summary != null -> badge
+        picture != null -> "Preview"
+        else -> "Recent app"
+    }
+    FrameTile(item.key, app?.label ?: LocalFrameApps.title(item.app.activityClass) ?: item.app.packageName, renderedBadge,
         listOfNotNull(summary, if (count > 0) "$count new" else null).joinToString(" · "), true, onOpen, onClose, modifier, picture, state.settings.openApps,
         icon = { if (app != null) AppMark(app, 28) })
 }
@@ -202,16 +217,7 @@ internal fun FrameTile(
             else Modifier.focusable()
         ).semantics { contentDescription = "$title, $badge" }) {
         Box(Modifier.weight(1f).fillMaxWidth().background(Bb10Background), contentAlignment = Alignment.Center) {
-            if (picture != null) {
-                Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                Text("Preview", color = Bb10Text, style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.align(Alignment.TopStart).background(Bb10Background).padding(4.dp))
-            }
-            else Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
-                icon()
-                Text(badge, color = Bb10Text, style = MaterialTheme.typography.labelSmall)
-                if (detail.isNotBlank()) Text(detail, color = Bb10Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            }
+            FrameContent(badge, detail, picture, icon)
         }
         Row(Modifier.fillMaxWidth().heightIn(min = 36.dp).background(if (focused) Bb10Blue else Bb10BarTop).padding(start = 6.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -223,4 +229,20 @@ internal fun FrameTile(
             }
         }
     }
+}
+
+@Composable
+private fun BoxScope.FrameContent(badge: String, detail: String, picture: Bitmap?,
+    icon: @Composable () -> Unit) {
+            if (picture != null) {
+                Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                Text("Preview", color = Bb10Text, style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.align(Alignment.TopStart).background(Bb10Background).padding(4.dp))
+            }
+            else Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
+                icon()
+                Text(badge, color = Bb10Text, style = MaterialTheme.typography.labelSmall)
+                if (detail.isNotBlank()) Text(detail, color = Bb10Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+
+            }
 }

@@ -191,7 +191,7 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
     if (dials.isNotEmpty()) {
         listOf(
             "wifi" to "Wi-Fi", "mobile" to "Mobile", "cpu" to "CPU",
-            "ram" to "RAM", "battery" to "Battery", "cell" to "Cell",
+            "ram" to "RAM", "battery" to "Battery", "cell" to "Cell", "storage" to "Storage",
         ).forEach { (key, title) ->
             SwitchRow(title, "Show $title dial", key in dials) { enabled ->
                 dials = if (enabled) dials + key else dials - key
@@ -204,7 +204,7 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
         state.saveHomeNotificationStrip(style, it)
     }
     if (strip) {
-        SwitchRow("Expanded notification bar", "Show all opted-in notification sources in a scrollable strip", expanded) {
+        SwitchRow("Show all notification icons on Home", "Wrap all enabled apps with unread notifications onto additional rows", expanded) {
             expanded = it
             state.saveHomeNotificationExpanded(style, it)
         }

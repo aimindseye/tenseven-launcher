@@ -20,6 +20,10 @@ import io.github.aimindseye.tenseven.extras.notes.ui.NotesApp
  * export and import happen only when asked. Text shared from another app opens as a new note.
  */
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        io.github.aimindseye.tenseven.platform.FrameWindowRepository.local(this, javaClass.name)
+    }
     private lateinit var controller: NotesController
 
     override fun onCreate(savedInstanceState: Bundle?) {

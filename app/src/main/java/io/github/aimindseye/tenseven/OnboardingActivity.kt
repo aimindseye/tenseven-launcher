@@ -206,6 +206,7 @@ private fun SetupScreen(
     val firstButton = remember { FocusRequester() }
     var picked by remember { mutableStateOf(enabledExtras) }
     BackHandler(enabled = !overview && index > 0) { index -= 1 }
+    ProvideHomeStyle(settings) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier =
@@ -272,6 +273,7 @@ private fun SetupScreen(
                         Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
                     }
                 }
+                if (step == SetupStep.NOTIFICATIONS && done) FrameSettingsSection(settings, state.notificationAccess)
                 OutlinedButton(
                     onClick = { if (last) onFinish() else index += 1 },
                     modifier = Modifier.fillMaxWidth().sableFocusRing(),
@@ -286,6 +288,7 @@ private fun SetupScreen(
                 }
             }
         }
+    }
     }
     LaunchedEffect(index) { runCatching { firstButton.requestFocus() } }
 }
@@ -371,6 +374,7 @@ private fun SetupOverview(
                         Text(if (done) stringResource(R.string.setup_change) else stepAction(step))
                     }
                 }
+                if (step == SetupStep.NOTIFICATIONS && done) FrameSettingsSection(settings, state.notificationAccess)
             }
         }
     }
@@ -392,7 +396,6 @@ private fun ChoiceSection(
         SetupStep.STYLE -> {
             HomeStyleSection(state)
             HomeDisplaySection(state)
-            FrameSettingsSection(state)
         }
         SetupStep.LOOK -> {
             ThemeSection(state)

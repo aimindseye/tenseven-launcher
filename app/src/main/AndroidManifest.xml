@@ -433,5 +433,6 @@
             android:theme="@android:style/Theme.Material.NoActionBar" android:resizeableActivity="true" />
         <service android:name=".platform.ScreenCaptureService" android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+        <activity android:name=".FrameIntegrationsActivity" android:exported="false" />
     </application>
 </manifest>

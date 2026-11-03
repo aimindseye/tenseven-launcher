@@ -74,6 +74,7 @@ import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.HomeApps
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.StartText.t
+import io.github.aimindseye.tenseven.model.inLauncherUser
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
@@ -483,6 +484,7 @@ fun Bb7HomeScreen(
                         compact = open || searching,
                         scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
                         onOpenHub = onOpenHub,
+                        onOpenNotificationApp = { pkg -> apps.firstOrNull { it.inLauncherUser && it.component.packageName == pkg }?.let(onLaunchApp) },
                     )
                     if (!open && !searching) {
                         Bb7Desktop(
@@ -575,6 +577,7 @@ private fun Bb7Banner(
     compact: Boolean,
     scrim: Color,
     onOpenHub: () -> Unit,
+    onOpenNotificationApp: (String) -> Unit,
 ) {
     Column(
         modifier =
@@ -600,7 +603,7 @@ private fun Bb7Banner(
         }
         if (showStrip && !compact) HomeNotificationStrip(
             counts = notificationCounts, enabledPackages = hubSources,
-            expanded = stripExpanded, onOpenHub = onOpenHub,
+            expanded = stripExpanded, onOpenHub = onOpenHub, onOpenApp = onOpenNotificationApp,
         )
     }
 }

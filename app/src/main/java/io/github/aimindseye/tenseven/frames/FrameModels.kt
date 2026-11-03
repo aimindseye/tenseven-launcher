@@ -6,8 +6,8 @@ import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.PlatformCapabilities
 
 /** Stable identity always includes the Android profile; never fall back to another user's app. */
-data class FrameApp(val packageName: String, val userId: Int) {
-    val key: String get() = "$userId:$packageName"
+data class FrameApp(val packageName: String, val userId: Int, val activityClass: String? = null) {
+    val key: String get() = "$userId:$packageName" + (activityClass?.let { "/" + it } ?: "")
 }
 
 data class FrameSettings(
@@ -18,8 +18,8 @@ data class FrameSettings(
     val rememberReturnedApps: Boolean = true,
     val maximum: Int = 8,
 ) {
-    fun normalized(): FrameSettings = copy(maximum = if (maximum in LIMITS) maximum else 8)
-    companion object { val LIMITS = listOf(4, 8, 12) }
+    fun normalized(): FrameSettings = copy(maximum = 8)
+    companion object { val LIMITS = listOf(8) }
 }
 
 data class FrameItem(val app: FrameApp, val task: ActiveFrame? = null) {
@@ -33,6 +33,7 @@ data class FrameInput(
     val personalUserId: Int,
     val capabilities: PlatformCapabilities,
     val settings: FrameSettings,
+    val openings: List<FrameOpening>? = null,
 )
 
 data class FramesState(
@@ -43,7 +44,7 @@ data class FramesState(
     val snapshotsAllowed: Boolean = false,
     val notificationsAllowed: Boolean = false,
     val calendarAllowed: Boolean = false,
-    val fallbackReason: String = "Recent apps use launcher history. Usage access adds apps opened elsewhere.",
+    val fallbackReason: String = "Open an app to create a frame. The latest eight opened apps are kept.",
 )
 
 /** Merge partial native results with recents. A dismissed native task cannot sneak back in. */
@@ -52,15 +53,19 @@ object FramePolicy {
         val settings = input.settings.normalized()
         val recent = if (settings.rememberReturnedApps) input.recent.sortedByDescending { it.timeMs }
             .distinctBy { it.packageName } else emptyList()
-        val opened = recent.associate { FrameApp(it.packageName, input.personalUserId).key to it.timeMs }
+        val opened = recent.associate { FrameApp(it.packageName, input.personalUserId).key to it.timeMs } +
+            input.openings.orEmpty().associate { it.app.key to it.at }
         val native = input.native.filter { FrameApp(it.packageName, it.userId) in input.availableApps }
-        val items = recent.map { event ->
+        val items = input.openings?.map { opening ->
+            FrameItem(opening.app, native.firstOrNull { it.packageName == opening.app.packageName && it.userId == opening.app.userId &&
+                (opening.app.activityClass == null || it.className == opening.app.activityClass) })
+        } ?: (recent.map { event ->
             val app = FrameApp(event.packageName, input.personalUserId)
             FrameItem(app, native.firstOrNull { it.packageName == app.packageName && it.userId == app.userId })
-        } + native.map { FrameItem(FrameApp(it.packageName, it.userId), it) }
+        } + native.map { FrameItem(FrameApp(it.packageName, it.userId), it) })
         val shown = items.filter { item ->
-            item.app in input.availableApps &&
-                ((dismissals[item.key] ?: dismissals[item.app.key])?.let { closed -> (opened[item.app.key] ?: 0L) > closed } ?: true)
+            val closed = dismissals[item.key] ?: dismissals[item.app.key]
+            item.app in input.availableApps && (closed == null || opened.getOrDefault(item.app.key, 0L) > closed)
         }.distinctBy { it.key }.take(settings.maximum)
         return FramesState(shown, generation, settings,
             usageAllowed = input.capabilities.usageRecents == CapabilityStatus.Ready,
@@ -78,7 +83,7 @@ object FrameDismissals {
     fun decode(value: String?): Map<String, Long> = value.orEmpty().lineSequence().mapNotNull { line ->
         val parts = line.split('\t')
         val at = parts.getOrNull(1)?.toLongOrNull()
-        if (parts.size != 2 || at == null || at < 0 || !parts[0].matches(Regex("[0-9]+:[a-zA-Z0-9_.]+(?::recent|:task:[0-9]+)?"))) null
+        if (parts.size != 2 || at == null || at < 0 || !parts[0].matches(Regex("[0-9]+:[a-zA-Z0-9_.]+(?:/[a-zA-Z0-9_.$]+)?(?::recent|:task:[0-9]+)?"))) null
         else parts[0] to at
     }.take(MAX).toMap()
     fun encode(entries: Map<String, Long>): String = entries.entries.sortedByDescending { it.value }

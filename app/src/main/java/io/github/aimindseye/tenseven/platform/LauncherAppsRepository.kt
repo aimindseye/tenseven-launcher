@@ -230,7 +230,10 @@ class LauncherAppsRepository(
             runCatching {
                 val state = StartStateRepository(appContext)
                 if (state.loadFrameSettings().rememberReturnedApps) {
-                    val frameKey = "${entry.user.hashCode()}:${entry.component.packageName}"
+                    val activity = io.github.aimindseye.tenseven.frames.LocalFrameApps.canonical(entry.component.className).takeIf { entry.component.packageName == appContext.packageName }
+                    val frameApp = io.github.aimindseye.tenseven.frames.FrameApp(entry.component.packageName, entry.user.hashCode(), activity)
+                    FrameWindowRepository(appContext).record(frameApp)
+                    val frameKey = frameApp.key
                     state.saveFrameDismissals(state.loadFrameDismissals().filterKeys { it != frameKey && !it.startsWith("$frameKey:") })
                     if (entry.user == android.os.Process.myUserHandle()) launches.record(entry.component.packageName)
                 }

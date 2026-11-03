@@ -45,6 +45,7 @@ data class LiveSurfaceSnapshot(
     /** The Hub page's unread bar, most unread first; empty when Hub has nothing or is missing. */
     val hubApps: List<AppUnreadCount> = emptyList(),
     val calendarPackages: Set<String> = emptySet(),
+    val appSummaries: List<io.github.aimindseye.tenseven.frames.AppSummary> = emptyList(),
 ) {
     init {
         require(dateText.isNotBlank())
