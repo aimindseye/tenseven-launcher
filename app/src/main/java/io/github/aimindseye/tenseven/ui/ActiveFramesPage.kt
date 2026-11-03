@@ -150,7 +150,7 @@ internal fun ActiveFramesGrid(
                             RecentFrameCard(state, item, apps, snapshot, enabledApps, frameSnapshot, active,
                                 {
                                     val summary = FrameLiveSummary.summary(state, item, snapshot, personalUser)
-                                    if (summary != null && summary.source in setOf(SummarySource.Document, SummarySource.Local)) onOpenSummary(summary.key) else onResume(item)
+                                    if (summary != null && summary.source == SummarySource.Local) onOpenSummary(summary.key) else onResume(item)
                                 }, {
                                     val index = keys.indexOf(key)
                                     nextFocus = keys.filterNot { it == key }.getOrNull(index.coerceAtMost(keys.size - 2).coerceAtLeast(0))
@@ -180,20 +180,14 @@ private fun RecentFrameCard(
     val count = FrameMessages.count(state, item, snapshot.hubApps, enabledApps, android.os.Process.myUserHandle().hashCode())
     val summary = FrameLiveSummary.detail(state, item, snapshot, android.os.Process.myUserHandle().hashCode())
     val badge = FrameLiveSummary.summary(state, item, snapshot, android.os.Process.myUserHandle().hashCode())?.source?.label ?: "Live summary"
-    val context = LocalContext.current
-    val kind = io.github.aimindseye.tenseven.platform.OfficeFrameDocuments.PACKAGES.entries.firstOrNull { it.value == item.app.packageName }?.key
-    val needsFile = kind != null && summary == null && state.settings.liveSummaries && item.app.userId == android.os.Process.myUserHandle().hashCode()
     val renderedBadge = when {
-        needsFile -> "File setup needed"
         summary != null -> badge
         picture != null -> "Preview"
         else -> "Recent app"
     }
     FrameTile(item.key, app?.label ?: LocalFrameApps.title(item.app.activityClass) ?: item.app.packageName, renderedBadge,
-        listOfNotNull(if (needsFile) "Choose a saved file for a summary" else summary, if (count > 0) "$count new" else null).joinToString(" · "), true, onOpen, onClose, modifier, picture, state.settings.openApps,
-        icon = { if (app != null) AppMark(app, 28) },
-        onConfigure = if (needsFile) ({ context.startActivity(android.content.Intent(context,
-            io.github.aimindseye.tenseven.FrameIntegrationsActivity::class.java).putExtra("choose_document", kind)) }) else null)
+        listOfNotNull(summary, if (count > 0) "$count new" else null).joinToString(" · "), true, onOpen, onClose, modifier, picture, state.settings.openApps,
+        icon = { if (app != null) AppMark(app, 28) })
 }
 
 /** Shared card used by the real grid and Compose keyboard/layout tests. */
@@ -203,7 +197,6 @@ internal fun FrameTile(
     closable: Boolean, onOpen: () -> Unit, onClose: () -> Unit,
     modifier: Modifier = Modifier, picture: Bitmap? = null, openEnabled: Boolean = true,
     icon: @Composable () -> Unit = {},
-    onConfigure: (() -> Unit)? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
@@ -223,7 +216,7 @@ internal fun FrameTile(
             else Modifier.focusable()
         ).semantics { contentDescription = "$title, $badge" }) {
         Box(Modifier.weight(1f).fillMaxWidth().background(Bb10Background), contentAlignment = Alignment.Center) {
-            FrameContent(key, badge, detail, picture, icon, onConfigure)
+            FrameContent(badge, detail, picture, icon)
         }
         Row(Modifier.fillMaxWidth().heightIn(min = 36.dp).background(if (focused) Bb10Blue else Bb10BarTop).padding(start = 6.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -238,8 +231,8 @@ internal fun FrameTile(
 }
 
 @Composable
-private fun BoxScope.FrameContent(key: String, badge: String, detail: String, picture: Bitmap?,
-    icon: @Composable () -> Unit, onConfigure: (() -> Unit)?) {
+private fun BoxScope.FrameContent(badge: String, detail: String, picture: Bitmap?,
+    icon: @Composable () -> Unit) {
             if (picture != null) {
                 Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 Text("Preview", color = Bb10Text, style = MaterialTheme.typography.labelSmall,
@@ -248,8 +241,7 @@ private fun BoxScope.FrameContent(key: String, badge: String, detail: String, pi
             else Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
                 icon()
                 Text(badge, color = Bb10Text, style = MaterialTheme.typography.labelSmall)
-                if (detail.isNotBlank()) Text(detail, color = Bb10Muted, maxLines = if (onConfigure == null) 2 else 1, overflow = TextOverflow.Ellipsis)
-                if (onConfigure != null) androidx.compose.material3.TextButton(onClick = onConfigure,
-                    modifier = Modifier.testTag("configure:$key")) { Text("Choose file") }
+                if (detail.isNotBlank()) Text(detail, color = Bb10Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+
             }
 }

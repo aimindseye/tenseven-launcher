@@ -2,7 +2,7 @@ package io.github.aimindseye.tenseven.frames
 
 /** Read-only, bounded presentation data. No PendingIntents, document URIs or account tokens. */
 enum class SummarySource(val label: String) {
-    Media("Media summary"), Notification("Notification summary"), Local("Local summary"), Document("Selected file")
+    Media("Media summary"), Notification("Notification summary"), Local("Local summary")
 }
 data class AppSummary(
     val key: String, val title: String, val detail: String, val source: SummarySource,

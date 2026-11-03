@@ -378,7 +378,7 @@ class SableStartActivity : ComponentActivity() {
                     homeGeneration = homeGeneration.value,
                     backGeneration = backGeneration.value,
                     initialScreen = request.screen,
-                    blankHomePage = homeStyle.value == HomeStyle.Bb7 && bb7Detour.returnOnHome,
+                    blankHomePage = homeStyle.value == HomeStyle.Bb7,
                     onBackToHomePage = {
                         // Back from the Hub to a BlackBerry 7 home: show it now instead of after the slide.
                         if (bb10Detour.value && bb7Detour.returnOnHome && bb7Detour.leftHome) endBb10Detour()
@@ -477,6 +477,7 @@ class SableStartActivity : ComponentActivity() {
         io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
         doubleTapLockState.value = startStateRepository.loadDoubleTapLock()
         val style = startStateRepository.loadHomeStyle()
+        if (style == HomeStyle.Bb7) stopService(Intent(this, io.github.aimindseye.tenseven.platform.ScreenCaptureService::class.java))
         if (style != homeStyle.value) {
             homeStyle.value = style
             endBb10Detour()
@@ -530,7 +531,7 @@ class SableStartActivity : ComponentActivity() {
                 homeGeneration.value += 1
                 activeFrames.coordinator.onResume()
                 // On the BlackBerry 7 home, Home goes back to it; Recents shows the Active Frames.
-                if (intent.action == ACTION_SHOW_ACTIVE_FRAMES) {
+                if (intent.action == ACTION_SHOW_ACTIVE_FRAMES && io.github.aimindseye.tenseven.frames.FrameAvailability.frames(homeStyle.value == HomeStyle.Bb10)) {
                     startBb10Detour(returnOnHome = false)
                 } else {
                     endBb10Detour()
@@ -854,7 +855,7 @@ class SableStartActivity : ComponentActivity() {
 
         /** Requests the BlackBerry 7 home shows on the BlackBerry 10 screen. */
         val BB10_ONLY_ACTIONS =
-            setOf(ACTION_EDIT_HOME, ACTION_EDIT_QUICK_BAR, ACTION_SHOW_HUB, ACTION_SHOW_ACTIVE_FRAMES)
+            setOf(ACTION_EDIT_HOME, ACTION_EDIT_QUICK_BAR, ACTION_SHOW_HUB)
 
         fun screenFor(intent: Intent?): String =
             when (intent?.action) {

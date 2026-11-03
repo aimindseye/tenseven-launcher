@@ -13,11 +13,12 @@ import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.platform.*
 
 @Composable
-internal fun FrameSettingsSection(repository: StartStateRepository) {
+internal fun FrameSettingsSection(repository: StartStateRepository, notificationAccess: Boolean? = null) {
     val style by homeStyleState(repository)
-    if (style != HomeStyle.Bb10) return
-    var value by remember { mutableStateOf(repository.loadFrameSettings()) }
     val context = LocalContext.current
+    val granted = notificationAccess ?: io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)
+    if (!io.github.aimindseye.tenseven.frames.FrameAvailability.setup(style == HomeStyle.Bb10, granted)) return
+    var value by remember { mutableStateOf(repository.loadFrameSettings()) }
     val capabilities = remember { PlatformCapabilityProbe.detect(context) }
     FrameIntegrationControls()
     ScreenCaptureControls()
@@ -29,7 +30,7 @@ internal fun FrameSettingsSection(repository: StartStateRepository) {
 internal fun FrameSettingsPanel(value: FrameSettings, capabilities: PlatformCapabilities, onChange: (FrameSettings) -> Unit) {
     Text("Active Frames", style = MaterialTheme.typography.titleLarge)
     Text(capabilities.frameFallbackReason, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    SwitchRow("Live tiles", "Show available media, Calendar, selected documents and local summaries. Notification excerpts require a separate opt-in.",
+    SwitchRow("Live tiles", "Show available media, Calendar and local summaries. Notification excerpts require a separate opt-in.",
         value.liveSummaries) { onChange(value.copy(liveSummaries = it)) }
     FrameCapabilitySwitch("New messages", "Counts from apps you enabled in Hub.",
         value.newMessages, capabilities.hubNotifications, "Enable notification access to show opted-in counts.") {
@@ -92,7 +93,7 @@ private fun ScreenCaptureControls() {
 private fun FrameIntegrationControls() {
     val context = LocalContext.current
     Text("App integrations", style = MaterialTheme.typography.titleMedium)
-    Text("Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar access. Selected documents and TenSeven local summaries do not need notification access.")
+    Text("Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar access. TenSeven local summaries do not need notification access.")
     Button(onClick = { context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.FrameIntegrationsActivity::class.java)) }) {
         Text("Configure app summaries")
     }

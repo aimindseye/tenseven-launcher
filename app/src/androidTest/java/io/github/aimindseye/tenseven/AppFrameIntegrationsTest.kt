@@ -12,17 +12,6 @@ import org.junit.Test
 import java.io.File
 
 class AppFrameIntegrationsTest {
-    @Test fun officeXmlUsesRealAndroidParserAndRejectsDocumentEntities() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val documents = OfficeFrameDocuments(context)
-        assertEquals("Hello World", documents.xmlText("<w:document xmlns:w='urn:test'><w:t>Hello</w:t><w:t>World</w:t></w:document>"))
-        assertEquals("1 25", documents.xmlText("<worksheet><v>1</v><v>25</v></worksheet>"))
-        assertEquals("", documents.xmlText("<r><unrelated>Hidden</unrelated></r>"))
-        assertEquals(240, documents.xmlText("<r><t>" + "a".repeat(2000) + "</t></r>").length)
-        assertTrue(runCatching { documents.xmlText("<!DOCTYPE r [<!ENTITY x SYSTEM 'file:///data/local/tmp/private'>]><r><t>&x;</t></r>") }.isFailure)
-        assertTrue(runCatching { documents.xmlText("<r><t>broken") }.isFailure)
-    }
-
     @Test fun localSummariesNeedNoNotificationAccessAndDisappearWhenDisabled() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val prefs = FrameIntegrationPreferences(context)
@@ -50,19 +39,22 @@ class AppFrameIntegrationsTest {
             calc.edit().putString("last_result", oldCalc).commit()
         }
     }
-    @Test fun selectedWordFileLoadsThroughAndroidProviderAndRemoveClearsIt() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val preferences = FrameIntegrationPreferences(context)
-        val prior = preferences.document("word")
-        try {
-            preferences.document("word", "content://io.github.aimindseye.tenseven.test.documents/fixture.docx")
-            val documents = OfficeFrameDocuments(context)
-            val summary = documents.summaries(System.currentTimeMillis()).first { it.key == "office:word" }
-            assertTrue(summary.detail, summary.detail.contains("Verified saved Word content"))
-            assertEquals("com.microsoft.office.word", summary.packageName)
-            preferences.document("word", null)
-            assertFalse(documents.summaries(System.currentTimeMillis()).any { it.key == "office:word" })
-        } finally { preferences.document("word", prior) }
-    }
 
+    @Test fun removedDocumentLinksAreForgottenWithoutClearingOtherIntegrationChoices() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences("frame_integrations_device", Context.MODE_PRIVATE)
+        val oldExcerpts = prefs.getBoolean("notification_excerpts", false)
+        try {
+            prefs.edit().putString("document_word", "content://removed.example/word")
+                .putString("document_excel", "content://removed.example/excel")
+                .putString("document_powerpoint", "content://removed.example/powerpoint")
+                .putBoolean("notification_excerpts", true).commit()
+            val choices = FrameIntegrationPreferences(context)
+            assertFalse(prefs.contains("document_word"))
+            assertFalse(prefs.contains("document_excel"))
+            assertFalse(prefs.contains("document_powerpoint"))
+            assertTrue(choices.excerpts)
+            FrameIntegrationPreferences(context) // migration is idempotent
+        } finally { prefs.edit().putBoolean("notification_excerpts", oldExcerpts).commit() }
+    }
 }

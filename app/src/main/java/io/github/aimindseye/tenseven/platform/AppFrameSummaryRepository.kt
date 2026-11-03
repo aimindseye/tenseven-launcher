@@ -16,7 +16,6 @@ import java.io.File
 /** Read-only adapters, refreshed off the UI thread. All third-party content stays in memory. */
 class AppFrameSummaryRepository(private val context: Context) {
     private val choices = FrameIntegrationPreferences(context)
-    private val documents = OfficeFrameDocuments(context)
     fun snapshot(now: Long): List<AppSummary> {
         val lock = context.getSystemService(KeyguardManager::class.java)
         if (lock.isDeviceLocked || lock.isKeyguardLocked) return emptyList()
@@ -29,7 +28,6 @@ class AppFrameSummaryRepository(private val context: Context) {
                 if (choices.excerpts) addAll(messages(now))
             }
             if (choices.local) addAll(local(now))
-            addAll(documents.summaries(now))
         }, allowed)
     }
 
@@ -86,7 +84,6 @@ class AppFrameSummaryRepository(private val context: Context) {
     }.getOrDefault(pkg)
 
     fun open(key: String) {
-        if (key.startsWith("office:")) { documents.open(key.removePrefix("office:")); return }
         val activity = when (key) {
             "local:notes" -> io.github.aimindseye.tenseven.extras.notes.MainActivity::class.java
             "local:tasks" -> io.github.aimindseye.tenseven.tasks.TasksActivity::class.java

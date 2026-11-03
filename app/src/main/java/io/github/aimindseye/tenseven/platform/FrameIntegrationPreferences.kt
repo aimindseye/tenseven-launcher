@@ -2,6 +2,7 @@ package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
 import androidx.core.content.edit
+import androidx.core.net.toUri
 
 /** Device-local choices, separate from backed-up launcher preferences and notification counts. */
 class FrameIntegrationPreferences(context: Context) {
@@ -15,6 +16,15 @@ class FrameIntegrationPreferences(context: Context) {
     var mediaPackages: Set<String>
         get() = prefs.getStringSet("media_sources", emptySet()).orEmpty().toSet()
         set(value) { prefs.edit { putStringSet("media_sources", value.toSet()) } }
-    fun document(kind: String): String? = prefs.getString("document_" + kind, null)
-    fun document(kind: String, uri: String?) { prefs.edit { putString("document_" + kind, uri) } }
+    init {
+        // Only this removed feature ever retained document grants. Forget links without deleting files.
+        val keys = listOf("document_word", "document_excel", "document_powerpoint")
+        keys.mapNotNull { prefs.getString(it, null) }.distinct().forEach { raw ->
+            runCatching {
+                val uri = raw.toUri()
+                if (uri.scheme == "content") context.contentResolver.releasePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
+        if (keys.any(prefs::contains)) prefs.edit { keys.forEach(::remove) }
+    }
 }

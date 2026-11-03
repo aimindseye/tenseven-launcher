@@ -50,9 +50,6 @@
     -->
 
     <queries>
-        <package android:name="com.microsoft.office.word" />
-        <package android:name="com.microsoft.office.excel" />
-        <package android:name="com.microsoft.office.powerpoint" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />

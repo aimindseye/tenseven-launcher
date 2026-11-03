@@ -1,19 +1,24 @@
 package io.github.aimindseye.tenseven.ui
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import android.content.Context
-import io.github.aimindseye.tenseven.FrameIntegrationsActivity
+import io.github.aimindseye.tenseven.FrameIntegrationsSurface
+import io.github.aimindseye.tenseven.LauncherTheme
+import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Text
+import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 
 class FrameRepairUiTest {
-    @get:Rule val compose = createEmptyComposeRule()
+    @get:Rule val compose = createComposeRule()
     @Test fun integrationActivityUsesLauncherDarkSurfaceInsteadOfWindowWhite() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val state = StartStateRepository(context)
@@ -22,7 +27,8 @@ class FrameRepairUiTest {
         val custom = state.loadCustomThemes().firstOrNull { it.id == state.loadActiveCustomThemeId() }
         state.saveAppearance("dark", "blue")
         try {
-            ActivityScenario.launch(FrameIntegrationsActivity::class.java).use {
+            compose.setContent { LauncherTheme { FrameIntegrationsSurface { Text("Integration theme fixture") } } }
+            run {
                 val image = compose.onNodeWithTag("frame-integrations-surface").captureToImage().toPixelMap()
                 val background = image[0, 0]
                 assertTrue("Integration background must match dark launcher theme", background.red + background.green + background.blue < 1f)
@@ -32,4 +38,42 @@ class FrameRepairUiTest {
             if (custom != null) state.saveActiveCustomTheme(custom)
         }
     }
+    @Test fun setupRequiresBb10AndGrantedNotificationAccess() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val repository = StartStateRepository(context)
+        val prior = repository.loadHomeStyle()
+        var access by mutableStateOf(false)
+        var version by mutableIntStateOf(0)
+        repository.saveHomeStyle(HomeStyle.Bb10)
+        try {
+            compose.setContent { LauncherTheme { Column { key(version) { FrameSettingsSection(repository, access) } } } }
+            compose.onNodeWithText("Active Frames").assertDoesNotExist()
+            compose.runOnIdle { access = true }
+            compose.onNodeWithText("Active Frames").assertExists()
+            compose.onNodeWithText("Choose file").assertDoesNotExist()
+            compose.runOnIdle { repository.saveHomeStyle(HomeStyle.Bb7); version++ }
+            compose.onNodeWithText("Active Frames").assertDoesNotExist()
+            compose.runOnIdle { access = false; repository.saveHomeStyle(HomeStyle.Bb10); version++ }
+            compose.onNodeWithText("Active Frames").assertDoesNotExist()
+        } finally { repository.saveHomeStyle(prior) }
+    }
+
+    @Test fun bb7RecentsIntentNeverDisplaysActiveFrames() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val state = StartStateRepository(context)
+        val prior = state.loadHomeStyle()
+        state.saveOnboardingDone()
+        state.saveHomeStyle(HomeStyle.Bb7)
+        try {
+            val open = android.content.Intent(context, io.github.aimindseye.tenseven.SableStartActivity::class.java)
+                .setAction(io.github.aimindseye.tenseven.SableStartActivity.ACTION_SHOW_ACTIVE_FRAMES)
+            ActivityScenario.launch<io.github.aimindseye.tenseven.SableStartActivity>(open).use { scenario ->
+                compose.onNodeWithTag("active-frames-grid").assertDoesNotExist()
+                scenario.onActivity { activity -> activity.startActivity(android.content.Intent(open)) }
+                compose.waitForIdle()
+                compose.onNodeWithTag("active-frames-grid").assertDoesNotExist()
+            }
+        } finally { state.saveHomeStyle(prior) }
+    }
+
 }

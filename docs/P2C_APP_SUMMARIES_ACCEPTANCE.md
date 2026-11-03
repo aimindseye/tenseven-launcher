@@ -1,5 +1,7 @@
 # P2-C app summaries
 
+Current: version 13 / 0.2.0-p2c-summaries.3. File linking and Office previews have been removed. The version-13 rules below supersede the historical version-11/12 sections.
+
 One Full APK: version 11 / 0.2.0-p2c-summaries.1. Builds on accepted Titan 2
 version 10 from PR #109. No signing key or network permission is added.
 
@@ -84,3 +86,25 @@ Reopen the closed app and verify it returns. Clear frames and confirm an empty g
 another app is opened. Reboot/recreate the Activity and verify the documented window behavior.
 Open Word, use Choose file, pick a saved DOCX and return Home. Confirm the selected-file
 summary and themed setup screen. Media metadata and capture Stop controls must still work.
+
+
+## Version 13: no file links; BB10 and notification-first setup
+
+- Word, Excel and PowerPoint are ordinary opened-app frames. There is no file picker,
+  linked-file preview, document parser, Choose file action or selected-file setting.
+- Upgrade forgets legacy Office links and releases their retained read grants. It never
+  deletes documents or clears media, Hub, Notes, Tasks or Calculator choices/data.
+- Active Frames setup is absent from the style step. It appears after granted notification
+  access in the wizard/overview, and after Hub in Launcher Settings. It is shown only for
+  BB10 Home with notification access granted. Basic BB10 app frames still work without
+  notification access; that access is needed for media and notification-derived summaries.
+- BB7 Home cannot enter the frame grid through a Recents/SHOW_ACTIVE_FRAMES action or
+  by swiping through a BB10 Hub detour. The integration screen also guards direct reentry.
+- The last-eight-app window, ninth-app eviction and dismissal semantics are retained.
+
+Titan 2: upgrade with linked Office files and confirm links/settings/previews are gone while
+files still exist. Test BB10 with access denied/granted/revoked in first-run and reopened
+setup; frame controls must follow the granted notification section and disappear on denial.
+Switch BB10 to BB7 in Launcher Settings and setup: frame settings and the frame grid must
+be absent. Invoke the prior Recents route and verify BB7 stays on BB7 Home. Switch back to
+BB10 and verify normal eight-frame behavior and media/Calendar/Hub/local summaries.
