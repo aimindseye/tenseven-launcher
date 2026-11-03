@@ -1,117 +1,18 @@
-name: Active Frames UI
+name: P3 landscape diagnosis
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'app/**'
-      - 'gradle/**'
-      - '.github/workflows/frames-ui.yml'
-  workflow_dispatch:
+  push:
+    branches: [ci/p3-landscape-diagnostics-20261103]
 permissions: {}
 concurrency:
-  group: frames-ui-${{ github.ref }}
+  group: p3-landscape-diagnosis
   cancel-in-progress: true
 jobs:
-  instrumented:
-    name: instrumented (API ${{ matrix.api }})
-    strategy:
-      fail-fast: false
-      matrix:
-        api: [34, 35]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
-    env:
-      ANDROID_USER_HOME: /tmp/tenseven-frames-android
-      ANDROID_AVD_HOME: /tmp/tenseven-frames-android/avd
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-      - name: Install Android SDK and emulator
-        run: |
-          set -euo pipefail
-          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
-          test -n "$sdkmanager"
-          yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-${{ matrix.api }};default;x86_64'
-          mkdir -p "$ANDROID_AVD_HOME"
-          avdmanager="$(dirname "$sdkmanager")/avdmanager"
-          echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-${{ matrix.api }};default;x86_64' --force
-          sudo chown "$(id -u)" /dev/kvm
-      - name: Compile instrumentation APKs
-        run: |
-          set -euo pipefail
-          build=(./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest)
-          if "${build[@]}" 2>&1 | tee /tmp/p2-test-compile.log; then
-            exit 0
-          fi
-          # A repository miss can be cached by Gradle. Retry resolution once, preserving failures.
-          if ! grep -Eq 'Could not (find|resolve) ' /tmp/p2-test-compile.log; then
-            exit 1
-          fi
-          "${build[@]}" --refresh-dependencies
-      - name: Run frame layout, keyboard and persistence tests
-        run: |
-          set -euo pipefail
-          "$ANDROID_HOME/emulator/emulator" -avd frames-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/frames-emulator.log 2>&1 &
-          emulator_pid=$!
-          trap 'kill "$emulator_pid" || true; cat /tmp/frames-emulator.log' EXIT
-          export PATH="$ANDROID_HOME/platform-tools:$PATH"
-          timeout 120 adb wait-for-device
-          timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == 1 ]]; do sleep 2; done'
-          adb shell wm size 720x720
-          adb shell wm density 280
-          adb shell settings put global window_animation_scale 0
-          adb shell settings put global transition_animation_scale 0
-          adb shell settings put global animator_duration_scale 0
-          adb shell input keyevent 82
-          ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest
-          for apk in app/build/outputs/apk/debug/*.apk app/build/outputs/apk/androidTest/debug/*.apk; do
-            test -f "$apk"
-            adb install -r -t "$apk"
-          done
-          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase seed io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-seed.log
-          adb shell am force-stop io.github.aimindseye.tenseven.debug
-          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase verify io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-verify.log
-          python3 - <<'PYTEST'
-          from pathlib import Path
-          for phase in ('seed', 'verify'):
-              assert 'OK (1 test)' in Path(f'/tmp/p2-process-{phase}.log').read_text(), phase
-          print('P2_PROCESS_REENTRY=PASS: persisted frame/style verified across force-stop and a different PID')
-          PYTEST
-      - name: Upload UI test evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: frames-ui-reports-api-${{ matrix.api }}
-          path: |
-            app/build/reports/androidTests/
-            app/build/outputs/androidTest-results/
-            /tmp/frames-emulator.log
-            /tmp/p2-process-*.log
-          if-no-files-found: ignore
-
   responsive:
     name: responsive (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: square-large-text
-            size: 720x720
-            density: 280
-            font: '2.0'
-          - name: tall-touch
-            size: 1080x2400
-            density: 440
-            font: '1.0'
           - name: landscape
             size: 1280x720
             density: 240
@@ -160,7 +61,7 @@ jobs:
           set -euo pipefail
           "$ANDROID_HOME/emulator/emulator" -avd frames-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > /tmp/frames-emulator.log 2>&1 &
           emulator_pid=$!
-          trap 'kill "$emulator_pid" || true; cat /tmp/frames-emulator.log' EXIT
+          trap 'adb shell dumpsys window > /tmp/p3-window-final.txt; kill "$emulator_pid" || true; cat /tmp/frames-emulator.log' EXIT
           export PATH="$ANDROID_HOME/platform-tools:$PATH"
           timeout 120 adb wait-for-device
           timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" == 1 ]]; do sleep 2; done'
@@ -171,6 +72,11 @@ jobs:
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
           adb shell input keyevent 82
+          adb shell dumpsys window > /tmp/p3-window-before.txt
+          adb shell dumpsys power > /tmp/p3-power-before.txt
+          adb shell input keyevent KEYCODE_WAKEUP
+          adb shell wm dismiss-keyguard
+          adb shell dumpsys window > /tmp/p3-window-after.txt
           ./gradlew --no-daemon --console=plain :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.github.aimindseye.tenseven.ui.P3ResponsiveUiTest
       - name: Upload UI test evidence
         if: always()
@@ -181,5 +87,6 @@ jobs:
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
             /tmp/frames-emulator.log
+            /tmp/p3-*.txt
             /tmp/p2-process-*.log
           if-no-files-found: ignore
