@@ -2,7 +2,7 @@ package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.provider.OpenableColumns
 import android.util.Xml
 import io.github.aimindseye.tenseven.frames.*
@@ -14,7 +14,7 @@ class OfficeFrameDocuments(private val context: Context) {
     private val cached = mutableMapOf<String, Pair<Long, AppSummary>>()
     fun summaries(now: Long): List<AppSummary> = KINDS.mapNotNull { kind ->
         val raw = preferences.document(kind) ?: return@mapNotNull null
-        val uri = Uri.parse(raw)
+        val uri = raw.toUri()
         val key = kind + ":" + raw
         cached[key]?.takeIf { now - it.first in 0..30_000 }?.let { return@mapNotNull it.second }
         val result = runCatching {
@@ -40,7 +40,7 @@ class OfficeFrameDocuments(private val context: Context) {
 
     fun open(kind: String) {
         val raw = preferences.document(kind) ?: return
-        val uri = Uri.parse(raw)
+        val uri = raw.toUri()
         if (uri.scheme != "content") return
         val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, context.contentResolver.getType(uri) ?: MIME[kind])
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -55,12 +55,14 @@ class OfficeFrameDocuments(private val context: Context) {
         parser.setInput(xml.reader())
         val out = StringBuilder()
         var capture = false
+        var openTags = 0
+        var sawRoot = false
         while (true) {
             when (parser.nextToken()) {
-                XmlPullParser.END_DOCUMENT -> break
+                XmlPullParser.END_DOCUMENT -> { require(sawRoot && openTags == 0) { "Incomplete document" }; break }
                 XmlPullParser.DOCDECL -> error("Document types are not supported")
-                XmlPullParser.START_TAG -> capture = parser.name in setOf("t", "v")
-                XmlPullParser.END_TAG -> { if (capture) out.append(' '); capture = false }
+                XmlPullParser.START_TAG -> { openTags++; sawRoot = true; capture = parser.name in setOf("t", "v") }
+                XmlPullParser.END_TAG -> { openTags--; if (capture) out.append(' '); capture = false }
                 XmlPullParser.TEXT, XmlPullParser.CDSECT -> if (capture && out.length < 1000) out.append(parser.text.take(1000 - out.length))
                 XmlPullParser.ENTITY_REF -> if (capture) {
                     require(parser.name in setOf("amp", "lt", "gt", "apos", "quot"))

@@ -3,6 +3,7 @@
 package io.github.aimindseye.tenseven.extras.calculator
 
 import io.github.aimindseye.tenseven.LauncherTheme
+import androidx.core.content.edit
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.KeyEvent
@@ -246,7 +247,7 @@ private fun CalculatorPad(
     val summaryContext = androidx.compose.ui.platform.LocalContext.current
     fun publishSummary(text: String) {
         summaryContext.getSharedPreferences("calculator_frame", android.content.Context.MODE_PRIVATE)
-            .edit().putString("last_result", text.take(240)).apply()
+            .edit { putString("last_result", text.take(240)) }
     }
 
     fun clear() {

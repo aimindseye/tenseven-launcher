@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven
 
+import androidx.core.net.toUri
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -46,7 +47,7 @@ class FrameIntegrationsActivity : ComponentActivity() {
         val prior = choices.document(kind)
         choices.document(kind, null)
         if (prior != null && prior != replacement && OfficeFrameDocuments.KINDS.none { choices.document(it) == prior })
-            runCatching { contentResolver.releasePersistableUriPermission(android.net.Uri.parse(prior), Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            runCatching { contentResolver.releasePersistableUriPermission(prior.toUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION) }
     }
 
     @Composable
