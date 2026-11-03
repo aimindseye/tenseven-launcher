@@ -49,7 +49,7 @@ class OfficeFrameDocuments(private val context: Context) {
         runCatching { context.startActivity(intent) }
     }
 
-    private fun xmlText(xml: String): String {
+    internal fun xmlText(xml: String): String {
         val parser = Xml.newPullParser()
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
         parser.setInput(xml.reader())
