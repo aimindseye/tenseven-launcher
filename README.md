@@ -285,7 +285,7 @@ INTERNET=none (no INTERNET permission)
 
 ### Current P2/P3 delivery order
 
-P2 engineering is being completed in PR #111 (screen boundaries, lifecycle orchestration,
+P2 engineering is merged through PR #111 (screen boundaries, lifecycle orchestration,
 capability snapshots and blocking quality ratchet). See
 [engineering acceptance](docs/P2_ENGINEERING_ACCEPTANCE.md). P3 follows P2 and targets Titan 2,
 Titan 2 Slim, Zinwa Q25, Zinwa P26 and a touchscreen Android device; KEY2 is removed from active scope.

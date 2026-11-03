@@ -54,8 +54,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -276,7 +276,11 @@ fun Bb7HomeScreen(
                 }
                 if (key in favorites) {
                     if (panel == Bb7Panel.Favorites && !searching && !fromDesktop) add(t("move_2") to { moving = true })
-                    add(resources.getString(R.string.bb7_remove_favorites) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
+                    add(
+                        resources.getString(
+                            R.string.bb7_remove_favorites,
+                        ) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) },
+                    )
                 } else {
                     add(resources.getString(R.string.bb7_add_favorites) to { addToFavorites(key) })
                 }

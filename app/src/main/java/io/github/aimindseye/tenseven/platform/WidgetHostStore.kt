@@ -1,9 +1,9 @@
 package io.github.aimindseye.tenseven.platform
 
-import android.content.Context
 import android.annotation.SuppressLint
-import androidx.core.content.edit
+import android.content.Context
 import android.provider.Settings
+import androidx.core.content.edit
 import io.github.aimindseye.tenseven.model.WidgetBinding
 import io.github.aimindseye.tenseven.model.WidgetSizing
 

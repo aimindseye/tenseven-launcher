@@ -70,14 +70,24 @@ private class KeyCaptureSession {
 // Compose Unit renderers require PascalCase; this exception is local to the renderer.
 @Suppress("FunctionNaming")
 @Composable
-private fun DeviceProbeContent(report: String, probe: KeyCaptureSession, onCopy: (String) -> Unit) {
+private fun DeviceProbeContent(
+    report: String,
+    probe: KeyCaptureSession,
+    onCopy: (String) -> Unit,
+) {
     val focus = remember { FocusRequester() }
     Surface(color = MaterialTheme.colorScheme.background) {
         Column(
-            Modifier.fillMaxSize().safeDrawingPadding()
-                .onPreviewKeyEvent { probe.record(it.nativeKeyEvent); false }
-                .focusRequester(focus).focusable()
-                .verticalScroll(rememberScrollState()).padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .onPreviewKeyEvent {
+                    probe.record(it.nativeKeyEvent)
+                    false
+                }.focusRequester(focus)
+                .focusable()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Device compatibility", style = MaterialTheme.typography.titleLarge)
