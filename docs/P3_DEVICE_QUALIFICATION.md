@@ -34,7 +34,8 @@ No panel size, density, firmware or OEM scan code is guessed from a model name.
   Capture stops on pause. Copy report is an explicit user action.
 - Widget bind/configure transactions are journaled before opening Android UI and survive
   controller/Activity reconstruction. Results are checked against stage/id and provider/profile.
-  Cancel releases the allocated id; late results cannot finish a different transaction.
+  Android 14 configuration launches explicitly opt in the sender; API 36 uses visible-window-only
+  privileges. Cancel releases the allocated id; late results cannot finish a different transaction.
   Allocated ids are reconciled independently of temporary provider/profile availability.
   Pending/orphan ids and user removal are cleaned up; saved order and heights remain local.
 - Widget views are cleared on pause/lock and unavailable profiles. Vertical resize controls

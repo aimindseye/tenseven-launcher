@@ -1,11 +1,14 @@
 package io.github.aimindseye.tenseven.platform
 
 import android.app.Activity
+import android.app.ActivityOptions
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import android.os.Process
 import android.os.UserManager
 import io.github.aimindseye.tenseven.model.WidgetBinding
@@ -183,10 +186,31 @@ class WidgetHostController(
             }
             val started =
                 runCatching {
-                    host.startAppWidgetConfigureActivityForResult(activity, pending.id, 0, REQUEST_CONFIGURE, null)
+                    host.startAppWidgetConfigureActivityForResult(
+                        activity,
+                        pending.id,
+                        0,
+                        REQUEST_CONFIGURE,
+                        configurationOptions(),
+                    )
                 }
             if (started.isFailure) cancelPending()
         }
+    }
+
+    /** Sender opt-in is required on Android 14; API 36 narrows it to visible windows. */
+    @Suppress("DEPRECATION") // API 34/35 expose only the legacy sender mode.
+    private fun configurationOptions(): Bundle {
+        val mode =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE
+            } else {
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+            }
+        return ActivityOptions
+            .makeBasic()
+            .setPendingIntentBackgroundActivityStartMode(mode)
+            .toBundle()
     }
 
     private fun bindingInfo(pending: WidgetBinding): AppWidgetProviderInfo? =
