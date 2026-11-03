@@ -1,10 +1,10 @@
 package io.github.aimindseye.tenseven
 
 import android.Manifest
-import android.os.Bundle
 import android.content.Intent
-import android.provider.Settings
 import android.net.Uri
+import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -34,14 +34,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
-import io.github.aimindseye.tenseven.onboarding.SpecialAccessAttemptStore
-import io.github.aimindseye.tenseven.onboarding.SetupStep
-import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HubApps
 import io.github.aimindseye.tenseven.model.StartText
+import io.github.aimindseye.tenseven.onboarding.SetupStep
+import io.github.aimindseye.tenseven.onboarding.SpecialAccessAttemptStore
+import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.HubCalendarRepository
 import io.github.aimindseye.tenseven.platform.HubCalendarSource
 import io.github.aimindseye.tenseven.platform.LauncherAppsRepository
@@ -60,7 +60,8 @@ class HubSettingsActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.onLauncherResume(this)
+        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+            .onLauncherResume(this)
         resumeTick++
     }
 
@@ -81,8 +82,11 @@ class HubSettingsActivity : ComponentActivity() {
                 val calendarPermitted = resumeTick >= 0 && calendars.hasPermission()
                 LaunchedEffect(resumeTick, calendarPeek) {
                     calendarSources =
-                        if (calendarPeek && calendarPermitted) withContext(Dispatchers.IO) { calendars.calendars() }
-                        else emptyList()
+                        if (calendarPeek && calendarPermitted) {
+                            withContext(Dispatchers.IO) { calendars.calendars() }
+                        } else {
+                            emptyList()
+                        }
                 }
                 var cleared by remember { mutableStateOf(false) }
                 var rows by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
@@ -93,13 +97,19 @@ class HubSettingsActivity : ComponentActivity() {
                         }
                 }
                 HubSettings(
-                    accessGranted = resumeTick >= 0 &&
-                        io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(this).hubNotifications ==
+                    accessGranted =
+                        resumeTick >= 0 &&
+                            io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe
+                                .detect(this)
+                                .hubNotifications ==
                             io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
-                    attemptedNotificationAccess = resumeTick >= 0 &&
-                        SetupStep.NOTIFICATIONS in SpecialAccessAttemptStore.attempted(this),
+                    attemptedNotificationAccess =
+                        resumeTick >= 0 &&
+                            SetupStep.NOTIFICATIONS in SpecialAccessAttemptStore.attempted(this),
                     listenerAvailable =
-                        io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe.detect(this).hubNotifications !=
+                        io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe
+                            .detect(this)
+                            .hubNotifications !=
                             io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
                     showText = showText,
                     calendarPeek = calendarPeek,
@@ -122,7 +132,8 @@ class HubSettingsActivity : ComponentActivity() {
                         runCatching { startActivity(ConversationAccess.settingsIntent()) }
                     },
                     onRetryListener = {
-                        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.retryFromSettings(this)
+                        io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+                            .retryFromSettings(this)
                     },
                     onShowText = {
                         showText = it
@@ -140,8 +151,11 @@ class HubSettingsActivity : ComponentActivity() {
                         enabled = HubApps.toggle(enabled, pkg)
                         state.saveHubEnabledApps(enabled)
                         if (HubApps.isIncluded(enabled, pkg)) {
-                            if (!io.github.aimindseye.tenseven.conversations.ConversationListenerService.refreshConnected()) {
-                                io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery.retryFromSettings(this)
+                            if (!io.github.aimindseye.tenseven.conversations.ConversationListenerService
+                                    .refreshConnected()
+                            ) {
+                                io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+                                    .retryFromSettings(this)
                             }
                         } else {
                             // Drop newly excluded content and badges without waiting for another notification.
@@ -180,7 +194,12 @@ private fun HubSettings(
     val first = remember { FocusRequester() }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
-            modifier = Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(stringResource(R.string.hub_settings), style = MaterialTheme.typography.titleLarge)
@@ -197,8 +216,12 @@ private fun HubSettings(
                         detail = "After an access request is blocked, App info may show ⋮ → Allow restricted settings. Choose it only if you trust this APK, return and retry notification access. This menu may be absent before the first blocked request.",
                         onClick = {
                             runCatching {
-                                context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.parse("package:${context.packageName}")))
+                                context.startActivity(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}"),
+                                    ),
+                                )
                             }
                         },
                     )
@@ -215,11 +238,21 @@ private fun HubSettings(
                 detail =
                     stringResource(
                         when {
-                            !listenerAvailable -> R.string.hub_access_lite
-                            accessGranted && !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected ->
+                            !listenerAvailable -> {
+                                R.string.hub_access_lite
+                            }
+
+                            accessGranted && !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected -> {
                                 R.string.hub_access_disconnected
-                            accessGranted -> R.string.hub_access_on
-                            else -> R.string.hub_access_off
+                            }
+
+                            accessGranted -> {
+                                R.string.hub_access_on
+                            }
+
+                            else -> {
+                                R.string.hub_access_off
+                            }
                         },
                     ),
                 modifier = Modifier.focusRequester(first),
@@ -232,19 +265,23 @@ private fun HubSettings(
             if (accessGranted && connected) {
                 Text("Notification listener · Connected", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    if (enabled.isEmpty()) "No apps selected. Enable notification sources below."
-                    else "$activeCount active device notifications · $conversationsCount Hub entries · $lockCount lock-screen counts · ${enabled.size} enabled sources.",
+                    if (enabled.isEmpty()) {
+                        "No apps selected. Enable notification sources below."
+                    } else {
+                        "$activeCount active device notifications · $conversationsCount Hub entries · $lockCount lock-screen counts · ${enabled.size} enabled sources."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 HubRow(
                     title = "Notification listener diagnostics",
-                    detail = when {
-                        !listenerAvailable -> "Listener service unavailable in this APK."
-                        !accessGranted -> "Android notification access is off. Open Notification access above."
-                        else -> "Access granted, listener disconnected. Tap here to reconnect."
-                    },
+                    detail =
+                        when {
+                            !listenerAvailable -> "Listener service unavailable in this APK."
+                            !accessGranted -> "Android notification access is off. Open Notification access above."
+                            else -> "Access granted, listener disconnected. Tap here to reconnect."
+                        },
                     onClick = { if (accessGranted) onRetryListener() else onAccess() },
                 )
             }
@@ -254,25 +291,41 @@ private fun HubSettings(
                 onClick = onClear,
             )
             HubSwitch(stringResource(R.string.hub_show_text), stringResource(R.string.hub_show_text_detail), showText, onShowText)
-            HubSwitch(stringResource(R.string.hub_calendar_peek), stringResource(R.string.hub_calendar_peek_detail), calendarPeek, onCalendarPeek)
+            HubSwitch(
+                stringResource(R.string.hub_calendar_peek),
+                stringResource(R.string.hub_calendar_peek_detail),
+                calendarPeek,
+                onCalendarPeek,
+            )
             if (calendarPeek) {
                 if (!calendarPermitted) {
-                    HubRow("Allow Calendar access",
+                    HubRow(
+                        "Allow Calendar access",
                         "Required to show events from calendars synchronized with Android",
-                        onClick = onCalendarPermission)
+                        onClick = onCalendarPermission,
+                    )
                 } else {
                     Text("Calendar sources", style = MaterialTheme.typography.titleMedium)
-                    Text("Select the calendars whose events appear in Hub. Selection stays on this device.",
+                    Text(
+                        "Select the calendars whose events appear in Hub. Selection stays on this device.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     calendarSources.forEach { source ->
-                        HubSwitch(source.name, source.account,
-                            selectedCalendars == null || source.id in selectedCalendars) {
+                        HubSwitch(
+                            source.name,
+                            source.account,
+                            selectedCalendars == null || source.id in selectedCalendars,
+                        ) {
                             onCalendarToggle(source.id)
                         }
                     }
-                    if (calendarSources.isEmpty()) Text("No visible Android calendars found",
-                        style = MaterialTheme.typography.bodyMedium)
+                    if (calendarSources.isEmpty()) {
+                        Text(
+                            "No visible Android calendars found",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
             }
 

@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven
 
-import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -56,6 +55,7 @@ import io.github.aimindseye.tenseven.model.ThemePresets
 import io.github.aimindseye.tenseven.model.WallpaperSet
 import io.github.aimindseye.tenseven.model.WallpaperSets
 import io.github.aimindseye.tenseven.platform.Capabilities
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.LockLayerLauncher
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WallpaperArt

@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.graphics.Rect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -68,6 +67,7 @@ import androidx.core.graphics.drawable.toBitmap
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.design.sableFocusRing
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlin.math.abs
 
@@ -355,4 +355,4 @@ private const val EDGE_DP = 20
 private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
-/* How opaque the peek panel is; the rest lets Home show through. */
+// How opaque the peek panel is; the rest lets Home show through.

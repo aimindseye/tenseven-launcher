@@ -46,7 +46,17 @@ jobs:
           echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-${{ matrix.api }};default;x86_64' --force
           sudo chown "$(id -u)" /dev/kvm
       - name: Compile instrumentation APKs
-        run: ./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+        run: |
+          set -euo pipefail
+          build=(./gradlew --no-daemon --console=plain :app:assembleDebug :app:assembleDebugAndroidTest)
+          if "${build[@]}" 2>&1 | tee /tmp/p2-test-compile.log; then
+            exit 0
+          fi
+          # A repository miss can be cached by Gradle. Retry resolution once, preserving failures.
+          if ! grep -Eq 'Could not (find|resolve) ' /tmp/p2-test-compile.log; then
+            exit 1
+          fi
+          "${build[@]}" --refresh-dependencies
       - name: Run frame layout, keyboard and persistence tests
         run: |
           set -euo pipefail

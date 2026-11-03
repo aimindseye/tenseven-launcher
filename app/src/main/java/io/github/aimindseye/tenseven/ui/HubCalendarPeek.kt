@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.app.KeyguardManager
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
@@ -24,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.HubCalendarEvent
 import io.github.aimindseye.tenseven.platform.HubCalendarRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository

@@ -31,8 +31,7 @@ class LockScreenAccessibilityService : AccessibilityService() {
     companion object {
         @Volatile private var connectedService: LockScreenAccessibilityService? = null
 
-        fun lockScreen(): Boolean =
-                connectedService?.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN) == true
+        fun lockScreen(): Boolean = connectedService?.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN) == true
 
         /** Whether the user has turned the service on in Accessibility settings. */
         fun isEnabled(context: Context): Boolean {

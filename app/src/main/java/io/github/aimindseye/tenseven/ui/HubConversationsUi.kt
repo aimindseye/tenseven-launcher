@@ -1,7 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.model.HubBar
-import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -73,11 +71,13 @@ import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
+import io.github.aimindseye.tenseven.model.HubBar
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.model.HubStreamSelection
 import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.Capabilities
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.tasks.ReminderPolicy
 import io.github.aimindseye.tenseven.tasks.TaskRecord
@@ -747,7 +747,10 @@ private const val NOTIFICATION_ICON_BITMAP_SIZE = 96
 
 /** Advances snooze eligibility only while the Hub is started. */
 @Composable
-private fun rememberHubTime(state: ConversationState, conversations: List<HubConversation>): Long {
+private fun rememberHubTime(
+    state: ConversationState,
+    conversations: List<HubConversation>,
+): Long {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle, state, conversations) {

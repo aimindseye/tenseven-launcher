@@ -1,8 +1,5 @@
 package io.github.aimindseye.tenseven
 
-import io.github.aimindseye.tenseven.platform.CapabilityStatus
-import io.github.aimindseye.tenseven.platform.PlatformCapabilities
-import io.github.aimindseye.tenseven.ui.rememberPlatformCapabilities
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -61,8 +58,11 @@ import androidx.core.view.WindowCompat
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.LockLayer
 import io.github.aimindseye.tenseven.model.LockPeek
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.LockLayerState
+import io.github.aimindseye.tenseven.platform.PlatformCapabilities
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.ui.rememberPlatformCapabilities
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -213,9 +213,10 @@ private fun LockLayerScreen(
     val capabilities = rememberPlatformCapabilities()
     val counts = lockLayerCounts(capabilities)
     val entries = remember(counts, enabled) { LockLayer.entries(counts, counts.keys - enabled) }
-    val preview = remember(counts, enabled, showText, capabilities) {
-        lockLayerPreview(enabled, showText, capabilities)
-    }
+    val preview =
+        remember(counts, enabled, showText, capabilities) {
+            lockLayerPreview(enabled, showText, capabilities)
+        }
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -352,7 +353,15 @@ private fun LockIcon(
     val icon =
         remember(
             packageName,
-        ) { runCatching { packageManager.getApplicationIcon(packageName).toBitmap(NOTIFICATION_ICON_BITMAP_SIZE, NOTIFICATION_ICON_BITMAP_SIZE).asImageBitmap() }.getOrNull() }
+        ) {
+            runCatching {
+                packageManager
+                    .getApplicationIcon(
+                        packageName,
+                    ).toBitmap(NOTIFICATION_ICON_BITMAP_SIZE, NOTIFICATION_ICON_BITMAP_SIZE)
+                    .asImageBitmap()
+            }.getOrNull()
+        }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -410,7 +419,8 @@ private fun lockLayerPreview(
     capabilities: PlatformCapabilities,
 ): Pair<String, String>? {
     if (!showText || capabilities.deviceLocked || capabilities.hubNotifications != CapabilityStatus.Ready) return null
-    return ConversationHub.conversations()
+    return ConversationHub
+        .conversations()
         .firstOrNull { conversation -> conversation.sourcePackages.any { it in enabled } }
         ?.let { it.name to it.latestMessage?.text.orEmpty() }
 }

@@ -96,7 +96,14 @@ object ConversationHub {
 
     internal fun replace(newItems: List<HubNotification>) = update { newItems.sortedByDescending(HubNotification::postedAt) }
 
-    internal fun upsert(item: HubNotification) = update { old -> (old.filterNot { it.key == item.key } + item).sortedByDescending(HubNotification::postedAt) }
+    internal fun upsert(item: HubNotification) =
+        update { old ->
+            (
+                old.filterNot {
+                    it.key == item.key
+                } + item
+            ).sortedByDescending(HubNotification::postedAt)
+        }
 
     internal fun remove(key: String) = update { old -> old.filterNot { it.key == key } }
 
@@ -203,8 +210,7 @@ internal fun buildConversations(
 private fun isEchoed(
     reply: ConversationMessage,
     fromApps: List<ConversationMessage>,
-): Boolean =
-    fromApps.any { it.isOutgoing && it.text == reply.text && abs(it.timestamp - reply.timestamp) < ECHO_WINDOW_MS }
+): Boolean = fromApps.any { it.isOutgoing && it.text == reply.text && abs(it.timestamp - reply.timestamp) < ECHO_WINDOW_MS }
 
 private const val ECHO_WINDOW_MS = 120_000L
 

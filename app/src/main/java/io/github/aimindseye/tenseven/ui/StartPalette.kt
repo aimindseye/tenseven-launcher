@@ -213,4 +213,4 @@ internal fun Bb10Theme(
     }
 }
 
-/* The width in dp the app grid has: the screen width less the grid's padding on both sides. */
+// The width in dp the app grid has: the screen width less the grid's padding on both sides.

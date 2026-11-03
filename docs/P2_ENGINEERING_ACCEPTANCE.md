@@ -79,3 +79,9 @@ an APK declaring the old API-30 floor. This is an implementation fix, not a base
 P3 also includes [Zinwa P26](https://zinwa.com/product/p26-full-device-pre-order/). The
 official listing describes a Passport with the P26 motherboard; it does not state the OS
 version or establish launcher compatibility. Capture actual OS/display/keyboard data in P3.
+
+Instrumentation dependency note: kotlinx-coroutines 1.11.0 remains pinned in the version
+catalog. Compose UI tests bring in coroutines-test transitively, aligned by the coroutines
+BOM. Both Google Maven and Maven Central remain configured. The instrumentation compile
+step retries a dependency-resolution failure once with --refresh-dependencies; compiler
+or test failures still fail the workflow. No alternate/unverified Maven repository is added.

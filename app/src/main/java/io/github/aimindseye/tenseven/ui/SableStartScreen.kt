@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -52,6 +51,7 @@ import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.inLauncherUser
 import io.github.aimindseye.tenseven.model.stableKey
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.SpeedDialRepository

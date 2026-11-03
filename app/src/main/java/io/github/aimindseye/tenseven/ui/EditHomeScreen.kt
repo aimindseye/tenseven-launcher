@@ -769,4 +769,4 @@ internal fun HomeToggleRow(
     }
 }
 
-/* Role slots first (Phone, Camera, Hub, All apps), then every other personal app A to Z. */
+// Role slots first (Phone, Camera, Hub, All apps), then every other personal app A to Z.

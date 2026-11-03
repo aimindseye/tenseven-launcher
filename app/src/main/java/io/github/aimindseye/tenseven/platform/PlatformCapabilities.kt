@@ -85,6 +85,7 @@ data class PlatformCapabilities(
                 deviceLock = frameAccess.lock,
                 postNotifications = permissionStatus(frameAccess.postNotifications),
             )
+
         private fun permissionStatus(allowed: Boolean): CapabilityStatus =
             if (allowed) CapabilityStatus.Ready else CapabilityStatus.PermissionRequired
 

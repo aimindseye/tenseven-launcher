@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import android.Manifest
 import android.content.Intent
 import android.provider.CallLog
@@ -74,6 +73,7 @@ import io.github.aimindseye.tenseven.model.HubPerson
 import io.github.aimindseye.tenseven.model.HubSourceGroups
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.inLauncherUser
+import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.PeopleRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository

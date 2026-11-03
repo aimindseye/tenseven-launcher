@@ -29,6 +29,7 @@ object IconPackLoader {
                             staticMappings[component] = IconPackDrawable.Static(drawable)
                         }
                     }
+
                     "calendar" -> {
                         val prefix = parser.getAttributeValue(null, "prefix")
                         if (component != null && !prefix.isNullOrBlank()) {
@@ -72,7 +73,9 @@ object IconPackLoader {
                     resources.getIdentifier(name, "xml", packageName).takeIf { it != 0 }?.let { parseXml(resources, it) }
                 },
                 {
-                    resources.getIdentifier(name, "raw", packageName).takeIf { it != 0 }
+                    resources
+                        .getIdentifier(name, "raw", packageName)
+                        .takeIf { it != 0 }
                         ?.let { resources.openRawResource(it).use(::parseStream) }
                 },
                 { resources.assets.open("$name.xml").use(::parseStream) },

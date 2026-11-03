@@ -448,8 +448,16 @@ internal fun SearchScreen(
                     item { Spacer(Modifier.height(12.dp)) }
                 }
             }
-            val noMatches = listOf(filteredApps, privacyMatches, filteredCommands, settingsResults,
-                quickRows, peopleResults, hubResults).all { it.isEmpty() }
+            val noMatches =
+                listOf(
+                    filteredApps,
+                    privacyMatches,
+                    filteredCommands,
+                    settingsResults,
+                    quickRows,
+                    peopleResults,
+                    hubResults,
+                ).all { it.isEmpty() }
             if (noMatches && !lockedPrivate) {
                 item {
                     EmptyState(

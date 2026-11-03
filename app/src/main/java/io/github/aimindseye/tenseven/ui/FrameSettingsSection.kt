@@ -1,13 +1,13 @@
 package io.github.aimindseye.tenseven.ui
 
-import io.github.aimindseye.tenseven.ScreenCaptureActivity
-import io.github.aimindseye.tenseven.FrameIntegrationsActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import io.github.aimindseye.tenseven.FrameIntegrationsActivity
+import io.github.aimindseye.tenseven.ScreenCaptureActivity
 import io.github.aimindseye.tenseven.SwitchRow
 import io.github.aimindseye.tenseven.frames.FrameSettings
 import io.github.aimindseye.tenseven.homeStyleState
