@@ -47,7 +47,7 @@ JVM tests cover stale/cancel/phase callbacks, orphan reconciliation, unavailable
 resize bounds/overflow, window/text sizing and keyboard fallbacks. API 34 and 35 integration
 suites install a real provider in the separate Android test APK, bind through the OS,
 create/size host views, reorder, recreate Home, cancel/save configuration and remove ids.
-Only the tests adopt shell BIND_APPWIDGET permission. The fixture is absent from Full release.
+Only the tests temporarily grant/revoke widget binding through Android’s CTS-style shell command. The fixture is absent from Full release.
 These checks do not qualify a real OEM widget, work/private-profile device or consent dialog.
 
 Responsive CI additionally runs the P3 screen suite on square/200% text, tall-touch and
@@ -82,7 +82,8 @@ hardware results pending. Merge authorization does not turn pending physical res
 The P3 integration preserves the original heads of PRs #90, #91 and #9 as merge parents
 and reapplies their intended changes to the current Full-only architecture: AGP built-in
 Kotlin/new DSL, explicit resValues, removed obsolete flags/report toggles, modern runtime
-permission callbacks and AppOps calls, modern widget sizes, and AGP 9.5.0 with Gradle 9.8.2 (official distribution checksum pinned). Lifecycle 2.10.0
-keeps its bundled lint checks compatible with the upgraded AGP. API-30 widget
+permission callbacks and AppOps calls, modern widget sizes, and AGP 9.5.0 with Gradle 9.8.2 (official distribution checksum pinned). Lifecycle 2.11.0 in both modules
+keeps its bundled lint checks compatible with the upgraded AGP. Compile SDK is 37; target
+SDK remains 36 and the installation minimum remains 34. API-30 widget
 fallback from the old draft is unnecessary at the approved API-34 floor. The final combined
 tree must pass CI before mainline merge; original heads are retained in Git history.

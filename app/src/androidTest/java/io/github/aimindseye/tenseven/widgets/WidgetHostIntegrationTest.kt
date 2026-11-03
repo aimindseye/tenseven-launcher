@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.widgets
 
-import android.Manifest
 import android.app.Activity
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
@@ -83,7 +82,9 @@ class WidgetHostIntegrationTest {
             scenario.onActivity { activity ->
                 val host = controller(activity)
                 host.begin(provider(host, true), WidgetTarget.HOME)
-                pendingId = WidgetHostStore(activity).pending()!!.id
+                val pending = WidgetHostStore(activity).pending()!!
+                pendingId = pending.id
+                assertEquals(WidgetBinding.Stage.Configure, pending.stage)
                 // A new controller recovers the journal; a stale result must not commit this widget.
                 controller(activity).onActivityResult(
                     WidgetHostController.REQUEST_CONFIGURE,
@@ -124,7 +125,7 @@ class WidgetHostIntegrationTest {
         val oldHome = state.loadHomeWidgetIds()
         state.saveWidgetIds(emptyList())
         state.saveHomeWidgetIds(emptyList())
-        instrumentation.uiAutomation.adoptShellPermissionIdentity(Manifest.permission.BIND_APPWIDGET)
+        setBindingPermission(true)
         try {
             ActivityScenario.launch(SableStartActivity::class.java).use { scenario ->
                 try {
@@ -142,9 +143,21 @@ class WidgetHostIntegrationTest {
                 }
             }
         } finally {
-            instrumentation.uiAutomation.dropShellPermissionIdentity()
+            setBindingPermission(false)
             state.saveWidgetIds(oldPage)
             state.saveHomeWidgetIds(oldHome)
+        }
+    }
+
+    // Match Android CTS: grant binding without adopting a shell identity during Activity launches.
+    private fun setBindingPermission(granted: Boolean) {
+        val operation = if (granted) "grantbind" else "revokebind"
+        val descriptor =
+            instrumentation.uiAutomation.executeShellCommand(
+                "appwidget $operation --package ${context.packageName} --user current",
+            )
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use {
+            assertEquals("", it.readText().trim())
         }
     }
 

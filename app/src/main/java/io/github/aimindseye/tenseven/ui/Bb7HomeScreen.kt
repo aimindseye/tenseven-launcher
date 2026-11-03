@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
+import android.content.Context
+import android.content.res.Resources
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -250,8 +252,7 @@ fun Bb7HomeScreen(
                 query = ""
                 pickingDesktop = false
                 selected = -1
-                val message = resources.getString(R.string.bb7_added_home, app.label)
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                showHomeAdded(context, resources.getString(R.string.bb7_added_home, app.label))
             }
         }
     }
@@ -301,8 +302,7 @@ fun Bb7HomeScreen(
                 // Panels: show or hide each one (the last one stays); the banner and tray can be more see-through.
                 Bb7Panel.entries.forEach { p ->
                     if (p in panels && panels.size == 1) return@forEach
-                    val label = if (p in panels) R.string.bb7_panel_hide else R.string.bb7_panel_show
-                    val text = resources.getString(label, p.title)
+                    val text = panelActionLabel(resources, p, p in panels)
                     add(text to { onPanelsChanged(Bb7Panels.toggle(panels, p)) })
                 }
                 if (scrimLevel >
@@ -937,4 +937,20 @@ private fun bb7Columns(
         io.github.aimindseye.tenseven.model.HomeViewport
             .columns(widthDp, chosen, LocalDensity.current.fontScale),
     )
+}
+
+private fun showHomeAdded(
+    context: Context,
+    message: String,
+) {
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+}
+
+private fun panelActionLabel(
+    resources: Resources,
+    panel: Bb7Panel,
+    shown: Boolean,
+): String {
+    val label = if (shown) R.string.bb7_panel_hide else R.string.bb7_panel_show
+    return resources.getString(label, panel.title)
 }

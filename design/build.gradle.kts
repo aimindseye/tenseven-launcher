@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "io.github.aimindseye.tenseven.design"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig { minSdk = 30 }
     buildFeatures {
         compose = true
@@ -23,6 +23,7 @@ android {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.lifecycle.runtime)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
