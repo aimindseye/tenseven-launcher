@@ -56,6 +56,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -167,13 +168,15 @@ private fun HubPeekPanel(
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
+                    .padding(start = 8.dp, top = 8.dp)
                     .fillMaxWidth(0.88f)
+                    .testTag("hub-peek-panel")
                     .widthIn(max = 360.dp)
                     .heightIn(max = maxHeight * 0.92f)
                     .graphicsLayer { translationX = (slide.value - 1f) * size.width }
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
-            shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 0.dp),
+            shape = RoundedCornerShape(18.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,

@@ -1,6 +1,6 @@
 # P2-C app summaries
 
-Current: version 14 / 0.2.0-p2c-summaries.4. File linking and Office previews have been removed. The version-13 rules below supersede the historical version-11/12 sections.
+Current: version 15 / 0.2.0-p2c-summaries.5. File linking and Office previews have been removed. The version-13 rules below supersede the historical version-11/12 sections.
 
 One Full APK: version 11 / 0.2.0-p2c-summaries.1. Builds on accepted Titan 2
 version 10 from PR #109. No signing key or network permission is added.
@@ -131,3 +131,24 @@ apps are absent, each Home icon opens the correct app, and each Hub icon filters
 Turn the options off and confirm compact behavior; switch styles/restart and verify independent
 saved choices. Enable Storage, compare its used percentage to system internal storage, disable
 it, and verify the other selected dials remain visible. Recheck notification-access revocation.
+
+## Version 15: Hub utility shortcuts and rounded Peek
+
+This supersedes version 14's Hub all-app-icon option. Individual application filter icons and
+that Hub setting are removed. App identity icons on actual notification rows remain. Home's
+Show all notification icons option, per-icon direct app actions, and Storage dial are retained.
+
+Hub keeps the primary Hub/Messages/Email/Unread/Search row, followed by one always-visible
+utility row: Phone (Calls), Calendar, Snoozed, Remind and Contacts. Calendar opens the default
+Calendar app; Snoozed opens the Hub snoozed view even at zero count; Remind opens TenSeven
+tasks/reminders. Both Home styles use this same Hub. The row scrolls on unusually narrow
+windows rather than wrapping or hiding utilities behind More.
+
+Hub Peek's outer panel has an 18dp rounded shape and a small inset to expose all four corners.
+Notification rows retain their existing borderless treatment, theme, privacy and actions.
+
+Acceptance on Titan 2: enter Hub from BB7 and BB10; confirm no per-app filter chips or related
+Hub option, and the five utility shortcuts are together without opening More. Exercise Calls,
+Calendar, zero/nonzero Snoozed, Remind and Contacts. Open Peek by gesture/keyboard, check
+rounded outer corners on light/dark wallpaper, then close via outside tap, Back/Escape or Hub.
+See P2_P3_STATUS_20261103.md for remaining milestone work; this UI revision does not close P2/P3.

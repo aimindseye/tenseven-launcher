@@ -45,46 +45,54 @@ class NotificationDisplayUiTest {
         compose.runOnIdle { assertEquals("app8", opened); assertEquals(1, hubOpens) }
     }
 
-    @Test fun hubAllIconsAreVisibleWithoutMoreAndSelectOnlyTheirSource() {
-        var all by mutableStateOf(false)
-        var source: String? = null
+    @Test fun hubShortcutsStayInOneRowAndPerformTheirNamedActions() {
+        var selectedTab = HubFilter.All
+        var selectedFilter = ConversationFilter()
+        var calendarOpens = 0
+        var remindOpens = 0
         val ui = HubConversationsUi(
             accessGranted = true, enabledAppCount = 2, onChooseApps = {}, deviceLocked = false,
             conversations = emptyList(), filter = ConversationFilter(), sourcePackage = null,
-            onSourceChange = { source = it }, state = ConversationState.EMPTY, now = 0L,
-            onOpen = {}, onReply = { _, _ -> false }, onAllowAccess = {}, onFilterChange = {},
+            onSourceChange = {}, state = ConversationState.EMPTY, now = 0L,
+            onOpen = {}, onReply = { _, _ -> false }, onAllowAccess = {}, onFilterChange = { selectedFilter = it },
             onMarkRead = {}, onSnooze = { _, _ -> }, onWake = {}, onRemind = { _, _ -> },
-            onCustomRemind = {}, reminders = emptyList(), remindersSelected = false, onShowReminders = {},
+            onCustomRemind = {}, reminders = emptyList(), remindersSelected = false, onShowReminders = { remindOpens++ },
         )
         compose.setContent { LauncherTheme {
-            HubUnifiedNavigation(ui, HubFilter.All, {}, remember { FocusRequester() },
-                listOf(Triple("mail", "Mail fixture", 2), Triple("chat", "Chat fixture", 1)), 1, 2, all)
+            HubUnifiedNavigation(ui, HubFilter.All, { selectedTab = it }, remember { FocusRequester() }, 1, 2,
+                onOpenCalendar = { calendarOpens++ })
         } }
-        compose.onNodeWithText("Mail fixture · 2").assertDoesNotExist()
-        compose.runOnIdle { all = true }
-        compose.onNodeWithText("Mail fixture · 2").assertIsDisplayed().performClick()
-        compose.onNodeWithText("Chat fixture · 1").assertIsDisplayed()
-        compose.runOnIdle { assertEquals("mail", source) }
+        val shortcuts = listOf("Calls", "Calendar", "Snoozed", "Remind", "Contacts")
+        val top = compose.onNodeWithContentDescription("Calls").fetchSemanticsNode().boundsInRoot.top
+        shortcuts.forEach { label ->
+            val node = compose.onNodeWithContentDescription(label).assertIsDisplayed()
+            assertEquals(top, node.fetchSemanticsNode().boundsInRoot.top, 0.1f)
+        }
+        compose.onNodeWithContentDescription("More categories and active apps").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Calls").performClick()
+        compose.runOnIdle { assertEquals(HubFilter.Calls, selectedTab) }
+        compose.onNodeWithContentDescription("Calendar").performClick()
+        compose.runOnIdle { assertEquals(1, calendarOpens) }
+        compose.onNodeWithContentDescription("Snoozed").performClick()
+        compose.runOnIdle { assertTrue(selectedFilter.snoozed); assertEquals(HubFilter.All, selectedTab) }
+        compose.onNodeWithContentDescription("Remind").performClick()
+        compose.runOnIdle { assertEquals(1, remindOpens) }
     }
 
     @Test fun displayPreferencesAreIndependentAndInternalStorageNeedsNoPermission() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val state = StartStateRepository(context)
         val original = HomeStyle.entries.associateWith { style ->
-            Triple(state.loadHomeNotificationExpanded(style), state.loadHubAllIcons(style), state.loadHomeDials(style))
+            state.loadHomeNotificationExpanded(style) to state.loadHomeDials(style)
         }
         try {
             state.saveHomeNotificationExpanded(HomeStyle.Bb7, true)
             state.saveHomeNotificationExpanded(HomeStyle.Bb10, false)
-            state.saveHubAllIcons(HomeStyle.Bb7, false)
-            state.saveHubAllIcons(HomeStyle.Bb10, true)
             state.saveHomeDials(HomeStyle.Bb7, setOf("storage"))
             state.saveHomeDials(HomeStyle.Bb10, setOf("cpu"))
             val reload = StartStateRepository(context)
             assertTrue(reload.loadHomeNotificationExpanded(HomeStyle.Bb7))
             assertFalse(reload.loadHomeNotificationExpanded(HomeStyle.Bb10))
-            assertFalse(reload.loadHubAllIcons(HomeStyle.Bb7))
-            assertTrue(reload.loadHubAllIcons(HomeStyle.Bb10))
             assertEquals(setOf("storage"), reload.loadHomeDials(HomeStyle.Bb7))
             assertEquals(setOf("cpu"), reload.loadHomeDials(HomeStyle.Bb10))
             val storage = DeviceStatsSampler().sample(context).storage
@@ -92,8 +100,7 @@ class NotificationDisplayUiTest {
             assertTrue(storage!! in 0f..1f)
         } finally { original.forEach { (style, values) ->
             state.saveHomeNotificationExpanded(style, values.first)
-            state.saveHubAllIcons(style, values.second)
-            state.saveHomeDials(style, values.third)
+            state.saveHomeDials(style, values.second)
         } }
     }
 }

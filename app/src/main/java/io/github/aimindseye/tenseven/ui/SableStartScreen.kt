@@ -1971,18 +1971,6 @@ private fun HubPage(
             messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
         )
     }
-    val showAllSourceIcons = remember(refreshGeneration) {
-        val preferences = StartStateRepository(context)
-        preferences.loadHubAllIcons(preferences.loadHomeStyle())
-    }
-    val selectedSources = remember(sourceGroups, personalApps, showAllSourceIcons, snapshot.hubApps, enabledHubApps) {
-        val sources = if (showAllSourceIcons) HubSourceGroups.individualSources(snapshot.hubApps, enabledHubApps) else sourceGroups.otherApps
-        sources.mapNotNull { source ->
-            personalApps[source.packageName]?.let { app ->
-                Triple(source.packageName, app.label, source.count)
-            }
-        }
-    }
     val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
     val barItems =
         remember(snapshot.hubApps, personalApps, enabledHubApps) {
@@ -2084,10 +2072,9 @@ private fun HubPage(
                 currentTab = filter,
                 onTabChange = onFilter,
                 firstTab = tabFocus,
-                sources = selectedSources,
                 messageCount = sourceGroups.messages,
                 emailCount = sourceGroups.email,
-                showAllSources = showAllSourceIcons,
+                onOpenCalendar = { onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR)) },
             )
         }
         // Calendar data requires a second, explicit opt-in (separate from notification sources).

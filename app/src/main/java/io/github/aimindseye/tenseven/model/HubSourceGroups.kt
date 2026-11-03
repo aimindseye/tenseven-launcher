@@ -11,11 +11,6 @@ object HubSourceGroups {
     data class AppSource(val packageName: String, val count: Int)
     data class Summary(val messages: Int, val email: Int, val otherApps: List<AppSource>)
 
-    /** Every opted-in active app, including mail and messaging, without redacted aggregate rows. */
-    fun individualSources(counts: List<AppUnreadCount>, enabledPackages: Set<String>): List<AppSource> =
-        HubBar.items(counts.filter { it.packageName in enabledPackages && it.packageName != HubBar.REDACTED }) { true }
-            .map { AppSource(it.packageName, it.count) }
-
     private val mailPackages = setOf(
         "com.google.android.gm", "com.microsoft.office.outlook",
         "com.yahoo.mobile.client.android.mail", "ch.protonmail.android",

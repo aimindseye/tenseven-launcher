@@ -10,6 +10,11 @@ import io.github.aimindseye.tenseven.FrameIntegrationsSurface
 import io.github.aimindseye.tenseven.LauncherTheme
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.background
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Text
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.platform.StartStateRepository
@@ -38,6 +43,20 @@ class FrameRepairUiTest {
             if (custom != null) state.saveActiveCustomTheme(custom)
         }
     }
+    @Test fun hubPeekClipsItsOuterCorners() {
+        compose.setContent { LauncherTheme {
+            Box(Modifier.fillMaxSize().background(Color.Red)) {
+                HubPeekHost(peekOpen = true, edgeEnabled = false, onPeekChange = {}, onOpenHub = {}) {}
+            }
+        } }
+        compose.waitForIdle()
+        val pixels = compose.onNodeWithTag("hub-peek-panel").captureToImage().toPixelMap()
+        val corner = pixels[0, 0]
+        val panel = pixels[pixels.width / 2, 10]
+        assertTrue("Rounded outer corner must expose the scrim instead of the panel background",
+            corner.alpha < panel.alpha || corner.red > panel.red + 0.1f)
+    }
+
     @Test fun setupRequiresBb10AndGrantedNotificationAccess() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val repository = StartStateRepository(context)

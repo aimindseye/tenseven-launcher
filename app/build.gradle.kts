@@ -47,8 +47,8 @@ android {
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Full-only P1 qualification build; update code and name for every distributed test APK.
-        versionCode = 14
-        versionName = "0.2.0-p2c-summaries.4"
+        versionCode = 15
+        versionName = "0.2.0-p2c-summaries.5"
     }
 
     signingConfigs {

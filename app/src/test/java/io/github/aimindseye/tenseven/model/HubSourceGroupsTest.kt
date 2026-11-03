@@ -5,19 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class HubSourceGroupsTest {
-    @Test fun allIconsIncludesMailAndMessagesButExcludesDisabledZeroAndRedactedSources() {
-        val counts = listOf(
-            AppUnreadCount("com.google.android.gm", 2), AppUnreadCount("com.google.android.gm", 3),
-            AppUnreadCount("com.whatsapp", 1), AppUnreadCount("radio", 4),
-            AppUnreadCount("disabled", 9), AppUnreadCount("zero", 0), AppUnreadCount("*", 99),
-        )
-        assertEquals(listOf(HubSourceGroups.AppSource("com.google.android.gm", 5),
-            HubSourceGroups.AppSource("radio", 4), HubSourceGroups.AppSource("com.whatsapp", 1)),
-            HubSourceGroups.individualSources(counts, setOf("com.google.android.gm", "com.whatsapp", "radio", "zero", "*")))
-    }
-
-    private fun row(pkg: String, count: Int) = AppUnreadCount(pkg, count)
-
     @Test fun activeMessagesAndMailAreSummedWithoutDuplicatingAppChips() {
         val summary = HubSourceGroups.summarize(
             listOf(row("com.whatsapp", 2), row("org.thoughtcrime.securesms", 3),

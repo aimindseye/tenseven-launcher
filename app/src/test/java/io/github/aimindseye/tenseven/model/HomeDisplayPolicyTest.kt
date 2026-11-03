@@ -18,6 +18,5 @@ class HomeDisplayPolicyTest {
         assertEquals(7, HomeDisplayPolicy.ALL_DIALS.size)
         assertEquals(6, HomeDisplayPolicy.DEFAULT_DIALS.size)
         assertEquals(setOf("storage"), HomeDisplayPolicy.ALL_DIALS - HomeDisplayPolicy.DEFAULT_DIALS)
-        assertNotEquals(HomeDisplayPolicy.hubIconsPreference(HomeStyle.Bb7), HomeDisplayPolicy.hubIconsPreference(HomeStyle.Bb10))
     }
 }

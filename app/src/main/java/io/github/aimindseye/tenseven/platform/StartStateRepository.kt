@@ -342,13 +342,6 @@ class StartStateRepository(
         preferences.edit().putInt(HomeDisplayPolicy.stripPreference(style), if (enabled) 1 else 0).apply()
     }
 
-    fun loadHubAllIcons(style: HomeStyle): Boolean =
-        preferences.getInt(HomeDisplayPolicy.hubIconsPreference(style), 0) != 0
-
-    fun saveHubAllIcons(style: HomeStyle, all: Boolean) {
-        preferences.edit().putInt(HomeDisplayPolicy.hubIconsPreference(style), if (all) 1 else 0).apply()
-    }
-
     fun loadHomeNotificationExpanded(style: HomeStyle): Boolean =
         preferences.getInt(HomeDisplayPolicy.stripExpandedPreference(style), 0) != 0
 
@@ -508,8 +501,6 @@ class StartStateRepository(
         const val KEY_HOME_NOTIFICATION_STRIP_BB10 = "home_notification_strip_bb10"
         const val KEY_HOME_NOTIFICATION_EXPANDED_BB7 = "home_notification_expanded_bb7"
         const val KEY_HOME_NOTIFICATION_EXPANDED_BB10 = "home_notification_expanded_bb10"
-        const val KEY_HUB_ALL_ICONS_BB7 = "hub_all_icons_bb7"
-        const val KEY_HUB_ALL_ICONS_BB10 = "hub_all_icons_bb10"
         const val KEY_TYPE_TO_SEARCH = "type_to_search"
         const val KEY_BB7_ICON_SIZE = "bb7_icon_size"
         const val KEY_WIDGETS_PAGE = "widgets_page"

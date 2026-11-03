@@ -12,9 +12,6 @@ object HomeDisplayPolicy {
     val ALL_DIALS: Set<String> = linkedSetOf(WIFI, MOBILE, CPU, RAM, BATTERY, CELL, STORAGE)
     val DEFAULT_DIALS: Set<String> = ALL_DIALS - STORAGE
 
-    fun hubIconsPreference(style: HomeStyle): String =
-        if (style == HomeStyle.Bb7) "hub_all_icons_bb7" else "hub_all_icons_bb10"
-
     fun normalizedDials(selected: Set<String>): Set<String> = selected.intersect(ALL_DIALS)
 
     fun dialPreference(style: HomeStyle): String =

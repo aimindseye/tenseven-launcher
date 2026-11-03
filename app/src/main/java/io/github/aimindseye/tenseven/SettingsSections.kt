@@ -182,7 +182,6 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
     var dials by remember(style) { mutableStateOf(state.loadHomeDials(style)) }
     var strip by remember(style) { mutableStateOf(state.loadHomeNotificationStrip(style)) }
     var expanded by remember(style) { mutableStateOf(state.loadHomeNotificationExpanded(style)) }
-    var hubAll by remember(style) { mutableStateOf(state.loadHubAllIcons(style)) }
 
     Text("Home status and notifications", style = MaterialTheme.typography.titleMedium)
     SwitchRow("Performance dials", "Show the performance gauges on this home style", dials.isNotEmpty()) { shown ->
@@ -209,10 +208,6 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
             expanded = it
             state.saveHomeNotificationExpanded(style, it)
         }
-    }
-    SwitchRow("Show all notification icons in Hub", "Show each enabled app with unread notifications, including mail and messaging apps", hubAll) {
-        hubAll = it
-        state.saveHubAllIcons(style, it)
     }
 }
 
