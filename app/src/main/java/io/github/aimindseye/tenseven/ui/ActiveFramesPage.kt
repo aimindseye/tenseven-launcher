@@ -56,6 +56,7 @@ internal fun ActiveFramesPage(
     onClose: (FrameItem) -> Unit,
     onShowHub: () -> Unit,
     onAllowUsageAccess: () -> Unit,
+    onOpenNotificationApp: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val display = remember(context) { StartStateRepository(context) }
@@ -72,7 +73,7 @@ internal fun ActiveFramesPage(
         if (shown(HomeLayout.WEATHER)) {
             DateHeader(refreshGeneration, snapshot.hubApps.filter { it.packageName in enabledApps }.sumOf { it.count },
                 onShowHub, !strip, if (dials.isEmpty()) onOpenSettings else null)
-            if (strip) HomeNotificationStrip(snapshot.hubApps, enabledApps, expanded, onShowHub)
+            if (strip) HomeNotificationStrip(snapshot.hubApps, enabledApps, expanded, onShowHub, onOpenApp = onOpenNotificationApp)
         }
         if (shown(HomeLayout.SEARCH_ROW)) Box(Modifier.padding(horizontal = 6.dp)) { SearchLaunchButton(onClick = onSearch) }
         // Put the access offer outside the grid so it never displaces one of its two visible rows.

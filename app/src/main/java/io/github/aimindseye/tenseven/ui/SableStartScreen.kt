@@ -582,6 +582,10 @@ fun SableStartScreen(
         }
     }
 
+    fun openNotificationApp(packageName: String) {
+        apps.firstOrNull { it.inLauncherUser && it.component.packageName == packageName }?.let(::launchApp)
+    }
+
     fun secondInstance(entry: AppEntry): AppEntry? =
         AppProfiles.secondInstance(
             app = entry,
@@ -808,6 +812,7 @@ fun SableStartScreen(
                                             onResume = ::resumeFrame,
                                             onClose = onCloseFrame,
                                             onShowHub = { showHub(HubFilter.All) },
+                                            onOpenNotificationApp = ::openNotificationApp,
                                             onAllowUsageAccess = onAllowUsageAccess,
                                         )
                                     else -> {
