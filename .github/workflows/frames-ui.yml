@@ -40,7 +40,7 @@ jobs:
           sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           test -n "$sdkmanager"
           yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'platforms;android-37' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-${{ matrix.api }};default;x86_64'
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-${{ matrix.api }};default;x86_64'
           mkdir -p "$ANDROID_AVD_HOME"
           avdmanager="$(dirname "$sdkmanager")/avdmanager"
           echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-${{ matrix.api }};default;x86_64' --force
@@ -138,7 +138,7 @@ jobs:
           sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           test -n "$sdkmanager"
           yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'platforms;android-37' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-35;default;x86_64'
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' platform-tools emulator 'system-images;android-35;default;x86_64'
           mkdir -p "$ANDROID_AVD_HOME"
           avdmanager="$(dirname "$sdkmanager")/avdmanager"
           echo no | "$avdmanager" create avd --name frames-ci --package 'system-images;android-35;default;x86_64' --force

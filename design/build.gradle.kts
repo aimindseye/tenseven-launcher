@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "io.github.aimindseye.tenseven.design"
-    compileSdk = 37
+    compileSdk = 36
     defaultConfig { minSdk = 30 }
     buildFeatures {
         compose = true

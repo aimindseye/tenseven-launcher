@@ -38,7 +38,7 @@ val releaseSigned =
 android {
     // The R class and BuildConfig package; the Kotlin sources use the same package.
     namespace = "io.github.aimindseye.tenseven"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.aimindseye.tenseven"

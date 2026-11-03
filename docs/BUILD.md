@@ -2,16 +2,17 @@
 
 ## 1. Host setup
 
-JDK 17 (Temurin recommended) and the Android SDK with `platforms;android-37` and `build-tools;36.0.0`:
+JDK 17 (Temurin recommended) and the Android SDK with `platforms;android-36` and `build-tools;36.0.0`:
 
 ```bash
-sdkmanager 'platforms;android-37' 'build-tools;36.0.0'
+sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
 export ANDROID_HOME=/path/to/android-sdk     # or write sdk.dir=... into local.properties (not committed)
 ```
 
 The first Gradle run downloads Gradle 9.8.2 (checksum pinned in `gradle/wrapper/gradle-wrapper.properties`),
-Android Gradle Plugin 9.5.0, Kotlin 2.4.21, Lifecycle 2.11.0 and the Compose BOM 2026.02.01.
-Compile SDK 37 supports the lint-compatible Lifecycle update; target SDK remains 36 and minSdk is 34.
+Android Gradle Plugin 9.5.0, Kotlin 2.4.21, Lifecycle 2.10.0 and the Compose BOM 2026.02.01.
+Compile and target SDK are 36; minSdk is 34. Lifecycle 2.10 is pinned for compatibility
+because 2.11 requires SDK 37, which the CI SDK channel does not provide.
 
 ## 2. Build and test
 
