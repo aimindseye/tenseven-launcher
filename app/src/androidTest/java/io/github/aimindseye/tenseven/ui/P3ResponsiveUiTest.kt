@@ -179,5 +179,4 @@ class P3ResponsiveUiTest {
             compose.onNodeWithText("Start key capture").performScrollTo().assertIsDisplayed()
         }
     }
-
 }

@@ -54,6 +54,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -135,6 +136,7 @@ fun Bb7HomeScreen(
     showLabels: Boolean = true,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val displayState = remember(context) { StartStateRepository(context) }
     val enabledDials = remember(refreshGeneration) { displayState.loadHomeDials(HomeStyle.Bb7) }
     val showStrip = remember(refreshGeneration) { displayState.loadHomeNotificationStrip(HomeStyle.Bb7) }
@@ -248,7 +250,7 @@ fun Bb7HomeScreen(
                 query = ""
                 pickingDesktop = false
                 selected = -1
-                Toast.makeText(context, context.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, resources.getString(R.string.bb7_added_home, app.label), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -262,21 +264,21 @@ fun Bb7HomeScreen(
                 if (key in desktopKeys) {
                     if (fromDesktop) add(t("move_2") to { moving = true })
                     add(
-                        context.getString(R.string.bb7_remove_home) to {
+                        resources.getString(R.string.bb7_remove_home) to {
                             onDesktopChanged(desktopKeys.filterNot { it == key })
                             if (desktopKeys.size <= 1) inDesktopZone = false
                         },
                     )
                 } else {
                     add(
-                        context.getString(R.string.bb7_add_home) to { addToDesktop(app) },
+                        resources.getString(R.string.bb7_add_home) to { addToDesktop(app) },
                     )
                 }
                 if (key in favorites) {
                     if (panel == Bb7Panel.Favorites && !searching && !fromDesktop) add(t("move_2") to { moving = true })
-                    add(context.getString(R.string.bb7_remove_favorites) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
+                    add(resources.getString(R.string.bb7_remove_favorites) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) })
                 } else {
-                    add(context.getString(R.string.bb7_add_favorites) to { addToFavorites(key) })
+                    add(resources.getString(R.string.bb7_add_favorites) to { addToFavorites(key) })
                 }
                 add(t("app_info") to { onOpenAppInfo(app) })
             }
@@ -288,26 +290,26 @@ fun Bb7HomeScreen(
             }
             if (!searching && panel != Bb7Panel.All) {
                 // Add icons to the home screen: pick them in All (Menu or long-press an icon, Add to Favorites).
-                add(context.getString(R.string.bb7_add_apps) to openApps)
+                add(resources.getString(R.string.bb7_add_apps) to openApps)
             }
             if (!searching) {
                 // Panels: show or hide each one (the last one stays); the banner and tray can be more see-through.
                 Bb7Panel.entries.forEach { p ->
                     if (p in panels && panels.size == 1) return@forEach
-                    val text = context.getString(if (p in panels) R.string.bb7_panel_hide else R.string.bb7_panel_show, p.title)
+                    val text = resources.getString(if (p in panels) R.string.bb7_panel_hide else R.string.bb7_panel_show, p.title)
                     add(text to { onPanelsChanged(Bb7Panels.toggle(panels, p)) })
                 }
                 if (scrimLevel >
                     Bb7Scrim.MIN
                 ) {
-                    add(context.getString(R.string.bb7_clearer) to { onScrimChanged(Bb7Scrim.step(scrimLevel, -1)) })
+                    add(resources.getString(R.string.bb7_clearer) to { onScrimChanged(Bb7Scrim.step(scrimLevel, -1)) })
                 }
                 if (scrimLevel <
                     Bb7Scrim.MAX
                 ) {
-                    add(context.getString(R.string.bb7_darker) to { onScrimChanged(Bb7Scrim.step(scrimLevel, 1)) })
+                    add(resources.getString(R.string.bb7_darker) to { onScrimChanged(Bb7Scrim.step(scrimLevel, 1)) })
                 }
-                add(context.getString(R.string.bb7_wallpaper) to onOpenWallpaper)
+                add(resources.getString(R.string.bb7_wallpaper) to onOpenWallpaper)
             }
         }
     }

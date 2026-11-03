@@ -83,17 +83,10 @@ internal fun startGridWidthDp(): Int {
     val density = LocalDensity.current
     val width = LocalWindowInfo.current.containerSize.width
     val insets = WindowInsets.safeDrawing
-    val available =
-        if (width > 0) {
-            with(density) {
-                (
-                    width - insets.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr) -
-                        insets.getRight(density, androidx.compose.ui.unit.LayoutDirection.Ltr)
-                ).toDp().value.toInt()
-            }
-        } else {
-            LocalConfiguration.current.screenWidthDp
-        }
+    val available = with(density) {
+        (width - insets.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr) -
+            insets.getRight(density, androidx.compose.ui.unit.LayoutDirection.Ltr)).toDp().value.toInt()
+    }
     return (available - (GRID_PADDING.value * 2).toInt()).coerceAtLeast(1)
 }
 

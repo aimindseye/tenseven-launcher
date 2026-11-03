@@ -11,6 +11,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.aimindseye.tenseven.SableStartActivity
+import io.github.aimindseye.tenseven.model.WidgetBinding
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
 import io.github.aimindseye.tenseven.platform.WidgetHostStore
@@ -103,6 +104,17 @@ class WidgetHostIntegrationTest {
             await { WidgetHostStore(context).pending() == null }
             assertEquals(listOf(pendingId), StartStateRepository(context).loadHomeWidgetIds())
         }
+
+    @Test fun setupFromAnEarlierBootIsDiscardedBeforeOrphanReconciliation() {
+        val store = WidgetHostStore(context)
+        store.save(WidgetBinding(123, "fixture/Widget", 0, "PAGE", WidgetBinding.Stage.Bind))
+        context
+            .getSharedPreferences("widget_host_state", android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putInt("pending_boot", -2)
+            .commit()
+        assertNull(WidgetHostStore(context).pending())
+    }
 
     private fun withHost(test: (ActivityScenario<SableStartActivity>) -> Unit) {
         val state = StartStateRepository(context)

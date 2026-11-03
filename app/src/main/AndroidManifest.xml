@@ -112,8 +112,7 @@
         android:theme="@style/Theme.SableLauncher"
         android:usesCleartextTraffic="false">
 
-        <activity android:name=".DeviceCompatibilityActivity" android:exported="false"
-            android:label="@string/tenseven_app_name" />
+        <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
 
         <!-- Remind scheduler is independent of the optional Notes and Tasks launcher icons. -->
         <receiver android:name=".tasks.TaskAlarmReceiver" android:enabled="true" android:exported="false">

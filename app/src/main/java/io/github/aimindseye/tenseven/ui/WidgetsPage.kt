@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -120,7 +121,7 @@ internal fun WidgetItem(
     val sizes = remember(context) { WidgetHostStore(context) }
     val info = rememberWidgetInfo(controller, id)
     val suggested = WidgetSizing.heightDp(info?.minHeight ?: 0, density)
-    var height by remember(id, suggested) { mutableStateOf(sizes.height(id, suggested)) }
+    var height by remember(id, suggested) { mutableIntStateOf(sizes.height(id, suggested)) }
     val canResize = info != null && info.resizeMode and AppWidgetProviderInfo.RESIZE_VERTICAL != 0
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         BoxWithConstraints(

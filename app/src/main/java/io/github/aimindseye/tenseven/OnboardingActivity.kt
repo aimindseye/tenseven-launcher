@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import androidx.core.net.toUri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -196,7 +197,9 @@ class OnboardingActivity : ComponentActivity() {
         }
     }
 
-    private fun openAppInfo() = openSettings(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+    private fun openAppInfo() {
+        openSettings(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))
+    }
 
     private fun openSettings(intent: Intent) {
         runCatching { startActivity(intent) }
