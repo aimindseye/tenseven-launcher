@@ -1,5 +1,8 @@
 # P2-A notification recovery regression — Hub, Peek, TenSeven lock screen
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 ## Confirmed Titan 2 observations (2026-11-02)
 
 - Physical test device for this launcher workflow is **Unihertz Titan 2**, not Zinwa Q25.

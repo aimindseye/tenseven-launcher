@@ -1,5 +1,8 @@
 # P2-A foundation — adaptive Hub and optional TenSeven icon styling
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 This branch starts P2-A on top of P1.2 (#102). It is **not** a completed Tasks/Remind release.
 
 ## Adaptive Hub + Peek

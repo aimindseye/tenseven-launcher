@@ -229,7 +229,7 @@ private fun ConversationCard(
 }
 
 /**
- * The six-icon Hub navigation is stable on a square Q25, even when dozens of apps are enabled.
+ * All ten Hub actions share one row; narrow windows scroll without reducing touch targets.
  * Message/mail counts roll up; utility shortcuts remain visible together without per-app filter chips.
  */
 @Composable
@@ -255,7 +255,7 @@ internal fun HubUnifiedNavigation(
     BackHandler(enabled = ui.remindersSelected || ui.filter.snoozed) { select(HubFilter.All) }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth().testTag("hub-shortcuts").horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -280,12 +280,6 @@ internal fun HubUnifiedNavigation(
                 select(HubFilter.All, ConversationFilter(unreadOnly = true))
             }
             IconHubFilterButton("Search", "search", searchOpen) { searchOpen = !searchOpen }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth().testTag("hub-shortcuts").horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
             IconHubFilterButton("Calls", "phone-call", currentTab == HubFilter.Calls) { select(HubFilter.Calls) }
             IconHubFilterButton("Calendar", "calendar", false, onClick = onOpenCalendar)
             val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)

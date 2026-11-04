@@ -42,6 +42,7 @@ extract_badging_field() {
   case "$field" in
     package) sed -nE "s/^package: name='([^']+)'.*/\1/p" <<< "$badging" ;;
     versionCode) sed -nE "s/^package: .*versionCode='([0-9]+)'.*/\1/p" <<< "$badging" ;;
+    versionName) sed -nE "s/^package: .*versionName='([^']+)'.*/\1/p" <<< "$badging" ;;
     minSdk) sed -nE "s/^(sdkVersion|minSdkVersion):'([0-9]+)'.*/\2/p" <<< "$badging" ;;
     *) echo "ERROR: unrecognized field" >&2; exit 1 ;;
   esac
@@ -55,6 +56,13 @@ check_apk() {
   [[ "$app" == "$EXPECTED_PACKAGE" ]] || { echo "ERROR: $kind wrong package: $app" >&2; exit 1; }
   [[ "$min" == "$EXPECTED_MIN_SDK" ]] || { echo "ERROR: $kind wrong minSdk: $min" >&2; exit 1; }
   [[ "$code" =~ ^[0-9]+$ ]] || { echo "ERROR: $kind missing/invalid versionCode: $code" >&2; exit 1; }
+
+  if [[ -n "${EXPECTED_VERSION_CODE:-}" && "$code" != "$EXPECTED_VERSION_CODE" ]]; then
+    echo "ERROR: wrong release versionCode: $code" >&2; exit 1
+  fi
+  if [[ -n "${EXPECTED_VERSION_NAME:-}" && "$(extract_badging_field versionName "$badging")" != "$EXPECTED_VERSION_NAME" ]]; then
+    echo "ERROR: wrong release versionName" >&2; exit 1
+  fi
 
   grep -Fq LockScreenAccessibilityService <<< "$xml" || { echo "ERROR: Full missing Accessibility service" >&2; exit 1; }
   grep -Fq ConversationListenerService <<< "$xml" || { echo "ERROR: Full missing notification listener service" >&2; exit 1; }

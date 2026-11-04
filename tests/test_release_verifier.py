@@ -19,7 +19,8 @@ kind = 'full'
 if sys.argv[2] == 'badging':
     pkg = os.getenv('TEST_PACKAGE', 'io.github.aimindseye.tenseven')
     code = os.getenv('TEST_FULL_CODE', '3')
-    print(f"package: name='{pkg}' versionCode='{code}' versionName='0.1.0'")
+    name = os.getenv('TEST_VERSION_NAME', '0.1.0')
+    print(f"package: name='{pkg}' versionCode='{code}' versionName='{name}'")
     print("sdkVersion:'" + os.getenv("TEST_MIN_SDK", "34") + "'")
 elif kind == 'full':
     print('ConversationListenerService')
@@ -73,6 +74,16 @@ class VerifyApkReleaseTest(unittest.TestCase):
 
     def test_android_11_minimum_is_rejected_after_android_14_floor(self):
         self.gate(expected_success=False, TEST_MIN_SDK="30")
+
+    def test_release_metadata_matches(self):
+        self.gate(EXPECTED_VERSION_CODE="18", EXPECTED_VERSION_NAME="1.0.0",
+                  TEST_FULL_CODE="18", TEST_VERSION_NAME="1.0.0")
+
+    def test_wrong_release_code_is_rejected(self):
+        self.gate(expected_success=False, EXPECTED_VERSION_CODE="18", TEST_FULL_CODE="17")
+
+    def test_wrong_release_name_is_rejected(self):
+        self.gate(expected_success=False, EXPECTED_VERSION_NAME="1.0.0")
 
     def test_v2_only(self):
         self.assertIn("verified v2 signature", self.gate())

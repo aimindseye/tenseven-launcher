@@ -1,5 +1,8 @@
 # P2-A Tasks / Remind — Titan 2 acceptance (candidate v8)
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 **Build lineage:** P1.2 #102 → P2-A foundation #103 → notification listener recovery #104 → Tasks/Remind candidate. Keep as draft until Android CI and Titan 2 device checks pass. Only one Full APK; sign locally on the owner's Mac.
 
 ## What is implemented

@@ -1,5 +1,8 @@
 # P2 engineering deliverable — candidate version 16
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 Builds on the accepted feature behavior in PR #110 / version 15. The owner has deferred
 building/testing the Full APK until P2 and P3 are both ready. This engineering delivery
 must not be represented as physical-device qualification.
