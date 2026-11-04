@@ -79,12 +79,16 @@ release helper. Lite builds are retired. Full setup, Google Play AAB and GitHub 
 
 ## Testing and device qualification
 
-P2/P3 engineering is merged. CI covers unit tests, the no-new-findings quality ratchet,
-API 34/35 instrumentation, responsive configurations, Sonar, CodeQL and security checks.
-The inherited quality baseline is still being reduced; global strict mode is separate.
-Titan 2 has owner testing. Other named hardware requires the recorded physical checks in
-[the P3 matrix](docs/P3_DEVICE_QUALIFICATION.md); emulator passes do not certify devices.
-KEY2 is outside active P3 scope. See [ROADMAP.md](ROADMAP.md) for remaining release work.
+Device-profile and responsive-layout support is available for:
+
+- Unihertz Titan 2
+- Unihertz Titan 2 Slim
+- Zinwa Q25
+- Zinwa P26
+- Touchscreen Android phones through a generic device profile
+
+**Unihertz Titan 2 is currently the only device tested on physical hardware.**
+The other device profiles still require testing on their respective devices.
 
 ## Screenshots and documentation
 
