@@ -1,5 +1,8 @@
 ## P1.2 acceptance — grouped Hub navigation + BBOS 7 desktop (2026-11-02)
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 Branch: `fix/p1-2-hub-groups-bb7-shortcuts-20261102`; Full-only local Mac signing.
 Expected **versionCode 5**, **versionName 0.1.2-p1.2-test.1**. Retain all P1.1 onboarding and lockscreen/wallpaper tests.
 

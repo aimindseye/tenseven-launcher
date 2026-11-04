@@ -46,8 +46,8 @@ android {
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Full-only P1 qualification build; update code and name for every distributed test APK.
-        versionCode = 17
-        versionName = "0.2.0-p3-device-polish.1"
+        versionCode = 18
+        versionName = "1.0.0"
     }
 
     signingConfigs {
@@ -155,7 +155,7 @@ if (releaseSigned) {
             println("Registered Tenseven signing certificate verified: $actual")
         }
     }
-    tasks.matching { it.name in setOf("packageRelease") }.configureEach {
+    tasks.matching { it.name in setOf("packageRelease", "signReleaseBundle") }.configureEach {
         dependsOn(verifyRegisteredReleaseKey)
     }
 }

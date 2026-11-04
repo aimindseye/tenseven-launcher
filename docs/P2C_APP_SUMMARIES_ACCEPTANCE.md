@@ -1,5 +1,8 @@
 # P2-C app summaries
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 Current: version 15 / 0.2.0-p2c-summaries.5. File linking and Office previews have been removed. The version-13 rules below supersede the historical version-11/12 sections.
 
 One Full APK: version 11 / 0.2.0-p2c-summaries.1. Builds on accepted Titan 2

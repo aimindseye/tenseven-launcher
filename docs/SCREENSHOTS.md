@@ -1,4 +1,4 @@
-# Screenshots
+# Screenshots — 1.0.0 refresh
 
 `tools/take-screenshots.sh` captures Tenseven from a phone connected over adb. It is meant for the README, the user
 guide and for checking every screen after a change.
@@ -66,3 +66,30 @@ touches the release app, contacts, or anything outside Tenseven.
 - A scrolled shot repeats: the screen did not move (an overlay is open). Close it and run again.
 - Swipes land in the wrong place: the script reads the screen size from `adb shell wm size`; on foldables or with a
   changed display size, capture those screens in the guided part instead.
+
+## Required 1.0.0 refresh
+
+The existing images predate the final Hub/Active Frames/device-profile changes. Capture new
+images from the final signed build; keep original captures as evidence and use docs-ready
+copies for documentation. Do not relabel old images as 1.0.0.
+
+```bash
+adb devices
+bash tools/take-screenshots.sh --release -s YOUR_SERIAL -o "$HOME/Desktop/tenseven-1.0.0-shots"
+```
+
+Release mode requires manual navigation for private settings/setup screens. Use sample
+conversations, files, notes and tasks; avoid personal notification content. Record the device,
+Android version, font/display scale, app version and source commit with the capture set.
+
+| Priority | Capture |
+|---|---|
+| Required | Hub ten-action row; narrow-window row scrolled to its end; rounded Hub peek |
+| Required | Both home styles; compact/show-all notification settings; storage dial |
+| Required | Active Frames with media/calendar summaries; empty frames; App integrations without Office file linking |
+| Required | BB10 setup ordering after notification access; BB7 setup without Active Frames |
+| Required | Widget Edit mode with height controls; Device compatibility; Notes and Tasks/Remind |
+| Review | Existing theme, lock layer, Command, All Apps and backup screenshots against the signed build |
+
+The script captures the screen the operator presents; it does not validate layout correctness
+or redact private content. Review each image before copying `docs-ready/` files into `docs/images/`.

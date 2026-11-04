@@ -1,4 +1,4 @@
-# Tenseven Launcher
+# TenSeven Launcher
 
 [![Android](https://github.com/aimindseye/tenseven-launcher/actions/workflows/android.yml/badge.svg)](https://github.com/aimindseye/tenseven-launcher/actions/workflows/android.yml)
 [![Checks](https://github.com/aimindseye/tenseven-launcher/actions/workflows/checks.yml/badge.svg)](https://github.com/aimindseye/tenseven-launcher/actions/workflows/checks.yml)
@@ -19,220 +19,84 @@ Gradle project so it can run on any Android 14+ phone, with new icons
 ([Tabler](https://github.com/tabler/tabler-icons)) and the missing pieces filled in from
 [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch).
 
-## Screenshots
+## Version 1.0.0
 
-From a Unihertz Titan 2. The [user guide](docs/USER_GUIDE.md) shows every screen.
+Android 14+ · package `io.github.aimindseye.tenseven` · version code `18`.
+The repository is preparing the signed 1.0.0 release; the owner's Mac retains the release key.
+See [release notes](docs/releases/1.0.0.md), [build and publish commands](docs/BUILD.md),
+[the user guide](docs/USER_GUIDE.md) and [delivery status](docs/P2_P3_STATUS_20261103.md).
 
-|  |  |  |  |
-|---|---|---|---|
-| <img src="docs/images/setup-overview-01.png" width="200" alt="Setup"> | <img src="docs/images/launcher-settings-01.png" width="200" alt="Launcher Settings"> | <img src="docs/images/hub-settings-01.png" width="200" alt="Hub settings"> | <img src="docs/images/lock-layer.png" width="200" alt="Lock layer"> |
-| <sub>Setup</sub> | <sub>Launcher Settings</sub> | <sub>Hub settings</sub> | <sub>Lock layer</sub> |
+## Functionality
 
-|  |  |  |  |
-|---|---|---|---|
-| <img src="docs/images/home-bb10.png" width="200" alt="BlackBerry 10 home"> | <img src="docs/images/home-bb7.png" width="200" alt="BlackBerry 7 home"> | <img src="docs/images/hub-page.png" width="200" alt="Hub"> | <img src="docs/images/hub-peek.png" width="200" alt="Hub peek"> |
-| <sub>BlackBerry 10 home</sub> | <sub>BlackBerry 7 home</sub> | <sub>Hub</sub> | <sub>Hub peek</sub> |
-
-
-|  |  |  |
-|---|---|---|
-| <img src="docs/images/edit-home.png" width="200" alt="Edit Home"> | <img src="docs/images/widgets-page.png" width="200" alt="Widgets page"> | <img src="docs/images/theme-phone-home.png" width="200" alt="Phone colours theme"> |
-| <sub>Edit Home</sub> | <sub>Widgets page</sub> | <sub>Phone colours theme</sub> |
-
-## What you get
-
-| | |
+| Area | Available behavior |
 |---|---|
-| **Launcher Settings** | One screen (BB7 menu, BB10 gear, or Command: "Launcher Settings"): home style (BlackBerry 7 or 10), Type to search, icon grid (columns, rows, icon size, app names, live preview), theme (BlackBerry, Phone colours and six more) and wallpaper (eight, set for Home, Lock or both), Widgets page and Glance widget switches, Hub settings, lock layer, Language, Back up and restore, Setup, Android settings and a privacy note. Every change is saved at once |
-| **Setup** | First run and Launcher Settings, then Setup: the home role, each optional permission with its reason, and a step for every Launcher Settings group (style, theme and wallpaper, icon grid, widgets, Hub, lock screen, extra apps). The choice steps share their controls with Launcher Settings, so setup cannot fall behind it |
-| **BlackBerry 10 style** | Hub, then Active Frames (cards for the apps you opened recently; empty until you open one), then pages of app icons. Phone, Search and Camera along the bottom. A top row with the status dials, the gear (Launcher Settings), today's date, a bell with the unread count (opens the Hub) and the speaker icon. Up to 8 frames, 5 icons per row |
-| **BlackBerry 7 style** | Status dials, date, unread badge and speaker icon over the wallpaper and a tray with Favorites, All and Downloads panels (Frequent, the apps you open most, can be added from the menu). A new home starts with your phone's own Phone, Messages, Mail, Camera, Calendar, Browser, Gallery and Music apps plus Settings. Swipe right for the Hub, left for the apps; long-press empty space, then Add to home screen, to place icons between the banner and the tray; Alt+Left/Right or Space switches panels |
-| **BB7 menu** | Alt+Enter, the ⋮ button on the tray or a long-press on an icon (the Titan 2 has no Menu key): add to or remove from the home screen, move, App info, show or hide panels, more rows, clearer or darker banner and tray, change wallpaper, Launcher Settings, Command |
-| **Type to find** | Press a letter on Home to search apps and actions; prefixes such as `?app`, `@person`, `/settings`, `!action`, `/private`, `/work` narrow it. Alt+Space opens Command from either layout; swipe down on the BB10 Home does too. Can be switched off in Launcher Settings |
-| **Hold a letter** | Hold a key on Home to open the app you assigned to it (`assign k camera` in Command; `unassign k` frees it), or call a speed-dial contact where Sable Phone is installed |
-| **Most-used first** | Command ranks the apps you open most ahead of other matches, so two letters are usually enough. Counts stay on the phone and fade over time |
-| **All Apps** | A to Z with a privacy row per app (permissions and special access), Private Space and work profile support, uninstall through the system |
-| **Widgets page** | Left of Hub, the one place for widgets: the built-in ones you switch on (Calendar, Alarm, Battery, Now playing) first, then widgets from any installed app (a weather app, a clock), added from a picker, ordered with Up/Down, removed in Edit. The BB10 home itself holds only your recent apps. Can be switched off in Launcher Settings |
-| **Edit Home** | Reorder the grid, bottom bar and frames with the keyboard; a bar at the bottom (Reset, Cancel, Done) stays on screen |
-| **Hub peek and Hub settings** | Drag in from the left edge of the BB10 home (or Space on the Hub slot) for the latest conversations without leaving Home. Hub settings: clear the Hub now, choose which apps feed it, and whether message text may be shown |
-| **Themes and wallpapers** | Eight themes that work on an ordinary install (BlackBerry, Phone colours and six more), theme files you can import and export, and eight wallpapers Tenseven draws itself (no image files, no BlackBerry artwork); the BB10 home can show the wallpaper through, dimmed |
-| **Lock layer** | Optional BlackBerry-style cover over your lock screen: time, date, app icons with counts, camera shortcut. The phone's own lock stays underneath. Needs Display over other apps and notification access |
-| **Hub** | Unread bar, then your message and email conversations grouped per person with inline reply (Tenseven's own notification listener, in memory only, text hidden while locked), calls and contacts. Filter by person, unread, messages or email; mark read (button or `M`); snooze for an hour or until tomorrow (button or `S`). It opens your phone's default Messages, Mail, Phone and Contacts apps and needs no Sable app |
-| **Built-in widgets** | Calendar (next event), Alarm (next alarm), Battery and Now Playing, all off until you switch them on in Launcher Settings: cards at the top of the Widgets page, reached by swiping right on BB10 or from the menu on BB7 |
-| **Sound** | The speaker icon on both homes shows Sound, Vibrate or Silent. With the Sound Profiles extra on, a tap opens it (a long press switches modes); otherwise a tap cycles Android's own modes, and Silent needs Do Not Disturb access (long press opens that screen) |
-| **Mail tile** | The BB10 Mail tile shows the newest unread email from your notifications (text hidden while locked) and opens your default email app |
-| **Edit Home** | Reorder the grid, the bottom bar and the frames with the keyboard (Enter picks up and drops, arrows move) |
-| **Extra apps** | Optional Calc Plus (exact and scientific calculator with unit converter; named so it does not clash with the phone's own Calculator), Notes, Sound Profiles (the BlackBerry profiles: Normal, Loud, Vibrate only, Phone calls only, All alerts off, each with volume, tones, vibration and light; needs Do Not Disturb access and, for tones and vibration, Modify system settings) and ten games (Sudoku, Minesweeper, 2048, Bricks, Snake, Blocks, Reversi, Solitaire, Mahjong, Words). None is on by default: tick the ones you want in the setup's Extras step, or later from Command, Extra apps. Nothing is downloaded; they ship inside Tenseven. In every extra, Esc leaves and Menu lists its keys |
-| **Default apps** | Tiles and shortcuts open your phone's own Calendar, Music, Email, Gallery, Messages, Phone and Camera apps, found by Android's app categories; next event and now-playing come from Android. There is no weather tile: Android has no weather data API and Tenseven asks for no internet access |
-| **Back up** | Launcher Settings, Back up and restore: a readable JSON file through the system file picker (no storage permission); letter shortcuts and contacts are not included |
+| Home layouts | BlackBerry 7 banner/tray and BlackBerry 10 Hub/Active Frames/app pages; responsive grids, keyboard navigation and touch support |
+| Command | Type to search, Alt+Space, app/contact/action scopes, letter assignments and usage-ranked results |
+| Hub | Conversations, inline reply, unread filtering, snooze, reminders, calls, contacts and selected calendars; ten actions in one row, scrolling on narrow windows |
+| Home notifications | Compact or show-all icons for either home style; tapping an app icon opens that app's Hub notifications |
+| Active Frames | BB10 only; the last eight opened apps, oldest displaced by a ninth. Available summaries enhance existing cards; background history/notifications do not create cards |
+| Summaries | Media sessions, selected calendars, optional Hub message excerpts and TenSeven-owned Notes/Tasks/calculator data. FM/player text depends on exposed notification metadata |
+| Office apps | Normal recent-app cards; no file linking or automatic access to private Word/Excel/PowerPoint documents |
+| Widgets | Built-in glance cards and hosted Android widgets on the Widgets page; bind/configure, reorder, resize and remove |
+| Personalisation | Themes, theme-file import/export, wallpapers, icon/grid choices, configurable dials including storage, backup and restore |
+| Extras | Optional Notes, Tasks/Remind, Calc Plus, Sound Profiles and games |
+| Lock layer | Optional cover over Android's own secure lock; requires overlay and notification access |
+| Device support | Profiles and responsive policies for Titan 2, Titan 2 Slim, Zinwa Q25, Zinwa P26 and touchscreen fallback; Device compatibility includes keyboard diagnostics |
 
-Keyboard shortcuts are confirmed on the Titan 2 only where noted in [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md); the repo
-records which keys each phone sends in `docs/ARCHITECTURE.md` as they are measured.
+## Permissions and privacy
 
-## Privacy and permissions
+No root or platform signature is required. The launcher has no Internet permission.
+Basic app launching and recent-app cards work without notification access. Enable Android
+notification access for TenSeven to use Hub and media/notification summaries; select the
+apps contributing to Hub in Hub settings. Calendar access and calendar selection are separate.
+Usage access helps observe app launches outside the launcher. Work and Private Space data
+remain subject to Android's profile boundaries.
 
-Tenseven has no accounts, ads, analytics, trackers or servers, and does not use the internet.
-Launcher state is in app-private storage. Recent activity is kept in memory only.
+Automatic private-app snapshots and force-stop are unavailable to this ordinary install.
+User-approved screen capture has a separate Android consent flow and preview. No Office
+file access is implied by opening Word, Excel or PowerPoint. See the guide for privacy limits.
 
-| Permission | Why | Optional |
-|---|---|---|
-| Home app role | Be the home screen | needed to be a launcher |
-| `READ_CONTACTS` | Hub Contacts tab: names and one number per person, read on the phone, never stored | yes; the tab asks again |
-| `READ_MEDIA_IMAGES` | Local photo counts on Home | yes |
-| `READ_CALENDAR` | The next event on the Calendar widget | yes; the widget asks again |
-| `REQUEST_DELETE_PACKAGES` | Hand uninstall to the system uninstaller, which confirms | yes |
-| Usage access (a special access you grant in Settings) | Active Frames also lists apps you opened without Tenseven (names and times only; not stored or sent) | yes; off until you turn it on |
-| Notification access (a special access you grant in Settings, not a manifest permission) | Counts unread messages and email per app for the Hub bar, grouped per person; read on the phone, held in memory only, never stored or sent | yes; off until you turn it on |
-| Accessibility service "Tenseven double-tap to lock" (a special access you grant in Settings) | Double-tap empty Home space to lock the screen. It can only perform the lock action: it reads no screen content and receives no events | yes; off until you turn it on in Accessibility settings and in Appearance |
-| `SYSTEM_ALERT_WINDOW` (Display over other apps, granted in Settings) | Only for the optional lock layer: lets it appear over the lock screen when the screen wakes. The phone's own lock stays underneath | yes; off until you turn the lock layer on |
-| `SET_WALLPAPER` | Sets one of Tenseven's own wallpapers when you pick one | yes; a normal permission, used only when you choose |
-| `ACCESS_NOTIFICATION_POLICY` (Do Not Disturb access, granted in Settings) | Lets the speaker icon and Sound Profiles pick Silent and the quiet profiles | yes; needed only for those |
-| `WRITE_SETTINGS` (Modify system settings, granted in Settings) | Sound Profiles sets tones, vibration and the notification light | yes; only the Sound Profiles extra uses it |
-| `ACCESS_HIDDEN_PROFILES` | Show the Private Space; Android grants it to the default Home app only | yes |
+If Android blocks notification access after sideloading, open Android Settings → Apps →
+TenSeven Launcher → the three-dot menu → Allow restricted settings, when offered by the device,
+then enable notification access. OEM wording and availability vary.
 
-No signature permissions: an ordinary install cannot hold them, and CI fails if the manifest asks for one
-(`tests/run.sh`). Features that need them on SableOS (live thumbnails in Active Frames, closing tasks,
-work-profile privacy rows) have an ordinary-install fallback; see the table in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Notification access is used by the Mink-based Hub (unread bar, conversations per person, inline reply) and
-usage access by the recent-apps row on Active Frames. Neither is asked for silently: the setup screen
-(first run, and Setup and permissions in the menu) explains each one, and every optional step can be skipped.
+## Build and install
 
-### If Android greys out Usage or Notification access
-
-Android 13+ restricts these for apps installed from a file, and some phones (the Titan 2 included) have no menu in App info to lift it. From a computer with adb, replace the id with `io.github.aimindseye.tenseven` (release) or `io.github.aimindseye.tenseven.debug`:
-
-```
-adb shell appops set --user 0 <id> GET_USAGE_STATS allow
-adb shell cmd notification allow_listener <id>/io.github.aimindseye.tenseven.conversations.ConversationListenerService
-```
-
-## Install — Full only
-
-The only distributed variant is **Full** (`Tenseven-Launcher-release.apk`); the Lite
-option and its Gradle build type are retired. Tenseven remains a normal Android Home app,
-without signature permissions or Play Protect workarounds.
-
-On the signing Mac, with the existing registered release keystore configured, run:
+Use JDK 17 and Android SDK 36 / build-tools 36.0.0. Release signing is automatic when the existing
+registered keystore credentials are configured; do not sign the resulting APK a second time.
 
 ```bash
-bash tools/build-full-consolidated-test.sh
+./gradlew :app:assembleDebug
+bash tools/build-release.sh
 ```
 
-This checks unit tests, builds one signed Full APK, verifies its package/manifest/signing
-identity and writes the APK plus SHA-256 to
-`~/Downloads/tenseven-full-combined-test/`. The package ID is
-`io.github.aimindseye.tenseven`. See [docs/BUILD.md](docs/BUILD.md).
+The verified release package is `~/Downloads/tenseven-release/1.0.0/TenSeven-Launcher-1.0.0.apk`,
+with a SHA-256 checksum and source commit. The old consolidated-test helper delegates to this
+release helper. Lite builds are retired. Full setup, Google Play AAB and GitHub publishing:
+[BUILD.md](docs/BUILD.md).
 
-Install the verified APK through the intended source with Play Protect enabled.
-If Android restricts Notification or Usage access for a downloaded APK, open
-**Settings → Apps → Tenseven → three-dot menu → Allow restricted settings**
-when that option exists. Return to Setup and grant access explicitly.
-This cannot be enabled through a manifest. Opt into Hub apps individually;
-Calendar access and calendar source selection are separate optional choices.
-The lock-layer Peek never replaces Android's secure keyguard.
+## Testing and device qualification
 
-## Supported devices
+P2/P3 engineering is merged. CI covers unit tests, the no-new-findings quality ratchet,
+API 34/35 instrumentation, responsive configurations, Sonar, CodeQL and security checks.
+The inherited quality baseline is still being reduced; global strict mode is separate.
+Titan 2 has owner testing. Other named hardware requires the recorded physical checks in
+[the P3 matrix](docs/P3_DEVICE_QUALIFICATION.md); emulator passes do not certify devices.
+KEY2 is outside active P3 scope. See [ROADMAP.md](ROADMAP.md) for remaining release work.
 
-Tenseven needs Android 14 or newer. A physical keyboard is the point, but nothing stops it running on a
-touch-only phone.
+## Screenshots and documentation
 
-| Device | Keyboard | Status |
-|---|---|---|
-| Zinwa Q25 (SableOS or stock Android) | QWERTY, trackpad | Layouts designed for it; not yet run |
-| Zinwa P26 (Passport-based) | Hardware profile pending | Planned for P3; not tested |
-| Unihertz Titan 2 | QWERTY, trackpad; no Menu key (use Alt+Enter) | Debug build runs and is tried by hand; not every feature confirmed |
-| Unihertz Titan 2 Slim | Hardware profile pending | Planned for P3; not tested |
-| Unihertz Titan Pocket | QWERTY | Not yet run |
-| BlackBerry KEYone | QWERTY | Historical target, not tested and outside current P3 scope |
-| Any other Android 14+ phone | on-screen or Bluetooth keyboard | Not yet run |
+The existing [image gallery](docs/images/) predates the 1.0.0 Hub and setup changes.
+It is historical illustration, not current release evidence. Refresh it using
+[the screenshot capture instructions](docs/SCREENSHOTS.md), especially Hub, peek,
+Active Frames, notification display settings, device compatibility and widget resizing.
 
-To add a device, capture its keys with the event viewer in Sable Keyboard (`KeyProbeActivity`) or
-`adb shell getevent -lt`, and add the result to the key map in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#key-profiles).
-
-## Guides
-
-| Guide | What it covers |
-|---|---|
-| [User guide](docs/USER_GUIDE.md) | Setting up, both layouts, icon grid, themes and wallpapers, keys and gestures, Command, Hub and peek, widgets, lock layer, extras, sound, grants over adb, troubleshooting |
-| [Screenshots](docs/SCREENSHOTS.md) | `tools/take-screenshots.sh`: captures the setup steps, Launcher Settings and the home screens from a connected phone |
-| [Roadmap](ROADMAP.md) | What is done, what is next, and what is not planned |
-| [Architecture](docs/ARCHITECTURE.md) | Modules, how the imported sources are organised, platform-only features and their fallbacks, key profiles, the keyboard companion |
-| [Build](docs/BUILD.md) | Build and test locally, quality switch, lock files, SonarCloud setup, GitHub Actions |
-| [Brand assets](docs/BRAND_ASSETS.md) | How provider logos for messaging and AI apps are handled and recorded |
-| [Sources](docs/SOURCES.md) | Every upstream with its pin and licence, and every change made to imported files |
-| [Porting from Mink](third_party/minklauncher/PORTING.md) | Which MinkLauncher pieces go where, in what order |
-| [Contributing](CONTRIBUTING.md) | Workflow, attribution rules, what a pull request needs |
-| [Security](SECURITY.md) | How to report a vulnerability |
-
-## Build it yourself
-
-You need JDK 17 and the Android SDK with platform 36 and build-tools 36.0.0. Nothing else.
-
-```bash
-git clone https://github.com/aimindseye/tenseven-launcher
-cd tenseven-launcher
-export ANDROID_HOME=/path/to/android-sdk
-./gradlew :app:assembleDebug                 # app/build/outputs/apk/debug/
-./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
-bash tests/run.sh                            # static checks, no SDK needed
-adb install -r app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk
-```
-
-Details, the quality switch and the lock files: [`docs/BUILD.md`](docs/BUILD.md).
-
-## Repository layout
-
-```text
-app/                      the launcher (Gradle application module, io.github.aimindseye.tenseven)
-  src/main/java/io/github/aimindseye/tenseven/   Sable Start sources, imported (renamed from org.sableos.start), plus Tenseven's own code:
-    conversations/ iconpacks/ onboarding/        ports from MinkLauncher
-    extras/                                      Calc Plus, Notes, Sound Profiles, ten games (from SableOS)
-    LauncherSettingsActivity, SettingsSections   Launcher Settings and the setting groups it shares with Setup
-    HubSettingsActivity, LockLayerActivity       Hub settings and the lock layer cover
-    BackupActivity, OnboardingActivity           Backup and Setup
-  src/main/res/                    strings (18 draft translations for the imported text; Tenseven's own lines are English), theme, Tenseven launcher icon
-  src/test/                        58 unit-test files (Sable Start's, the ports', and Tenseven's own)
-design/                   Sable design library (theme, tokens, shared components, 18 draft translations)
-config/                   detekt rules (byte-exact SableOS copy) and their provenance
-gradle/                   version catalog and wrapper
-third_party/
-  tabler-icons/           verbatim SVGs, licence, manifest with sha256, provenance
-  minklauncher/           read-only reference snapshot of the MinkLauncher pieces to port, with attribution
-  titan-ai/               MIT notice for the status rings
-brand-assets/             catalog of messaging and AI provider logos (source, status, sha256)
-tools/                    tabler_icons.py, brand_assets.py, refresh-locks.sh, take-screenshots.sh
-tests/run.sh              static checks: shellcheck, XML, generated icons, catalog, manifest permissions
-docs/                     guides
-.github/workflows/        GitHub Actions: checks, Android, Security, CodeQL, SonarCloud
-sonar-project.properties  SonarCloud analysis scope
-```
-
-## Continuous integration
-
-GitHub Actions runs on every pull request and on `main`, with the same pinned actions SableOS uses:
-
-| Workflow | What it runs |
-|---|---|
-| `checks` | `tests/run.sh`: shellcheck, XML well-formedness, Tabler icon manifest and generated files, brand catalog, detekt config provenance, licences and provenance of `third_party/`, no signature permissions in the manifest, no keys or APKs tracked, Gradle wrapper checksum |
-| `Android` | Gradle build of the debug APK, unit tests, Android Lint, detekt, ktlint and Kover coverage (a baseline, no threshold); uploads the APK and the reports |
-| `Security` | Gitleaks history scan and MobSF source scan (also weekly) |
-| `CodeQL` | GitHub code scanning for Kotlin (security-and-quality queries; also weekly); results under Security > Code scanning |
-| `SonarCloud` | SonarCloud scan of the whole repository, waiting on the "Sonar way" quality gate; needs the `SONAR_TOKEN` repository secret |
-
-`Android` and `checks` skip documentation-only changes. SonarCloud runs as CI-based analysis, so
-Automatic Analysis must stay off in the SonarCloud project, and a failing quality gate fails the job. Until the imported sources are clean,
-detekt, ktlint and Lint **report without failing**; compile errors and failing tests always fail. Set the
-repository variable `TENSEVEN_STRICT_QUALITY` to `true` to make them fail
-([`docs/BUILD.md`](docs/BUILD.md#quality-gates)).
-
-## Boundaries
-
-This repository must never contain signing keys, keystores, device identifiers, personal data, or
-proprietary artwork or fonts. BlackBerry's own icons, wallpapers, fonts and apps are not used and not
-planned: Tenseven's two layouts are original code that borrows the *arrangement* of the BlackBerry 10
-and 7 home screens, nothing else. Provider logos for other companies' apps follow
-[`docs/BRAND_ASSETS.md`](docs/BRAND_ASSETS.md).
+- [User guide](docs/USER_GUIDE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Build and release](docs/BUILD.md)
+- [Screenshot tooling](docs/SCREENSHOTS.md)
+- [Device qualification](docs/P3_DEVICE_QUALIFICATION.md)
+- [Third-party provenance](THIRD_PARTY_NOTICES.md)
 
 ## Licence
 
@@ -250,48 +114,3 @@ BlackBerry is a trademark of its owner. Tenseven is not affiliated with or endor
 - **Notification, usage, Private Space, onboarding, icon pack, backup and command ideas and code to port:**
   [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch) by Katoa Apps (Apache-2.0).
 - **Status rings:** [Titan AI](https://github.com/andrehafner/aiassistant) by Andre Hafner (MIT).
-
-## Status
-
-**Working beta.** The launcher builds in CI (compile, 58 unit-test files, Lint, detekt, ktlint, security scans)
-and is installed and tried by hand on a Unihertz Titan 2. There is no published release; builds are the CI debug
-APK or one you sign yourself. The layouts were designed for the Zinwa Q25's 411 dp square screen, so other screens
-need checking. What is done and what is next: [`ROADMAP.md`](ROADMAP.md).
-
-| Area | State |
-|---|---|
-| Both home layouts, Command, Hub, All Apps, extra apps | Run on the Titan 2 |
-| Launcher Settings, Setup (first run and overview) | Run on the Titan 2 |
-| Themes, wallpapers (Home, Lock, BB10 see-through), lock layer and its preview | Run on the Titan 2 |
-| Widgets page and widget tiles, Hub peek, Hub settings, icon grid options, Edit Home bar | Written and in CI; not yet confirmed on a phone |
-| Other devices (Q25, Titan 2 Slim, touchscreen phones) | Not run |
-
-```text
-APP=Tenseven Launcher (io.github.aimindseye.tenseven)
-PHASE=beta: both layouts, Hub, Command, extras, Launcher Settings, Setup, themes, wallpapers and lock layer built
-BASE=Android 14+ (minSdk 34), compileSdk and targetSdk 36, ordinary install, no platform signature
-HOME_STYLES=BlackBerry 10 style, BlackBerry 7 style (chosen in Launcher Settings or Setup)
-ICONS=Tabler Icons outline 3.50.0 (MIT), generated into the app by tools/tabler_icons.py
-WALLPAPERS=eight, drawn in code by Tenseven; no image files, no BlackBerry artwork
-APPS_BUILD=GitHub Actions on every pull request (Gradle build, unit tests, Lint, detekt, ktlint, Kover)
-DEVICE_TESTED=Unihertz Titan 2, debug build, by hand; no other device
-QUALITY_GATES=report only until TENSEVEN_STRICT_QUALITY=true (docs/BUILD.md)
-BORROWED_FROM_MINK=Hub conversations, onboarding, usage recents, icon packs, backup, command prefixes, lock service (third_party/minklauncher/PORTING.md)
-EXTRAS=Calc Plus, Notes, Sound Profiles, ten games, ported from SableOS, off by default
-SABLE_KEYBOARD=separate companion app, not in this repository yet (docs/ARCHITECTURE.md)
-RELEASES=none published; release signing supported (docs/BUILD.md)
-INTERNET=none (no INTERNET permission)
-```
-
-### Current P2/P3 delivery order
-
-P2 engineering is merged through PR #111 (screen boundaries, lifecycle orchestration,
-capability snapshots and blocking quality ratchet). See
-[engineering acceptance](docs/P2_ENGINEERING_ACCEPTANCE.md). P3 follows P2 and targets Titan 2,
-Titan 2 Slim, Zinwa Q25, Zinwa P26 and a touchscreen Android device; KEY2 is removed from active scope.
-The owner will build/test the single Full APK when both deliveries are ready. Current minimum
-Android version remains Android 14 (API 34).
-
-P3 device/window/keyboard/widget engineering and the pending physical qualification
-matrix are documented in [P3 device qualification](docs/P3_DEVICE_QUALIFICATION.md).
-Launcher Settings → Device compatibility provides the foreground key-event probe.

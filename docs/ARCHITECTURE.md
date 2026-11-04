@@ -1,5 +1,7 @@
 # Architecture
 
+Current behavior: 1.0.0 preparation. Dated acceptance sections below retain historical context.
+
 ## Modules
 
 ```text
@@ -41,7 +43,7 @@ Tenseven-only files worth knowing: `model/GridColumns`, `model/HubApps`, `model/
 
 ### Widgets: the page, and nothing on the home
 
-One `WidgetHostController` (one `AppWidgetHost` id) serves the Widgets page (`WidgetTarget.PAGE`). The `HOME` target and `home_widget_ids` are kept for old saves. BB10 Active Frames can show available TenSeven-owned Calendar/Now playing summaries, but do not embed arbitrary third-party widgets. The built-in widgets (`GlanceWidgets`: Calendar, Alarm, Battery, Now playing; none on by default, switched in Launcher Settings) are drawn by `BuiltInWidgets` as the top of the Widgets page, passed into `WidgetsPage` as its `builtIn` slot. Edit mode dims an added widget and puts Up, Down, Remove in a row under it. Edit Home ends in a bar that stays on screen (`EditBar`: Reset, Cancel, Done).
+One `WidgetHostController` (one `AppWidgetHost` id) serves the Widgets page (`WidgetTarget.PAGE`). The `HOME` target and `home_widget_ids` are kept for old saves. BB10 Active Frames can show available TenSeven-owned Calendar/Now playing summaries, but do not embed arbitrary third-party widgets. The built-in widgets (`GlanceWidgets`: Calendar, Alarm, Battery, Now playing; none on by default, switched in Launcher Settings) are drawn by `BuiltInWidgets` as the top of the Widgets page, passed into `WidgetsPage` as its `builtIn` slot. Edit mode dims an added widget and puts Up, Down, Shorter, Taller and Remove in a row under it. Edit Home ends in a bar that stays on screen (`EditBar`: Reset, Cancel, Done).
 
 ### Settings groups shared with Setup
 
@@ -52,6 +54,12 @@ One `WidgetHostController` (one `AppWidgetHost` id) serves the Widgets page (`Wi
 `LauncherTheme` replaces `SableGlobalTheme` in every Tenseven activity: the theme chosen in Launcher Settings (`appearance_mode`, `appearance_accent`, backed up) wins when set; otherwise the Sable global provider is read, which only exists on SableOS. `ThemePresets` and `WallpaperSets` are pure models (unit tested). `WallpaperArt` paints each wallpaper in code (gradient, soft disc, layered ridges, seeded per set), so no image files ship, and sets it through `WallpaperManager` for Home, Lock or both (`SET_WALLPAPER`). The BlackBerry 7 home always draws on the wallpaper; the BlackBerry 10 home does so when `home_wallpaper` is on (default), by showing the wallpaper window flag and painting its background at 60% (`LocalHomeBackdrop`).
 
 ### Hub controls and the peek
+
+`HubUnifiedNavigation` renders all ten category/utility actions in one horizontally scrolling
+row. Actual window width determines how many fit, independent of device-brand guesses;
+buttons retain their minimum 48 dp touch target. Per-app notification icons belong to Home,
+where selecting one opens the matching Hub source filter. The peek uses rounded corners.
+
 
 `ConversationListenerService` drops notifications from apps in `hub_excluded_apps` (`HubApps`) before they reach `ConversationHub`; `ConversationHub.clearNow()` is the "Clear the Hub now" button. Nothing about message text is persisted. `hub_peek_text` (off by default) decides whether the lock layer and the peek may show the latest message. The peek (`ui/HubPeek`) is an overlay on the BlackBerry 10 Start destination; a pointer handler on the Initial pass opens it from a drag that starts in the left 20 dp of Home and consumes the rest of that drag so the pager does not also move.
 
@@ -200,23 +208,17 @@ needed), not device models or a nonempty partial task result. The normal Full AP
 requests no signature permissions. Close always dismisses the TenSeven card; it
 never invokes removeTask or force-stop. The underlying app remains intact.
 
-`FrameSettingsSection` is shared by Launcher Settings and initial/reopened setup,
-and appears for BB10. Supported persisted controls: actual TenSeven Calendar and
-Now playing summaries; opted-in personal-profile Hub counts; authorized snapshots;
-opening an app from a card; recording returned apps; and limits of 4/8/12. Live
-summaries appear inside matching personal-profile app cards, or as separate owned
-tiles when no matching card exists. They are independent of Glance widget settings.
-Live app cards are prioritized within the total 4/8/12 limit. Calendar reads the Hub's
-selected CalendarProvider calendars; media is matched to its active session package.
-Unsupported snapshot/new-message choices show the needed capability explanation;
-force-stop is always disabled. Existing Widgets page binding remains separate.
+`FrameSettingsSection` is shared by Launcher Settings and setup, and appears only for BB10.
+The current ordinary-install policy retains eight opened-app identities. Opening a ninth
+replaces the oldest; summaries enrich matching cards without creating cards from historical
+usage or incoming notifications. Calendar uses Hub-selected CalendarProvider calendars;
+media matches session packages. Optional Hub excerpts and TenSeven Notes/Tasks/calculator
+summaries respect their integration preferences. Office document linking has been removed.
+The Widgets page remains separate. Capture consent is described below.
 
-Domain tests cover merge/identity/limits, store codec, lifecycle races, revocation,
-recreation and safe open/close. The Active Frames UI workflow runs instrumented
-keyboard, layout, lifecycle and persistence tests on an Android 35 emulator with a
-720×720 display at density 280. This is emulator evidence, not Titan 2 or privileged
-SableOS qualification. Outstanding combined architecture acceptance in #100 and
-physical-device acceptance in #99 remain tracked separately.
+The UI workflow tests API 34 and 35, plus three responsive configurations. Its Hub regression
+checks all ten actions at a narrow width and scrolls to each before exercising shortcuts.
+Physical hardware acceptance remains distinct from emulator evidence.
 
 
 ### User-approved shared-screen preview

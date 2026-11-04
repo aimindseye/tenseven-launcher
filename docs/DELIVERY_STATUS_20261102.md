@@ -1,5 +1,7 @@
 # Delivered work and integration status — 2026-11-02
 
+> Historical status. See [current delivery status](P2_P3_STATUS_20261103.md) and the [user guide](USER_GUIDE.md).
+
 The project owner confirmed the latest Hub/Yahoo/Snoozed fixes work on Titan 2 and requested closure of completed work before P2-B.
 
 ## Canonical integration

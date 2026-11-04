@@ -1,5 +1,8 @@
 # P2-B Active Frames acceptance
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 Update: version 10 live-summary and consented capture acceptance supersedes the
 version 9 live-tile/snapshot rows below; see [P2B_LIVE_CAPTURE_ACCEPTANCE.md](P2B_LIVE_CAPTURE_ACCEPTANCE.md).
 

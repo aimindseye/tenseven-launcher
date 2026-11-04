@@ -1,5 +1,8 @@
 # P2-B live summaries and user-approved capture
 
+> Historical acceptance record for the build named below. Current release behavior and setup:
+> [1.0.0 user guide](USER_GUIDE.md); current delivery state: [P2/P3 status](P2_P3_STATUS_20261103.md).
+
 Version 10 / 0.2.0-p2b-frames.2. Follow-up to #99 and PR #109.
 
 Calendar and media summaries now appear inside matching personal-profile recent-app cards.

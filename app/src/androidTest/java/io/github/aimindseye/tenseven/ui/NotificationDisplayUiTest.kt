@@ -30,19 +30,32 @@ class NotificationDisplayUiTest {
         var expanded by mutableStateOf(false)
         var opened: String? = null
         var hubOpens = 0
-        compose.setContent { LauncherTheme {
-            Column(Modifier.width(200.dp)) {
-                HomeNotificationStrip(counts, (1..8).map { "app$it" }.toSet(), expanded,
-                    onOpenHub = { hubOpens++ }, onOpenApp = { opened = it })
+        compose.setContent {
+            LauncherTheme {
+                Column(Modifier.width(200.dp)) {
+                    HomeNotificationStrip(
+                        counts,
+                        (1..8).map { "app$it" }.toSet(),
+                        expanded,
+                        onOpenHub = { hubOpens++ },
+                        onOpenApp = { opened = it },
+                    )
+                }
             }
-        } }
+        }
         compose.onNodeWithText("+4").assertIsDisplayed().performClick()
-        compose.runOnIdle { assertEquals(1, hubOpens); expanded = true }
+        compose.runOnIdle {
+            assertEquals(1, hubOpens)
+            expanded = true
+        }
         compose.onNodeWithText("+4").assertDoesNotExist()
         (1..8).forEach { compose.onNodeWithTag("home-notification-app$it").assertIsDisplayed() }
         compose.onNodeWithTag("home-notification-disabled").assertDoesNotExist()
         compose.onNodeWithTag("home-notification-app8").performClick()
-        compose.runOnIdle { assertEquals("app8", opened); assertEquals(1, hubOpens) }
+        compose.runOnIdle {
+            assertEquals("app8", opened)
+            assertEquals(1, hubOpens)
+        }
     }
 
     @Test fun hubShortcutsStayInOneRowAndPerformTheirNamedActions() {
@@ -50,41 +63,77 @@ class NotificationDisplayUiTest {
         var selectedFilter = ConversationFilter()
         var calendarOpens = 0
         var remindOpens = 0
-        val ui = HubConversationsUi(
-            accessGranted = true, enabledAppCount = 2, onChooseApps = {}, deviceLocked = false,
-            conversations = emptyList(), filter = ConversationFilter(), sourcePackage = null,
-            onSourceChange = {}, state = ConversationState.EMPTY, now = 0L,
-            onOpen = {}, onReply = { _, _ -> false }, onAllowAccess = {}, onFilterChange = { selectedFilter = it },
-            onMarkRead = {}, onSnooze = { _, _ -> }, onWake = {}, onRemind = { _, _ -> },
-            onCustomRemind = {}, reminders = emptyList(), remindersSelected = false, onShowReminders = { remindOpens++ },
-        )
-        compose.setContent { LauncherTheme {
-            HubUnifiedNavigation(ui, HubFilter.All, { selectedTab = it }, remember { FocusRequester() }, 1, 2,
-                onOpenCalendar = { calendarOpens++ })
-        } }
-        val shortcuts = listOf("Calls", "Calendar", "Snoozed", "Remind", "Contacts")
-        val top = compose.onNodeWithContentDescription("Calls").fetchSemanticsNode().boundsInRoot.top
+        val ui =
+            HubConversationsUi(
+                accessGranted = true,
+                enabledAppCount = 2,
+                onChooseApps = {},
+                deviceLocked = false,
+                conversations = emptyList(),
+                filter = ConversationFilter(),
+                sourcePackage = null,
+                onSourceChange = {},
+                state = ConversationState.EMPTY,
+                now = 0L,
+                onOpen = {},
+                onReply = { _, _ -> false },
+                onAllowAccess = {},
+                onFilterChange = { selectedFilter = it },
+                onMarkRead = {},
+                onSnooze = { _, _ -> },
+                onWake = {},
+                onRemind = { _, _ -> },
+                onCustomRemind = {},
+                reminders = emptyList(),
+                remindersSelected = false,
+                onShowReminders = { remindOpens++ },
+            )
+        compose.setContent {
+            LauncherTheme {
+                Column(Modifier.width(200.dp)) {
+                    HubUnifiedNavigation(
+                        ui,
+                        HubFilter.All,
+                        { selectedTab = it },
+                        remember { FocusRequester() },
+                        0,
+                        0,
+                        onOpenCalendar = { calendarOpens++ },
+                    )
+                }
+            }
+        }
+        val shortcuts = listOf("Hub", "Messages", "Email", "Unread", "Search", "Calls", "Calendar", "Snoozed", "Remind", "Contacts")
+        val top =
+            compose
+                .onNodeWithContentDescription("Hub")
+                .fetchSemanticsNode()
+                .boundsInRoot.top
         shortcuts.forEach { label ->
-            val node = compose.onNodeWithContentDescription(label).assertIsDisplayed()
+            val node = compose.onNodeWithContentDescription(label).performScrollTo().assertIsDisplayed()
             assertEquals(top, node.fetchSemanticsNode().boundsInRoot.top, 0.1f)
         }
         compose.onNodeWithContentDescription("More categories and active apps").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Calls").performClick()
+        compose.onNodeWithContentDescription("Calls").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(HubFilter.Calls, selectedTab) }
-        compose.onNodeWithContentDescription("Calendar").performClick()
+        compose.onNodeWithContentDescription("Calendar").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, calendarOpens) }
-        compose.onNodeWithContentDescription("Snoozed").performClick()
-        compose.runOnIdle { assertTrue(selectedFilter.snoozed); assertEquals(HubFilter.All, selectedTab) }
-        compose.onNodeWithContentDescription("Remind").performClick()
+        compose.onNodeWithContentDescription("Snoozed").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertTrue(selectedFilter.snoozed)
+            assertEquals(HubFilter.All, selectedTab)
+        }
+        compose.onNodeWithContentDescription("Remind").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, remindOpens) }
     }
 
     @Test fun displayPreferencesAreIndependentAndInternalStorageNeedsNoPermission() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val state = StartStateRepository(context)
-        val original = HomeStyle.entries.associateWith { style ->
-            state.loadHomeNotificationExpanded(style) to state.loadHomeDials(style)
-        }
+        val original =
+            HomeStyle.entries.associateWith { style ->
+                state.loadHomeNotificationExpanded(style) to state.loadHomeDials(style)
+            }
         try {
             state.saveHomeNotificationExpanded(HomeStyle.Bb7, true)
             state.saveHomeNotificationExpanded(HomeStyle.Bb10, false)
@@ -98,9 +147,11 @@ class NotificationDisplayUiTest {
             val storage = DeviceStatsSampler().sample(context).storage
             assertNotNull(storage)
             assertTrue(storage!! in 0f..1f)
-        } finally { original.forEach { (style, values) ->
-            state.saveHomeNotificationExpanded(style, values.first)
-            state.saveHomeDials(style, values.second)
-        } }
+        } finally {
+            original.forEach { (style, values) ->
+                state.saveHomeNotificationExpanded(style, values.first)
+                state.saveHomeDials(style, values.second)
+            }
+        }
     }
 }
