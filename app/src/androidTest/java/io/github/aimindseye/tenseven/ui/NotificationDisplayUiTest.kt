@@ -59,23 +59,25 @@ class NotificationDisplayUiTest {
             onCustomRemind = {}, reminders = emptyList(), remindersSelected = false, onShowReminders = { remindOpens++ },
         )
         compose.setContent { LauncherTheme {
-            HubUnifiedNavigation(ui, HubFilter.All, { selectedTab = it }, remember { FocusRequester() }, 1, 2,
-                onOpenCalendar = { calendarOpens++ })
+            Column(Modifier.width(200.dp)) {
+                HubUnifiedNavigation(ui, HubFilter.All, { selectedTab = it }, remember { FocusRequester() }, 0, 0,
+                    onOpenCalendar = { calendarOpens++ })
+            }
         } }
-        val shortcuts = listOf("Calls", "Calendar", "Snoozed", "Remind", "Contacts")
-        val top = compose.onNodeWithContentDescription("Calls").fetchSemanticsNode().boundsInRoot.top
+        val shortcuts = listOf("Hub", "Messages", "Email", "Unread", "Search", "Calls", "Calendar", "Snoozed", "Remind", "Contacts")
+        val top = compose.onNodeWithContentDescription("Hub").fetchSemanticsNode().boundsInRoot.top
         shortcuts.forEach { label ->
-            val node = compose.onNodeWithContentDescription(label).assertIsDisplayed()
+            val node = compose.onNodeWithContentDescription(label).performScrollTo().assertIsDisplayed()
             assertEquals(top, node.fetchSemanticsNode().boundsInRoot.top, 0.1f)
         }
         compose.onNodeWithContentDescription("More categories and active apps").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Calls").performClick()
+        compose.onNodeWithContentDescription("Calls").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(HubFilter.Calls, selectedTab) }
-        compose.onNodeWithContentDescription("Calendar").performClick()
+        compose.onNodeWithContentDescription("Calendar").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, calendarOpens) }
-        compose.onNodeWithContentDescription("Snoozed").performClick()
+        compose.onNodeWithContentDescription("Snoozed").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(selectedFilter.snoozed); assertEquals(HubFilter.All, selectedTab) }
-        compose.onNodeWithContentDescription("Remind").performClick()
+        compose.onNodeWithContentDescription("Remind").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, remindOpens) }
     }
 

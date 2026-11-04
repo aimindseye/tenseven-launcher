@@ -1,0 +1,27 @@
+name: V1 source preflight
+on:
+  push:
+    branches: [ci/v1-preflight]
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+      - name: Format changed sources and report patch
+        run: |
+          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false ktlintFormat
+          python3 - <<'PY'
+          import base64, subprocess
+          patch = subprocess.check_output(['git', 'diff', '--', 'app/build.gradle.kts', 'app/src/main/java/io/github/aimindseye/tenseven/ui/HubConversationsUi.kt', 'app/src/androidTest/java/io/github/aimindseye/tenseven/ui/NotificationDisplayUiTest.kt'])
+          print('V1_FORMAT_PATCH:' + base64.b64encode(patch).decode())
+          PY
