@@ -22,7 +22,9 @@ Gradle project so it can run on any Android 14+ phone, with new icons
 ## Version 1.0.0
 
 Android 14+ · package `io.github.aimindseye.tenseven` · version code `18`.
-The repository is preparing the signed 1.0.0 release; the owner's Mac retains the release key.
+[Download TenSeven Launcher 1.0.0](https://github.com/aimindseye/tenseven-launcher/releases/tag/v1.0.0)
+on your phone and open the APK to install. The release supports Play Protect scanning;
+no ADB installation or computer is needed.
 See [release notes](docs/releases/1.0.0.md), [build and publish commands](docs/BUILD.md),
 [the user guide](docs/USER_GUIDE.md) and [delivery status](docs/P2_P3_STATUS_20261103.md).
 
@@ -86,10 +88,21 @@ KEY2 is outside active P3 scope. See [ROADMAP.md](ROADMAP.md) for remaining rele
 
 ## Screenshots and documentation
 
-The existing [image gallery](docs/images/) predates the 1.0.0 Hub and setup changes.
-It is historical illustration, not current release evidence. Refresh it using
-[the screenshot capture instructions](docs/SCREENSHOTS.md), especially Hub, peek,
-Active Frames, notification display settings, device compatibility and widget resizing.
+Screenshots supplied by the owner from TenSeven Launcher 1.0.0 on a Unihertz Titan 2.
+Tap a screenshot to view it at full size. The user guide places more captures beside each feature.
+
+| BlackBerry 10 Home | BlackBerry 7 Home | Active Frames with media summaries |
+|---|---|---|
+| <a href="docs/images/v1.0.0/home-bb10.png"><img src="docs/images/v1.0.0/home-bb10.png" width="240" alt="BlackBerry 10 Home"></a> | <a href="docs/images/v1.0.0/home-bb7.png"><img src="docs/images/v1.0.0/home-bb7.png" width="240" alt="BlackBerry 7 Home"></a> | <a href="docs/images/v1.0.0/active-frames.png"><img src="docs/images/v1.0.0/active-frames.png" width="240" alt="Active Frames with media summaries"></a> |
+
+
+| Hub: one navigation row | Rounded Hub peek | Widget height and order controls |
+|---|---|---|
+| <a href="docs/images/v1.0.0/hub-page.png"><img src="docs/images/v1.0.0/hub-page.png" width="240" alt="Hub: one navigation row"></a> | <a href="docs/images/v1.0.0/hub-peek.png"><img src="docs/images/v1.0.0/hub-peek.png" width="240" alt="Rounded Hub peek"></a> | <a href="docs/images/v1.0.0/widgets-page-edit.png"><img src="docs/images/v1.0.0/widgets-page-edit.png" width="240" alt="Widget height and order controls"></a> |
+
+[Capture and review notes](docs/images/v1.0.0/README.md) distinguish the new images from
+older screenshots elsewhere in `docs/images/`. To update them again, use the
+[screenshot capture instructions](docs/SCREENSHOTS.md).
 
 - [User guide](docs/USER_GUIDE.md)
 - [Architecture](docs/ARCHITECTURE.md)

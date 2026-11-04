@@ -1,13 +1,17 @@
 # TenSeven Launcher user guide — 1.0.0
 
 Requires Android 14 or newer. Both home layouts work with touch; keyboard-equipped phones
-also offer letter shortcuts and focus navigation. Existing images under `docs/images/`
-predate this release; follow [the capture checklist](SCREENSHOTS.md) for current screenshots.
+also offer letter shortcuts and focus navigation. Screenshots below are owner-supplied
+1.0.0 captures from a Unihertz Titan 2, taken on November 3, 2026. Tap an image to view it
+at full size. See [capture notes](images/v1.0.0/README.md) for coverage and limitations.
 
 ## Install and first setup
 
-Install the signed Full APK, then choose TenSeven as Android's default Home app. The debug
-build is a separate app. Lite is retired. Setup explains each optional permission and shares
+Download `TenSeven-Launcher-1.0.0.apk` from the
+[GitHub release](https://github.com/aimindseye/tenseven-launcher/releases/tag/v1.0.0) on your phone,
+open it and follow Android's installation and Play Protect scanning prompts. ADB and a computer
+are not required. Then choose TenSeven as Android's default Home app. The debug build is a
+separate app. Lite is retired. Setup explains each optional permission and shares
 its settings controls with Launcher Settings. Permissions can be skipped and enabled later.
 Active Frames setup applies only to the BlackBerry 10 home style and follows notification access.
 
@@ -25,6 +29,11 @@ Notification access is not required for basic app launching or ordinary Active F
 If sideloading blocks a permission, Android Settings → Apps → TenSeven Launcher → three-dot
 menu → Allow restricted settings may be needed before granting access. Device menus vary.
 
+
+| Home style chooser | Launcher Settings with BB7 selected |
+|---|---|
+| <a href="images/v1.0.0/home-style.png"><img src="images/v1.0.0/home-style.png" width="240" alt="Home style chooser"></a> | <a href="images/v1.0.0/launcher-settings-01.png"><img src="images/v1.0.0/launcher-settings-01.png" width="240" alt="Launcher Settings with BB7 selected"></a> |
+
 ## Home layouts and notification icons
 
 Choose BlackBerry 7 or BlackBerry 10 in Launcher Settings. BB7 provides a banner, home icons
@@ -40,6 +49,27 @@ Choose status dials in Launcher Settings; storage is an option alongside network
 battery and signal. The speaker opens enabled Sound Profiles or cycles Android sound modes;
 Do Not Disturb permission may be needed for Silent.
 
+
+| BlackBerry 10 Home | BlackBerry 7 Home | BB10 app grid |
+|---|---|---|
+| <a href="images/v1.0.0/home-bb10.png"><img src="images/v1.0.0/home-bb10.png" width="240" alt="BlackBerry 10 Home"></a> | <a href="images/v1.0.0/home-bb7.png"><img src="images/v1.0.0/home-bb7.png" width="240" alt="BlackBerry 7 Home"></a> | <a href="images/v1.0.0/home-bb10-swipe-left.png"><img src="images/v1.0.0/home-bb10-swipe-left.png" width="240" alt="BB10 app grid"></a> |
+
+
+| BB7 home shortcut | BB7 All panel | BB7 menu |
+|---|---|---|
+| <a href="images/v1.0.0/bb7-desktop-icons.png"><img src="images/v1.0.0/bb7-desktop-icons.png" width="240" alt="BB7 home shortcut"></a> | <a href="images/v1.0.0/bb7-tray-all.png"><img src="images/v1.0.0/bb7-tray-all.png" width="240" alt="BB7 All panel"></a> | <a href="images/v1.0.0/bb7-menu.png"><img src="images/v1.0.0/bb7-menu.png" width="240" alt="BB7 menu"></a> |
+
+
+| Notification display choice and storage option | Performance dials with storage enabled |
+|---|---|
+| <a href="images/v1.0.0/launcher-settings-02.png"><img src="images/v1.0.0/launcher-settings-02.png" width="240" alt="Notification display choice and storage option"></a> | <a href="images/v1.0.0/notification-display-settings.png"><img src="images/v1.0.0/notification-display-settings.png" width="240" alt="Performance dials with storage enabled"></a> |
+
+| BB7 icon size and grid choices |
+|---|
+| <a href="images/v1.0.0/launcher-settings-03.png"><img src="images/v1.0.0/launcher-settings-03.png" width="240" alt="BB7 icon size and grid choices"></a> |
+
+The notification setting is shown with show-all disabled; the storage dial is shown enabled in the second capture.
+
 ## Hub and peek
 
 Hub navigation has ten actions: Hub, Messages, Email, Unread, Search, Calls, Calendar,
@@ -52,6 +82,16 @@ reply inline when the app supports it, mark read, snooze, or make a reminder. Sn
 and reminders have their own shortcuts. Calendar permission and calendar selection are in
 Hub settings, independently of notification access. Drag inward from the left edge of BB10
 Home to open the rounded peek panel. Notification text is hidden while the device is locked.
+
+
+| Hub with all ten navigation actions on one row | Rounded Hub peek |
+|---|---|
+| <a href="images/v1.0.0/hub-page.png"><img src="images/v1.0.0/hub-page.png" width="240" alt="Hub with all ten navigation actions on one row"></a> | <a href="images/v1.0.0/hub-peek.png"><img src="images/v1.0.0/hub-peek.png" width="240" alt="Rounded Hub peek"></a> |
+
+
+| Snoozed conversation | Remind view |
+|---|---|
+| <a href="images/v1.0.0/hub-snoozed.png"><img src="images/v1.0.0/hub-snoozed.png" width="240" alt="Snoozed conversation"></a> | <a href="images/v1.0.0/hub-remind.png"><img src="images/v1.0.0/hub-remind.png" width="240" alt="Remind view"></a> |
 
 ## Active Frames
 
@@ -77,6 +117,18 @@ to continue playback and expose its session. A card labelled Recent app is expec
 no summary data is available. The launcher cannot keep another app playing or force it open.
 Protected/DRM windows may be excluded from screen capture.
 
+
+| Media summaries inside existing app frames | No app frames, with usage-access guidance |
+|---|---|
+| <a href="images/v1.0.0/active-frames.png"><img src="images/v1.0.0/active-frames.png" width="240" alt="Media summaries inside existing app frames"></a> | <a href="images/v1.0.0/home-empty.png"><img src="images/v1.0.0/home-empty.png" width="240" alt="No app frames, with usage-access guidance"></a> |
+
+
+| Active Frames App integrations |
+|---|
+| <a href="images/v1.0.0/frame-integrations.png"><img src="images/v1.0.0/frame-integrations.png" width="240" alt="Active Frames App integrations"></a> |
+
+The integrations capture shows player sources and notification excerpts; the TenSeven-app controls continue below the visible area.
+
 ## Widgets and editing
 
 Enable the Widgets page and optional built-in Calendar, Alarm, Battery and Now playing cards
@@ -84,6 +136,16 @@ in Launcher Settings. Add an installed app's widget through the picker and finis
 bind/configuration prompts. Edit widgets to move Up/Down, make Shorter/Taller or Remove.
 Configuration cancellation should not leave a phantom widget. Widget IDs belong to this
 installation and are not portable backup data. Edit Home has Reset, Cancel and Done controls.
+
+
+| Built-in glance cards | Added clock widget | Shorter, Taller, Up, Down and Remove controls |
+|---|---|---|
+| <a href="images/v1.0.0/widgets-page.png"><img src="images/v1.0.0/widgets-page.png" width="240" alt="Built-in glance cards"></a> | <a href="images/v1.0.0/widgets-page-with-widget.png"><img src="images/v1.0.0/widgets-page-with-widget.png" width="240" alt="Added clock widget"></a> | <a href="images/v1.0.0/widgets-page-edit.png"><img src="images/v1.0.0/widgets-page-edit.png" width="240" alt="Shorter, Taller, Up, Down and Remove controls"></a> |
+
+
+| Edit Home with Reset, Cancel and Done |
+|---|
+| <a href="images/v1.0.0/edit-home.png"><img src="images/v1.0.0/edit-home.png" width="240" alt="Edit Home with Reset, Cancel and Done"></a> |
 
 ## Keyboard and device profiles
 
@@ -94,11 +156,21 @@ compatibility shows the detected profile and a foreground key probe. Profiles in
 keyboard/window policies; responsive layout also uses actual width, density and font scale.
 A profile name is not proof the hardware has passed qualification. KEY2 is not in active P3 scope.
 
+
+| Titan 2 profile and foreground keyboard diagnostics |
+|---|
+| <a href="images/v1.0.0/device-compatibility.png"><img src="images/v1.0.0/device-compatibility.png" width="240" alt="Titan 2 profile and foreground keyboard diagnostics"></a> |
+
 ## Command and app privacy
 
 All Apps lists applications and their available permission/profile information. Space opens
 an app's privacy details. Command searches apps, people, settings and actions; `assign` and
 `unassign` manage letter shortcuts. Private Space/work apps remain subject to Android access.
+
+
+| Command search | All Apps | Selected app privacy and actions |
+|---|---|---|
+| <a href="images/v1.0.0/command.png"><img src="images/v1.0.0/command.png" width="240" alt="Command search"></a> | <a href="images/v1.0.0/all-apps.png"><img src="images/v1.0.0/all-apps.png" width="240" alt="All Apps"></a> | <a href="images/v1.0.0/app-privacy-row.png"><img src="images/v1.0.0/app-privacy-row.png" width="240" alt="Selected app privacy and actions"></a> |
 
 ### Command prefixes
 
@@ -137,6 +209,26 @@ Optional games and Sound Profiles follow the launcher theme.
 The lock layer is a visual cover, not a replacement for Android authentication. Preview it
 before enabling it. Back up settings through Launcher Settings; restore does not transfer
 Android permission grants, widget IDs or a live screen-capture consent session.
+
+
+| Theme and wallpaper choices | Appearance and icon-pack choices |
+|---|---|
+| <a href="images/v1.0.0/launcher-settings-05.png"><img src="images/v1.0.0/launcher-settings-05.png" width="240" alt="Theme and wallpaper choices"></a> | <a href="images/v1.0.0/appearance.png"><img src="images/v1.0.0/appearance.png" width="240" alt="Appearance and icon-pack choices"></a> |
+
+
+| Notes | Tasks and Remind | Calc Plus |
+|---|---|---|
+| <a href="images/v1.0.0/notes.png"><img src="images/v1.0.0/notes.png" width="240" alt="Notes"></a> | <a href="images/v1.0.0/tasks.png"><img src="images/v1.0.0/tasks.png" width="240" alt="Tasks and Remind"></a> | <a href="images/v1.0.0/calc-plus.png"><img src="images/v1.0.0/calc-plus.png" width="240" alt="Calc Plus"></a> |
+
+
+| Sound Profiles | 2048 | Sudoku |
+|---|---|---|
+| <a href="images/v1.0.0/sound-profiles.png"><img src="images/v1.0.0/sound-profiles.png" width="240" alt="Sound Profiles"></a> | <a href="images/v1.0.0/game-2048.png"><img src="images/v1.0.0/game-2048.png" width="240" alt="2048"></a> | <a href="images/v1.0.0/game-sudoku.png"><img src="images/v1.0.0/game-sudoku.png" width="240" alt="Sudoku"></a> |
+
+
+| Lock-layer controls and Device compatibility entry | Lock layer after waking the phone |
+|---|---|
+| <a href="images/v1.0.0/launcher-settings-bb7-10.png"><img src="images/v1.0.0/launcher-settings-bb7-10.png" width="240" alt="Lock-layer controls and Device compatibility entry"></a> | <a href="images/v1.0.0/lock-layer-on-wake.png"><img src="images/v1.0.0/lock-layer-on-wake.png" width="240" alt="Lock layer after waking the phone"></a> |
 
 ## Troubleshooting
 
