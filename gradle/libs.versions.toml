@@ -17,7 +17,7 @@ androidx-core = "1.16.0"
 androidx-lifecycle = "2.10.0"
 # Keep the SDK-36-compatible Compose line; the 2026.09 line requires SDK 37.
 #noinspection GradleDependency
-compose-bom = "2026.02.01"
+compose-bom = "2026.09.00"
 junit = "4.13.2"
 kotlinx-coroutines = "1.11.0"
 androidx-test-runner = "1.7.0"
