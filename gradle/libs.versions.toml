@@ -10,7 +10,7 @@ ktlint-engine = "1.8.0"
 kover = "0.9.11"
 activity-compose = "1.12.4"
 androidx-collection = "1.7.0"
-androidx-core = "1.16.0"
+androidx-core = "1.19.1"
 # Lifecycle 2.11 requires compile SDK 37, unavailable on the CI SDK channel.
 # 2.10 fixes AGP 9.5 lint compatibility and supports the current compile SDK 36.
 #noinspection GradleDependency
