@@ -21,6 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -44,7 +47,7 @@ internal fun ReferenceHomeBar(
     val capabilities = rememberPlatformCapabilities()
     val keyboard = capabilities.hardwareKeyboard
     val revision = rememberHubRevision()
-    val context = androidx.compose.ui.platform.LocalContext.pages.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val enabled =
         remember(revision) {
             io.github.aimindseye.tenseven.platform
@@ -145,7 +148,14 @@ private fun HomeShortcut(
         Modifier
             .size(48.dp)
             .onFocusChanged { if (slot.token == QuickBar.PHONE) onPhoneFocus(it.isFocused) }
-            .sableFocusRing()
+            .onPreviewKeyEvent { event ->
+                val menu =
+                    io.github.aimindseye.tenseven.platform.DeviceCompatibility
+                        .keyAction(event.nativeKeyEvent) ==
+                        io.github.aimindseye.tenseven.model.LauncherKeys.Action.Menu
+                if (menu && event.type == KeyEventType.KeyDown) onOptions(slot)
+                menu
+            }.sableFocusRing()
             .combinedClickable(onClick = { onSlot(slot) }, onLongClick = { onOptions(slot) })
             .semantics { contentDescription = slot.label },
         contentAlignment = Alignment.Center,
@@ -182,7 +192,12 @@ internal fun HomeBarControl(
             },
         contentAlignment = Alignment.Center,
     ) {
-        LineIcon(TablerGlyphPaths.BY_NAME[glyph] ?: LineIconPaths.SEARCH, Modifier.size(22.dp), Bb10Text)
+        if (glyph == "circle") {
+            val color = if (isSelected) Bb10Text else Bb10Muted
+            androidx.compose.foundation.Canvas(Modifier.size(6.dp)) { drawCircle(color) }
+        } else {
+            LineIcon(homeControlPaths(glyph), Modifier.size(22.dp), Bb10Text)
+        }
         if (unread > 0) {
             Text(
                 if (unread >
@@ -216,7 +231,7 @@ internal fun Bb7ReferenceBar(
     val slots =
         io.github.aimindseye.tenseven.model.QuickBar
             .normalize(state.loadQuickBar())
-            .map { resolveQuickSlot(it, apps, byKey) }
+            .mapNotNull { resolveQuickSlot(it, apps, byKey) }
     ReferenceHomeBar(
         slots = slots,
         pages = HomeBarPages(StartPages.HOME, StartPages.FIRST_GRID + 1, 0, favorites = true),
@@ -280,3 +295,10 @@ internal class Bb7BarActions(
 
 private const val BAR_GLYPH_SIZE = 22
 private const val MAX_BAR_COUNT = 99
+
+private fun homeControlPaths(glyph: String): List<String> =
+    if (glyph == "menu-2") {
+        listOf("M4 6h16", "M4 12h16", "M4 18h16")
+    } else {
+        TablerGlyphPaths.BY_NAME[glyph] ?: LineIconPaths.SEARCH
+    }

@@ -180,15 +180,7 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
         return
     }
     conversationItems(visible.take(MAX_CONVERSATIONS), key = { "conversation:" + it.id }) { conversation ->
-        ConversationRow(
-            conversation = conversation,
-            locked = ui.deviceLocked,
-            unread = ui.state.unreadCount(conversation),
-            snoozed = ui.filter.snoozed,
-            onMarkRead = { ui.onMarkRead(conversation) },
-            onSnooze = { until -> ui.onSnooze(conversation, until) },
-            onWake = { ui.onWake(conversation) },
-        )
+        ConversationRow(conversation, ui)
     }
 }
 
@@ -376,13 +368,10 @@ private fun IconHubFilterButton(
 @Composable
 private fun ConversationRow(
     conversation: HubConversation,
-    locked: Boolean,
-    unread: Int,
-    snoozed: Boolean,
-    onMarkRead: () -> Unit,
-    onSnooze: (Long) -> Unit,
-    onWake: () -> Unit,
+    ui: HubConversationsUi,
 ) {
+    val locked = ui.deviceLocked
+    val unread = ui.state.unreadCount(conversation)
     val selectRow = LocalHubRowSelection.current
     val rowFocus = remember(conversation.id) { FocusRequester() }
     val preview = conversationPreview(conversation, locked, you = stringResource(R.string.hub_you))
@@ -424,12 +413,16 @@ private fun ConversationRow(
                                 }
 
                                 event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_M && unread > 0 -> {
-                                    onMarkRead()
+                                    ui.onMarkRead(conversation)
                                     true
                                 }
 
                                 event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_S -> {
-                                    if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+                                    if (ui.filter.snoozed) {
+                                        ui.onWake(conversation)
+                                    } else {
+                                        ui.onSnooze(conversation, System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+                                    }
                                     true
                                 }
 

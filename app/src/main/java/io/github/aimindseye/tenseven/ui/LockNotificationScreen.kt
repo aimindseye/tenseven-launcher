@@ -4,6 +4,7 @@ import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -242,7 +243,10 @@ private fun LockSourceIcon(
         modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp)
-            .sableFocusRing()
+            .border(
+                if (isSelected) 1.dp else 0.dp,
+                if (isSelected) Bb10Blue else androidx.compose.ui.graphics.Color.Transparent,
+            ).sableFocusRing()
             .clickable(onClick = onClick)
             .semantics {
                 contentDescription = "$name, $count notifications"

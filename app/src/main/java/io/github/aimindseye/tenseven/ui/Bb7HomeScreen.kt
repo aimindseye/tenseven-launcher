@@ -171,17 +171,8 @@ fun Bb7HomeScreen(
         pickingDesktop = false
         inDesktopZone = false
     }
-    val live by
-        produceState(liveSurfaceRepository.initialSnapshot(), refreshGeneration) {
-            value = liveSurfaceRepository.snapshot()
-        }
-    val today by
-        produceState(System.currentTimeMillis(), refreshGeneration) {
-            while (true) {
-                value = System.currentTimeMillis()
-                delay(DATE_TICK_MS - value % DATE_TICK_MS)
-            }
-        }
+    val live = rememberBb7Live(liveSurfaceRepository, refreshGeneration)
+    val today = rememberBb7Date(refreshGeneration)
     val openApps = {
         query = ""
         panel = if (Bb7Panel.All in panels) Bb7Panel.All else panels.first()
@@ -968,4 +959,24 @@ private fun panelActionLabel(
 ): String {
     val label = if (shown) R.string.bb7_panel_hide else R.string.bb7_panel_show
     return resources.getString(label, panel.title)
+}
+
+@Composable
+private fun rememberBb7Live(
+    repository: LiveSurfaceRepository,
+    generation: Int,
+): io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot {
+    val snapshot by produceState(repository.initialSnapshot(), generation) { value = repository.snapshot() }
+    return snapshot
+}
+
+@Composable
+private fun rememberBb7Date(generation: Int): Long {
+    val today by produceState(System.currentTimeMillis(), generation) {
+        while (true) {
+            value = System.currentTimeMillis()
+            delay(DATE_TICK_MS - value % DATE_TICK_MS)
+        }
+    }
+    return today
 }
