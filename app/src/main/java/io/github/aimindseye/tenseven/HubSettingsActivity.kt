@@ -198,6 +198,7 @@ private fun HubSettings(
     enabled: HubSourceSettings,
 ) {
     val first = remember { FocusRequester() }
+    val auditContext = androidx.compose.ui.platform.LocalContext.current
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier =
@@ -269,6 +270,22 @@ private fun HubSettings(
                 onClick = { if (access.listenerAvailable) access.onAccess() },
             )
             HubListenerDiagnostics(access, enabled)
+            HubRow(
+                title = "Copy D0 notification audit",
+                detail = "Per-app counts and exclusion reasons only. No messages or notification keys are copied.",
+                onClick = {
+                    val clipboard =
+                        auditContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                            as? android.content.ClipboardManager
+                    clipboard?.setPrimaryClip(
+                        android.content.ClipData.newPlainText(
+                            "TenSeven D0 notification audit",
+                            io.github.aimindseye.tenseven.conversations.HubNotificationAudit
+                                .report(),
+                        ),
+                    )
+                },
+            )
             HubRow(
                 title = stringResource(R.string.hub_clear),
                 detail = stringResource(if (content.cleared) R.string.hub_cleared else R.string.hub_clear_detail),
