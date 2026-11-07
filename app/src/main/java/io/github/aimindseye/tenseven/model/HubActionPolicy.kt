@@ -1,5 +1,7 @@
 package io.github.aimindseye.tenseven.model
 
+enum class HubMessageKind { Email, Message, Notification }
+
 enum class HubActionInput { None, Text, Unsupported }
 
 data class HubActionCapability(
@@ -24,7 +26,17 @@ object HubActionPolicy {
             }
         }
 
-    fun panelTitle(email: Boolean): String = if (email) "Email options" else "Message options"
+    fun panelTitle(kind: HubMessageKind): String =
+        when (kind) {
+            HubMessageKind.Email -> "Email options"
+            HubMessageKind.Message -> "Message options"
+            HubMessageKind.Notification -> "Notification options"
+        }
 
-    fun openLabel(email: Boolean): String = if (email) "Open email app" else "Open messaging app"
+    fun openLabel(kind: HubMessageKind): String =
+        when (kind) {
+            HubMessageKind.Email -> "Open email app"
+            HubMessageKind.Message -> "Open messaging app"
+            HubMessageKind.Notification -> "Open app"
+        }
 }

@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.conversations
 
+import io.github.aimindseye.tenseven.model.HubMessageKind
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneId
@@ -38,9 +39,7 @@ class ConversationState private constructor(
         return conversation.messages.count { !it.isOutgoing && !it.isHistoric && it.timestamp > after }
     }
 
-    fun unreadCount(
-        notification: HubNotification,
-    ): Int {
+    fun unreadCount(notification: HubNotification): Int {
         val after = readUpTo[hash(notification.conversationId)] ?: 0L
         return notification.messages.count { !it.isOutgoing && !it.isHistoric && it.timestamp > after }
     }
@@ -77,7 +76,12 @@ class ConversationState private constructor(
                     's' -> snoozed[key] = value
                 }
             }
-            return ConversationState(read.entries.take(MAX_ENTRIES).associate { it.toPair() }, snoozed.entries.take(MAX_ENTRIES).associate { it.toPair() })
+            return ConversationState(
+                read.entries.take(MAX_ENTRIES).associate {
+                    it.toPair()
+                },
+                snoozed.entries.take(MAX_ENTRIES).associate { it.toPair() },
+            )
         }
     }
 }
@@ -130,7 +134,7 @@ object ConversationView {
                 when (filter.kind) {
                     ConversationKind.All -> true
                     ConversationKind.Email -> c.isEmail
-                    ConversationKind.Messages -> !c.isEmail
+                    ConversationKind.Messages -> c.latestNotification.kind == HubMessageKind.Message
                 }
         }
     }

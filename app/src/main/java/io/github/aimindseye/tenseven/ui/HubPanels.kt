@@ -48,12 +48,12 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.HubConversation
-import io.github.aimindseye.tenseven.conversations.HubSourceAction
 import io.github.aimindseye.tenseven.conversations.Snooze
-import io.github.aimindseye.tenseven.conversations.availableSourceActions
-import io.github.aimindseye.tenseven.conversations.performHubSourceAction
 import io.github.aimindseye.tenseven.design.sableFocusRing
+import io.github.aimindseye.tenseven.platform.HubSourceAction
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.platform.availableSourceActions
+import io.github.aimindseye.tenseven.platform.performHubSourceAction
 import kotlin.math.abs
 
 internal val LocalHubRowSelection = staticCompositionLocalOf<(String, FocusRequester) -> Unit> { { _, _ -> } }
@@ -117,7 +117,7 @@ internal fun HubPanelsHost(
                         paneTitle =
                             hubPaneTitle(
                                 settings,
-                                conversation?.latestNotification?.isEmail == true,
+                                conversation?.latestNotification?.kind,
                             )
                     }.verticalScroll(rememberScrollState())
                     .padding(16.dp),
@@ -199,7 +199,7 @@ private fun HubMessagePanel(
     var remind by remember(conversation.id) { mutableStateOf(false) }
     Text(
         io.github.aimindseye.tenseven.model.HubActionPolicy
-            .panelTitle(conversation.latestNotification.isEmail),
+            .panelTitle(conversation.latestNotification.kind),
         Modifier.semantics { heading() },
         color = Bb10Text,
         style = MaterialTheme.typography.titleLarge,
@@ -207,7 +207,7 @@ private fun HubMessagePanel(
     Text(conversation.latestNotification.appName, color = Bb10Muted)
     PanelAction(
         io.github.aimindseye.tenseven.model.HubActionPolicy
-            .openLabel(conversation.latestNotification.isEmail),
+            .openLabel(conversation.latestNotification.kind),
     ) {
         ui.onOpen(conversation)
         onClose()
@@ -390,11 +390,11 @@ private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConvers
 
 private fun hubPaneTitle(
     settings: Boolean,
-    email: Boolean,
+    kind: io.github.aimindseye.tenseven.model.HubMessageKind?,
 ): String =
     if (settings) {
         "Hub settings"
     } else {
         io.github.aimindseye.tenseven.model.HubActionPolicy
-            .panelTitle(email)
+            .panelTitle(kind ?: io.github.aimindseye.tenseven.model.HubMessageKind.Notification)
     }

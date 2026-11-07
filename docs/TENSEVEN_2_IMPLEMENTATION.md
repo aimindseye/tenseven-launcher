@@ -22,7 +22,7 @@ not copied into the application or used as proof of TenSeven functionality.
 
 1. Shared visual foundation, device-aware lower navigation, Hub panels and per-app lock
    selection. Keep the last-eight-opened frame policy, explicit screen-capture consent,
-   existing notification source selection, reminders and calendar sources.
+   existing optional notification filters, reminders and calendar sources.
 2. TenSeven-owned Phone browsing and Calendar surfaces, using ordinary Android APIs.
 3. Optional default-dialer integration, independently tested on real phones before release.
 4. Remaining portable SableOS features selected from the mapping below, followed by
@@ -57,7 +57,7 @@ remain usable on Q25 and at large text sizes, with a visible Call action and key
 
 | Area | Existing TenSeven / adaptation |
 |---|---|
-| Hub | Notification-source opt-in, grouped messages/mail, Snooze, Remind and Upcoming already exist. Add the approved settings/action panels. Priority ordering and Mark prior read need separate policies and tests before being claimed. |
+| Hub | Notification access, grouped messages/mail, Snooze, Remind and Upcoming already exist. Add the approved settings/action panels. Priority ordering and Mark prior read need separate policies and tests before being claimed. |
 | Active Frames | Existing media and owned-app summaries stay. Device Monitor summary and additional media controls can use public/local data; automatic third-party snapshots remain unavailable. |
 | Calendar | Month busy rings, collapsible month/week strip, agenda/day/week, search, selected calendars and keyboard navigation. Merge overlapping occupied intervals, keep all-day events separate. Begin event changes through Android intents. Full CRUD/ICS import requires its own permission, recurrence and conflict tests. |
 | Command / grid | Existing search, folders, hidden apps, tabs and shortcuts remain. Import additional pure policies only with regression coverage. Global Alt+Space from other apps is a ROM feature, not a launcher guarantee. |
@@ -86,5 +86,25 @@ An email app that exposes none of those actions retains Open email app plus TenS
 Mark read, Snooze and Remind actions. Search-by-subject/sender, invitations and contact creation
 need separately available structured data; notification text is not treated as a trusted address book.
 Provider actions are checked again on activation against the exact active notification/action,
-current source opt-in, notification access and Android lock state. Stale or revoked actions fail
+current source filter, notification access and Android lock state. Stale or revoked actions fail
 without executing. Merely selecting a message, opening an editor or changing sources sends nothing.
+
+## Automatic notification sources
+
+Hub follows Android-delivered notifications by default after notification access is granted.
+Users do not assign each app to Hub. Enabling an app's notifications in Android allows that app
+to contribute when it actually posts; no notification or Active Frame is invented for an installed
+app with nothing active. Android-blocked, unavailable-profile and system-redacted content cannot
+be recovered by the launcher.
+
+Optional app filters can hide a source in Hub, Home badges, Peek and the lock layer. Automatic
+sources is visible in Hub settings; advanced selected-app mode remains available by switching it
+off. Prior manual lists are retained for that mode. The 2.0 default is automatic, including upgrades;
+it no longer treats a missing Hub assignment as a reason to hide Android-delivered notifications.
+
+Ordinary notifications appear in All with Notification options; message and email filters retain
+their own categories. Group summaries fall back only when no usable children exist. A notification
+with no readable text can retain its real app identity without a fabricated preview. Message menus
+still use each notification's supplied capabilities; automatic inclusion adds no Reply All or
+Forward capability by itself. CalendarProvider access and explicit frame-capture consent remain
+separate from notification access.

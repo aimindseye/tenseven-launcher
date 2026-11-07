@@ -70,7 +70,6 @@ import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.conversationPreview
-import io.github.aimindseye.tenseven.conversations.openHubSource
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HubBar
 import io.github.aimindseye.tenseven.model.HubFilter
@@ -80,6 +79,7 @@ import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.platform.openHubSource
 import io.github.aimindseye.tenseven.tasks.ReminderPolicy
 import io.github.aimindseye.tenseven.tasks.TaskRecord
 import io.github.aimindseye.tenseven.tasks.TaskRepository
@@ -90,6 +90,7 @@ internal class HubConversationsUi(
     val accessGranted: Boolean,
     /** False only when the listener is unavailable on the installed device. */
     val canAllowAccess: Boolean = true,
+    /** -1 means automatic sources; zero means an empty manual selection. */
     val enabledAppCount: Int,
     val onChooseApps: () -> Unit,
     val deviceLocked: Boolean,
@@ -527,7 +528,7 @@ internal fun rememberHubConversationsUi(
             )
         }
     var sourcePackage by remember { mutableStateOf<String?>(null) }
-    val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
+    val enabledAppCount = remember(refreshGeneration) { hubSourceCount(context) }
     val state = remember(refreshGeneration, revision, accessGranted) { ConversationHub.state() }
     val now = rememberHubTime(state, conversations)
     return remember(
@@ -633,4 +634,12 @@ private fun rememberHubTime(
         }
     }
     return now
+}
+
+private fun hubSourceCount(context: android.content.Context): Int {
+    val policy =
+        io.github.aimindseye.tenseven.platform
+            .HubSourceRepository(context)
+            .policy()
+    return if (policy.automatic) -1 else policy.selected.size
 }

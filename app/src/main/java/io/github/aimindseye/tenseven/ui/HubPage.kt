@@ -542,7 +542,12 @@ private fun rememberHubSourceGroups(
             counts = snapshot.hubApps,
             enabledPackages = enabledHubApps,
             emailSources = conversationSources.filter { it.isEmail }.map { it.packageName }.toSet(),
-            messageSources = conversationSources.filterNot { it.isEmail }.map { it.packageName }.toSet(),
+            messageSources =
+                conversationSources
+                    .filter {
+                        it.kind == io.github.aimindseye.tenseven.model.HubMessageKind.Message
+                    }.map { it.packageName }
+                    .toSet(),
         )
     }
 }

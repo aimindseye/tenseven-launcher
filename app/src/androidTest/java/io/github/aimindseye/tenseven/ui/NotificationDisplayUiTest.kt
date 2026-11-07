@@ -66,7 +66,7 @@ class NotificationDisplayUiTest {
         val ui =
             HubConversationsUi(
                 accessGranted = true,
-                enabledAppCount = 2,
+                enabledAppCount = 1,
                 onChooseApps = {},
                 deviceLocked = false,
                 conversations = emptyList(),

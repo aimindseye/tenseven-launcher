@@ -53,10 +53,13 @@ class LockLayerActivity : ComponentActivity() {
             }
         ContextCompat.registerReceiver(this, closer, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         val state = StartStateRepository(this)
-        val enabled = state.loadHubEnabledApps()
+        val sources =
+            io.github.aimindseye.tenseven.platform
+                .HubSourceRepository(this)
         // Preview opt-in never overrides Android authentication on this cover.
         val showText = state.loadHubPeekText()
         setContent {
+            val enabled = sources.policy().resolve(io.github.aimindseye.tenseven.platform.LockLayerState.counts.keys)
             LauncherTheme(window = window) {
                 io.github.aimindseye.tenseven.ui.LockNotificationScreen(
                     enabled = enabled,

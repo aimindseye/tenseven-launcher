@@ -26,13 +26,13 @@ import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.ConversationMessage
 import io.github.aimindseye.tenseven.conversations.ConversationState
 import io.github.aimindseye.tenseven.conversations.HubNotification
-import io.github.aimindseye.tenseven.conversations.availableSourceActions
-import io.github.aimindseye.tenseven.conversations.performHubSourceAction
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.platform.FramePlatformAccess
 import io.github.aimindseye.tenseven.platform.LockLayerState
 import io.github.aimindseye.tenseven.platform.PlatformCapabilities
+import io.github.aimindseye.tenseven.platform.availableSourceActions
+import io.github.aimindseye.tenseven.platform.performHubSourceAction
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -158,7 +158,7 @@ class BlackBerryUiTest {
     @Test fun emailActionsUseProviderCapabilitiesAndNeverExecuteOnSelection() {
         val email =
             fixture("mail", "Email body").copy(
-                isEmail = true,
+                kind = io.github.aimindseye.tenseven.model.HubMessageKind.Email,
                 sourceActions = listOf(sourceAction("Reply All", true), sourceAction("Forward", false)),
             )
         ConversationHub.replace(listOf(email))

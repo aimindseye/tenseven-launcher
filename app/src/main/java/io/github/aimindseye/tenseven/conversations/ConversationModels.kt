@@ -5,6 +5,7 @@ package io.github.aimindseye.tenseven.conversations
 
 import android.app.Notification
 import android.app.PendingIntent
+import io.github.aimindseye.tenseven.model.HubMessageKind
 import io.github.aimindseye.tenseven.model.HubSourceGroups
 import java.util.Locale
 
@@ -23,7 +24,7 @@ data class ConversationMessage(
     val isHistoric: Boolean = false,
 )
 
-/** One active notification that is a message or an email. */
+/** One Android-delivered message, email or ordinary notification. */
 data class HubNotification(
     val key: String,
     val conversationId: String,
@@ -35,11 +36,12 @@ data class HubNotification(
     val messages: List<ConversationMessage>,
     internal val contentIntent: PendingIntent?,
     internal val replyAction: Notification.Action?,
-    /** An email notification (category email); everything else is a message. */
-    val isEmail: Boolean = false,
+    /** Classification for filtering and context labels; does not grant provider actions. */
+    val kind: HubMessageKind = HubMessageKind.Message,
     /** Source-provided capabilities and intents; kept in memory with this active notification only. */
     internal val sourceActions: List<Notification.Action> = emptyList(),
 ) {
+    val isEmail: Boolean get() = kind == HubMessageKind.Email
     internal val markReadAction: Notification.Action?
         get() = sourceActions.firstOrNull { it.semanticAction == Notification.Action.SEMANTIC_ACTION_MARK_AS_READ }
     val canReply: Boolean get() = replyAction != null
@@ -119,8 +121,10 @@ internal fun conversationId(
     isGroup: Boolean,
     contactIdentity: String?,
     providerIdentity: String,
+    generic: Boolean = false,
 ): String =
     when {
+        generic -> "$packageName:notification:$providerIdentity"
         isGroup -> "$packageName:group:$providerIdentity"
         contactIdentity != null -> "contact:$contactIdentity"
         else -> "$packageName:direct:$providerIdentity"
@@ -150,3 +154,15 @@ internal fun conversationPreview(
     val clipped = if (text.length > maxChars) text.take(maxChars - 1).trimEnd() + "…" else text
     return if (who == null) clipped else "$who: $clipped"
 }
+
+/** App/package hints supplement Android categories; an ordinary notice is never counted as a chat message. */
+internal fun hubNotificationKind(
+    packageName: String,
+    category: String?,
+    structured: Boolean,
+): HubMessageKind =
+    when {
+        isEmailNotification(packageName, category) -> HubMessageKind.Email
+        isConversationNotification(category, structured, packageName) -> HubMessageKind.Message
+        else -> HubMessageKind.Notification
+    }

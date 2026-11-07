@@ -1,4 +1,4 @@
-package io.github.aimindseye.tenseven.conversations
+package io.github.aimindseye.tenseven.platform
 
 import android.app.KeyguardManager
 import android.app.Notification
@@ -7,11 +7,14 @@ import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import io.github.aimindseye.tenseven.conversations.ConversationAccess
+import io.github.aimindseye.tenseven.conversations.ConversationHub
+import io.github.aimindseye.tenseven.conversations.HubConversation
+import io.github.aimindseye.tenseven.conversations.HubNotification
 import io.github.aimindseye.tenseven.model.HubActionCapability
 import io.github.aimindseye.tenseven.model.HubActionInput
 import io.github.aimindseye.tenseven.model.HubActionPolicy
 import io.github.aimindseye.tenseven.model.HubApps
-import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /** A user-visible capability tied to one exact active notification/action snapshot. Never persisted. */
 internal data class HubSourceAction(
@@ -79,7 +82,7 @@ internal fun canUseHubActions(
 ): Boolean =
     context.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == false &&
         ConversationAccess.isGranted(context) &&
-        HubApps.isIncluded(StartStateRepository(context).loadHubEnabledApps(), source)
+        HubSourceRepository(context).includes(source)
 
 private fun replyIntent(
     action: Notification.Action,
