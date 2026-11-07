@@ -15,10 +15,22 @@ class HubNotificationAuditTest {
     }
 
     @Test fun explainsSourceAndGroupOutcomesWithoutConflatingThem() {
-        assertEquals(HubAuditReason.OTHER_PROFILE, HubAuditPolicy.reason(false, false, true, HubAuditConversion(false, true, true)))
-        assertEquals(HubAuditReason.USER_FILTER, HubAuditPolicy.reason(true, false, false, HubAuditConversion(false, true, true)))
-        assertEquals(HubAuditReason.PARSE_FAILURE, HubAuditPolicy.reason(true, false, true, HubAuditConversion(true, false, false)))
-        assertEquals(HubAuditReason.NO_HUB_CONTENT, HubAuditPolicy.reason(true, false, true, HubAuditConversion(false, false, false)))
+        assertEquals(
+            HubAuditReason.OTHER_PROFILE,
+            HubAuditPolicy.reason(false, false, true, HubAuditConversion(false, true, true)),
+        )
+        assertEquals(
+            HubAuditReason.USER_FILTER,
+            HubAuditPolicy.reason(true, false, false, HubAuditConversion(false, true, true)),
+        )
+        assertEquals(
+            HubAuditReason.PARSE_FAILURE,
+            HubAuditPolicy.reason(true, false, true, HubAuditConversion(true, false, false)),
+        )
+        assertEquals(
+            HubAuditReason.NO_HUB_CONTENT,
+            HubAuditPolicy.reason(true, false, true, HubAuditConversion(false, false, false)),
+        )
         assertEquals(
             HubAuditReason.GROUP_SUMMARY_REPLACED,
             HubAuditPolicy.reason(true, false, true, HubAuditConversion(false, true, false)),
