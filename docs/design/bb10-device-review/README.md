@@ -151,6 +151,9 @@ Do not reuse a normal camera intent on the real keyguard. No Home dock appears o
 
 Keep the current no-new-findings ratchet and Sonar/security gates. No version bump, APK rebuild,
 permission expansion, Android system hook or blanket warning suppression belongs to this design PR.
+The generated static `index.html` intentionally repeats device fixtures for comparison and is
+excluded only from duplication scoring by its exact path. CSS/accessibility analysis, production
+source analysis, quality thresholds and the accepted static baseline remain unchanged.
 
 ## Sources and asset provenance
 
