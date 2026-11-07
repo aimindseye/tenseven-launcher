@@ -49,7 +49,14 @@ class ConversationListenerService : NotificationListenerService() {
         io.github.aimindseye.tenseven.platform.FrameMediaNotifications
             .replace(this, active)
         // Parse before choosing summaries: a malformed/empty child must not hide usable mail content.
-        val parsed = active.mapNotNull { sbn -> safeHubNotification(sbn)?.let { sbn to it } }
+        // D0 diagnostic: observe conversion failures without changing the items Hub receives.
+        val parseFailures = mutableSetOf<String>()
+        val parsed =
+            active.mapNotNull { sbn ->
+                val attempt = runCatching { toHubNotification(sbn) }
+                if (attempt.isFailure) parseFailures += sbn.key
+                attempt.getOrNull()?.let { sbn to it }
+            }
         val visible =
             NotificationGroupSelection.visibleKeys(
                 parsed.map { (sbn, item) ->
@@ -61,6 +68,28 @@ class ConversationListenerService : NotificationListenerService() {
                     )
                 },
             )
+        // D0: diagnostics must never block the original notification delivery path.
+        runCatching {
+            // Store ONLY per-package outcome counts. No notification keys or message text survive.
+            val convertedKeys = parsed.map { it.second.key }.toSet()
+            HubNotificationAudit.publish(
+                active.map { sbn ->
+                    HubAuditEvent(
+                        packageName = sbn.packageName,
+                        reason =
+                            HubAuditPolicy.reason(
+                                sameUser = sbn.user == android.os.Process.myUserHandle(),
+                                ownApp = sbn.packageName == packageName,
+                                sourceEnabled = hubSources.includes(sbn.packageName),
+                                conversionFailed = sbn.key in parseFailures,
+                                converted = sbn.key in convertedKeys,
+                                retainedByGroupSelection = sbn.key in visible,
+                            ),
+                        sound = auditSoundOf(sbn),
+                    )
+                },
+            )
+        }
         ConversationHub.replace(parsed.map { it.second }.filter { it.key in visible })
         refreshLockCounts()
     }
@@ -102,6 +131,7 @@ class ConversationListenerService : NotificationListenerService() {
         io.github.aimindseye.tenseven.platform.FrameMediaNotifications
             .clear()
         ConversationHub.clear()
+        HubNotificationAudit.clear()
         LockLayerState.update(emptyMap())
         if (screenOnRegistered) {
             runCatching { unregisterReceiver(screenOn) }
@@ -117,6 +147,7 @@ class ConversationListenerService : NotificationListenerService() {
             io.github.aimindseye.tenseven.platform.FrameMediaNotifications
                 .clear()
             ConversationHub.clear()
+            HubNotificationAudit.clear()
             LockLayerState.update(emptyMap())
         }
         if (screenOnRegistered) {
@@ -134,10 +165,24 @@ class ConversationListenerService : NotificationListenerService() {
         importActiveNotifications()
     }
 
+    /** Android ranking/channel hints only; silent status does not affect inclusion. */
+    private fun auditSoundOf(sbn: StatusBarNotification): HubAuditSound {
+        val ranking = NotificationListenerService.Ranking()
+        val available = runCatching { currentRanking.getRanking(sbn.key, ranking) }.getOrDefault(false)
+        if (!available) return HubAuditSound.RANKING_UNKNOWN
+        val channel = ranking.channel
+        val lowImportance =
+            ranking.importance >= android.app.NotificationManager.IMPORTANCE_NONE &&
+                ranking.importance <= android.app.NotificationManager.IMPORTANCE_LOW
+        return when {
+            lowImportance -> HubAuditSound.SILENT_CANDIDATE
+            channel != null && channel.sound == null -> HubAuditSound.SILENT_CANDIDATE
+            else -> HubAuditSound.NOT_IDENTIFIED_SILENT
+        }
+    }
+
     private fun readActiveNotifications(): List<StatusBarNotification> =
         runCatching { activeNotifications.orEmpty().toList() }.getOrDefault(emptyList())
-
-    private fun safeHubNotification(sbn: StatusBarNotification): HubNotification? = runCatching { toHubNotification(sbn) }.getOrNull()
 
     /** Counts per app for the lock layer: how many notifications wait, nothing of what they say. */
     private fun refreshLockCounts() {
