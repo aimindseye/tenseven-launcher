@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
+import androidx.core.content.edit
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.model.HubSourcePolicy
 
@@ -31,22 +32,21 @@ class HubSourceRepository(
     }
 
     fun saveManual(packages: Set<String>) {
-        preferences
-            .edit()
-            .putBoolean(AUTOMATIC, false)
-            .putStringSet(StartStateRepository.KEY_HUB_ENABLED, packages.toSet())
-            .apply()
+        preferences.edit {
+            putBoolean(AUTOMATIC, false)
+            putStringSet(StartStateRepository.KEY_HUB_ENABLED, packages.toSet())
+        }
     }
 
     fun setAutomatic(automatic: Boolean) {
-        preferences.edit().putBoolean(AUTOMATIC, automatic).apply()
+        preferences.edit { putBoolean(AUTOMATIC, automatic) }
     }
 
     fun toggle(packageName: String) {
         val current = policy()
         if (current.automatic) {
             val next = if (packageName in current.hidden) current.hidden - packageName else current.hidden + packageName
-            preferences.edit().putStringSet(HIDDEN, next).apply()
+            preferences.edit { putStringSet(HIDDEN, next) }
         } else {
             val next =
                 if (packageName in current.selected) {
