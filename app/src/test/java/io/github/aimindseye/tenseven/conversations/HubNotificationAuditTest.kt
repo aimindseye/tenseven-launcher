@@ -9,17 +9,20 @@ class HubNotificationAuditTest {
     @Test fun silenceIsNotAnExclusionReason() {
         assertEquals(
             HubAuditReason.VISIBLE,
-            HubAuditPolicy.reason(true, false, true, false, true, true),
+            HubAuditPolicy.reason(true, false, true, HubAuditConversion(false, true, true)),
         )
         assertFalse(HubAuditReason.entries.any { it.name.contains("SILENT") })
     }
 
     @Test fun explainsSourceAndGroupOutcomesWithoutConflatingThem() {
-        assertEquals(HubAuditReason.OTHER_PROFILE, HubAuditPolicy.reason(false, false, true, false, true, true))
-        assertEquals(HubAuditReason.USER_FILTER, HubAuditPolicy.reason(true, false, false, false, true, true))
-        assertEquals(HubAuditReason.PARSE_FAILURE, HubAuditPolicy.reason(true, false, true, true, false, false))
-        assertEquals(HubAuditReason.NO_HUB_CONTENT, HubAuditPolicy.reason(true, false, true, false, false, false))
-        assertEquals(HubAuditReason.GROUP_SUMMARY_REPLACED, HubAuditPolicy.reason(true, false, true, false, true, false))
+        assertEquals(HubAuditReason.OTHER_PROFILE, HubAuditPolicy.reason(false, false, true, HubAuditConversion(false, true, true)))
+        assertEquals(HubAuditReason.USER_FILTER, HubAuditPolicy.reason(true, false, false, HubAuditConversion(false, true, true)))
+        assertEquals(HubAuditReason.PARSE_FAILURE, HubAuditPolicy.reason(true, false, true, HubAuditConversion(true, false, false)))
+        assertEquals(HubAuditReason.NO_HUB_CONTENT, HubAuditPolicy.reason(true, false, true, HubAuditConversion(false, false, false)))
+        assertEquals(
+            HubAuditReason.GROUP_SUMMARY_REPLACED,
+            HubAuditPolicy.reason(true, false, true, HubAuditConversion(false, true, false)),
+        )
     }
 
     @Test fun exportIsAggregatedAndContainsNoIndividualKeys() {

@@ -81,9 +81,12 @@ class ConversationListenerService : NotificationListenerService() {
                                 sameUser = sbn.user == android.os.Process.myUserHandle(),
                                 ownApp = sbn.packageName == packageName,
                                 sourceEnabled = hubSources.includes(sbn.packageName),
-                                conversionFailed = sbn.key in parseFailures,
-                                converted = sbn.key in convertedKeys,
-                                retainedByGroupSelection = sbn.key in visible,
+                                conversion =
+                                    HubAuditConversion(
+                                        failed = sbn.key in parseFailures,
+                                        converted = sbn.key in convertedKeys,
+                                        retained = sbn.key in visible,
+                                    ),
                             ),
                         sound = auditSoundOf(sbn),
                     )

@@ -30,23 +30,28 @@ internal data class HubAuditEvent(
     val sound: HubAuditSound,
 )
 
+/** Conversion/group outcome is independent of Android's sound or ranking classification. */
+internal data class HubAuditConversion(
+    val failed: Boolean,
+    val converted: Boolean,
+    val retained: Boolean,
+)
+
 internal object HubAuditPolicy {
     /** Sound is deliberately NOT an eligibility input. Silence must never hide a Hub notification. */
     fun reason(
         sameUser: Boolean,
         ownApp: Boolean,
         sourceEnabled: Boolean,
-        conversionFailed: Boolean,
-        converted: Boolean,
-        retainedByGroupSelection: Boolean,
+        conversion: HubAuditConversion,
     ): HubAuditReason =
         when {
             !sameUser -> HubAuditReason.OTHER_PROFILE
             ownApp -> HubAuditReason.OWN_APP
             !sourceEnabled -> HubAuditReason.USER_FILTER
-            conversionFailed -> HubAuditReason.PARSE_FAILURE
-            !converted -> HubAuditReason.NO_HUB_CONTENT
-            !retainedByGroupSelection -> HubAuditReason.GROUP_SUMMARY_REPLACED
+            conversion.failed -> HubAuditReason.PARSE_FAILURE
+            !conversion.converted -> HubAuditReason.NO_HUB_CONTENT
+            !conversion.retained -> HubAuditReason.GROUP_SUMMARY_REPLACED
             else -> HubAuditReason.VISIBLE
         }
 }
@@ -64,12 +69,10 @@ internal object HubNotificationAudit {
                 val unknown = rows.count { it.sound == HubAuditSound.RANKING_UNKNOWN }
                 // Package names are Android identities, never notification text. Keep the export single-line safe.
                 val safePackage = pkg.replace(Regex("[^A-Za-z0-9_.]"), "_")
-                listOf(
-                    safePackage,
-                    rows.size.toString(),
-                    *counts.map(Int::toString).toTypedArray(),
-                    likelySilent.toString(),
-                    unknown.toString(),
+                (
+                    listOf(safePackage, rows.size.toString()) +
+                        counts.map(Int::toString) +
+                        listOf(likelySilent.toString(), unknown.toString())
                 ).joinToString(" | ")
             }
         val totals = categories.map { reason -> events.count { it.reason == reason } }
@@ -77,7 +80,10 @@ internal object HubNotificationAudit {
             buildString {
                 appendLine("TenSeven D0 Hub snapshot diagnostics (in-memory counts only)")
                 appendLine("This is a snapshot, not WhatsApp/chat history or an Android notification-shade dump.")
-                appendLine("Silent candidate means low channel importance or channel sound disabled, when ranking is available.")
+                appendLine(
+                    "Silent candidate means low channel importance or channel sound disabled, " +
+                        "when ranking is available.",
+                )
                 appendLine("No message text, sender, phone number, notification ID/key or contact data is collected.")
                 appendLine("Observed by listener: ${events.size}; Hub-visible: ${totals.first()}")
                 appendLine(
