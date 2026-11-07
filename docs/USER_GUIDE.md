@@ -1,4 +1,7 @@
-# TenSeven Launcher user guide — 1.0.0
+# TenSeven Launcher user guide
+
+This branch documents the upcoming 2.0 changes. The installation download and screenshots
+below still refer to released version 1.0.0; they do not show the new navigation or action panels.
 
 Requires Android 14 or newer. Both home layouts work with touch; keyboard-equipped phones
 also offer letter shortcuts and focus navigation. Screenshots below are owner-supplied
@@ -18,7 +21,7 @@ Active Frames setup applies only to the BlackBerry 10 home style and follows not
 | Permission or choice | What it enables |
 |---|---|
 | Notification access for TenSeven | Hub notifications, notification counts/excerpts and available media sessions |
-| Apps selected in Hub settings | Which apps contribute message/email notifications to Hub |
+| Hub source filters (optional) | Automatically include Android-delivered notifications, or use a manual selection |
 | Calendar permission and selected calendars in Hub settings | Upcoming events and Calendar summaries |
 | Usage access | Observing apps opened outside TenSeven; not access to their screens |
 | Contacts | People search and contact actions |
@@ -77,8 +80,15 @@ Snoozed, Remind and Contacts. They occupy one horizontal row. Swipe sideways on 
 windows to reach the remaining actions; touch targets stay usable. Notification totals may
 increase a button's width. No separate row of individual notification-app icons is shown.
 
-Hub displays notifications from apps you select in Hub settings. Open a conversation,
-reply inline when the app supports it, mark read, snooze, or make a reminder. Snoozed items
+After granting Android notification access, Hub automatically displays notifications delivered
+to TenSeven. No separate app assignment is required. Hub settings offers optional app filters
+and a manual-selection mode. Android can restrict notifications or redact their content; an
+app with notifications disabled or no active notification contributes no entry.
+
+Select a row to open its action panel. Available actions come from the source notification: reply,
+reply all, forward or other provider actions appear only when supported. Text actions require
+Send; selecting a row alone does not read or launch it. Hub also offers local mark-read, snooze
+and reminder controls. Ordinary notifications appear in All, not Messages or Email. Snoozed items
 and reminders have their own shortcuts. Calendar permission and calendar selection are in
 Hub settings, independently of notification access. Drag inward from the left edge of BB10
 Home to open the rounded peek panel. Notification text is hidden while the device is locked.
@@ -106,7 +116,7 @@ usage history, calendar events and incoming notifications do not create extra ap
 | Media, podcasts, audiobooks | Enable notification access. The player must publish a media session or supported metadata |
 | FM Radio and other players | Opt in to notification-text fallback in App integrations when the player lacks session metadata; station details appear only if the app publishes them |
 | Calendar | Grant Calendar access and choose calendars in Hub settings; enable live tiles |
-| Mail and messaging | Enable notification access, select apps in Hub and opt in to notification excerpts in App integrations |
+| Mail and messaging | Enable notification access and opt in to notification excerpts in App integrations; optional Hub source filters apply |
 | TenSeven Notes, Tasks/Remind, Calc Plus | Enable the corresponding extras/integration; summaries reflect TenSeven-owned data |
 | Word, Excel, PowerPoint | Ordinary recent-app cards. File linking was removed; no private document or automatic latest-file preview |
 | Shared screen | Explicit Android capture consent; separate preview, not a per-app automatic snapshot |
@@ -232,7 +242,7 @@ Android permission grants, widget IDs or a live screen-capture consent session.
 
 ## Troubleshooting
 
-- Missing summaries: check notification access, Hub app selection, Calendar selection and live-tile settings as applicable.
+- Missing summaries: check notification access, optional Hub source filters, Calendar selection and live-tile settings as applicable.
 - A player shows Recent app: check whether it still exposes playback/session metadata after leaving it.
 - No Office document text: expected; the launcher cannot inspect Word/Excel/PowerPoint private content.
 - Missing Hub shortcut: scroll its single navigation row sideways.

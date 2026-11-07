@@ -11,6 +11,7 @@ import android.content.Intent
 import android.os.Bundle
 import io.github.aimindseye.tenseven.live.AppUnreadCount
 import io.github.aimindseye.tenseven.platform.currentHubReplyTarget
+import io.github.aimindseye.tenseven.platform.markHubSourceRead
 import io.github.aimindseye.tenseven.platform.sendHubPendingIntent
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
@@ -63,7 +64,7 @@ object ConversationHub {
         conversation: HubConversation,
     ) {
         conversation.notifications.forEach { n ->
-            runCatching { n.markReadAction?.actionIntent?.send() }
+            markHubSourceRead(context, n)
         }
         val now = maxOf(System.currentTimeMillis(), conversation.messages.maxOfOrNull(ConversationMessage::timestamp) ?: 0L)
         changeState(context) { it.markRead(conversation.id, now) }

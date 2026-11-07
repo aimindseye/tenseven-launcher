@@ -129,13 +129,27 @@ internal fun currentHubReplyTarget(
     }
 }
 
+/** Native mark-read is optional; local Hub read state remains independent of provider support. */
+internal fun markHubSourceRead(
+    context: Context,
+    notification: HubNotification,
+) {
+    val current = ConversationHub.notifications().firstOrNull { it === notification }
+    if (current != null && canUseHubActions(context, current.packageName)) {
+        sendHubPendingIntent(context, current.markReadAction?.actionIntent)
+    }
+}
+
 /** A notification without an open intent falls back to its own app, never a different messaging provider. */
 internal fun openHubSource(
     context: Context,
     conversation: HubConversation,
     onUnavailable: () -> Unit,
 ) {
-    if (!ConversationHub.open(context, conversation.openTarget)) {
+    val target = conversation.openTarget
+    val active = ConversationHub.notifications().any { it === target }
+    if (!active || !canUseHubActions(context, target.packageName)) return
+    if (!ConversationHub.open(context, target)) {
         val intent = context.packageManager.getLaunchIntentForPackage(conversation.latestNotification.packageName)
         val opened =
             intent?.let {
