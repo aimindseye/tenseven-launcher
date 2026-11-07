@@ -357,7 +357,7 @@ internal fun FrameTile(
     icon: @Composable () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(0.dp)
     Column(
         modifier
             .testTag(key)
@@ -395,13 +395,13 @@ internal fun FrameTile(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 36.dp)
-                .background(if (focused) Bb10Blue else Bb10BarTop)
+                .background(Bb10Card)
                 .padding(start = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 title,
-                color = if (focused) Bb10OnBlue else Bb10Text,
+                color = Bb10Text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.labelLarge,
@@ -416,7 +416,7 @@ internal fun FrameTile(
                         .semantics { contentDescription = "Close $title card" },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("×", color = if (focused) Bb10OnBlue else Bb10Text)
+                    Text("×", color = Bb10Text)
                 }
             }
         }

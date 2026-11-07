@@ -621,6 +621,21 @@ fun Bb7HomeScreen(
                             onOpenMenu(menuFor(app, false))
                         },
                     )
+                    Bb7ReferenceBar(
+                        apps = apps,
+                        actions =
+                            Bb7BarActions(
+                                hub = onOpenHub,
+                                command = onOpenCommand,
+                                apps = openApps,
+                                favorites = {
+                                    panel = Bb7Panel.Favorites
+                                    open = false
+                                    query = ""
+                                },
+                                launch = { onLaunchApp(it) },
+                            ),
+                    )
                 }
             }
         }

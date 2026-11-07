@@ -185,13 +185,9 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
             locked = ui.deviceLocked,
             unread = ui.state.unreadCount(conversation),
             snoozed = ui.filter.snoozed,
-            onOpen = { ui.onOpen(conversation) },
-            onReply = { text -> ui.onReply(conversation, text) },
             onMarkRead = { ui.onMarkRead(conversation) },
             onSnooze = { until -> ui.onSnooze(conversation, until) },
             onWake = { ui.onWake(conversation) },
-            onRemind = { whenAt -> ui.onRemind(conversation, whenAt) },
-            onCustomRemind = { ui.onCustomRemind(conversation) },
         )
     }
 }
@@ -320,13 +316,14 @@ private fun IconHubFilterButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val color = MaterialTheme.colorScheme.onSurface
     Column(
         modifier =
             modifier
-                .clip(RoundedCornerShape(7.dp))
-                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                .sableFocusRing()
+                .border(
+                    if (selected) 1.dp else 0.dp,
+                    if (selected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
+                ).sableFocusRing()
                 .clickable(onClick = onClick)
                 .semantics {
                     contentDescription =
@@ -377,48 +374,18 @@ private fun IconHubFilterButton(
 }
 
 @Composable
-private fun HubActionIcon(
-    label: String,
-    glyph: List<String>,
-    showLabel: Boolean = false,
-    onClick: () -> Unit,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.sableFocusRing().semantics { contentDescription = label },
-        contentPadding =
-            androidx.compose.foundation.layout
-                .PaddingValues(horizontal = 12.dp, vertical = 7.dp),
-    ) {
-        LineIcon(paths = glyph, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface)
-        if (showLabel) {
-            Spacer(Modifier.width(6.dp))
-            Text(label, color = MaterialTheme.colorScheme.onSurface)
-        }
-    }
-}
-
-@Composable
 private fun ConversationRow(
     conversation: HubConversation,
     locked: Boolean,
     unread: Int,
     snoozed: Boolean,
-    onOpen: () -> Unit,
-    onReply: (String) -> Boolean,
     onMarkRead: () -> Unit,
     onSnooze: (Long) -> Unit,
     onWake: () -> Unit,
-    onRemind: (Long?) -> Unit,
-    onCustomRemind: () -> Unit,
 ) {
-    var expanded by remember(conversation.id) { mutableStateOf(false) }
-    var replying by remember(conversation.id) { mutableStateOf(false) }
-    var draft by remember(conversation.id) { mutableStateOf("") }
-    var failed by remember { mutableStateOf(false) }
-    var remindMenu by remember(conversation.id) { mutableStateOf(false) }
+    val selectRow = LocalHubRowSelection.current
+    val rowFocus = remember(conversation.id) { FocusRequester() }
     val preview = conversationPreview(conversation, locked, you = stringResource(R.string.hub_you))
-    val canReply = !locked && conversation.replyTarget != null
     val latestAt = conversation.latestMessage?.timestamp ?: conversation.latestNotification.postedAt
     val whenText = DateUtils.getRelativeTimeSpanString(latestAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
     val source = conversation.latestNotification.appName
@@ -437,22 +404,12 @@ private fun ConversationRow(
             }
         }
 
-    fun send() {
-        if (draft.isBlank()) return
-        failed = !onReply(draft)
-        if (!failed) {
-            draft = ""
-            replying = false
-        }
-    }
-
     HubContrastTheme {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)),
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             Row(
                 modifier =
@@ -480,8 +437,9 @@ private fun ConversationRow(
                                     false
                                 }
                             }
-                        }.sableFocusRing()
-                        .clickable { expanded = !expanded }
+                        }.focusRequester(rowFocus)
+                        .sableFocusRing()
+                        .clickable { selectRow(conversation.id, rowFocus) }
                         .padding(horizontal = 4.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -537,86 +495,6 @@ private fun ConversationRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-            if (expanded) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(start = 40.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    HubActionIcon("Open in source app", LineIconPaths.EXTERNAL, onClick = onOpen)
-                    if (canReply) {
-                        HubActionIcon("Reply", LineIconPaths.REPLY) { replying = !replying }
-                    }
-                    if (unread > 0) {
-                        HubActionIcon("Mark read", LineIconPaths.CHECK, onClick = onMarkRead)
-                    }
-                    HubActionIcon("Remind", TablerGlyphPaths.BY_NAME["clock"].orEmpty(), showLabel = true) { remindMenu = true }
-                    HubActionIcon(
-                        if (snoozed) "Show now" else "Snooze 1h",
-                        TablerGlyphPaths.BY_NAME["clock"].orEmpty(),
-                        showLabel = true,
-                    ) {
-                        if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
-                    }
-                }
-                if (replying && canReply) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        OutlinedTextField(
-                            value = draft,
-                            onValueChange = {
-                                draft = it
-                                failed = false
-                            },
-                            modifier = Modifier.weight(1f).sableFocusRing(),
-                            singleLine = true,
-                            isError = failed,
-                            placeholder = { Text(stringResource(R.string.hub_reply_hint)) },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(onSend = { send() }),
-                        )
-                        OutlinedButton(
-                            onClick = ::send,
-                            enabled = draft.isNotBlank(),
-                            modifier = Modifier.sableFocusRing(),
-                        ) {
-                            Text(stringResource(R.string.hub_send))
-                        }
-                    }
-                    if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)
-                }
-            }
-            if (remindMenu) {
-                val zone = java.time.ZoneId.systemDefault()
-                AlertDialog(
-                    onDismissRequest = { remindMenu = false },
-                    title = { Text("TenSeven Remind") },
-                    text = { Text("Save a local follow-up. Only app identity is retained; message text is not copied.") },
-                    confirmButton = {
-                        Column {
-                            listOf("Later today", "This evening", "Tomorrow morning", "Until complete").forEach { choice ->
-                                TextButton(onClick = {
-                                    onRemind(
-                                        io.github.aimindseye.tenseven.tasks.TaskSchedule
-                                            .preset(choice, java.time.Instant.now(), zone),
-                                    )
-                                    remindMenu = false
-                                }) { Text(choice) }
-                            }
-                            TextButton(onClick = {
-                                remindMenu = false
-                                onCustomRemind()
-                            }) { Text("Choose date and time…") }
-                        }
-                    },
-                    dismissButton = { TextButton(onClick = { remindMenu = false }) { Text("Cancel") } },
-                )
             }
             Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
         }

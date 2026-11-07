@@ -278,6 +278,8 @@ fun SableStartScreen(
         when (slot.token) {
             QuickBar.COMMAND -> openSearch(SableStartDestination.Start)
 
+            QuickBar.CAMERA -> onStartIntent(Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA))
+
             QuickBar.ALL_APPS -> destination = SableStartDestination.Apps
 
             // The Hub slot is Start's own Hub page; the Sable Hub app has no screen to open.

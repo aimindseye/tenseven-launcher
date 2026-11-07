@@ -79,7 +79,7 @@ internal const val BAR_GLYPH_DP = 26
 internal const val STATUS_BAR_FALLBACK_DP = 24
 
 /** Page indicator, bar and the grid's own padding: what the grid rows do not get. */
-internal const val START_CHROME_DP = INDICATOR_HEIGHT_DP + BAR_HEIGHT_DP + 2 * 4
+internal const val START_CHROME_DP = BAR_HEIGHT_DP + 2 * 4
 internal const val NANOS_PER_MILLI = 1_000_000L
 
 /** Typed `-todo`, `/note`, `+event` and web addresses become rows that hand the text to the app that handles it. */

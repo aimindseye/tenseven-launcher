@@ -183,66 +183,75 @@ internal fun HubPage(
     }
 
     HubContrastTheme {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
-            state = listState,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item(key = "header") {
-                Text(
-                    text = HUB_LABEL,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium,
-                    // The strip's own text colour (BB10 palette), not the appearance's content colour.
-                    color = Bb10Text,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Spacer(Modifier.height(6.dp))
-                HubUnifiedNavigation(
-                    ui = conversationsUi,
-                    currentTab = filter,
-                    onTabChange = onFilter,
-                    firstTab = tabFocus,
-                    messageCount = sourceGroups.messages,
-                    emailCount = sourceGroups.email,
-                    onOpenCalendar = { onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR)) },
-                )
-            }
-            // Calendar data requires a second, explicit opt-in (separate from notification sources).
-            if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
-                item(key = "hub-upcoming-calendar") {
-                    HubCalendarPeek(
-                        refreshGeneration = refreshGeneration,
-                        onRequestCalendarPermission = {
-                            (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
-                        },
+        HubPanelsHost(conversationsUi, onOpenHubSettings) { openPanel ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
+                state = listState,
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                item(key = "header") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        HomeBarControl("Hub settings", "menu-2", onClick = openPanel)
+                        Text(
+                            text = HUB_LABEL,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Medium,
+                            // The strip's own text colour (BB10 palette), not the appearance's content colour.
+                            color = Bb10Text,
+                            modifier = Modifier.semantics { heading() },
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    HubUnifiedNavigation(
+                        ui = conversationsUi,
+                        currentTab = filter,
+                        onTabChange = onFilter,
+                        firstTab = tabFocus,
+                        messageCount = sourceGroups.messages,
+                        emailCount = sourceGroups.email,
                         onOpenCalendar = {
-                            onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
+                            onStartIntent(
+                                Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR),
+                            )
                         },
                     )
                 }
-            }
-            if (contactsTab) {
-                hubContactsItems(
-                    people = people,
-                    loaded = peopleLoaded,
-                    canRead = canReadContacts,
-                    contactsApp = contactsApp,
-                    messagesPackage = messagesApp?.component?.packageName,
-                    requesterFor = ::requesterFor,
-                    actions = actions,
-                )
-            } else {
-                hubSummaryItems(
-                    filter = filter,
-                    snapshot = snapshot,
-                    summary = if (hubInstalled) HubBar.summary(barItems) else null,
-                    messagesApp = messagesApp,
-                    mailApp = mailApp,
-                    actions = actions,
-                    conversations = conversationsUi,
-                )
+                // Calendar data requires a second, explicit opt-in (separate from notification sources).
+                if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
+                    item(key = "hub-upcoming-calendar") {
+                        HubCalendarPeek(
+                            refreshGeneration = refreshGeneration,
+                            onRequestCalendarPermission = {
+                                (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
+                            },
+                            onOpenCalendar = {
+                                onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
+                            },
+                        )
+                    }
+                }
+                if (contactsTab) {
+                    hubContactsItems(
+                        people = people,
+                        loaded = peopleLoaded,
+                        canRead = canReadContacts,
+                        contactsApp = contactsApp,
+                        messagesPackage = messagesApp?.component?.packageName,
+                        requesterFor = ::requesterFor,
+                        actions = actions,
+                    )
+                } else {
+                    hubSummaryItems(
+                        filter = filter,
+                        snapshot = snapshot,
+                        summary = if (hubInstalled) HubBar.summary(barItems) else null,
+                        messagesApp = messagesApp,
+                        mailApp = mailApp,
+                        actions = actions,
+                        conversations = conversationsUi,
+                    )
+                }
             }
         }
     }

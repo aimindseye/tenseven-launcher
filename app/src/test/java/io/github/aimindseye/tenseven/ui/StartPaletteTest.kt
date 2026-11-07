@@ -2,16 +2,16 @@ package io.github.aimindseye.tenseven.ui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import io.github.aimindseye.tenseven.design.AccentPreset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import io.github.aimindseye.tenseven.design.AccentPreset
 
 /** Start's pages follow Android's Dark theme and the Sable accent. */
 class StartPaletteTest {
     @Test
     fun defaultBlueKeepsTheBb10BlueAndOtherAccentsAreUsedAsIs() {
-        assertEquals(Color(0xFF00A8DF), startPalette(dark = true, accent = AccentPreset.Blue).accent)
+        assertEquals(Color(0xFF2E9BD6), startPalette(dark = true, accent = AccentPreset.Blue).accent)
         for (accent in AccentPreset.entries.filter { it != AccentPreset.Blue }) {
             assertEquals(accent.color, startPalette(dark = true, accent = accent).accent)
             assertEquals(accent.onColor, startPalette(dark = false, accent = accent).onAccent)

@@ -242,18 +242,10 @@ internal fun StartStrip(
             beyondViewportPageCount = 0,
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { index -> page(index) }
-        Bb10PageIndicator(
-            current = state.currentPage,
-            count = pageCount,
-            lead = pageLead,
-            onShowPage = onShowPage,
-        )
-        Bb10ActionBar(
+        ReferenceHomeBar(
             slots = quickSlots,
-            onSlot = onQuickSlot,
-            onOptions = onSlotOptions,
-            onHubPeek = onHubPeek,
-            onPhoneFocusChanged = { phoneSlotFocused = it },
+            pages = HomeBarPages(state.currentPage, pageCount, pageLead),
+            actions = HomeBarActions(onShowPage, onQuickSlot, onSlotOptions) { phoneSlotFocused = it },
         )
     }
 }
