@@ -280,7 +280,8 @@ private fun HubSettings(
                     clipboard?.setPrimaryClip(
                         android.content.ClipData.newPlainText(
                             "TenSeven D0 notification audit",
-                            io.github.aimindseye.tenseven.conversations.HubNotificationAudit.report(),
+                            io.github.aimindseye.tenseven.conversations.HubNotificationAudit
+                                .report(),
                         ),
                     )
                 },

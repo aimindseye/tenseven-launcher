@@ -57,28 +57,35 @@ internal object HubNotificationAudit {
 
     fun publish(events: List<HubAuditEvent>) {
         val categories = HubAuditReason.entries
-        val lines = events.groupBy(HubAuditEvent::packageName).toSortedMap().map { (pkg, rows) ->
-            val counts = categories.map { reason -> rows.count { it.reason == reason } }
-            val likelySilent = rows.count { it.sound == HubAuditSound.SILENT_CANDIDATE }
-            val unknown = rows.count { it.sound == HubAuditSound.RANKING_UNKNOWN }
-            // Package names are Android identities, never notification text. Keep the export single-line safe.
-            val safePackage = pkg.replace(Regex("[^A-Za-z0-9_.]"), "_")
-            listOf(safePackage, rows.size.toString(), *counts.map(Int::toString).toTypedArray(),
-                likelySilent.toString(), unknown.toString()).joinToString(" | ")
-        }
+        val lines =
+            events.groupBy(HubAuditEvent::packageName).toSortedMap().map { (pkg, rows) ->
+                val counts = categories.map { reason -> rows.count { it.reason == reason } }
+                val likelySilent = rows.count { it.sound == HubAuditSound.SILENT_CANDIDATE }
+                val unknown = rows.count { it.sound == HubAuditSound.RANKING_UNKNOWN }
+                // Package names are Android identities, never notification text. Keep the export single-line safe.
+                val safePackage = pkg.replace(Regex("[^A-Za-z0-9_.]"), "_")
+                listOf(
+                    safePackage,
+                    rows.size.toString(),
+                    *counts.map(Int::toString).toTypedArray(),
+                    likelySilent.toString(),
+                    unknown.toString(),
+                ).joinToString(" | ")
+            }
         val totals = categories.map { reason -> events.count { it.reason == reason } }
-        latest = buildString {
-            appendLine("TenSeven D0 Hub snapshot diagnostics (in-memory counts only)")
-            appendLine("This is a snapshot, not WhatsApp/chat history or an Android notification-shade dump.")
-            appendLine("Silent candidate means low channel importance or channel sound disabled, when ranking is available.")
-            appendLine("No message text, sender, phone number, notification ID/key or contact data is collected.")
-            appendLine("Observed by listener: ${events.size}; Hub-visible: ${totals.first()}")
-            appendLine(
-                "package | observed | ${categories.joinToString(" | ") { it.name.lowercase() }} | " +
-                    "silent_candidate | ranking_unknown",
-            )
-            lines.forEach(::appendLine)
-        }
+        latest =
+            buildString {
+                appendLine("TenSeven D0 Hub snapshot diagnostics (in-memory counts only)")
+                appendLine("This is a snapshot, not WhatsApp/chat history or an Android notification-shade dump.")
+                appendLine("Silent candidate means low channel importance or channel sound disabled, when ranking is available.")
+                appendLine("No message text, sender, phone number, notification ID/key or contact data is collected.")
+                appendLine("Observed by listener: ${events.size}; Hub-visible: ${totals.first()}")
+                appendLine(
+                    "package | observed | ${categories.joinToString(" | ") { it.name.lowercase() }} | " +
+                        "silent_candidate | ranking_unknown",
+                )
+                lines.forEach(::appendLine)
+            }
     }
 
     fun report(): String = latest
