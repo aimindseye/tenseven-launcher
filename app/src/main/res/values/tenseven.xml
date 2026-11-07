@@ -82,8 +82,8 @@
 
     <!-- Hub conversations -->
     <string name="hub_allow_title">Allow notification access</string>
-    <string name="hub_allow_detail">Group messages and email per person, with unread counts and inline reply. Kept in memory only.</string>
-    <string name="hub_conversations_empty">No message or email notifications right now.</string>
+    <string name="hub_allow_detail">Show Android-delivered notifications automatically, with supported actions. Content stays in memory.</string>
+    <string name="hub_conversations_empty">No notifications right now.</string>
     <string name="hub_locked_preview">Unlock to read</string>
     <string name="hub_you">You</string>
     <string name="hub_reply">Reply</string>

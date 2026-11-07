@@ -19,13 +19,15 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.content.ContextCompat
 import io.github.aimindseye.tenseven.model.HubApps
+import io.github.aimindseye.tenseven.model.HubMessageKind
 import io.github.aimindseye.tenseven.model.LockLayer
+import io.github.aimindseye.tenseven.platform.HubSourceRepository
 import io.github.aimindseye.tenseven.platform.LockLayerLauncher
 import io.github.aimindseye.tenseven.platform.LockLayerState
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
- * Turns message and email notifications into [HubNotification]s in [ConversationHub]. Only runs once the
+ * Turns Android-delivered notifications into [HubNotification]s in [ConversationHub]. Only runs once the
  * user grants notification access; reads text for grouping and counting, keeps it in memory, and
  * never sends it anywhere.
  */
@@ -44,13 +46,21 @@ class ConversationListenerService : NotificationListenerService() {
 
     private fun importActiveNotifications() {
         val active = readActiveNotifications()
-        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.replace(this, active)
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+            .replace(this, active)
         // Parse before choosing summaries: a malformed/empty child must not hide usable mail content.
         val parsed = active.mapNotNull { sbn -> safeHubNotification(sbn)?.let { sbn to it } }
-        val visible = NotificationGroupSelection.visibleKeys(parsed.map { (sbn, item) ->
-            NotificationGroupEntry(item.key, item.packageName, sbn.groupKey,
-                sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0)
-        })
+        val visible =
+            NotificationGroupSelection.visibleKeys(
+                parsed.map { (sbn, item) ->
+                    NotificationGroupEntry(
+                        item.key,
+                        item.packageName,
+                        sbn.groupKey,
+                        sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0,
+                    )
+                },
+            )
         ConversationHub.replace(parsed.map { it.second }.filter { it.key in visible })
         refreshLockCounts()
     }
@@ -63,7 +73,7 @@ class ConversationListenerService : NotificationListenerService() {
             ) = LockLayerLauncher.showIfLocked(context)
         }
     private var screenOnRegistered = false
-    private val startState by lazy { StartStateRepository(this) }
+    private val hubSources by lazy { HubSourceRepository(this) }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -73,17 +83,24 @@ class ConversationListenerService : NotificationListenerService() {
         importActiveNotifications()
         if (!screenOnRegistered) {
             // Receiver registration failure must not disable Hub, Peek and lock-screen counts.
-            screenOnRegistered = runCatching {
-                ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
-                true
-            }.getOrDefault(false)
+            screenOnRegistered =
+                runCatching {
+                    ContextCompat.registerReceiver(
+                        this,
+                        screenOn,
+                        IntentFilter(Intent.ACTION_SCREEN_ON),
+                        ContextCompat.RECEIVER_NOT_EXPORTED,
+                    )
+                    true
+                }.getOrDefault(false)
         }
     }
 
     override fun onListenerDisconnected() {
         live.clear()
         NotificationConnection.onDisconnected()
-        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.clear()
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+            .clear()
         ConversationHub.clear()
         LockLayerState.update(emptyMap())
         if (screenOnRegistered) {
@@ -97,8 +114,9 @@ class ConversationListenerService : NotificationListenerService() {
         if (live.get() === this) {
             live.clear()
             NotificationConnection.onDisconnected()
-            io.github.aimindseye.tenseven.platform.FrameMediaNotifications.clear()
-        ConversationHub.clear()
+            io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+                .clear()
+            ConversationHub.clear()
             LockLayerState.update(emptyMap())
         }
         if (screenOnRegistered) {
@@ -109,38 +127,26 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        if (isEmailNotification(sbn.packageName, sbn.notification.category)) {
-            importActiveNotifications()
-        } else {
-            val converted = safeHubNotification(sbn)
-            if (converted != null) ConversationHub.upsert(converted) else ConversationHub.remove(sbn.key)
-            refreshLockCounts()
-        }
+        importActiveNotifications()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // When the last mail child disappears, its summary may be the only usable row.
-        if (isEmailNotification(sbn.packageName, sbn.notification.category)) importActiveNotifications()
-        else {
-            ConversationHub.remove(sbn.key)
-            refreshLockCounts()
-        }
+        importActiveNotifications()
     }
 
     private fun readActiveNotifications(): List<StatusBarNotification> =
         runCatching { activeNotifications.orEmpty().toList() }.getOrDefault(emptyList())
 
-    private fun safeHubNotification(sbn: StatusBarNotification): HubNotification? =
-        runCatching { toHubNotification(sbn) }.getOrNull()
+    private fun safeHubNotification(sbn: StatusBarNotification): HubNotification? = runCatching { toHubNotification(sbn) }.getOrNull()
 
     /** Counts per app for the lock layer: how many notifications wait, nothing of what they say. */
     private fun refreshLockCounts() {
-        val enabled = startState.loadHubEnabledApps()
         val current = readActiveNotifications()
-        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.replace(this, current)
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+            .replace(this, current)
         NotificationConnection.onSnapshot(current.size)
         val waiting =
-            current.filter { it.packageName in enabled }.map {
+            current.filter { it.user == android.os.Process.myUserHandle() && hubSources.includes(it.packageName) }.map {
                 val flags = it.notification?.flags ?: 0
                 Triple(
                     it.packageName,
@@ -152,17 +158,11 @@ class ConversationListenerService : NotificationListenerService() {
     }
 
     private fun toHubNotification(sbn: StatusBarNotification): HubNotification? {
-        if (sbn.user != android.os.Process.myUserHandle()) return null
-        // Enforce per-app consent before reading notification message extras or recovering styles.
-        if (!HubApps.isIncluded(startState.loadHubEnabledApps(), sbn.packageName)) return null
-        val notification = sbn.notification ?: return null
-        if (sbn.packageName == packageName) return null
-        val email = isEmailNotification(sbn.packageName, notification.category)
-        if (notification.flags and Notification.FLAG_GROUP_SUMMARY != 0 && !email) return null
-        if (email && notification.flags and Notification.FLAG_ONGOING_EVENT != 0) return null
+        // Read only Android-delivered notifications allowed by the optional Hub source filter.
+        val notification = sbn.notification?.takeIf { eligibleSource(sbn) } ?: return null
         val style = messagingStyleOf(notification)
         val extracted = style?.let(::extractMessages).orEmpty()
-        if (!isConversationNotification(notification.category, extracted.isNotEmpty(), sbn.packageName)) return null
+        val kind = hubNotificationKind(sbn.packageName, notification.category, extracted.isNotEmpty())
         val extras = notification.extras ?: Bundle.EMPTY
         val appName = appLabel(sbn.packageName)
         val latestIncoming = extracted.lastOrNull { !it.isOutgoing && !it.isHistoric } ?: extracted.lastOrNull { !it.isOutgoing }
@@ -178,11 +178,22 @@ class ConversationListenerService : NotificationListenerService() {
             conversationId(
                 packageName = sbn.packageName,
                 isGroup = isGroup,
-                contactIdentity = if (isGroup || email) null else resolveContactIdentity(latestIncoming?.personUri, name),
-                providerIdentity = notification.shortcutId?.takeIf(String::isNotBlank) ?: normalizeName(name),
+                contactIdentity =
+                    if (isGroup || kind != HubMessageKind.Message) {
+                        null
+                    } else {
+                        resolveContactIdentity(latestIncoming?.personUri, name)
+                    },
+                providerIdentity =
+                    if (kind == HubMessageKind.Notification) {
+                        sbn.key
+                    } else {
+                        notification.shortcutId?.takeIf(String::isNotBlank) ?: normalizeName(name)
+                    },
+                generic = kind == HubMessageKind.Notification,
             )
         val messages = toMessages(sbn, appName, id, extracted).ifEmpty { fallbackMessage(sbn, extras, appName, id, name) }
-        if (messages.isEmpty()) return null
+        val visibleMessages = messages.ifEmpty { genericHubNotice(sbn, appName, id, kind) }
         return HubNotification(
             key = sbn.key,
             conversationId = id,
@@ -191,20 +202,21 @@ class ConversationListenerService : NotificationListenerService() {
             appName = appName,
             postedAt = sbn.postTime,
             isOngoing = notification.flags and Notification.FLAG_ONGOING_EVENT != 0,
-            messages = messages,
+            messages = visibleMessages,
             contentIntent = notification.contentIntent,
             replyAction = replyActionOf(notification),
-            isEmail = email,
-            markReadAction = markReadActionOf(notification),
-        )
+            kind = kind,
+            sourceActions = notification.actions.orEmpty().toList(),
+        ).takeIf { visibleMessages.isNotEmpty() }
     }
+
+    private fun eligibleSource(sbn: StatusBarNotification): Boolean =
+        sbn.user == android.os.Process.myUserHandle() &&
+            sbn.packageName != packageName && hubSources.includes(sbn.packageName)
 
     /** The action behind the notification's own Reply button: the first one that takes free-form text. */
     private fun replyActionOf(notification: Notification): Notification.Action? =
         notification.actions?.firstOrNull { action -> action.remoteInputs?.any(RemoteInput::getAllowFreeFormInput) == true }
-
-    private fun markReadActionOf(notification: Notification): Notification.Action? =
-        notification.actions?.firstOrNull { it.semanticAction == Notification.Action.SEMANTIC_ACTION_MARK_AS_READ }
 
     private fun messagingStyleOf(notification: Notification): Notification.MessagingStyle? =
         runCatching {
@@ -265,13 +277,14 @@ class ConversationListenerService : NotificationListenerService() {
         conversationId: String,
         name: String,
     ): List<ConversationMessage> {
-        val body = fallbackNotificationText(
-            bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
-            text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
-            lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES).orEmpty().map { it.toString() },
-            summary = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString(),
-            title = titleOf(null, extras)?.toString(),
-        ) ?: return emptyList()
+        val body =
+            fallbackNotificationText(
+                bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
+                text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+                lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES).orEmpty().map { it.toString() },
+                summary = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString(),
+                title = titleOf(null, extras)?.toString(),
+            ) ?: return emptyList()
         return listOf(
             ConversationMessage(
                 id = "${sbn.packageName}|${sbn.postTime}|$body",
@@ -343,3 +356,28 @@ private data class ExtractedMessage(
     val isOutgoing: Boolean,
     val isHistoric: Boolean,
 )
+
+/** A custom notification may have no text extras; keep its real identity without inventing preview content. */
+private fun genericHubNotice(
+    sbn: StatusBarNotification,
+    appName: String,
+    id: String,
+    kind: HubMessageKind,
+): List<ConversationMessage> =
+    if (kind != HubMessageKind.Notification) {
+        emptyList()
+    } else {
+        listOf(
+            ConversationMessage(
+                id = "notice:${sbn.key}",
+                conversationId = id,
+                notificationKey = sbn.key,
+                packageName = sbn.packageName,
+                appName = appName,
+                text = "",
+                timestamp = sbn.postTime,
+                senderName = null,
+                isOutgoing = false,
+            ),
+        )
+    }

@@ -1,11 +1,12 @@
 package io.github.aimindseye.tenseven.conversations
 
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import io.github.aimindseye.tenseven.model.HubMessageKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class ConversationStateTest {
     private fun message(
@@ -34,7 +35,7 @@ class ConversationStateTest {
                 messages = messages.toList(),
                 contentIntent = null,
                 replyAction = null,
-                isEmail = email,
+                kind = if (email) HubMessageKind.Email else HubMessageKind.Message,
             )
         return HubConversation(id, name, listOf(n), messages.toList())
     }
@@ -92,6 +93,7 @@ class ConversationStateTest {
         val bo = conversation("b", "Bo", message("b", "invoice", 100), email = true)
         val all = listOf(ann, bo)
         val state = ConversationState.EMPTY.markRead("a", 100)
+
         fun ids(filter: ConversationFilter) = ConversationView.apply(all, filter, state, now = 0).map { it.id }
         assertEquals(listOf("a", "b"), ids(ConversationFilter()))
         assertEquals(listOf("a"), ids(ConversationFilter(person = "ann l")))
@@ -118,8 +120,10 @@ class ConversationStateTest {
         val rows = listOf(ann, bo)
         val state = ConversationState.EMPTY.snooze("a", 1000).snooze("b", 2000)
         for (now in listOf(500L, 1000L, 2000L)) {
-            assertEquals(ConversationView.apply(rows, ConversationFilter(snoozed = true), state, now).size,
-                ConversationView.snoozedCount(rows, state, now))
+            assertEquals(
+                ConversationView.apply(rows, ConversationFilter(snoozed = true), state, now).size,
+                ConversationView.snoozedCount(rows, state, now),
+            )
         }
         assertEquals(1, ConversationView.snoozedCount(rows, state.wake("a"), 500L))
         assertEquals(1, ConversationView.snoozedCount(listOf(ann), state, 500L))
@@ -128,6 +132,7 @@ class ConversationStateTest {
     @Test
     fun tomorrowMorningIsTheNextEightAm() {
         val zone = ZoneId.of("America/New_York")
+
         fun at(h: Int) = ZonedDateTime.of(2026, 10, 30, h, 15, 0, 0, zone).toInstant().toEpochMilli()
         val eightNextDay = ZonedDateTime.of(2026, 10, 31, 8, 0, 0, 0, zone).toInstant().toEpochMilli()
         val eightToday = ZonedDateTime.of(2026, 10, 30, 8, 0, 0, 0, zone).toInstant().toEpochMilli()

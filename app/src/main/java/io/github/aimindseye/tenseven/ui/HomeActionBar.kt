@@ -454,3 +454,25 @@ internal fun quickSlotFallbackLabel(token: String): String =
         QuickBar.CAMERA -> t("camera_not_installed")
         else -> t("app_not_installed")
     }
+
+/** Role routing shared by the bar; presentation never invents an app record for Camera or Hub. */
+internal class QuickSlotActions(
+    val command: () -> Unit,
+    val apps: () -> Unit,
+    val hub: () -> Unit,
+    val camera: () -> Unit,
+    val launch: (AppEntry) -> Unit,
+)
+
+internal fun activateQuickSlot(
+    slot: QuickSlot,
+    actions: QuickSlotActions,
+) {
+    when (slot.token) {
+        QuickBar.COMMAND -> actions.command()
+        QuickBar.ALL_APPS -> actions.apps()
+        QuickBar.HUB -> actions.hub()
+        QuickBar.CAMERA -> actions.camera()
+        else -> slot.app?.let(actions.launch)
+    }
+}

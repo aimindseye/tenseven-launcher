@@ -79,6 +79,7 @@ import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import io.github.aimindseye.tenseven.platform.openHubSource
 import io.github.aimindseye.tenseven.tasks.ReminderPolicy
 import io.github.aimindseye.tenseven.tasks.TaskRecord
 import io.github.aimindseye.tenseven.tasks.TaskRepository
@@ -89,6 +90,7 @@ internal class HubConversationsUi(
     val accessGranted: Boolean,
     /** False only when the listener is unavailable on the installed device. */
     val canAllowAccess: Boolean = true,
+    /** -1 means automatic sources; zero means an empty manual selection. */
     val enabledAppCount: Int,
     val onChooseApps: () -> Unit,
     val deviceLocked: Boolean,
@@ -180,19 +182,7 @@ internal fun LazyListScope.hubConversationItems(ui: HubConversationsUi) {
         return
     }
     conversationItems(visible.take(MAX_CONVERSATIONS), key = { "conversation:" + it.id }) { conversation ->
-        ConversationRow(
-            conversation = conversation,
-            locked = ui.deviceLocked,
-            unread = ui.state.unreadCount(conversation),
-            snoozed = ui.filter.snoozed,
-            onOpen = { ui.onOpen(conversation) },
-            onReply = { text -> ui.onReply(conversation, text) },
-            onMarkRead = { ui.onMarkRead(conversation) },
-            onSnooze = { until -> ui.onSnooze(conversation, until) },
-            onWake = { ui.onWake(conversation) },
-            onRemind = { whenAt -> ui.onRemind(conversation, whenAt) },
-            onCustomRemind = { ui.onCustomRemind(conversation) },
-        )
+        ConversationRow(conversation, ui)
     }
 }
 
@@ -320,13 +310,14 @@ private fun IconHubFilterButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val color = MaterialTheme.colorScheme.onSurface
     Column(
         modifier =
             modifier
-                .clip(RoundedCornerShape(7.dp))
-                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                .sableFocusRing()
+                .border(
+                    if (selected) 1.dp else 0.dp,
+                    if (selected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
+                ).sableFocusRing()
                 .clickable(onClick = onClick)
                 .semantics {
                     contentDescription =
@@ -377,48 +368,15 @@ private fun IconHubFilterButton(
 }
 
 @Composable
-private fun HubActionIcon(
-    label: String,
-    glyph: List<String>,
-    showLabel: Boolean = false,
-    onClick: () -> Unit,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.sableFocusRing().semantics { contentDescription = label },
-        contentPadding =
-            androidx.compose.foundation.layout
-                .PaddingValues(horizontal = 12.dp, vertical = 7.dp),
-    ) {
-        LineIcon(paths = glyph, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface)
-        if (showLabel) {
-            Spacer(Modifier.width(6.dp))
-            Text(label, color = MaterialTheme.colorScheme.onSurface)
-        }
-    }
-}
-
-@Composable
 private fun ConversationRow(
     conversation: HubConversation,
-    locked: Boolean,
-    unread: Int,
-    snoozed: Boolean,
-    onOpen: () -> Unit,
-    onReply: (String) -> Boolean,
-    onMarkRead: () -> Unit,
-    onSnooze: (Long) -> Unit,
-    onWake: () -> Unit,
-    onRemind: (Long?) -> Unit,
-    onCustomRemind: () -> Unit,
+    ui: HubConversationsUi,
 ) {
-    var expanded by remember(conversation.id) { mutableStateOf(false) }
-    var replying by remember(conversation.id) { mutableStateOf(false) }
-    var draft by remember(conversation.id) { mutableStateOf("") }
-    var failed by remember { mutableStateOf(false) }
-    var remindMenu by remember(conversation.id) { mutableStateOf(false) }
+    val locked = ui.deviceLocked
+    val unread = ui.state.unreadCount(conversation)
+    val selectRow = LocalHubRowSelection.current
+    val rowFocus = remember(conversation.id) { FocusRequester() }
     val preview = conversationPreview(conversation, locked, you = stringResource(R.string.hub_you))
-    val canReply = !locked && conversation.replyTarget != null
     val latestAt = conversation.latestMessage?.timestamp ?: conversation.latestNotification.postedAt
     val whenText = DateUtils.getRelativeTimeSpanString(latestAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
     val source = conversation.latestNotification.appName
@@ -437,22 +395,12 @@ private fun ConversationRow(
             }
         }
 
-    fun send() {
-        if (draft.isBlank()) return
-        failed = !onReply(draft)
-        if (!failed) {
-            draft = ""
-            replying = false
-        }
-    }
-
     HubContrastTheme {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)),
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             Row(
                 modifier =
@@ -467,12 +415,16 @@ private fun ConversationRow(
                                 }
 
                                 event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_M && unread > 0 -> {
-                                    onMarkRead()
+                                    ui.onMarkRead(conversation)
                                     true
                                 }
 
                                 event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_S -> {
-                                    if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+                                    if (ui.filter.snoozed) {
+                                        ui.onWake(conversation)
+                                    } else {
+                                        ui.onSnooze(conversation, System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+                                    }
                                     true
                                 }
 
@@ -480,8 +432,9 @@ private fun ConversationRow(
                                     false
                                 }
                             }
-                        }.sableFocusRing()
-                        .clickable { expanded = !expanded }
+                        }.focusRequester(rowFocus)
+                        .sableFocusRing()
+                        .clickable { selectRow(conversation.id, rowFocus) }
                         .padding(horizontal = 4.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -538,86 +491,6 @@ private fun ConversationRow(
                     )
                 }
             }
-            if (expanded) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(start = 40.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    HubActionIcon("Open in source app", LineIconPaths.EXTERNAL, onClick = onOpen)
-                    if (canReply) {
-                        HubActionIcon("Reply", LineIconPaths.REPLY) { replying = !replying }
-                    }
-                    if (unread > 0) {
-                        HubActionIcon("Mark read", LineIconPaths.CHECK, onClick = onMarkRead)
-                    }
-                    HubActionIcon("Remind", TablerGlyphPaths.BY_NAME["clock"].orEmpty(), showLabel = true) { remindMenu = true }
-                    HubActionIcon(
-                        if (snoozed) "Show now" else "Snooze 1h",
-                        TablerGlyphPaths.BY_NAME["clock"].orEmpty(),
-                        showLabel = true,
-                    ) {
-                        if (snoozed) onWake() else onSnooze(System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
-                    }
-                }
-                if (replying && canReply) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        OutlinedTextField(
-                            value = draft,
-                            onValueChange = {
-                                draft = it
-                                failed = false
-                            },
-                            modifier = Modifier.weight(1f).sableFocusRing(),
-                            singleLine = true,
-                            isError = failed,
-                            placeholder = { Text(stringResource(R.string.hub_reply_hint)) },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(onSend = { send() }),
-                        )
-                        OutlinedButton(
-                            onClick = ::send,
-                            enabled = draft.isNotBlank(),
-                            modifier = Modifier.sableFocusRing(),
-                        ) {
-                            Text(stringResource(R.string.hub_send))
-                        }
-                    }
-                    if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)
-                }
-            }
-            if (remindMenu) {
-                val zone = java.time.ZoneId.systemDefault()
-                AlertDialog(
-                    onDismissRequest = { remindMenu = false },
-                    title = { Text("TenSeven Remind") },
-                    text = { Text("Save a local follow-up. Only app identity is retained; message text is not copied.") },
-                    confirmButton = {
-                        Column {
-                            listOf("Later today", "This evening", "Tomorrow morning", "Until complete").forEach { choice ->
-                                TextButton(onClick = {
-                                    onRemind(
-                                        io.github.aimindseye.tenseven.tasks.TaskSchedule
-                                            .preset(choice, java.time.Instant.now(), zone),
-                                    )
-                                    remindMenu = false
-                                }) { Text(choice) }
-                            }
-                            TextButton(onClick = {
-                                remindMenu = false
-                                onCustomRemind()
-                            }) { Text("Choose date and time…") }
-                        }
-                    },
-                    dismissButton = { TextButton(onClick = { remindMenu = false }) { Text("Cancel") } },
-                )
-            }
             Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
         }
     }
@@ -655,7 +528,7 @@ internal fun rememberHubConversationsUi(
             )
         }
     var sourcePackage by remember { mutableStateOf<String?>(null) }
-    val enabledAppCount = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps().size }
+    val enabledAppCount = remember(refreshGeneration) { hubSourceCount(context) }
     val state = remember(refreshGeneration, revision, accessGranted) { ConversationHub.state() }
     val now = rememberHubTime(state, conversations)
     return remember(
@@ -721,7 +594,7 @@ internal fun rememberHubConversationsUi(
                 }
             },
             onOpen = { conversation ->
-                if (!ConversationHub.open(context, conversation.openTarget)) onOpenFallback()
+                openHubSource(context, conversation, onOpenFallback)
             },
             onReply = { conversation, text -> ConversationHub.reply(context, conversation, text) },
             onAllowAccess = {
@@ -761,4 +634,12 @@ private fun rememberHubTime(
         }
     }
     return now
+}
+
+private fun hubSourceCount(context: android.content.Context): Int {
+    val policy =
+        io.github.aimindseye.tenseven.platform
+            .HubSourceRepository(context)
+            .policy()
+    return if (policy.automatic) -1 else policy.selected.size
 }

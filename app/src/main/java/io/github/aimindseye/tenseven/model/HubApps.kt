@@ -1,9 +1,8 @@
 package io.github.aimindseye.tenseven.model
 
 /**
- * Explicitly selected notification-source apps. Android's notification-listener grant does not
- * imply consent to display any installed app in Hub. Empty/missing selection is intentionally
- * fail-closed, including on upgrades from the former "excluded apps" denylist.
+ * Helpers for optional manual source selection and installed-app filter rows.
+ * Automatic notification delivery is governed by HubSourcePolicy; manual mode stays fail-closed.
  */
 object HubApps {
     fun isIncluded(

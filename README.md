@@ -49,8 +49,10 @@ See [release notes](docs/releases/1.0.0.md), [build and publish commands](docs/B
 
 No root or platform signature is required. The launcher has no Internet permission.
 Basic app launching and recent-app cards work without notification access. Enable Android
-notification access for TenSeven to use Hub and media/notification summaries; select the
-apps contributing to Hub in Hub settings. Calendar access and calendar selection are separate.
+notification access for TenSeven to use Hub and media/notification summaries. The upcoming
+2.0 Hub automatically includes Android-delivered notifications, with optional app filters or
+a manual selection in Hub settings. Its action panel uses actions supplied by each notification;
+message type alone cannot enable Reply All or Forward. Calendar access and calendar selection are separate.
 Usage access helps observe app launches outside the launcher. Work and Private Space data
 remain subject to Android's profile boundaries.
 

@@ -1,22 +1,22 @@
 package io.github.aimindseye.tenseven.platform
 
 import android.content.Context
-import androidx.core.content.edit
 import android.content.SharedPreferences
-import io.github.aimindseye.tenseven.model.CustomTheme
-import io.github.aimindseye.tenseven.model.CustomThemes
+import androidx.core.content.edit
+import io.github.aimindseye.tenseven.model.BackupValue
 import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
 import io.github.aimindseye.tenseven.model.Bb7Scrim
-import io.github.aimindseye.tenseven.model.BackupValue
+import io.github.aimindseye.tenseven.model.CustomTheme
+import io.github.aimindseye.tenseven.model.CustomThemes
 import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeDisplayPolicy
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.model.LauncherBackup
 import io.github.aimindseye.tenseven.model.ThemePresets
 import io.github.aimindseye.tenseven.model.WallpaperSets
-import io.github.aimindseye.tenseven.model.LauncherBackup
 import io.github.aimindseye.tenseven.model.WidgetList
 
 /**
@@ -32,6 +32,7 @@ import io.github.aimindseye.tenseven.model.WidgetList
 class StartStateRepository(
     context: Context,
 ) {
+    private val hubSources = HubSourceRepository(context)
     private val preferences =
         context.applicationContext.getSharedPreferences(
             PREFERENCES_NAME,
@@ -39,14 +40,15 @@ class StartStateRepository(
         )
 
     fun loadFrameSettings(): io.github.aimindseye.tenseven.frames.FrameSettings =
-        io.github.aimindseye.tenseven.frames.FrameSettings(
-            liveSummaries = preferences.getBoolean("frames_live", true),
-            newMessages = preferences.getBoolean("frames_messages", true),
-            snapshots = preferences.getBoolean("frames_snapshots", true),
-            openApps = preferences.getBoolean("frames_open", true),
-            rememberReturnedApps = preferences.getBoolean("frames_recents", true),
-            maximum = preferences.getInt("frames_maximum", 8),
-        ).normalized()
+        io.github.aimindseye.tenseven.frames
+            .FrameSettings(
+                liveSummaries = preferences.getBoolean("frames_live", true),
+                newMessages = preferences.getBoolean("frames_messages", true),
+                snapshots = preferences.getBoolean("frames_snapshots", true),
+                openApps = preferences.getBoolean("frames_open", true),
+                rememberReturnedApps = preferences.getBoolean("frames_recents", true),
+                maximum = preferences.getInt("frames_maximum", 8),
+            ).normalized()
 
     fun saveFrameSettings(value: io.github.aimindseye.tenseven.frames.FrameSettings) {
         val settings = value.normalized()
@@ -60,12 +62,19 @@ class StartStateRepository(
         }
     }
 
-    fun loadFrameDismissals(): Map<String, Long> = io.github.aimindseye.tenseven.frames.FrameDismissals.decode(
-        preferences.getString("frames_dismissed", null),
-    )
+    fun loadFrameDismissals(): Map<String, Long> =
+        io.github.aimindseye.tenseven.frames.FrameDismissals.decode(
+            preferences.getString("frames_dismissed", null),
+        )
 
     fun saveFrameDismissals(value: Map<String, Long>) {
-        preferences.edit { putString("frames_dismissed", io.github.aimindseye.tenseven.frames.FrameDismissals.encode(value)) }
+        preferences.edit {
+            putString(
+                "frames_dismissed",
+                io.github.aimindseye.tenseven.frames.FrameDismissals
+                    .encode(value),
+            )
+        }
     }
 
     fun loadFavoriteKeys(): Set<String> {
@@ -82,8 +91,7 @@ class StartStateRepository(
             .getStringSet(
                 KEY_PINNED_APPS_LEGACY,
                 emptySet(),
-            )
-            .orEmpty()
+            ).orEmpty()
             .toSet()
     }
 
@@ -93,8 +101,7 @@ class StartStateRepository(
             .putStringSet(
                 KEY_FAVORITE_APPS,
                 keys.toSet(),
-            )
-            .remove(KEY_PINNED_APPS_LEGACY)
+            ).remove(KEY_PINNED_APPS_LEGACY)
             .apply()
     }
 
@@ -112,8 +119,7 @@ class StartStateRepository(
             .getStringSet(
                 KEY_START_TILES,
                 emptySet(),
-            )
-            .orEmpty()
+            ).orEmpty()
             .toSet()
     }
 
@@ -123,8 +129,7 @@ class StartStateRepository(
             .putStringSet(
                 KEY_START_TILES,
                 keys.toSet(),
-            )
-            .apply()
+            ).apply()
     }
 
     /**
@@ -239,9 +244,11 @@ class StartStateRepository(
     fun loadIconPack(): String? = preferences.getString(KEY_ICON_PACK, null)?.takeIf { it.isNotBlank() }
 
     fun saveIconPack(packageName: String?) {
-        preferences.edit().apply {
-            if (packageName.isNullOrBlank()) remove(KEY_ICON_PACK) else putString(KEY_ICON_PACK, packageName)
-        }.apply()
+        preferences
+            .edit()
+            .apply {
+                if (packageName.isNullOrBlank()) remove(KEY_ICON_PACK) else putString(KEY_ICON_PACK, packageName)
+            }.apply()
     }
 
     /** Original installed icons by default; Tabler-derived TenSeven glyphs are opt-in. */
@@ -261,8 +268,7 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_TYPE_TO_SEARCH, if (enabled) 1 else 0).apply()
     }
 
-    fun loadBb7IconSize(): Bb7IconSize =
-        Bb7IconSize.fromStable(preferences.getInt(KEY_BB7_ICON_SIZE, Bb7IconSize.DEFAULT.stable))
+    fun loadBb7IconSize(): Bb7IconSize = Bb7IconSize.fromStable(preferences.getInt(KEY_BB7_ICON_SIZE, Bb7IconSize.DEFAULT.stable))
 
     fun saveBb7IconSize(size: Bb7IconSize) {
         preferences.edit().putInt(KEY_BB7_ICON_SIZE, size.stable).apply()
@@ -312,14 +318,11 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_GRID_LABELS, if (shown) 1 else 0).apply()
     }
 
-    /**
-     * Only explicitly opted-in apps may feed Hub and lock-layer badges. Old denylist values
-     * must NOT be converted into an all-apps grant; users select their sources again.
-     */
-    fun loadHubEnabledApps(): Set<String> = preferences.getStringSet(KEY_HUB_ENABLED, null).orEmpty().toSet()
+    /** Compatibility view of automatic observed sources or the optional saved manual selection. */
+    fun loadHubEnabledApps(): Set<String> = hubSources.enabledPackages()
 
     fun saveHubEnabledApps(packages: Set<String>) {
-        preferences.edit().putStringSet(KEY_HUB_ENABLED, packages.toSet()).apply()
+        hubSources.saveManual(packages)
     }
 
     /** Visibility is independent per selected home style, including an empty dial set. */
@@ -329,38 +332,59 @@ class StartStateRepository(
                 ?: HomeDisplayPolicy.DEFAULT_DIALS,
         )
 
-    fun saveHomeDials(style: HomeStyle, selected: Set<String>) {
-        preferences.edit().putStringSet(
-            HomeDisplayPolicy.dialPreference(style), HomeDisplayPolicy.normalizedDials(selected),
-        ).apply()
+    fun saveHomeDials(
+        style: HomeStyle,
+        selected: Set<String>,
+    ) {
+        preferences
+            .edit()
+            .putStringSet(
+                HomeDisplayPolicy.dialPreference(style),
+                HomeDisplayPolicy.normalizedDials(selected),
+            ).apply()
     }
 
-    fun loadHomeNotificationStrip(style: HomeStyle): Boolean =
-        preferences.getInt(HomeDisplayPolicy.stripPreference(style), 1) != 0
+    fun loadHomeNotificationStrip(style: HomeStyle): Boolean = preferences.getInt(HomeDisplayPolicy.stripPreference(style), 1) != 0
 
-    fun saveHomeNotificationStrip(style: HomeStyle, enabled: Boolean) {
+    fun saveHomeNotificationStrip(
+        style: HomeStyle,
+        enabled: Boolean,
+    ) {
         preferences.edit().putInt(HomeDisplayPolicy.stripPreference(style), if (enabled) 1 else 0).apply()
     }
 
     fun loadHomeNotificationExpanded(style: HomeStyle): Boolean =
         preferences.getInt(HomeDisplayPolicy.stripExpandedPreference(style), 0) != 0
 
-    fun saveHomeNotificationExpanded(style: HomeStyle, expanded: Boolean) {
+    fun saveHomeNotificationExpanded(
+        style: HomeStyle,
+        expanded: Boolean,
+    ) {
         preferences.edit().putInt(HomeDisplayPolicy.stripExpandedPreference(style), if (expanded) 1 else 0).apply()
     }
 
     /** null selects all visible calendars; empty selects none. IDs stay on-device (never backed up). */
     fun loadHubSelectedCalendarIds(): Set<Long>? =
         if (preferences.contains(KEY_HUB_SELECTED_CALENDARS)) {
-            preferences.getStringSet(KEY_HUB_SELECTED_CALENDARS, emptySet())
-                .orEmpty().mapNotNull { it.toLongOrNull() }.toSet()
-        } else null
+            preferences
+                .getStringSet(KEY_HUB_SELECTED_CALENDARS, emptySet())
+                .orEmpty()
+                .mapNotNull { it.toLongOrNull() }
+                .toSet()
+        } else {
+            null
+        }
 
     fun saveHubSelectedCalendarIds(ids: Set<Long>?) {
-        preferences.edit().apply {
-            if (ids == null) remove(KEY_HUB_SELECTED_CALENDARS)
-            else putStringSet(KEY_HUB_SELECTED_CALENDARS, ids.map { it.toString() }.toSet())
-        }.apply()
+        preferences
+            .edit()
+            .apply {
+                if (ids == null) {
+                    remove(KEY_HUB_SELECTED_CALENDARS)
+                } else {
+                    putStringSet(KEY_HUB_SELECTED_CALENDARS, ids.map { it.toString() }.toSet())
+                }
+            }.apply()
     }
 
     /** Calendar Peek is optional: never read CalendarProvider until the user enables this. */
@@ -394,11 +418,13 @@ class StartStateRepository(
         mode: String?,
         accent: String?,
     ) {
-        preferences.edit().apply {
-            if (mode == null) remove(KEY_APPEARANCE_MODE) else putString(KEY_APPEARANCE_MODE, mode)
-            if (accent == null) remove(KEY_APPEARANCE_ACCENT) else putString(KEY_APPEARANCE_ACCENT, accent)
-            remove(KEY_APPEARANCE_CUSTOM)
-        }.apply()
+        preferences
+            .edit()
+            .apply {
+                if (mode == null) remove(KEY_APPEARANCE_MODE) else putString(KEY_APPEARANCE_MODE, mode)
+                if (accent == null) remove(KEY_APPEARANCE_ACCENT) else putString(KEY_APPEARANCE_ACCENT, accent)
+                remove(KEY_APPEARANCE_CUSTOM)
+            }.apply()
     }
 
     /** The imported themes (a JSON array, see [CustomThemes.formatStored]); included in a backup. */
@@ -413,7 +439,8 @@ class StartStateRepository(
 
     /** Uses the imported [theme]: its mode, the "custom" accent, and its id. */
     fun saveActiveCustomTheme(theme: CustomTheme) {
-        preferences.edit()
+        preferences
+            .edit()
             .putString(KEY_APPEARANCE_MODE, theme.mode)
             .putString(KEY_APPEARANCE_ACCENT, CustomThemes.ACCENT_VALUE)
             .putString(KEY_APPEARANCE_CUSTOM, theme.id)
@@ -424,7 +451,11 @@ class StartStateRepository(
     fun onAppearanceChanged(listener: () -> Unit): () -> Unit {
         val callback =
             SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                if (key == KEY_APPEARANCE_MODE || key == KEY_APPEARANCE_ACCENT || key == KEY_APPEARANCE_CUSTOM || key == KEY_CUSTOM_THEMES) listener()
+                if (key == KEY_APPEARANCE_MODE || key == KEY_APPEARANCE_ACCENT || key == KEY_APPEARANCE_CUSTOM ||
+                    key == KEY_CUSTOM_THEMES
+                ) {
+                    listener()
+                }
             }
         preferences.registerOnSharedPreferenceChangeListener(callback)
         return { preferences.unregisterOnSharedPreferenceChangeListener(callback) }
@@ -449,18 +480,20 @@ class StartStateRepository(
 
     /** Replaces every backed-up setting with [settings]: keys the file lacks go back to their defaults. */
     fun restoreSettings(settings: Map<String, BackupValue>) {
-        preferences.edit().apply {
-            LauncherBackup.keys.forEach { remove(it) }
-            settings.forEach { (key, value) ->
-                if (key in LauncherBackup.keys) {
-                    when (value) {
-                        is BackupValue.Text -> putString(key, value.value)
-                        is BackupValue.Number -> putInt(key, value.value)
-                        is BackupValue.Items -> putStringSet(key, value.values)
+        preferences
+            .edit()
+            .apply {
+                LauncherBackup.keys.forEach { remove(it) }
+                settings.forEach { (key, value) ->
+                    if (key in LauncherBackup.keys) {
+                        when (value) {
+                            is BackupValue.Text -> putString(key, value.value)
+                            is BackupValue.Number -> putInt(key, value.value)
+                            is BackupValue.Items -> putStringSet(key, value.values)
+                        }
                     }
                 }
-            }
-        }.apply()
+            }.apply()
     }
 
     private fun loadOrdered(key: String): List<String>? =
@@ -522,6 +555,7 @@ class StartStateRepository(
         const val KEY_CUSTOM_THEMES = "custom_themes"
         const val KEY_WIDGET_IDS = "widget_ids"
         const val KEY_GLANCE_WIDGETS = "glance_widgets"
+
         // v2: the BB10 Home shows the status dials by default; sets saved by the
         // three-page Home hid them without the user choosing, so they are not read.
         const val KEY_HOME_HIDDEN_SECTIONS = "home_hidden_sections_v2"

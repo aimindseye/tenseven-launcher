@@ -39,7 +39,7 @@ internal val SableTilePalette =
 // Guidelines PDF has the exact tokens. The pages follow Android's Dark theme and the
 // Sable accent: dark is the BB10 look, light keeps the layout on light surfaces, and the
 // focus highlight is the accent (BB10 blue for the default Sable Blue).
-internal val Bb10DefaultBlue = Color(0xFF00A8DF)
+internal val Bb10DefaultBlue = Color(0xFF2E9BD6)
 
 /** Start's page colours for one Dark theme state and accent. */
 @Immutable
@@ -72,11 +72,11 @@ internal fun startPalette(
             background = Color.Black,
             card = Color(0xFF141414),
             tile = Color(0xFF1C1C1C),
-            line = Color(0xFF2A2A2A),
+            line = Bb10DefaultLine,
             barTop = Color(0xFF1C1C1C),
             barBottom = Color.Black,
             text = Color.White,
-            muted = Color(0xFF9E9E9E),
+            muted = Bb10DefaultMuted,
             dim = Color(0xFF5E5E5E),
         )
     } else {
@@ -206,7 +206,13 @@ internal fun Bb10Theme(
                     onSurfaceVariant = palette.muted,
                     outlineVariant = palette.line,
                 ),
-            typography = MaterialTheme.typography,
+            typography =
+                if (dark && appearance.accent == AccentPreset.Blue && appearance.custom == null) {
+                    io.github.aimindseye.tenseven.design
+                        .blackBerryTypography(MaterialTheme.typography)
+                } else {
+                    MaterialTheme.typography
+                },
             shapes = MaterialTheme.shapes,
             content = content,
         )
@@ -214,3 +220,6 @@ internal fun Bb10Theme(
 }
 
 // The width in dp the app grid has: the screen width less the grid's padding on both sides.
+
+private val Bb10DefaultLine = Color(0xFF262626)
+private val Bb10DefaultMuted = Color(0xFFA6A6A6)
