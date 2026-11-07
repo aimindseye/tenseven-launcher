@@ -6,7 +6,7 @@
 <title>TenSeven BB10 device design review</title>
 <style>
 @font-face{font-family:SourceSans;src:url(fonts/SourceSans3-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:SourceSans;src:url(fonts/SourceSans3-Light.woff2);font-weight:300;font-display:swap}@font-face{font-family:SourceSans;src:url(fonts/SourceSans3-Semibold.woff2);font-weight:600;font-display:swap}*{box-sizing:border-box}body{margin:0;background:#e9edf0;color:#14202b;font-family:SourceSans,"Segoe UI",sans-serif}a{color:inherit;text-decoration:none}button,input{font:inherit}svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}h1,h2,h3,p{margin:0}a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #2e9bd6;outline-offset:2px}.review-head{padding:24px 32px;background:#fff;border-bottom:1px solid #c9d2d9}.review-head h1{font-size:29px;font-weight:400}.review-head p{font-size:16px;color:#465866;margin-top:6px}.review-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px 30px;background:#f5f7f8;position:sticky;top:0;z-index:20}.review-nav a{padding:7px 12px;border:1px solid #becad3;border-radius:3px;background:white;font-size:14px}.pages{max-width:1100px;margin:auto;padding:24px}.screen-page{display:none;scroll-margin-top:130px}.pages:not(:has(.screen-page:target)) .screen-page:first-child,.screen-page:target{display:block}.screen-page>h2{font-size:25px;font-weight:400}.annotation{font-size:16px;line-height:1.45;margin:8px 0 20px;max-width:950px;color:#435766}.pair{display:grid;grid-template-columns:1.14fr 1fr;gap:34px;align-items:start}.device-card>header h3{font-size:20px;font-weight:600}.device-card>header p{color:#526472;font-size:14px;margin:4px 0 14px}.stage{position:relative;height:432px}.stage>.device{position:absolute;left:0;top:0}.device{width:576px;height:576px;transform:scale(.75);transform-origin:top left;box-shadow:0 0 0 1px #30404d;background:#000;color:#fff;--ink:#fff;--muted:#a6a6a6;--blue:#2e9bd6;--raised:#141414;--line:#262626;font-size:18px;overflow:hidden}.device.q25{width:411px;height:411px;transform:scale(.84);font-size:16px}.device-card.q25-card .stage{height:345.24px}.status-bar{height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:#ddd;font-size:13px;border-bottom:1px solid #141414}.device.q25 .status-bar{height:22px;font-size:12px}.screen{height:calc(100% - 24px);position:relative;display:flex;flex-direction:column;overflow:hidden}.device.q25 .screen{height:calc(100% - 22px)}.key-legend{margin:14px 0 0;display:flex;flex-wrap:wrap;gap:6px;font-size:13px;color:#344b5c}.key-legend span{padding:5px 8px;border:1px solid #b9c5ce;border-radius:3px;background:#fff}.hardware-note{font-size:13px;color:#546877;margin-top:8px;line-height:1.4}.app-head{min-height:58px;padding:4px 12px;display:flex;gap:12px;align-items:center;flex-shrink:0;border-bottom:1px solid var(--line)}.app-head>div{flex:1}.app-head h2{font-size:26px;font-weight:400;line-height:1.05}.app-head small{font-size:14px;color:var(--muted)}.icon-button{display:flex;align-items:center;justify-content:center;min-height:48px;min-width:48px}.icon-button span:empty{display:none}.home-header{display:flex;padding:16px 16px 10px;align-items:center;justify-content:space-between}.home-header h2{font-size:24px;font-weight:400}.stats{display:flex;gap:20px;color:var(--muted);font-size:12px;letter-spacing:.5px}.stats b{color:#fff;font-size:15px;font-weight:600;letter-spacing:0}.notification-line{display:flex;gap:15px;padding:0 16px 8px}.notification-line>a{display:flex;align-items:center;gap:5px;min-height:48px;min-width:48px}.notification-line svg{height:20px;width:20px}.frames{padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0}.frame{background:#101010;border:1px solid #303030;display:flex;flex-direction:column;min-height:0}.frame:first-child{outline:2px solid var(--blue);outline-offset:1px}.cover{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:13px;flex:1;min-height:0}.cover svg{color:var(--blue);height:26px;width:26px}.cover strong{font-size:20px;font-weight:600;line-height:1.1}.cover small{font-size:15px;color:var(--muted);line-height:1.2}.frame-footer{display:flex;justify-content:space-between;background:#1c1c1c;padding:6px 10px;font-size:16px;min-height:32px}.home-dock,.action-bar{display:flex;align-items:center;justify-content:space-around;flex-shrink:0;border-top:1px solid var(--line);min-height:60px;margin-top:9px;background:#0a0a0a}.home-dock a,.action-bar a{display:flex;gap:3px;align-items:center;justify-content:center;flex-direction:column;min-width:64px;min-height:48px;font-size:13px}.signature svg{color:var(--blue)}.page-position{display:flex;justify-content:center;align-items:center;gap:8px;min-height:22px}.page-position i,.page-position b{width:5px;height:5px;border-radius:50%;background:#666}.page-position b{background:#fff}.bb7-clock{font-size:58px;font-weight:300;line-height:1;padding:12px 18px}.bb7-clock small{display:block;font-size:16px;margin-top:8px}.screen>.stats{padding:8px 18px}.bb7-open-space{flex:1;display:grid;place-items:center;color:#a6a6a6;font-size:14px;min-height:25px}.bb7-tray{border-top:1px solid var(--line);background:#101010;padding:9px 14px}.tray-head{display:flex;align-items:center;justify-content:space-between;font-size:15px}.tray-head a{display:flex;align-items:center;gap:7px;min-height:36px}.tray-head svg{width:18px}.app-icons{display:flex;justify-content:space-between;margin-top:10px}.app-icons>a{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:14px}.app-icons svg{height:30px;width:30px}.tabs{display:flex;align-items:center;gap:22px;padding:4px 16px;min-height:40px;border-bottom:1px solid var(--line);flex-shrink:0;color:var(--muted);font-size:15px}.chosen{color:#fff;border-bottom:2px solid var(--blue)}.hub-calendar{padding:8px 16px;border-bottom:1px solid var(--line);font-size:15px;flex-shrink:0}.hub-calendar summary{min-height:30px;cursor:pointer;color:#ddd}.hub-calendar summary span{float:right}.hub-calendar p{color:var(--muted);padding:6px 0}.hub-calendar a{color:var(--blue);display:block;padding:5px 0}.message-list{flex:1;min-height:0;overflow:auto}.message-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-bottom:1px solid var(--line);min-height:76px;border-left:3px solid transparent}.message-row.unread{border-left-color:var(--blue)}.message-row>div{flex:1;min-width:0}.message-row strong{font-size:19px;font-weight:400}.message-row.unread strong{font-weight:600}.message-row p{font-size:16px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.message-row time{font-size:12px;color:var(--muted);align-self:flex-start;margin-top:5px;white-space:nowrap}.message-row svg{height:23px;width:23px}.underlay{position:absolute;inset:0;display:flex;flex-direction:column}.panel-scrim{position:absolute;inset:0;background:#0009}.side-panel{position:absolute;top:0;bottom:0;width:70%;z-index:2;background:#080808;border-left:1px solid var(--line);overflow:auto}.side-panel.left{left:0;border-right:1px solid #555}.side-panel.right{right:0;width:59%;border-left:1px solid #555}.panel-title{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:25px;font-weight:400;border-bottom:1px solid var(--line);min-height:60px}.panel-title .icon-button{min-width:40px}.section-label{font-size:12px;letter-spacing:1px;color:var(--muted);padding:14px 14px 4px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;min-height:54px;border-bottom:1px solid var(--line);font-size:17px}.setting-row b{font-weight:400;color:var(--muted);font-size:14px;text-align:right}.selected-message{padding:12px;border:2px solid var(--blue);margin:10px;line-height:1.3}.selected-message small{font-size:11px;color:var(--muted)}.selected-message strong{display:block;font-size:18px;margin:5px 0}.selected-message p{font-size:15px;color:var(--muted)}.option-row{display:flex;align-items:center;gap:15px;min-height:53px;padding:8px 16px;border-bottom:1px solid var(--line)}.lock-time{font-size:92px;font-weight:300;line-height:1;margin:42px 32px 18px}.lock-time small{font-size:18px;display:block;margin-top:12px;color:var(--muted)}.lock-time.compact{font-size:60px;margin:22px 24px 18px}.lock-counts{display:flex;gap:20px;margin:15px 32px}.lock-counts>a{display:flex;align-items:center;gap:9px;min-height:48px}.lock-instruction{margin-top:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px;font-size:18px}.lock-instruction small{font-size:14px;color:var(--muted)}.lock-bottom{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;margin-top:auto}.lock-bottom a{min-height:48px;display:flex;align-items:center;gap:8px;font-size:15px}.lock-peek{margin:0 18px;border:1px solid #3a3a3a;border-radius:10px;overflow:hidden;background:#101010}.lock-peek header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}.lock-peek h2{font-size:26px;font-weight:400}.privacy-label{color:var(--muted);font-size:14px;padding:0 14px 8px}.glance-row{display:flex;align-items:center;gap:12px;min-height:54px;padding:10px 14px;border-top:1px solid var(--line)}.glance-row strong{font-weight:400;flex:1}.glance-row span{font-size:15px;color:var(--muted)}.phone-list{flex:1;min-height:0;overflow:hidden}.call-row{display:flex;align-items:center;gap:15px;padding:14px;min-height:83px;border-bottom:1px solid var(--line)}.call-row>div{flex:1}.call-row strong{font-weight:400;font-size:20px}.call-row small{display:block;color:var(--muted);font-size:15px;margin-top:4px}.call-row time{font-size:13px;color:var(--muted)}.missed>svg{color:#e0463c}.missed strong{color:#e0463c}.dial-number{background:#000;color:#fff;text-align:center;font-size:30px;border:none;border-bottom:1px solid var(--line);height:74px;width:100%;padding:10px}.dialpad{display:grid;grid-template-columns:repeat(3,1fr);flex:1;padding:0 24px;min-height:0}.dialpad>div{display:flex;flex-direction:column;align-items:center;justify-content:center}.dialpad strong{font-weight:400;font-size:35px;line-height:1}.dialpad small{font-size:11px;color:var(--muted);letter-spacing:1px}.call-button{display:flex;justify-content:center;align-items:center;gap:12px;min-height:50px;color:var(--blue);border-top:1px solid var(--line)}.calendar-month summary{padding:6px 16px;font-size:14px;color:var(--muted);cursor:pointer}.calendar-month summary>span{float:right}.month-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:4px 18px 9px;gap:3px 7px;text-align:center;border-bottom:1px solid var(--line)}.weekday{font-size:13px;color:var(--muted);padding:3px}.day{display:flex;align-items:center;justify-content:center;height:48px;position:relative;border-radius:50%;font-size:18px}.day>span{background:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;width:35px;height:35px;z-index:1}.day.busy1{background:conic-gradient(var(--blue) 0deg 65deg,#202020 65deg 360deg)}.day.busy2{background:conic-gradient(var(--blue) 0deg 160deg,#202020 160deg 360deg)}.day.busy3{background:conic-gradient(var(--blue) 0deg 245deg,#202020 245deg 360deg)}.day .busy-ring{position:absolute;width:44px;height:44px;left:50%;top:50%;transform:translate(-50%,-50%);stroke:none}.day.selected>span{background:#2e9bd6;color:#000}.agenda-summary{display:flex;flex-direction:column;gap:5px;padding:12px 18px;flex:1;font-size:16px;min-height:0}.agenda-summary strong{font-weight:400}.agenda-summary span{color:var(--muted);font-size:15px}.week-strip{display:grid;grid-template-columns:repeat(7,1fr);padding:9px 13px;gap:6px;border-bottom:1px solid var(--line)}.week-strip>div{display:flex;flex-direction:column;align-items:center;gap:4px}.week-strip small{color:var(--muted);font-size:13px}.week-strip b{font-size:20px;font-weight:400}.schedule{display:flex;min-height:0;flex:1;padding:8px 14px 0}.time-line{display:flex;flex-direction:column;justify-content:space-between;width:54px;font-size:12px;color:var(--muted);padding-bottom:9px}.time-grid{flex:1;position:relative;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(25% - 1px),#262626 calc(25% - 1px),#262626 25%);border-left:1px solid #363636}.event{position:absolute;left:10px;right:10px;border-left:3px solid var(--blue);padding:8px;background:#171717;line-height:1.15;min-height:45px}.event strong{font-size:17px;font-weight:400}.event small{font-size:13px;color:var(--muted);display:block;margin-top:3px}.event.review{top:38%}.event.plan{bottom:0}.now-line{position:absolute;left:0;right:0;height:1px;background:var(--blue);top:21%}.now-line span{position:absolute;font-size:11px;color:var(--blue);right:3px;top:-17px}.search-field{background:#141414;color:#fff;border:1px solid #555;margin:14px;height:48px;padding:10px}.camera-placeholder{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--muted)}.camera-placeholder svg{height:64px;width:64px}.q25 .app-head{min-height:48px;padding:1px 8px;gap:5px}.q25 .app-head h2{font-size:22px}.q25 .app-head small{font-size:12px}.q25 .app-head .icon-button{min-width:40px}.q25 .home-header{padding:8px 10px 3px}.q25 .home-header h2{font-size:20px}.q25 .stats{font-size:11px;gap:12px;letter-spacing:.2px}.q25 .stats b{font-size:13px}.q25 .notification-line{padding:0 10px 5px;gap:12px}.q25 .notification-line>a{min-height:48px;font-size:13px}.q25 .frames{padding:0 8px;gap:7px}.q25 .cover{padding:9px;gap:4px}.q25 .cover svg{width:21px;height:21px}.q25 .cover strong{font-size:17px}.q25 .cover small{font-size:13px}.q25 .frame-footer{min-height:27px;padding:3px 8px;font-size:14px}.q25 .home-dock,.q25 .action-bar{min-height:50px;margin-top:4px}.q25 .action-bar a{font-size:11px;min-width:48px;min-height:48px}.q25 .action-bar svg{width:21px;height:21px}.q25 .tabs{min-height:32px;gap:18px;font-size:13px;padding:2px 12px}.q25 .hub-calendar{font-size:13px;padding:3px 12px}.q25 .hub-calendar summary{min-height:27px}.q25 .message-row{min-height:59px;padding:7px 8px;gap:8px}.q25 .message-row strong{font-size:16px}.q25 .message-row p{font-size:14px;margin-top:2px}.q25 .message-row time{font-size:11px}.q25 .message-row svg{width:20px;height:20px}.q25 .panel-title{font-size:21px;padding:1px 8px;min-height:49px}.q25 .setting-row{font-size:15px;min-height:49px;padding:5px 10px}.q25 .setting-row b{font-size:12px}.q25 .section-label{padding:8px 10px 3px;font-size:11px}.q25 .side-panel.left{width:76%}.q25 .side-panel.right{width:62%}.q25 .selected-message{padding:7px;margin:7px}.q25 .selected-message small{font-size:11px}.q25 .selected-message strong{font-size:16px;margin:3px 0}.q25 .selected-message p{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q25 .option-row{min-height:48px;padding:5px 12px;gap:10px;font-size:15px}.q25 .option-row svg{width:20px;height:20px}.q25 .lock-time{font-size:72px;margin:29px 24px 10px}.q25 .lock-time small{font-size:15px}.q25 .lock-time.compact{font-size:43px;margin:12px 18px}.q25 .lock-counts{margin:10px 24px}.q25 .lock-instruction{padding:9px;font-size:15px;gap:5px}.q25 .lock-instruction small{font-size:12px}.q25 .lock-bottom{padding:2px 13px}.q25 .lock-bottom a{font-size:13px}.q25 .lock-peek{margin:0 12px}.q25 .lock-peek header{padding:7px 12px}.q25 .lock-peek h2{font-size:22px}.q25 .privacy-label{font-size:12px}.q25 .glance-row{min-height:48px;padding:6px 12px;font-size:14px}.q25 .glance-row span{font-size:12px}.q25 .bb7-clock{font-size:44px;padding:10px 12px 2px}.q25 .bb7-clock small{font-size:14px;margin-top:7px}.q25 .screen>.stats{padding:7px 12px}.q25 .bb7-open-space{font-size:12px}.q25 .bb7-tray{padding:4px 10px 9px}.q25 .app-icons{margin-top:5px}.q25 .app-icons>a{font-size:12px;gap:4px;min-height:48px;min-width:48px}.q25 .app-icons svg{width:24px;height:24px}.q25 .tray-head{font-size:13px}.q25 .call-row{min-height:61px;padding:9px;gap:12px}.q25 .call-row strong{font-size:17px}.q25 .call-row small{font-size:12px}.q25 .call-row time{font-size:11px}.q25 .dial-number{height:54px;font-size:25px}.q25 .dialpad strong{font-size:26px}.q25 .call-button{min-height:48px}.q25 .calendar-month summary{padding:0 12px;font-size:12px}.q25 .month-grid{padding:0 13px 4px;gap:0 7px}.q25 .weekday{font-size:11px;padding:0}.q25 .day{height:48px;font-size:14px}.q25 .day .busy-ring{width:35px;height:35px}.q25 .day>span{height:24px;width:24px}.q25 .calendar-month~.agenda-summary{display:none}.q25 .agenda-summary{padding:6px 12px;gap:1px;font-size:14px}.q25 .agenda-summary span{font-size:12px}.q25 .week-strip{padding:6px 10px}.q25 .week-strip b{font-size:17px}.q25 .week-strip small{font-size:11px}.q25 .schedule{padding:7px 10px 0}.q25 .time-line{font-size:11px;width:44px}.q25 .event{padding:5px;min-height:38px}.q25 .event strong{font-size:14px}.q25 .event small{font-size:11px}.q25 .now-line span{font-size:11px}.bottom-note{font-size:14px;color:#4b6070;padding:16px 0;border-top:1px solid #c7d0d8;margin-top:22px;line-height:1.4}.review-footer{max-width:1040px;margin:20px auto 32px;color:#536775;font-size:14px;padding:0 24px}body:has(#hub-settings:target) .review-nav a[href="#hub-settings"],body:has(#message-options:target) .review-nav a[href="#message-options"]{border-color:#1672a5;background:#e4f3fc}@media(max-width:850px){.pair{grid-template-columns:1fr}.pages{padding:18px}.review-head{padding:18px}.device-card{max-width:450px}.review-nav{position:static;padding:12px}.review-nav a{font-size:13px}.device-card.q25-card{margin-top:20px}}@media(max-width:480px){.device.titan{transform:scale(.56)}.device-card.titan-card .stage{height:322.56px}.device.q25{transform:scale(.78)}.device-card.q25-card .stage{height:320.58px}.pair{gap:20px}}@media print{@page{size:A4 landscape;margin:12mm;@bottom-left{content:"TenSeven BB10 - device design proposal";font-family:SourceSans,sans-serif;font-size:9px;color:#536775}@bottom-right{content:counter(page) " / " counter(pages);font-family:SourceSans,sans-serif;font-size:9px;color:#536775}}body{background:white}.review-head,.review-nav,.review-footer{display:none}.pages{padding:0;max-width:1040px}.screen-page,.pages:not(:has(.screen-page:target)) .screen-page{display:block;break-after:page;padding-top:0}.screen-page>h2{font-size:24px;bookmark-level:1}.device-card h2,.device-card h3{bookmark-level:none}.annotation{font-size:14px;margin:6px 0 13px}.pair{grid-template-columns:1.14fr 1fr;gap:30px}.bottom-note{margin-top:12px;padding:10px 0;font-size:13px}.hardware-note{font-size:12px}.device-card>header p{margin-bottom:9px}.device{print-color-adjust:exact;-webkit-print-color-adjust:exact}.screen-page:last-child{break-after:auto}}
+@font-face{font-family:SourceSans;src:url(fonts/SourceSans3-Light.woff2);font-weight:300;font-display:swap}@font-face{font-family:SourceSans;src:url(fonts/SourceSans3-Semibold.woff2);font-weight:600;font-display:swap}*{box-sizing:border-box}body{margin:0;background:#e9edf0;color:#14202b;font-family:SourceSans,"Segoe UI",sans-serif}a{color:inherit;text-decoration:none}button,input{font:inherit}svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}h1,h2,h3,p{margin:0}a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #2e9bd6;outline-offset:2px}.review-head{padding:24px 32px;background:#fff;border-bottom:1px solid #c9d2d9}.review-head h1{font-size:29px;font-weight:400}.review-head p{font-size:16px;color:#465866;margin-top:6px}.review-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px 30px;background:#f5f7f8;position:sticky;top:0;z-index:20}.review-nav a{padding:7px 12px;border:1px solid #becad3;border-radius:3px;background:white;font-size:14px}.pages{max-width:1100px;margin:auto;padding:24px}.screen-page{display:none;scroll-margin-top:130px}.pages:not(:has(.screen-page:target)) .screen-page:first-child,.screen-page:target{display:block}.screen-page>h2{font-size:25px;font-weight:400}.annotation{font-size:16px;line-height:1.45;margin:8px 0 20px;max-width:950px;color:#435766}.pair{display:grid;grid-template-columns:1.14fr 1fr;gap:34px;align-items:start}.device-card>header h3{font-size:20px;font-weight:600}.device-card>header p{color:#526472;font-size:14px;margin:4px 0 14px}.stage{position:relative;height:432px}.stage>.device{position:absolute;left:0;top:0}.device{width:576px;height:576px;transform:scale(.75);transform-origin:top left;box-shadow:0 0 0 1px #30404d;background:#000;color:#fff;--ink:#fff;--muted:#a6a6a6;--blue:#2e9bd6;--raised:#141414;--line:#262626;font-size:18px;overflow:hidden}.device.q25{width:411px;height:411px;transform:scale(.84);font-size:16px}.device-card.q25-card .stage{height:345.24px}.status-bar{height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:#ddd;font-size:13px;border-bottom:1px solid #141414}.device.q25 .status-bar{height:22px;font-size:12px}.screen{height:calc(100% - 24px);position:relative;display:flex;flex-direction:column;overflow:hidden}.device.q25 .screen{height:calc(100% - 22px)}.key-legend{margin:14px 0 0;display:flex;flex-wrap:wrap;gap:6px;font-size:13px;color:#344b5c}.key-legend span{padding:5px 8px;border:1px solid #b9c5ce;border-radius:3px;background:#fff}.hardware-note{font-size:13px;color:#546877;margin-top:8px;line-height:1.4}.app-head{min-height:58px;padding:4px 12px;display:flex;gap:12px;align-items:center;flex-shrink:0;border-bottom:1px solid var(--line)}.app-head>div{flex:1}.app-head h2{font-size:26px;font-weight:400;line-height:1.05}.app-head small{font-size:14px;color:var(--muted)}.icon-button{display:flex;align-items:center;justify-content:center;min-height:48px;min-width:48px}.icon-button span:empty{display:none}.home-header{display:flex;padding:16px 16px 10px;align-items:center;justify-content:space-between}.home-header h2{font-size:24px;font-weight:400}.stats{display:flex;gap:20px;color:var(--muted);font-size:12px;letter-spacing:.5px}.stats b{color:#fff;font-size:15px;font-weight:600;letter-spacing:0}.notification-line{display:flex;gap:15px;padding:0 16px 8px}.notification-line>a{display:flex;align-items:center;gap:5px;min-height:48px;min-width:48px}.notification-line svg{height:20px;width:20px}.frames{padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0}.frame{background:#101010;border:1px solid #303030;display:flex;flex-direction:column;min-height:0}.frame:first-child{outline:2px solid var(--blue);outline-offset:1px}.cover{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:13px;flex:1;min-height:0}.cover svg{color:var(--blue);height:26px;width:26px}.cover strong{font-size:20px;font-weight:600;line-height:1.1}.cover small{font-size:15px;color:var(--muted);line-height:1.2}.frame-footer{display:flex;justify-content:space-between;background:#1c1c1c;padding:6px 10px;font-size:16px;min-height:32px}.home-dock,.action-bar{display:flex;align-items:center;justify-content:space-around;flex-shrink:0;border-top:1px solid var(--line);min-height:60px;margin-top:9px;background:#0a0a0a}.home-dock a,.action-bar a{display:flex;gap:3px;align-items:center;justify-content:center;flex-direction:column;min-width:64px;min-height:48px;font-size:13px}.signature svg{color:var(--blue)}.page-position{display:flex;justify-content:center;align-items:center;gap:8px;min-height:22px}.page-position i,.page-position b{width:5px;height:5px;border-radius:50%;background:#666}.page-position b{background:#fff}.bb7-clock{font-size:58px;font-weight:300;line-height:1;padding:12px 18px}.bb7-clock small{display:block;font-size:16px;margin-top:8px}.screen>.stats{padding:8px 18px}.bb7-open-space{flex:1;display:grid;place-items:center;color:#a6a6a6;font-size:14px;min-height:25px}.bb7-tray{border-top:1px solid var(--line);background:#101010;padding:9px 14px}.tray-head{display:flex;align-items:center;justify-content:space-between;font-size:15px}.tray-head a{display:flex;align-items:center;gap:7px;min-height:36px}.tray-head svg{width:18px}.app-icons{display:flex;justify-content:space-between;margin-top:10px}.app-icons>a{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:14px}.app-icons svg{height:30px;width:30px}.tabs{display:flex;align-items:center;gap:22px;padding:4px 16px;min-height:40px;border-bottom:1px solid var(--line);flex-shrink:0;color:var(--muted);font-size:15px}.chosen{color:#fff;border-bottom:2px solid var(--blue)}.hub-calendar{padding:8px 16px;border-bottom:1px solid var(--line);font-size:15px;flex-shrink:0}.hub-calendar summary{min-height:30px;cursor:pointer;color:#ddd}.hub-calendar summary span{float:right}.hub-calendar p{color:var(--muted);padding:6px 0}.hub-calendar a{color:var(--blue);display:block;padding:5px 0}.message-list{flex:1;min-height:0;overflow:auto}.message-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-bottom:1px solid var(--line);min-height:76px;border-left:3px solid transparent}.message-row.unread{border-left-color:var(--blue)}.message-row>div{flex:1;min-width:0}.message-row strong{font-size:19px;font-weight:400}.message-row.unread strong{font-weight:600}.message-row p{font-size:16px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.message-row time{font-size:12px;color:var(--muted);align-self:flex-start;margin-top:5px;white-space:nowrap}.message-row svg{height:23px;width:23px}.underlay{position:absolute;inset:0;display:flex;flex-direction:column}.panel-scrim{position:absolute;inset:0;background:#0009}.side-panel{position:absolute;top:0;bottom:0;width:70%;z-index:2;background:#080808;border-left:1px solid var(--line);overflow:auto}.side-panel.left{left:0;border-right:1px solid #555}.side-panel.right{right:0;width:59%;border-left:1px solid #555}.panel-title{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;font-size:25px;font-weight:400;border-bottom:1px solid var(--line);min-height:60px}.panel-title .icon-button{min-width:40px}.section-label{font-size:12px;letter-spacing:1px;color:var(--muted);padding:14px 14px 4px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;min-height:54px;border-bottom:1px solid var(--line);font-size:17px}.setting-row b{font-weight:400;color:var(--muted);font-size:14px;text-align:right}.selected-message{padding:12px;border:2px solid var(--blue);margin:10px;line-height:1.3}.selected-message small{font-size:11px;color:var(--muted)}.selected-message strong{display:block;font-size:18px;margin:5px 0}.selected-message p{font-size:15px;color:var(--muted)}.option-row{display:flex;align-items:center;gap:15px;min-height:53px;padding:8px 16px;border-bottom:1px solid var(--line)}.lock-time{font-size:92px;font-weight:300;line-height:1;margin:42px 32px 18px}.lock-time small{font-size:18px;display:block;margin-top:12px;color:var(--muted)}.lock-time.compact{font-size:60px;margin:22px 24px 18px}.lock-counts{display:flex;gap:20px;margin:15px 32px}.lock-counts>a{display:flex;align-items:center;gap:9px;min-height:48px}.lock-instruction{margin-top:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px;font-size:18px}.lock-instruction small{font-size:14px;color:var(--muted)}.lock-bottom{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;margin-top:auto}.lock-bottom a{min-height:48px;display:flex;align-items:center;gap:8px;font-size:15px}.lock-peek{margin:0 18px;border:1px solid #3a3a3a;border-radius:10px;overflow:hidden;background:#101010}.lock-peek header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}.lock-peek h2{font-size:26px;font-weight:400}.privacy-label{color:var(--muted);font-size:14px;padding:0 14px 8px}.glance-row{display:flex;align-items:center;gap:12px;min-height:54px;padding:10px 14px;border-top:1px solid var(--line)}.glance-row strong{font-weight:400;flex:1}.glance-row span{font-size:15px;color:var(--muted)}.phone-list{flex:1;min-height:0;overflow:hidden}.call-row{display:flex;align-items:center;gap:15px;padding:14px;min-height:83px;border-bottom:1px solid var(--line)}.call-row>div{flex:1}.call-row strong{font-weight:400;font-size:20px}.call-row small{display:block;color:var(--muted);font-size:15px;margin-top:4px}.call-row time{font-size:13px;color:var(--muted)}.missed>svg{color:#e0463c}.missed strong{color:#e0463c}.dial-number{background:#000;color:#fff;text-align:center;font-size:30px;border:none;border-bottom:1px solid var(--line);height:74px;width:100%;padding:10px}.dialpad{display:grid;grid-template-columns:repeat(3,1fr);flex:1;padding:0 24px;min-height:0}.dialpad>div{display:flex;flex-direction:column;align-items:center;justify-content:center}.dialpad strong{font-weight:400;font-size:35px;line-height:1}.dialpad small{font-size:11px;color:var(--muted);letter-spacing:1px}.call-button{display:flex;justify-content:center;align-items:center;gap:12px;min-height:50px;color:var(--blue);border-top:1px solid var(--line)}.calendar-month summary{padding:6px 16px;font-size:14px;color:var(--muted);cursor:pointer}.calendar-month summary>span{float:right}.month-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:4px 18px 9px;gap:3px 7px;text-align:center;border-bottom:1px solid var(--line)}.weekday{font-size:13px;color:var(--muted);padding:3px}.day{display:flex;align-items:center;justify-content:center;height:48px;position:relative;border-radius:50%;font-size:18px}.day>span{background:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;width:35px;height:35px;z-index:1}.day.busy1{background:conic-gradient(var(--blue) 0deg 65deg,#202020 65deg 360deg)}.day.busy2{background:conic-gradient(var(--blue) 0deg 160deg,#202020 160deg 360deg)}.day.busy3{background:conic-gradient(var(--blue) 0deg 245deg,#202020 245deg 360deg)}.day .busy-ring{position:absolute;width:44px;height:44px;left:50%;top:50%;transform:translate(-50%,-50%);stroke:none}.day.selected>span{background:#2e9bd6;color:#000}.agenda-summary{display:flex;flex-direction:column;gap:5px;padding:12px 18px;flex:1;font-size:16px;min-height:0}.agenda-summary strong{font-weight:400}.agenda-summary span{color:var(--muted);font-size:15px}.week-strip{display:grid;grid-template-columns:repeat(7,1fr);padding:9px 13px;gap:6px;border-bottom:1px solid var(--line)}.week-strip>div{display:flex;flex-direction:column;align-items:center;gap:4px}.week-strip small{color:var(--muted);font-size:13px}.week-strip b{font-size:20px;font-weight:400}.schedule{display:flex;min-height:0;flex:1;padding:8px 14px 0}.time-line{display:flex;flex-direction:column;justify-content:space-between;width:54px;font-size:12px;color:var(--muted);padding-bottom:9px}.time-grid{flex:1;position:relative;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(25% - 1px),#262626 calc(25% - 1px),#262626 25%);border-left:1px solid #363636}.event{position:absolute;left:10px;right:10px;border-left:3px solid var(--blue);padding:8px;background:#171717;line-height:1.15;min-height:45px}.event strong{font-size:17px;font-weight:400}.event small{font-size:13px;color:var(--muted);display:block;margin-top:3px}.event.review{top:38%}.event.plan{bottom:0}.now-line{position:absolute;left:0;right:0;height:1px;background:var(--blue);top:21%}.now-line span{position:absolute;font-size:11px;color:var(--blue);right:3px;top:-17px}.search-field{background:#141414;color:#fff;border:1px solid #555;margin:14px;height:48px;padding:10px}.camera-placeholder{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--muted)}.camera-placeholder svg{height:64px;width:64px}.q25 .app-head{min-height:48px;padding:1px 8px;gap:5px}.q25 .app-head h2{font-size:22px}.q25 .app-head small{font-size:12px}.q25 .app-head .icon-button{min-width:40px}.q25 .home-header{padding:8px 10px 3px}.q25 .home-header h2{font-size:20px}.q25 .stats{font-size:11px;gap:12px;letter-spacing:.2px}.q25 .stats b{font-size:13px}.q25 .notification-line{padding:0 10px 5px;gap:12px}.q25 .notification-line>a{min-height:48px;font-size:13px}.q25 .frames{padding:0 8px;gap:7px}.q25 .cover{padding:9px;gap:4px}.q25 .cover svg{width:21px;height:21px}.q25 .cover strong{font-size:17px}.q25 .cover small{font-size:13px}.q25 .frame-footer{min-height:27px;padding:3px 8px;font-size:14px}.q25 .home-dock,.q25 .action-bar{min-height:50px;margin-top:4px}.q25 .action-bar a{font-size:11px;min-width:48px;min-height:48px}.q25 .action-bar svg{width:21px;height:21px}.q25 .tabs{min-height:32px;gap:18px;font-size:13px;padding:2px 12px}.q25 .hub-calendar{font-size:13px;padding:3px 12px}.q25 .hub-calendar summary{min-height:27px}.q25 .message-row{min-height:59px;padding:7px 8px;gap:8px}.q25 .message-row strong{font-size:16px}.q25 .message-row p{font-size:14px;margin-top:2px}.q25 .message-row time{font-size:11px}.q25 .message-row svg{width:20px;height:20px}.q25 .panel-title{font-size:21px;padding:1px 8px;min-height:49px}.q25 .setting-row{font-size:15px;min-height:49px;padding:5px 10px}.q25 .setting-row b{font-size:12px}.q25 .section-label{padding:8px 10px 3px;font-size:11px}.q25 .side-panel.left{width:76%}.q25 .side-panel.right{width:62%}.q25 .selected-message{padding:7px;margin:7px}.q25 .selected-message small{font-size:11px}.q25 .selected-message strong{font-size:16px;margin:3px 0}.q25 .selected-message p{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q25 .option-row{min-height:48px;padding:5px 12px;gap:10px;font-size:15px}.q25 .option-row svg{width:20px;height:20px}.q25 .lock-time{font-size:72px;margin:29px 24px 10px}.q25 .lock-time small{font-size:15px}.q25 .lock-time.compact{font-size:43px;margin:12px 18px}.q25 .lock-counts{margin:10px 24px}.q25 .lock-instruction{padding:9px;font-size:15px;gap:5px}.q25 .lock-instruction small{font-size:12px}.q25 .lock-bottom{padding:2px 13px}.q25 .lock-bottom a{font-size:13px}.q25 .lock-peek{margin:0 12px}.q25 .lock-peek header{padding:7px 12px}.q25 .lock-peek h2{font-size:22px}.q25 .privacy-label{font-size:12px}.q25 .glance-row{min-height:48px;padding:6px 12px;font-size:14px}.q25 .glance-row span{font-size:12px}.q25 .bb7-clock{font-size:44px;padding:10px 12px 2px}.q25 .bb7-clock small{font-size:14px;margin-top:7px}.q25 .screen>.stats{padding:7px 12px}.q25 .bb7-open-space{font-size:12px}.q25 .bb7-tray{padding:4px 10px 9px}.q25 .app-icons{margin-top:5px}.q25 .app-icons>a{font-size:12px;gap:4px;min-height:48px;min-width:48px}.q25 .app-icons svg{width:24px;height:24px}.q25 .tray-head{font-size:13px}.q25 .call-row{min-height:61px;padding:9px;gap:12px}.q25 .call-row strong{font-size:17px}.q25 .call-row small{font-size:12px}.q25 .call-row time{font-size:11px}.q25 .dial-number{height:54px;font-size:25px}.q25 .dialpad strong{font-size:26px}.q25 .call-button{min-height:48px}.q25 .calendar-month summary{padding:0 12px;font-size:12px}.q25 .month-grid{padding:0 13px 4px;gap:0 7px}.q25 .weekday{font-size:11px;padding:0}.q25 .day{height:48px;font-size:14px}.q25 .day .busy-ring{width:35px;height:35px}.q25 .day>span{height:24px;width:24px}.q25 .calendar-month~.agenda-summary{display:none}.q25 .agenda-summary{padding:6px 12px;gap:1px;font-size:14px}.q25 .agenda-summary span{font-size:12px}.q25 .week-strip{padding:6px 10px}.q25 .week-strip b{font-size:17px}.q25 .week-strip small{font-size:11px}.q25 .schedule{padding:7px 10px 0}.q25 .time-line{font-size:11px;width:44px}.q25 .event{padding:5px;min-height:38px}.q25 .event strong{font-size:14px}.q25 .event small{font-size:11px}.q25 .now-line span{font-size:11px}.bottom-note{font-size:14px;color:#4b6070;padding:16px 0;border-top:1px solid #c7d0d8;margin-top:22px;line-height:1.4}.review-footer{max-width:1040px;margin:20px auto 32px;color:#536775;font-size:14px;padding:0 24px}body:has(#hub-settings:target) .review-nav a[href="#hub-settings"],body:has(#message-options:target) .review-nav a[href="#message-options"]{border-color:#1672a5;background:#e4f3fc}.reference-bar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;min-height:60px;padding:0 12px;margin-top:8px;border-top:1px solid var(--line);background:#080808}.reference-leading,.reference-pages,.reference-trailing{display:flex;align-items:center}.reference-bar a{min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;position:relative}.reference-bar a>span{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.reference-bar svg{width:23px;height:23px}.reference-current:after{content:"";height:2px;width:18px;background:var(--blue);position:absolute;bottom:4px}.reference-dot i{width:5px;height:5px;background:#a6a6a6;border-radius:50%}.reference-hub:after{content:"3";position:absolute;top:2px;right:0;background:#2e9bd6;color:#000;border-radius:50%;font-size:11px;width:15px;height:15px;display:flex;align-items:center;justify-content:center}.sample-app-grid{display:grid;grid-template-columns:repeat(3,1fr);flex:1;min-height:0;padding:15px;gap:8px}.sample-app-grid a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:48px;font-size:15px}.sample-app-grid svg{width:30px;height:30px}.rail-clock{font-size:76px;font-weight:300;line-height:1;padding:22px 24px 16px;margin-left:76px}.rail-clock small{display:block;font-size:18px;color:var(--muted);margin-top:10px}.lock-rail-layout{display:flex;gap:12px;padding:0 20px;flex:1;min-height:0}.notification-rail{width:68px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;overflow:auto}.notification-app{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;min-height:72px;width:64px;color:#ddd}.notification-app svg{width:25px;height:25px}.notification-app .source-name{font-size:11px;line-height:1.1}.notification-app b{font-size:15px;font-weight:400}.notification-app.selected{outline:2px solid var(--blue);outline-offset:-3px}.selected-notifications{border-left:2px solid var(--blue);padding:0 0 0 15px;position:relative;flex:1;min-width:0;overflow:visible}.selection-notch{position:absolute;top:calc(var(--source-index)*76px + 20px);left:-12px;width:12px;height:24px;overflow:visible}.source-heading{font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}.notification-detail{padding:7px 0 17px;border-bottom:1px solid #141414}.notification-detail>div{display:flex;gap:12px;justify-content:space-between;align-items:baseline}.notification-detail strong{font-size:20px;font-weight:600}.notification-detail time{font-size:13px;color:var(--muted);white-space:nowrap}.notification-detail p{font-size:17px;line-height:1.35;margin-top:5px;color:#e5e5e5}.rail-empty{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:17px;gap:10px;text-align:center}.rail-empty small{font-size:14px}.hidden-preview{display:flex;flex-direction:column;gap:12px;padding-top:14px}.hidden-preview strong{font-size:22px;font-weight:400}.hidden-preview p{font-size:16px;color:var(--muted)}.lock-hint{font-size:13px;color:var(--muted)}.q25 .reference-bar{min-height:50px;padding:0 6px;margin-top:4px}.q25 .reference-bar svg{height:21px;width:21px}.q25 .rail-clock{font-size:54px;padding:14px 14px 12px;margin-left:68px}.q25 .rail-clock small{font-size:15px;margin-top:8px}.q25 .lock-rail-layout{padding:0 10px;gap:8px}.q25 .notification-rail{width:58px}.q25 .notification-app{width:55px;min-height:60px;gap:1px}.q25 .notification-app svg{width:23px;height:23px}.q25 .notification-app b{font-size:13px}.q25 .selected-notifications{padding-left:10px}.q25 .selection-notch{top:calc(var(--source-index)*64px + 18px)}.q25 .notification-detail strong{font-size:17px}.q25 .notification-detail p{font-size:14px;line-height:1.35}.q25 .notification-detail time{font-size:11px}.q25 .notification-detail{padding:4px 0 12px}.q25 .source-heading{font-size:11px;margin-bottom:7px}.q25 .rail-empty{font-size:15px}.q25 .rail-empty small{font-size:12px}.q25 .hidden-preview strong{font-size:19px}.q25 .hidden-preview p{font-size:14px}.q25 .lock-hint{font-size:11px}.q25 .sample-app-grid{padding:8px;gap:3px}.q25 .sample-app-grid a{font-size:13px;gap:4px}.q25 .sample-app-grid svg{width:25px;height:25px}@media(max-width:850px){.pair{grid-template-columns:1fr}.pages{padding:18px}.review-head{padding:18px}.device-card{max-width:450px}.review-nav{position:static;padding:12px}.review-nav a{font-size:13px}.device-card.q25-card{margin-top:20px}}@media(max-width:480px){.device.titan{transform:scale(.56)}.device-card.titan-card .stage{height:322.56px}.device.q25{transform:scale(.78)}.device-card.q25-card .stage{height:320.58px}.pair{gap:20px}}@media print{@page{size:A4 landscape;margin:12mm;@bottom-left{content:"TenSeven BB10 - device design proposal";font-family:SourceSans,sans-serif;font-size:9px;color:#536775}@bottom-right{content:counter(page) " / " counter(pages);font-family:SourceSans,sans-serif;font-size:9px;color:#536775}}body{background:white}.review-head,.review-nav,.review-footer{display:none}.pages{padding:0;max-width:1040px}.screen-page,.pages:not(:has(.screen-page:target)) .screen-page{display:block;break-after:page;padding-top:0}.screen-page>h2{font-size:24px;bookmark-level:1}.device-card h2,.device-card h3{bookmark-level:none}.annotation{font-size:14px;margin:6px 0 13px}.pair{grid-template-columns:1.14fr 1fr;gap:30px}.bottom-note{margin-top:12px;padding:10px 0;font-size:13px}.hardware-note{font-size:12px}.device-card>header p{margin-bottom:9px}.device{print-color-adjust:exact;-webkit-print-color-adjust:exact}.screen-page:last-child{break-after:auto}}
 </style>
 </head>
 <body>
@@ -22,23 +22,27 @@
 <a href="#message-options">Selected message · right actions</a>
 <a href="#lock">Lock screen</a>
 <a href="#lock-peek">Lock screen · Glance / Peek</a>
+<a href="#lock-peek-email">Lock Peek · Gmail selected</a>
+<a href="#lock-peek-messages">Lock Peek · Messages selected</a>
+<a href="#lock-peek-hidden">Lock Peek · hidden content</a>
 <a href="#phone">Phone · recent calls</a>
 <a href="#phone-keypad">Phone · keypad</a>
 <a href="#calendar">Calendar · busy month</a>
 <a href="#calendar-agenda">Calendar · day / week schedule</a>
 <a href="#command">Command · navigation sample</a>
 <a href="#home-menu">Home menu · touch fallback</a>
+<a href="#apps">App page · lower-bar destination</a>
 <a href="#camera">Camera · handoff sample</a>
 </nav>
 <main class="pages">
 <section class="screen-page" id="home-bb10">
 <h2>BBOS 10 Home</h2>
-<p class="annotation">Titan 2 keeps a configurable Phone / Command / Camera dock. Q25 uses hardware navigation and a small page indicator.</p>
+<p class="annotation">Both devices have the reference-style Hub / page navigation / Camera bar. Titan 2 also retains Phone and Command shortcuts.</p>
 <div class="pair">
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -135,13 +139,40 @@
 </div>
 </a>
 </div>
-<nav class="home-dock" aria-label="Home shortcuts">
+<nav class="reference-bar" aria-label="Home navigation">
+<div class="reference-leading">
+<a class="reference-hub" aria-label="Hub, 3 unread" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub, 3 unread</span>
+</a>
 <a class="" aria-label="Phone" href="#phone">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h4l2 5-3 2a14 14 0 0 0 5 5l2-3 5 2v4c0 2-2 3-4 2C9 18 4 13 3 6c0-2 1-3 3-3Z"/>
 </svg>
 <span>Phone</span>
 </a>
+</div>
+<div class="reference-pages">
+<a class="reference-current" aria-label="Active Frames" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z"/>
+</svg>
+<span>Active Frames</span>
+</a>
+<a class="" aria-label="All apps" href="#apps">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 4h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 11h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 18h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2Z"/>
+</svg>
+<span>All apps</span>
+</a>
+<a href="#apps" aria-label="App page 1" class="reference-dot">
+<i>
+</i>
+</a>
+</div>
+<div class="reference-trailing">
 <a class="" aria-label="Command" href="#command">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14m5 12 6 6"/>
@@ -154,6 +185,7 @@
 </svg>
 <span>Camera</span>
 </a>
+</div>
 </nav>
 </div>
 </div>
@@ -168,7 +200,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -265,14 +297,42 @@
 </div>
 </a>
 </div>
-<div class="page-position">
-<b>
-</b>
-<i>
-</i>
-<i>
-</i>
+<nav class="reference-bar" aria-label="Home navigation">
+<div class="reference-leading">
+<a class="reference-hub" aria-label="Hub, 3 unread" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub, 3 unread</span>
+</a>
 </div>
+<div class="reference-pages">
+<a class="reference-current" aria-label="Active Frames" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z"/>
+</svg>
+<span>Active Frames</span>
+</a>
+<a class="" aria-label="All apps" href="#apps">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 4h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 11h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 18h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2Z"/>
+</svg>
+<span>All apps</span>
+</a>
+<a href="#apps" aria-label="App page 1" class="reference-dot">
+<i>
+</i>
+</a>
+</div>
+<div class="reference-trailing">
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</nav>
 </div>
 </div>
 </div>
@@ -290,12 +350,12 @@
 </section>
 <section class="screen-page" id="home-bb7">
 <h2>BBOS 7 Home</h2>
-<p class="annotation">BB7 retains its clock, Favorites tray and keyboard-first panel switching. The optional software dock follows the device profile.</p>
+<p class="annotation">BB7 retains its clock and Favorites tray, with the same reference-style lower bar as Active Frames on both devices.</p>
 <div class="pair">
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -374,13 +434,40 @@
 </a>
 </div>
 </div>
-<nav class="home-dock" aria-label="Home shortcuts">
+<nav class="reference-bar" aria-label="Home navigation">
+<div class="reference-leading">
+<a class="reference-hub" aria-label="Hub, 3 unread" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub, 3 unread</span>
+</a>
 <a class="" aria-label="Phone" href="#phone">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h4l2 5-3 2a14 14 0 0 0 5 5l2-3 5 2v4c0 2-2 3-4 2C9 18 4 13 3 6c0-2 1-3 3-3Z"/>
 </svg>
 <span>Phone</span>
 </a>
+</div>
+<div class="reference-pages">
+<a class="reference-current" aria-label="Favorites" href="#home-bb7">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m3 11 9-8 9 8M6 9v12h12V9"/>
+</svg>
+<span>Favorites</span>
+</a>
+<a class="" aria-label="All apps" href="#apps">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 4h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 11h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 18h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2Z"/>
+</svg>
+<span>All apps</span>
+</a>
+<a href="#apps" aria-label="App page 1" class="reference-dot">
+<i>
+</i>
+</a>
+</div>
+<div class="reference-trailing">
 <a class="" aria-label="Command" href="#command">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14m5 12 6 6"/>
@@ -393,6 +480,7 @@
 </svg>
 <span>Camera</span>
 </a>
+</div>
 </nav>
 </div>
 </div>
@@ -407,7 +495,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -486,12 +574,42 @@
 </a>
 </div>
 </div>
-<div class="page-position">
-<b>
-</b>
+<nav class="reference-bar" aria-label="Home navigation">
+<div class="reference-leading">
+<a class="reference-hub" aria-label="Hub, 3 unread" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub, 3 unread</span>
+</a>
+</div>
+<div class="reference-pages">
+<a class="reference-current" aria-label="Favorites" href="#home-bb7">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m3 11 9-8 9 8M6 9v12h12V9"/>
+</svg>
+<span>Favorites</span>
+</a>
+<a class="" aria-label="All apps" href="#apps">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 4h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 11h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 18h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2Z"/>
+</svg>
+<span>All apps</span>
+</a>
+<a href="#apps" aria-label="App page 1" class="reference-dot">
 <i>
 </i>
+</a>
 </div>
+<div class="reference-trailing">
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</nav>
 </div>
 </div>
 </div>
@@ -514,7 +632,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -632,7 +750,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -759,7 +877,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -900,8 +1018,8 @@
 </a>
 <p class="section-label">CONTROLS</p>
 <a class="setting-row" href="#hub-settings">
-<span>Home dock</span>
-<b>Configurable</b>
+<span>Home bar</span>
+<b>With shortcuts</b>
 </a>
 <a class="setting-row" href="#hub-settings">
 <span>Notification access</span>
@@ -921,7 +1039,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -1062,8 +1180,8 @@
 </a>
 <p class="section-label">CONTROLS</p>
 <a class="setting-row" href="#hub-settings">
-<span>Home dock</span>
-<b>Hidden · hardware keys</b>
+<span>Home bar</span>
+<b>Hub / pages / Camera</b>
 </a>
 <a class="setting-row" href="#hub-settings">
 <span>Notification access</span>
@@ -1092,7 +1210,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -1259,7 +1377,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -1430,12 +1548,12 @@
 </section>
 <section class="screen-page" id="lock">
 <h2>Lock screen</h2>
-<p class="annotation">Clock, app counts and secure-camera access on an opaque black canvas. No Home dock appears while locked.</p>
+<p class="annotation">Clock and vertical per-app notification icons. Select an icon to reveal only that app’s notifications beside the rail.</p>
 <div class="pair">
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -1444,35 +1562,42 @@
 <span>4G　Wi-Fi　82%</span>
 </div>
 <div class="screen" data-profile="titan" data-screen="lock">
-<div class="lock-time">10:50<small>Friday, November 6</small>
+<div class="rail-clock">10:50<small>Friday, November 6</small>
 </div>
-<div class="lock-counts">
-<a class="" aria-label="2" href="#lock-peek">
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app " aria-label="Signal, 2 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
 </svg>
-<span>2</span>
+<span class="source-name">Signal</span>
+<b>2</b>
 </a>
-<a class="" aria-label="1" href="#lock-peek">
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
 </svg>
-<span>1</span>
+<span class="source-name">Gmail</span>
+<b>1</b>
 </a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<div class="rail-empty">Select a notification icon<small>Details appear here</small>
 </div>
-<div class="lock-instruction">
+</div>
+<div class="lock-bottom">
+<span class="lock-hint">Swipe up to unlock</span>
+<a class="" aria-label="Unlock" href="#home-bb10">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
 </svg>
-<span>Swipe up to unlock</span>
-<small>Android PIN or fingerprint</small>
-</div>
-<div class="lock-bottom">
-<a class="" aria-label="Glance" href="#lock-peek">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
-</svg>
-<span>Glance</span>
+<span>Unlock</span>
 </a>
 <a class="" aria-label="Camera" href="#camera">
 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1494,7 +1619,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -1503,35 +1628,42 @@
 <span>4G　Wi-Fi　82%</span>
 </div>
 <div class="screen" data-profile="q25" data-screen="lock">
-<div class="lock-time">10:50<small>Friday, November 6</small>
+<div class="rail-clock">10:50<small>Friday, November 6</small>
 </div>
-<div class="lock-counts">
-<a class="" aria-label="2" href="#lock-peek">
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app " aria-label="Signal, 2 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
 </svg>
-<span>2</span>
+<span class="source-name">Signal</span>
+<b>2</b>
 </a>
-<a class="" aria-label="1" href="#lock-peek">
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
 </svg>
-<span>1</span>
+<span class="source-name">Gmail</span>
+<b>1</b>
 </a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<div class="rail-empty">Select a notification icon<small>Details appear here</small>
 </div>
-<div class="lock-instruction">
+</div>
+<div class="lock-bottom">
+<span class="lock-hint">Swipe up to unlock</span>
+<a class="" aria-label="Unlock" href="#home-bb10">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
 </svg>
-<span>Swipe up to unlock</span>
-<small>Android PIN or fingerprint</small>
-</div>
-<div class="lock-bottom">
-<a class="" aria-label="Glance" href="#lock-peek">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
-</svg>
-<span>Glance</span>
+<span>Unlock</span>
 </a>
 <a class="" aria-label="Camera" href="#camera">
 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1557,12 +1689,12 @@
 </section>
 <section class="screen-page" id="lock-peek">
 <h2>Lock screen · Glance / Peek</h2>
-<p class="annotation">Glance expands app-level counts without exposing senders, subjects or event titles on a locked device.</p>
+<p class="annotation">Signal is selected: its details appear beside the icon rail, with a blue selection bracket. Tap another app icon to switch sources.</p>
 <div class="pair">
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -1571,50 +1703,71 @@
 <span>4G　Wi-Fi　82%</span>
 </div>
 <div class="screen" data-profile="titan" data-screen="lock-peek">
-<div class="lock-time compact">10:50<small>Friday, November 6</small>
+<div class="rail-clock">10:50<small>Friday, November 6</small>
 </div>
-<section class="lock-peek">
-<header>
-<h2>Glance</h2>
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
-</svg>
-</header>
-<p class="privacy-label">Unlock to read message content</p>
-<div class="glance-row">
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app selected" aria-label="Signal, 2 notifications" aria-current="true">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
 </svg>
-<strong>Messages</strong>
-<span>2 new</span>
-</div>
-<div class="glance-row">
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
 </svg>
-<strong>Email</strong>
-<span>1 new</span>
-</div>
-<div class="glance-row">
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
-<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v16H4ZM8 2v6m8-6v6M4 10h16"/>
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
 </svg>
-<strong>Calendar</strong>
-<span>1 upcoming</span>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Signal notifications">
+<svg class="selection-notch" style="--source-index:0" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Signal</div>
+<div class="notification-detail">
+<div>
+<strong>Alex Rivera</strong>
+<time>10:42</time>
+</div>
+<p>Dinner at 6? I can book a table.</p>
+</div>
+<div class="notification-detail">
+<div>
+<strong>Jamie Lee</strong>
+<time>09:50</time>
+</div>
+<p>See you tomorrow.</p>
 </div>
 </section>
+</div>
 <div class="lock-bottom">
-<a class="" aria-label="Back" href="#lock">
+<a class="" aria-label="Collapse" href="#lock">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
 </svg>
-<span>Back</span>
+<span>Collapse</span>
 </a>
 <a class="" aria-label="Unlock" href="#home-bb10">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
 </svg>
 <span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
 </a>
 </div>
 </div>
@@ -1630,7 +1783,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -1639,50 +1792,71 @@
 <span>4G　Wi-Fi　82%</span>
 </div>
 <div class="screen" data-profile="q25" data-screen="lock-peek">
-<div class="lock-time compact">10:50<small>Friday, November 6</small>
+<div class="rail-clock">10:50<small>Friday, November 6</small>
 </div>
-<section class="lock-peek">
-<header>
-<h2>Glance</h2>
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
-</svg>
-</header>
-<p class="privacy-label">Unlock to read message content</p>
-<div class="glance-row">
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app selected" aria-label="Signal, 2 notifications" aria-current="true">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
 </svg>
-<strong>Messages</strong>
-<span>2 new</span>
-</div>
-<div class="glance-row">
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
 </svg>
-<strong>Email</strong>
-<span>1 new</span>
-</div>
-<div class="glance-row">
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
 <svg viewBox="0 0 24 24" aria-hidden="true">
-<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v16H4ZM8 2v6m8-6v6M4 10h16"/>
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
 </svg>
-<strong>Calendar</strong>
-<span>1 upcoming</span>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Signal notifications">
+<svg class="selection-notch" style="--source-index:0" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Signal</div>
+<div class="notification-detail">
+<div>
+<strong>Alex Rivera</strong>
+<time>10:42</time>
+</div>
+<p>Dinner at 6? I can book a table.</p>
+</div>
+<div class="notification-detail">
+<div>
+<strong>Jamie Lee</strong>
+<time>09:50</time>
+</div>
+<p>See you tomorrow.</p>
 </div>
 </section>
+</div>
 <div class="lock-bottom">
-<a class="" aria-label="Back" href="#lock">
+<a class="" aria-label="Collapse" href="#lock">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
 </svg>
-<span>Back</span>
+<span>Collapse</span>
 </a>
 <a class="" aria-label="Unlock" href="#home-bb10">
 <svg viewBox="0 0 24 24" aria-hidden="true">
 <path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
 </svg>
 <span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
 </a>
 </div>
 </div>
@@ -1698,7 +1872,526 @@
 <p class="hardware-note">Logical hardware roles, not asserted scan-code mappings. Context actions remain on screen.</p>
 </article>
 </div>
-<p class="bottom-note">Showing private previews requires the system privacy policy and an unlocked device; this proposal defaults to redaction.</p>
+<p class="bottom-note">Shown with notification previews allowed. Hidden/private content uses the redacted state; tapping never bypasses Android authentication.</p>
+</section>
+<section class="screen-page" id="lock-peek-email">
+<h2>Lock Peek · Gmail selected</h2>
+<p class="annotation">Selecting Gmail moves the indicator and replaces the detail region with Gmail notifications only.</p>
+<div class="pair">
+<article class="device-card titan-card">
+<header>
+<h3>Unihertz Titan 2</h3>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
+</header>
+<div class="stage">
+<div class="device titan">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="titan" data-screen="lock-peek-email">
+<div class="rail-clock">10:50<small>Friday, November 6</small>
+</div>
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app " aria-label="Signal, 2 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app selected" aria-label="Gmail, 1 notifications" aria-current="true">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Gmail notifications">
+<svg class="selection-notch" style="--source-index:1" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Gmail</div>
+<div class="notification-detail">
+<div>
+<strong>Project update</strong>
+<time>10:18</time>
+</div>
+<p>The revised checklist is ready for review.</p>
+</div>
+</section>
+</div>
+<div class="lock-bottom">
+<a class="" aria-label="Collapse" href="#lock">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>Collapse</span>
+</a>
+<a class="" aria-label="Unlock" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>QWERTY</span>
+<span>Alt+Space · Command</span>
+<span>Alt+Enter · Menu</span>
+</div>
+<p class="hardware-note">No dedicated Call / Menu / Back / End key assumed.</p>
+</article>
+<article class="device-card q25-card">
+<header>
+<h3>Zinwa Q25</h3>
+<p>~411 dp canvas · reference bar + hardware keys</p>
+</header>
+<div class="stage">
+<div class="device q25">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="q25" data-screen="lock-peek-email">
+<div class="rail-clock">10:50<small>Friday, November 6</small>
+</div>
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app " aria-label="Signal, 2 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app selected" aria-label="Gmail, 1 notifications" aria-current="true">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Gmail notifications">
+<svg class="selection-notch" style="--source-index:1" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Gmail</div>
+<div class="notification-detail">
+<div>
+<strong>Project update</strong>
+<time>10:18</time>
+</div>
+<p>The revised checklist is ready for review.</p>
+</div>
+</section>
+</div>
+<div class="lock-bottom">
+<a class="" aria-label="Collapse" href="#lock">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>Collapse</span>
+</a>
+<a class="" aria-label="Unlock" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>Call</span>
+<span>Menu role</span>
+<span>Trackpad</span>
+<span>Back</span>
+<span>End</span>
+</div>
+<p class="hardware-note">Logical hardware roles, not asserted scan-code mappings. Context actions remain on screen.</p>
+</article>
+</div>
+<p class="bottom-note">Illustrative content is shown only when the applicable notification and lock-screen privacy rules allow previews.</p>
+</section>
+<section class="screen-page" id="lock-peek-messages">
+<h2>Lock Peek · Messages selected</h2>
+<p class="annotation">Selecting Messages shows its own notification, not the Signal or Gmail previews.</p>
+<div class="pair">
+<article class="device-card titan-card">
+<header>
+<h3>Unihertz Titan 2</h3>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
+</header>
+<div class="stage">
+<div class="device titan">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="titan" data-screen="lock-peek-messages">
+<div class="rail-clock">10:50<small>Friday, November 6</small>
+</div>
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app " aria-label="Signal, 2 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app selected" aria-label="Messages, 1 notifications" aria-current="true">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Messages notifications">
+<svg class="selection-notch" style="--source-index:2" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Messages</div>
+<div class="notification-detail">
+<div>
+<strong>Morgan Park</strong>
+<time>10:35</time>
+</div>
+<p>I will be there in ten minutes.</p>
+</div>
+</section>
+</div>
+<div class="lock-bottom">
+<a class="" aria-label="Collapse" href="#lock">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>Collapse</span>
+</a>
+<a class="" aria-label="Unlock" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>QWERTY</span>
+<span>Alt+Space · Command</span>
+<span>Alt+Enter · Menu</span>
+</div>
+<p class="hardware-note">No dedicated Call / Menu / Back / End key assumed.</p>
+</article>
+<article class="device-card q25-card">
+<header>
+<h3>Zinwa Q25</h3>
+<p>~411 dp canvas · reference bar + hardware keys</p>
+</header>
+<div class="stage">
+<div class="device q25">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="q25" data-screen="lock-peek-messages">
+<div class="rail-clock">10:50<small>Friday, November 6</small>
+</div>
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app " aria-label="Signal, 2 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app selected" aria-label="Messages, 1 notifications" aria-current="true">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Messages notifications">
+<svg class="selection-notch" style="--source-index:2" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Messages</div>
+<div class="notification-detail">
+<div>
+<strong>Morgan Park</strong>
+<time>10:35</time>
+</div>
+<p>I will be there in ten minutes.</p>
+</div>
+</section>
+</div>
+<div class="lock-bottom">
+<a class="" aria-label="Collapse" href="#lock">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>Collapse</span>
+</a>
+<a class="" aria-label="Unlock" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>Call</span>
+<span>Menu role</span>
+<span>Trackpad</span>
+<span>Back</span>
+<span>End</span>
+</div>
+<p class="hardware-note">Logical hardware roles, not asserted scan-code mappings. Context actions remain on screen.</p>
+</article>
+</div>
+<p class="bottom-note">Selection changes the viewed source; it does not mark messages read or open the underlying app.</p>
+</section>
+<section class="screen-page" id="lock-peek-hidden">
+<h2>Lock Peek · hidden content</h2>
+<p class="annotation">The same selection layout works when content previews are hidden: the app count remains, while private details are redacted.</p>
+<div class="pair">
+<article class="device-card titan-card">
+<header>
+<h3>Unihertz Titan 2</h3>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
+</header>
+<div class="stage">
+<div class="device titan">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="titan" data-screen="lock-peek-hidden">
+<div class="rail-clock">10:50<small>Friday, November 6</small>
+</div>
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app selected" aria-label="Signal, 2 notifications" aria-current="true">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Signal notifications">
+<svg class="selection-notch" style="--source-index:0" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Signal</div>
+<div class="hidden-preview">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<strong>Content hidden</strong>
+<p>Unlock to view these notifications.</p>
+</div>
+</section>
+</div>
+<div class="lock-bottom">
+<a class="" aria-label="Collapse" href="#lock">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>Collapse</span>
+</a>
+<a class="" aria-label="Unlock" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>QWERTY</span>
+<span>Alt+Space · Command</span>
+<span>Alt+Enter · Menu</span>
+</div>
+<p class="hardware-note">No dedicated Call / Menu / Back / End key assumed.</p>
+</article>
+<article class="device-card q25-card">
+<header>
+<h3>Zinwa Q25</h3>
+<p>~411 dp canvas · reference bar + hardware keys</p>
+</header>
+<div class="stage">
+<div class="device q25">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="q25" data-screen="lock-peek-hidden">
+<div class="rail-clock">10:50<small>Friday, November 6</small>
+</div>
+<div class="lock-rail-layout">
+<nav class="notification-rail" aria-label="Notification apps">
+<a href="#lock-peek" class="notification-app selected" aria-label="Signal, 2 notifications" aria-current="true">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Signal</span>
+<b>2</b>
+</a>
+<a href="#lock-peek-email" class="notification-app " aria-label="Gmail, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span class="source-name">Gmail</span>
+<b>1</b>
+</a>
+<a href="#lock-peek-messages" class="notification-app " aria-label="Messages, 1 notifications" aria-current="false">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span class="source-name">Messages</span>
+<b>1</b>
+</a>
+</nav>
+<section class="selected-notifications" aria-label="Signal notifications">
+<svg class="selection-notch" style="--source-index:0" viewBox="0 0 12 24" aria-hidden="true">
+<path d="M12 0 L0 12 L12 24" fill="#000000" stroke="#2e9bd6" stroke-width="2"/>
+</svg>
+<div class="source-heading">Signal</div>
+<div class="hidden-preview">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<strong>Content hidden</strong>
+<p>Unlock to view these notifications.</p>
+</div>
+</section>
+</div>
+<div class="lock-bottom">
+<a class="" aria-label="Collapse" href="#lock">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>Collapse</span>
+</a>
+<a class="" aria-label="Unlock" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 10h12v11H6Zm2 0V6a4 4 0 0 1 8 0v4"/>
+</svg>
+<span>Unlock</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>Call</span>
+<span>Menu role</span>
+<span>Trackpad</span>
+<span>Back</span>
+<span>End</span>
+</div>
+<p class="hardware-note">Logical hardware roles, not asserted scan-code mappings. Context actions remain on screen.</p>
+</article>
+</div>
+<p class="bottom-note">Opening, replying or revealing protected content still requires the appropriate Android unlock.</p>
 </section>
 <section class="screen-page" id="phone">
 <h2>Phone · recent calls</h2>
@@ -1707,7 +2400,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -1817,7 +2510,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -1936,7 +2629,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -2038,7 +2731,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -2149,7 +2842,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -2371,7 +3064,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -2602,7 +3295,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -2722,7 +3415,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -2851,7 +3544,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -2911,7 +3604,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -2975,12 +3668,12 @@
 </section>
 <section class="screen-page" id="home-menu">
 <h2>Home menu · touch fallback</h2>
-<p class="annotation">A visible menu preserves Phone, Command and Camera access when the Q25 Home dock is hidden.</p>
+<p class="annotation">A visible menu preserves Phone, Command and Camera access alongside the Q25 compact Home bar.</p>
 <div class="pair">
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -3042,7 +3735,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">
@@ -3106,6 +3799,331 @@
 </div>
 <p class="bottom-note">Hardware shortcuts supplement these actions; they never make a function available only through a physical key.</p>
 </section>
+<section class="screen-page" id="apps">
+<h2>App page · lower-bar destination</h2>
+<p class="annotation">The center grid control opens the app page. The lower bar remains the same across Home, frames and app pages.</p>
+<div class="pair">
+<article class="device-card titan-card">
+<header>
+<h3>Unihertz Titan 2</h3>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
+</header>
+<div class="stage">
+<div class="device titan">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="titan" data-screen="apps">
+<header class="app-head">
+<a class="icon-button" aria-label="back" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>
+</span>
+</a>
+<div>
+<h2>All apps</h2>
+<small>Page 1</small>
+</div>
+<a class="icon-button" aria-label="more" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m0 6v1m0 6v1"/>
+</svg>
+<span>
+</span>
+</a>
+</header>
+<div class="sample-app-grid">
+<a class="" aria-label="Hub" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub</span>
+</a>
+<a class="" aria-label="Phone" href="#phone">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h4l2 5-3 2a14 14 0 0 0 5 5l2-3 5 2v4c0 2-2 3-4 2C9 18 4 13 3 6c0-2 1-3 3-3Z"/>
+</svg>
+<span>Phone</span>
+</a>
+<a class="" aria-label="Calendar" href="#calendar">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v16H4ZM8 2v6m8-6v6M4 10h16"/>
+</svg>
+<span>Calendar</span>
+</a>
+<a class="" aria-label="Messages" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span>Messages</span>
+</a>
+<a class="" aria-label="Music" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m8 4 12 8-12 8Z"/>
+</svg>
+<span>Music</span>
+</a>
+<a class="" aria-label="Notes" href="#home-bb7">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5 3h14v18H5Zm3 5h8m-8 4h8m-8 4h5"/>
+</svg>
+<span>Notes</span>
+</a>
+<a class="" aria-label="Tasks" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m4 12 5 5L21 5"/>
+</svg>
+<span>Tasks</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+<a class="" aria-label="Settings" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9 3h6l1 4 4 2v6l-4 1-1 5H9l-1-4-5-2V9l4-1Zm3 5a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Settings</span>
+</a>
+<a class="" aria-label="Search" href="#command">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14m5 12 6 6"/>
+</svg>
+<span>Search</span>
+</a>
+<a class="" aria-label="Files" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5 3h14v18H5Zm3 5h8m-8 4h8m-8 4h5"/>
+</svg>
+<span>Files</span>
+</a>
+<a class="" aria-label="Tools" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z"/>
+</svg>
+<span>Tools</span>
+</a>
+</div>
+<nav class="reference-bar" aria-label="Home navigation">
+<div class="reference-leading">
+<a class="reference-hub" aria-label="Hub, 3 unread" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub, 3 unread</span>
+</a>
+<a class="" aria-label="Phone" href="#phone">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h4l2 5-3 2a14 14 0 0 0 5 5l2-3 5 2v4c0 2-2 3-4 2C9 18 4 13 3 6c0-2 1-3 3-3Z"/>
+</svg>
+<span>Phone</span>
+</a>
+</div>
+<div class="reference-pages">
+<a class="" aria-label="Active Frames" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z"/>
+</svg>
+<span>Active Frames</span>
+</a>
+<a class="reference-current" aria-label="All apps" href="#apps">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 4h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 11h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 18h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2Z"/>
+</svg>
+<span>All apps</span>
+</a>
+<a href="#apps" aria-label="App page 1" class="reference-dot">
+<i>
+</i>
+</a>
+</div>
+<div class="reference-trailing">
+<a class="" aria-label="Command" href="#command">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14m5 12 6 6"/>
+</svg>
+<span>Command</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</nav>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>QWERTY</span>
+<span>Alt+Space · Command</span>
+<span>Alt+Enter · Menu</span>
+</div>
+<p class="hardware-note">No dedicated Call / Menu / Back / End key assumed.</p>
+</article>
+<article class="device-card q25-card">
+<header>
+<h3>Zinwa Q25</h3>
+<p>~411 dp canvas · reference bar + hardware keys</p>
+</header>
+<div class="stage">
+<div class="device q25">
+<div class="status-bar">
+<span>10:50</span>
+<span>4G　Wi-Fi　82%</span>
+</div>
+<div class="screen" data-profile="q25" data-screen="apps">
+<header class="app-head">
+<a class="icon-button" aria-label="back" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m15 4-8 8 8 8"/>
+</svg>
+<span>
+</span>
+</a>
+<div>
+<h2>All apps</h2>
+<small>Page 1</small>
+</div>
+<a class="icon-button" aria-label="more" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m0 6v1m0 6v1"/>
+</svg>
+<span>
+</span>
+</a>
+</header>
+<div class="sample-app-grid">
+<a class="" aria-label="Hub" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub</span>
+</a>
+<a class="" aria-label="Phone" href="#phone">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h4l2 5-3 2a14 14 0 0 0 5 5l2-3 5 2v4c0 2-2 3-4 2C9 18 4 13 3 6c0-2 1-3 3-3Z"/>
+</svg>
+<span>Phone</span>
+</a>
+<a class="" aria-label="Calendar" href="#calendar">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v16H4ZM8 2v6m8-6v6M4 10h16"/>
+</svg>
+<span>Calendar</span>
+</a>
+<a class="" aria-label="Messages" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 4h18v13H9l-6 4Z"/>
+</svg>
+<span>Messages</span>
+</a>
+<a class="" aria-label="Music" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m8 4 12 8-12 8Z"/>
+</svg>
+<span>Music</span>
+</a>
+<a class="" aria-label="Notes" href="#home-bb7">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5 3h14v18H5Zm3 5h8m-8 4h8m-8 4h5"/>
+</svg>
+<span>Notes</span>
+</a>
+<a class="" aria-label="Tasks" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="m4 12 5 5L21 5"/>
+</svg>
+<span>Tasks</span>
+</a>
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+<a class="" aria-label="Settings" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9 3h6l1 4 4 2v6l-4 1-1 5H9l-1-4-5-2V9l4-1Zm3 5a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Settings</span>
+</a>
+<a class="" aria-label="Search" href="#command">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14m5 12 6 6"/>
+</svg>
+<span>Search</span>
+</a>
+<a class="" aria-label="Files" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M5 3h14v18H5Zm3 5h8m-8 4h8m-8 4h5"/>
+</svg>
+<span>Files</span>
+</a>
+<a class="" aria-label="Tools" href="#home-menu">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z"/>
+</svg>
+<span>Tools</span>
+</a>
+</div>
+<nav class="reference-bar" aria-label="Home navigation">
+<div class="reference-leading">
+<a class="reference-hub" aria-label="Hub, 3 unread" href="#hub">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 5h18v14H3Zm0 0 9 8 9-8"/>
+</svg>
+<span>Hub, 3 unread</span>
+</a>
+</div>
+<div class="reference-pages">
+<a class="" aria-label="Active Frames" href="#home-bb10">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z"/>
+</svg>
+<span>Active Frames</span>
+</a>
+<a class="reference-current" aria-label="All apps" href="#apps">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 4h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 11h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2ZM4 18h2v2H4Zm7 0h2v2h-2Zm7 0h2v2h-2Z"/>
+</svg>
+<span>All apps</span>
+</a>
+<a href="#apps" aria-label="App page 1" class="reference-dot">
+<i>
+</i>
+</a>
+</div>
+<div class="reference-trailing">
+<a class="" aria-label="Camera" href="#camera">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l2-3h6l2 3h4v13H3Zm9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>
+</svg>
+<span>Camera</span>
+</a>
+</div>
+</nav>
+</div>
+</div>
+</div>
+<div class="key-legend">
+<span>Call</span>
+<span>Menu role</span>
+<span>Trackpad</span>
+<span>Back</span>
+<span>End</span>
+</div>
+<p class="hardware-note">Logical hardware roles, not asserted scan-code mappings. Context actions remain on screen.</p>
+</article>
+</div>
+<p class="bottom-note">This is sample navigation content; installed apps and pages are derived from the real inventory.</p>
+</section>
 <section class="screen-page" id="camera">
 <h2>Camera · handoff sample</h2>
 <p class="annotation">The camera action hands off to the installed camera rather than inventing a second camera app.</p>
@@ -3113,7 +4131,7 @@
 <article class="device-card titan-card">
 <header>
 <h3>Unihertz Titan 2</h3>
-<p>~576 dp design canvas · configurable software dock</p>
+<p>~576 dp canvas · reference bar + optional shortcuts</p>
 </header>
 <div class="stage">
 <div class="device titan">
@@ -3161,7 +4179,7 @@
 <article class="device-card q25-card">
 <header>
 <h3>Zinwa Q25</h3>
-<p>~411 dp design canvas · hardware navigation</p>
+<p>~411 dp canvas · reference bar + hardware keys</p>
 </header>
 <div class="stage">
 <div class="device q25">

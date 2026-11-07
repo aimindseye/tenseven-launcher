@@ -1,6 +1,7 @@
 # TenSeven BlackBerry 10 device design review
 
-Design proposal for review. No production app code or permission declarations are changed.
+The owner approved the design direction, with the lock-screen and lower-bar revisions below.
+No production app code or permission declarations are changed.
 The released 1.0.0 APK remains unchanged.
 
 Open `index.html` with its `fonts/` directory beside it, or read
@@ -11,7 +12,7 @@ not implement Android gesture recognition, authentication, phone calls or notifi
 
 ## Scope and screen inventory
 
-Every screen has separate Titan 2 and Zinwa Q25 layouts: 28 designs, 14 paired pages.
+Every screen has separate Titan 2 and Zinwa Q25 layouts: 36 designs, 18 paired pages.
 
 ![Paired Home designs](previews/home.png)
 
@@ -25,14 +26,18 @@ Every screen has separate Titan 2 and Zinwa Q25 layouts: 28 designs, 14 paired p
 4. Hub Settings revealed by a rightward swipe on Hub
 5. Single selected message with an action panel on the right
 6. Lock screen
-7. Lock-screen Glance / Peek, with private content redacted
-8. Phone recent calls
-9. Phone keypad
-10. Calendar month with busy indicators
-11. Calendar day/week schedule
-12. Command navigation sample
-13. Home menu with touch-accessible Phone / Command / Camera
-14. Camera handoff sample
+7. Lock-screen Peek with Signal selected
+8. Lock-screen Peek with Gmail selected
+9. Lock-screen Peek with Messages selected
+10. Lock-screen Peek with content hidden by privacy rules
+11. Phone recent calls
+12. Phone keypad
+13. Calendar month with busy indicators
+14. Calendar day/week schedule
+15. Command navigation sample
+16. Home menu with touch-accessible Phone / Command / Camera
+17. App-grid destination for the lower navigation bar
+18. Camera handoff sample
 
 All names, messages, events and values are fictional design fixtures. These are proposed
 interfaces, not screenshots or proof of features implemented on Android.
@@ -47,7 +52,8 @@ interfaces, not screenshots or proof of features implemented on Android.
 - Flat lists and thin separators. No routine filled blue selection tiles.
 - Keyboard focus uses a blue outline. Unread state uses weight and a small blue edge;
   focus and unread are separate states and do not depend on colour alone.
-- Rounded outer Peek/Glance panel retains the owner's earlier preference; its inner rows are flat.
+- Hub Peek retains its rounded outer panel. The lock-screen Peek uses the latest reference:
+  a vertical app rail and inline details with a selection bracket, not a floating card.
 - Keep installed-app icons and user icon packs. Schematic control glyphs in this review are
   original simple geometry; production should use TenSeven's existing licensed glyph set.
 - Existing non-BlackBerry themes and user configuration remain available.
@@ -58,8 +64,8 @@ interfaces, not screenshots or proof of features implemented on Android.
 |---|---|---|
 | Design grid | Rounded 576 dp square | Rounded 411 dp square |
 | Evidence | Owner capture: window 1436x1440 px, density 2.5, font scale 1.1 | Prior Q25 reference: 720x720 px, density 280 |
-| Home dock default | Phone / Command / Camera | Hidden; retain a small page-position indicator |
-| Dock preference | Configurable actions, order and visibility | Same override available; no function becomes touch-inaccessible |
+| Home lower bar | Hub / page navigation / Camera, plus Phone and Command shortcuts | Hub / page navigation / Camera |
+| Shortcut preference | Phone / Command shortcuts remain configurable | Optional shortcuts remain configurable; hardware keys do not remove the reference navigation bar |
 | Global navigation roles | Do not assume dedicated Call/Menu/Back/End keys | Call/Menu/Back/End/trackpad roles provided by hardware, subject to verified event mapping |
 | Context actions | Visible screen-specific action bar | Same screen-specific actions remain available |
 | Menu access in TenSeven | Alt/Fn+Enter where verified; visible menu control | Verified Menu action and visible menu control |
@@ -126,17 +132,51 @@ with reusable SableOS presentation adapted to ordinary Android APIs.
 - The preview's Call, Compose and New-event labels are visual proposals, not real operations.
   Their eventual routes and capability-disabled states must be wired to supported behavior.
 
-## Lock screen and Glance
+## Owner revision: reference-style lower navigation bar
 
-The TenSeven lock layer is a cover over Android keyguard. It cannot replace authentication,
-change system PIN/fingerprint rules or install a Picture Password credential.
-Counts-only Glance is the default locked state; sender names, message bodies and event titles
-remain redacted. Secure-camera and notification-opening flows obey Android authentication.
-Do not reuse a normal camera intent on the real keyguard. No Home dock appears on lock surfaces.
+The new Active Frames and BBOS 7 Home references supersede the earlier Q25-hidden-dock default.
+Use one shared lower bar on both devices and both Home styles, not two stacked docks:
+
+- Hub icon and unread indicator on the left.
+- Context/page controls and page-position dots in the centre: Frames/Favorites, app grid, app pages.
+- Camera on the right.
+- Titan 2 retains Phone and Command shortcut controls within the same row; they are configurable.
+- Q25 uses the compact reference row. Phone and Command remain available through hardware roles,
+  configured shortcuts and the touch-accessible Home menu.
+- Keep a stable position across Active Frames, BB7 Home and app pages. Preserve touch targets and
+  the space available to frames; do not create sample frames or extra app records for navigation.
+
+## Lock screen and per-app Peek
+
+The owner approved the reference interaction: a vertical rail of notification-app icons and
+counts beside the clock/content area. Selecting an icon shows only that app's notifications
+in the detail region to its right, with a thin selection bracket aligned to the chosen icon.
+Selecting a different icon replaces the details; selecting/collapsing must not mark read,
+dismiss, reply or open the original app. Trackpad/arrows move between icons; Enter selects.
+Use actual installed app icons in production; schematic glyphs and labels identify the review fixtures.
+
+The review includes Signal, Gmail and Messages selections, plus an explicit content-hidden
+state. The preview text is fictional; neither reference image nor its message contents is copied.
+
+Notification selection is separate from permission to reveal content. Show preview details
+only when the applicable Android notification visibility, lock-screen privacy and user settings
+allow them. Otherwise keep the icon/count and render a content-hidden explanation in the same
+region. Clicking must never bypass privacy restrictions. Opening, replying, or revealing protected
+content requires the appropriate Android authentication. Respect policy changes while the panel
+is open and clear any revealed content immediately when it becomes disallowed.
+
+The TenSeven lock layer remains a cover over Android keyguard. It does not replace PIN or
+fingerprint rules, and it cannot install a Picture Password credential. The camera uses the secure
+handoff where Android supports it. The Home navigation bar is not drawn on lock-screen surfaces.
+
+![Lock-screen per-app Peek](previews/lock-peek.png)
+
+![Lock-screen selection switched to Gmail](previews/lock-email.png)
 
 ## Implementation sequence and acceptance
 
-1. Review and accept these paired layouts and hardware/dock policy.
+1. Design approval is recorded. Apply the owner-requested lock Peek and shared lower-bar
+   revisions before beginning the already-planned implementation phases.
 2. Add shared theme/type/row/action primitives behind the BlackBerry theme. Preserve saved
    preferences; add contrast, keyboard focus and configuration/migration tests.
 3. Restyle Hub/Settings/Peek; add panel gesture arbitration, close/focus restoration and
@@ -160,7 +200,7 @@ source analysis, quality thresholds and the accepted static baseline remain unch
 - SableOS main inspected at a3300bd96f4cb7a70c980ec50191edff0907c8ca: shared tokens,
   typography and patches 0143, 0146-0149. Adapt presentation; do not import ROM privileges.
 - Owner-provided BlackBerry 10 UI Guidelines, SableOS 2.0 UI direction and handover,
-  jl-shots reference set, and BB Hub with Calendar image. Reference images/PDFs are not vendored.
+  jl-shots reference set, BB Hub with Calendar image, and the later lock/Active Frames references. Reference images/PDFs are not vendored.
 - Source Sans 3 from https://github.com/adobe-fonts/source-sans,
   release commit 87b37a2daaed80fcb8e8ccb0085c4d72ddade12e, WOFF2/TTF Regular/Light/Semibold.
   Copyright and SIL Open Font License are retained in fonts/OFL.md. Font files are unmodified.
