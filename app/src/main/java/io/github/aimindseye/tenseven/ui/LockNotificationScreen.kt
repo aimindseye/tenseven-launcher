@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
@@ -73,6 +75,7 @@ internal fun LockNotificationScreen(
         Modifier
             .fillMaxSize()
             .background(Bb10Background)
+            .lockUnlockSwipe(actions.unlock)
             .safeDrawingPadding()
             .padding(12.dp),
     ) {
@@ -325,3 +328,14 @@ private fun LockSourceDetails(
 private const val INITIAL_MARKER_PX = 24f
 private const val CLOCK_INTERVAL_MS = 60_000L
 private const val LOCK_ICON_PX = 96
+
+/** An unused upward drag asks Android to unlock; scrolling notification lists consumes its own drags first. */
+private fun Modifier.lockUnlockSwipe(onUnlock: () -> Unit): Modifier =
+    pointerInput(onUnlock) {
+        var distance = 0f
+        val threshold = 64.dp.toPx()
+        detectVerticalDragGestures(
+            onDragStart = { distance = 0f },
+            onDragEnd = { if (distance < -threshold) onUnlock() },
+        ) { _, amount -> distance += amount }
+    }

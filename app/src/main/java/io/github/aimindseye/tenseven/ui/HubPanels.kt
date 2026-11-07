@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -104,6 +105,7 @@ internal fun HubPanelsHost(
                     .widthIn(max = 340.dp)
                     .fillMaxWidth(HUB_PANEL_FRACTION)
                     .fillMaxHeight()
+                    .hubPanelDismiss(settings) { close() }
                     .background(MaterialTheme.colorScheme.background)
                     .testTag(if (settings) "hub-settings-panel" else "hub-message-panel")
                     .semantics { paneTitle = if (settings) "Hub settings" else "Message options" }
@@ -304,3 +306,20 @@ private fun HubPanelBody(
         conversation?.let { HubMessagePanel(it, ui) { onClose() } }
     }
 }
+
+/** Return swipe complements Back without claiming vertical panel scrolling. */
+private fun Modifier.hubPanelDismiss(
+    settings: Boolean,
+    onClose: () -> Unit,
+): Modifier =
+    pointerInput(settings, onClose) {
+        var distance = 0f
+        val threshold = 64.dp.toPx()
+        detectHorizontalDragGestures(
+            onDragStart = { distance = 0f },
+            onDragEnd = {
+                val closing = if (settings) distance < -threshold else distance > threshold
+                if (closing) onClose()
+            },
+        ) { _, amount -> distance += amount }
+    }
