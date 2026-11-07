@@ -76,9 +76,7 @@ internal fun ReferenceHomeBar(
         Modifier.testTag("home-reference-bar").background(Bb10Background).padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        HomeBarControl("Hub", "mail", pages.current == StartPages.HUB + pages.lead, unread) {
-            actions.showPage(StartPages.HUB + pages.lead)
-        }
+        HubBarTarget(pages, unread, actions)
         slots.filter { it.token in shown }.filterNot { it.token == QuickBar.COMMAND }.forEach { slot ->
             HomeShortcut(slot, actions.openSlot, actions.options, actions.phoneFocus)
         }
@@ -220,6 +218,7 @@ internal fun HomeBarControl(
 internal fun Bb7ReferenceBar(
     apps: List<io.github.aimindseye.tenseven.model.AppEntry>,
     actions: Bb7BarActions,
+    appsOpen: Boolean = false,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val state =
@@ -234,7 +233,13 @@ internal fun Bb7ReferenceBar(
             .mapNotNull { resolveQuickSlot(it, apps, byKey) }
     ReferenceHomeBar(
         slots = slots,
-        pages = HomeBarPages(StartPages.HOME, StartPages.FIRST_GRID + 1, 0, favorites = true),
+        pages =
+            HomeBarPages(
+                if (appsOpen) StartPages.FIRST_GRID else StartPages.HOME,
+                StartPages.FIRST_GRID + 1,
+                0,
+                favorites = true,
+            ),
         actions =
             HomeBarActions(
                 showPage = { page ->
@@ -282,6 +287,7 @@ internal class HomeBarActions(
     val showPage: (Int) -> Unit,
     val openSlot: (QuickSlot) -> Unit,
     val options: (QuickSlot) -> Unit,
+    val peek: (() -> Unit)? = null,
     val phoneFocus: (Boolean) -> Unit = {},
 )
 
@@ -302,3 +308,25 @@ private fun homeControlPaths(glyph: String): List<String> =
     } else {
         TablerGlyphPaths.BY_NAME[glyph] ?: LineIconPaths.SEARCH
     }
+
+@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
+@Composable
+private fun HubBarTarget(pages: HomeBarPages, unread: Int, actions: HomeBarActions) {
+    Box(
+        Modifier.onPreviewKeyEvent { event ->
+            val native = event.nativeKeyEvent
+            val peek = actions.peek
+            val space =
+                native.keyCode == KeyEvent.KEYCODE_SPACE &&
+                    native.metaState and (QuickBar.META_ALT_ON or QuickBar.META_FUNCTION_ON) == 0
+            if (space && peek != null) {
+                if (event.type == KeyEventType.KeyDown && native.repeatCount == 0) peek()
+            }
+            space && peek != null
+        },
+    ) {
+        HomeBarControl("Hub", "mail", pages.current == StartPages.HUB + pages.lead, unread) {
+            actions.showPage(StartPages.HUB + pages.lead)
+        }
+    }
+}

@@ -245,7 +245,13 @@ internal fun StartStrip(
         ReferenceHomeBar(
             slots = quickSlots,
             pages = HomeBarPages(state.currentPage, pageCount, pageLead),
-            actions = HomeBarActions(onShowPage, onQuickSlot, onSlotOptions) { phoneSlotFocused = it },
+            actions =
+                HomeBarActions(
+                    onShowPage,
+                    onQuickSlot,
+                    onSlotOptions,
+                    peek = onHubPeek,
+                ) { phoneSlotFocused = it },
         )
     }
 }

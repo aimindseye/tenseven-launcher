@@ -97,28 +97,13 @@ internal fun HubPage(
     val capabilities = rememberPlatformCapabilities(refreshGeneration)
     // The phone's own default apps, whichever they are: Tenseven looks for no Sable app here.
     val messagesPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.MESSAGING) }
-    val mailPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.EMAIL) }
     val contactsPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.CONTACTS) }
-    val dialerPackage = remember(context) { DefaultApps.dialerPackage(context) }
 
     fun appOf(pkg: String?) = pkg?.let { p -> apps.firstOrNull { it.inLauncherUser && it.component.packageName == p } }
     val messagesApp = appOf(messagesPackage)
-    val mailApp = appOf(mailPackage)
     val contactsApp = appOf(contactsPackage) ?: findLiveApp(apps, CONTACTS_PACKAGE)
-    // The Hub works from Tenseven's own notification listener, or from Sable Hub's snapshot when that is installed.
-    val hubInstalled =
-        snapshot.messages.availability != LiveAvailability.UNAVAILABLE ||
-            capabilities.hubNotifications == CapabilityStatus.Ready
-    val personalApps = remember(apps) { apps.filter { it.inLauncherUser }.associateBy { it.component.packageName } }
     val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
     val sourceGroups = rememberHubSourceGroups(snapshot, enabledHubApps, refreshGeneration)
-    val calendarPeekEnabled = remember(refreshGeneration) { StartStateRepository(context).loadHubCalendarPeek() }
-    val barItems =
-        remember(snapshot.hubApps, personalApps, enabledHubApps) {
-            // Sable Hub can expose a separate notification source; opt-in still applies here.
-            // Do not reuse its aggregate redacted count: it may include disabled apps.
-            HubBar.items(snapshot.hubApps.filter { it.packageName in enabledHubApps }) { it in personalApps }
-        }
     val contactsTab = filter == HubFilter.Contacts
     val canReadContacts = capabilities.contacts == CapabilityStatus.Ready
     val (people, peopleLoaded) = rememberHubPeople(contactsTab, canReadContacts, refreshGeneration)
@@ -176,6 +161,7 @@ internal fun HubPage(
 
     HubContrastTheme {
         HubPanelsHost(conversationsUi, onOpenHubSettings) { openPanel ->
+            val calendarPeekEnabled = StartStateRepository(context).loadHubCalendarPeek()
             LazyColumn(
                 modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
                 state = listState,
@@ -236,10 +222,6 @@ internal fun HubPage(
                 } else {
                     hubSummaryItems(
                         filter = filter,
-                        snapshot = snapshot,
-                        summary = if (hubInstalled) HubBar.summary(barItems) else null,
-                        messagesApp = messagesApp,
-                        mailApp = mailApp,
                         actions = actions,
                         conversations = conversationsUi,
                     )
@@ -403,10 +385,6 @@ internal class HubActions(
  */
 internal fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
     filter: HubFilter,
-    snapshot: LiveSurfaceSnapshot,
-    summary: String?,
-    messagesApp: AppEntry?,
-    mailApp: AppEntry?,
     actions: HubActions,
     conversations: HubConversationsUi,
 ) {

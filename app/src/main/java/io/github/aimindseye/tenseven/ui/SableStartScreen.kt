@@ -274,20 +274,17 @@ fun SableStartScreen(
         onStartIntent(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(digits))))
     }
 
-    fun activateSlot(slot: QuickSlot) {
-        when (slot.token) {
-            QuickBar.COMMAND -> openSearch(SableStartDestination.Start)
-
-            QuickBar.CAMERA -> onStartIntent(Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA))
-
-            QuickBar.ALL_APPS -> destination = SableStartDestination.Apps
-
-            // The Hub slot is Start's own Hub page; the Sable Hub app has no screen to open.
-            QuickBar.HUB -> showHub(HubFilter.All)
-
-            else -> slot.app?.let(::launchApp)
-        }
-    }
+    fun activateSlot(slot: QuickSlot) =
+        activateQuickSlot(
+            slot,
+            QuickSlotActions(
+                command = { openSearch(SableStartDestination.Start) },
+                apps = { destination = SableStartDestination.Apps },
+                hub = { showHub(HubFilter.All) },
+                camera = { onStartIntent(Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)) },
+                launch = { launchApp(it) },
+            ),
+        )
 
     fun resumeFrame(frame: io.github.aimindseye.tenseven.frames.FrameItem) {
         onResumeFrame(frame)

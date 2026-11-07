@@ -180,13 +180,13 @@ fun Bb7HomeScreen(
         selected = 0
     }
 
-    val defaultPackages = remember(context, apps.size) { DefaultApps.homePackages(context) }
     val searching = query.isNotEmpty()
-    val shown =
-        if (searching) Bb7Home.search(apps, query) else Bb7Home.panelApps(panel, apps, favoriteKeys, usage, defaultPackages)
-    val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, favoriteKeys, defaultPackages = defaultPackages).map { it.stableKey() }
-    val appsByKey = remember(apps) { apps.associateBy { it.stableKey() } }
-    val desktopApps = Bb7Home.desktopShortcuts(desktopKeys).mapNotNull { appsByKey[it] }
+    val (shown, favorites, desktopApps) =
+        rememberBb7Apps(
+            apps,
+            usage,
+            Bb7AppSelection(panel, query, favoriteKeys, desktopKeys),
+        )
     val inDesktop = inDesktopZone && !open && !searching && desktopApps.isNotEmpty()
     val deskIndex = deskSelected.coerceIn(0, (desktopApps.size - 1).coerceAtLeast(0))
     val trayTitle =
@@ -221,30 +221,13 @@ fun Bb7HomeScreen(
     }
     // Tap empty wallpaper, then tap an installed app to add its shortcut.
     val addToDesktop: (AppEntry) -> Unit = { app ->
-        val key = app.stableKey()
-        val next = Bb7Home.addDesktopShortcut(desktopKeys, key)
-        when {
-            key in desktopKeys -> {
-                Toast.makeText(context, "Already on Home", Toast.LENGTH_SHORT).show()
-            }
-
-            key !in next -> {
-                Toast
-                    .makeText(
-                        context,
-                        "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts",
-                        Toast.LENGTH_LONG,
-                    ).show()
-            }
-
-            else -> {
-                onDesktopChanged(next)
-                open = false
-                query = ""
-                pickingDesktop = false
-                selected = -1
-                showHomeAdded(context, resources.getString(R.string.bb7_added_home, app.label))
-            }
+        addBb7Desktop(context, desktopKeys, app.stableKey()) { next ->
+            onDesktopChanged(next)
+            open = false
+            query = ""
+            pickingDesktop = false
+            selected = -1
+            showHomeAdded(context, resources.getString(R.string.bb7_added_home, app.label))
         }
     }
 
@@ -614,6 +597,7 @@ fun Bb7HomeScreen(
                     )
                     Bb7ReferenceBar(
                         apps = apps,
+                        appsOpen = open || searching,
                         actions =
                             Bb7BarActions(
                                 hub = onOpenHub,
@@ -623,6 +607,9 @@ fun Bb7HomeScreen(
                                     panel = Bb7Panel.Favorites
                                     open = false
                                     query = ""
+                                    pickingDesktop = false
+                                    moving = false
+                                    selected = -1
                                 },
                                 launch = { onLaunchApp(it) },
                             ),
@@ -979,4 +966,65 @@ private fun rememberBb7Date(generation: Int): Long {
         }
     }
     return today
+}
+
+private data class Bb7AppSelection(
+    val panel: Bb7Panel,
+    val query: String,
+    val favorites: List<String>?,
+    val desktop: List<String>,
+)
+
+private data class Bb7AppLists(
+    val shown: List<AppEntry>,
+    val favorites: List<String>,
+    val desktop: List<AppEntry>,
+)
+
+@Composable
+private fun rememberBb7Apps(
+    apps: List<AppEntry>,
+    usage: io.github.aimindseye.tenseven.model.AppUsage,
+    selection: Bb7AppSelection,
+): Bb7AppLists {
+    val context = LocalContext.current
+    val defaults = remember(context, apps.size) { DefaultApps.homePackages(context) }
+    val shown =
+        if (selection.query.isNotEmpty()) {
+            Bb7Home.search(apps, selection.query)
+        } else {
+            Bb7Home.panelApps(selection.panel, apps, selection.favorites, usage, defaults)
+        }
+    val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, selection.favorites, defaultPackages = defaults)
+    val byKey = remember(apps) { apps.associateBy { it.stableKey() } }
+    val desktop = Bb7Home.desktopShortcuts(selection.desktop).mapNotNull { byKey[it] }
+    return Bb7AppLists(shown, favorites.map { it.stableKey() }, desktop)
+}
+
+/** Validate a desktop addition before the screen changes its browsing state. */
+private fun addBb7Desktop(
+    context: android.content.Context,
+    current: List<String>,
+    key: String,
+    onAdded: (List<String>) -> Unit,
+) {
+    val next = Bb7Home.addDesktopShortcut(current, key)
+    when {
+        key in current -> {
+            Toast.makeText(context, "Already on Home", Toast.LENGTH_SHORT).show()
+        }
+
+        key !in next -> {
+            Toast
+                .makeText(
+                    context,
+                    "Home holds at most ${Bb7Home.MAX_DESKTOP_SHORTCUTS} shortcuts",
+                    Toast.LENGTH_LONG,
+                ).show()
+        }
+
+        else -> {
+            onAdded(next)
+        }
+    }
 }
