@@ -70,6 +70,7 @@ import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.conversationPreview
+import io.github.aimindseye.tenseven.conversations.openHubSource
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HubBar
 import io.github.aimindseye.tenseven.model.HubFilter
@@ -592,7 +593,7 @@ internal fun rememberHubConversationsUi(
                 }
             },
             onOpen = { conversation ->
-                if (!ConversationHub.open(context, conversation.openTarget)) onOpenFallback()
+                openHubSource(context, conversation, onOpenFallback)
             },
             onReply = { conversation, text -> ConversationHub.reply(context, conversation, text) },
             onAllowAccess = {

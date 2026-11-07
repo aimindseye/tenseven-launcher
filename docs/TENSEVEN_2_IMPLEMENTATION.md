@@ -74,3 +74,17 @@ remain usable on Q25 and at large text sizes, with a visible Call action and key
 - Device checks: Titan 2 standard/large text; Q25 remains unqualified until measured on hardware.
 - Source Sans 3 is bundled from Adobe's release commit
   `87b37a2daaed80fcb8e8ccb0085c4d72ddade12e`; license in `design/SourceSans3-OFL.txt`.
+
+## Dynamic Hub message actions
+
+The right-side panel adapts to the latest selected notification. Email uses Email options / Open
+email app; messaging uses Message options / Open messaging app. Reply uses the provider's actual
+RemoteInput target and label. Additional Reply All, Forward, Archive or other native actions are
+shown only when the provider supplies a usable PendingIntent, with text entry when required.
+There is no inference from translated action names and no fabricated email recipients or body.
+An email app that exposes none of those actions retains Open email app plus TenSeven's explicit
+Mark read, Snooze and Remind actions. Search-by-subject/sender, invitations and contact creation
+need separately available structured data; notification text is not treated as a trusted address book.
+Provider actions are checked again on activation against the exact active notification/action,
+current source opt-in, notification access and Android lock state. Stale or revoked actions fail
+without executing. Merely selecting a message, opening an editor or changing sources sends nothing.

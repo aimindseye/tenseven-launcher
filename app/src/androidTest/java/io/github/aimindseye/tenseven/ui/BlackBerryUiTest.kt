@@ -18,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.LauncherTheme
 import io.github.aimindseye.tenseven.conversations.ConversationFilter
@@ -25,6 +26,8 @@ import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.ConversationMessage
 import io.github.aimindseye.tenseven.conversations.ConversationState
 import io.github.aimindseye.tenseven.conversations.HubNotification
+import io.github.aimindseye.tenseven.conversations.availableSourceActions
+import io.github.aimindseye.tenseven.conversations.performHubSourceAction
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.platform.FramePlatformAccess
@@ -32,6 +35,7 @@ import io.github.aimindseye.tenseven.platform.LockLayerState
 import io.github.aimindseye.tenseven.platform.PlatformCapabilities
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 
@@ -133,6 +137,8 @@ class BlackBerryUiTest {
         }
         compose.onNodeWithText("Select message").performClick()
         compose.onNodeWithTag("hub-message-panel").assertIsDisplayed()
+        compose.onNodeWithText("Reply All").assertDoesNotExist()
+        compose.onNodeWithText("Forward").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(0, reads)
             assertEquals(0, opens)
@@ -147,6 +153,80 @@ class BlackBerryUiTest {
         compose.onNodeWithTag("hub-settings-panel").assertIsDisplayed()
         compose.onNodeWithText("Back").performClick()
         compose.onNodeWithTag("hub-settings-panel").assertDoesNotExist()
+    }
+
+    @Test fun emailActionsUseProviderCapabilitiesAndNeverExecuteOnSelection() {
+        val email =
+            fixture("mail", "Email body").copy(
+                isEmail = true,
+                sourceActions = listOf(sourceAction("Reply All", true), sourceAction("Forward", false)),
+            )
+        ConversationHub.replace(listOf(email))
+        val stale = email.availableSourceActions(false).first()
+        compose.setContent {
+            LauncherTheme {
+                val revision = rememberHubRevision()
+                val ui = remember(revision) { hubUi({}, {}) }
+                HubPanelsHost(ui, {}) {
+                    val select = LocalHubRowSelection.current
+                    val focus = remember { FocusRequester() }
+                    Text(
+                        "Select email",
+                        Modifier.focusRequester(focus).sableFocusRing().clickable {
+                            select(ui.conversations.single().id, focus)
+                        },
+                    )
+                }
+            }
+        }
+        compose.onNodeWithText("Select email").performClick()
+        compose.onNodeWithText("Email options").assertIsDisplayed()
+        compose.onNodeWithText("Forward").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Reply All").performScrollTo().performClick()
+        compose.onNodeWithText("Send").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle {
+            ConversationHub.replace(listOf(email.copy(sourceActions = emptyList())))
+            val context =
+                androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation()
+                    .targetContext
+            assertFalse(performHubSourceAction(context, stale, "Do not send"))
+        }
+        compose.onNodeWithText("Reply All").assertDoesNotExist()
+        compose.onNodeWithText("Forward").assertDoesNotExist()
+    }
+
+    private fun sourceAction(
+        label: String,
+        text: Boolean,
+    ): android.app.Notification.Action {
+        val context =
+            androidx.test.platform.app.InstrumentationRegistry
+                .getInstrumentation()
+                .targetContext
+        val intent = android.content.Intent(context, io.github.aimindseye.tenseven.SableStartActivity::class.java)
+        val pending =
+            android.app.PendingIntent.getActivity(
+                context,
+                label.hashCode(),
+                intent,
+                android.app.PendingIntent.FLAG_MUTABLE,
+            )
+        val icon =
+            android.graphics.drawable.Icon
+                .createWithResource(context, android.R.drawable.ic_dialog_email)
+        return android.app.Notification.Action
+            .Builder(icon, label, pending)
+            .apply {
+                if (text) {
+                    addRemoteInput(
+                        android.app.RemoteInput
+                            .Builder("reply")
+                            .setLabel(label)
+                            .build(),
+                    )
+                }
+            }.build()
     }
 
     private fun fixture(

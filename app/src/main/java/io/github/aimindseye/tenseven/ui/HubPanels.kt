@@ -40,13 +40,18 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.HubConversation
+import io.github.aimindseye.tenseven.conversations.HubSourceAction
 import io.github.aimindseye.tenseven.conversations.Snooze
+import io.github.aimindseye.tenseven.conversations.availableSourceActions
+import io.github.aimindseye.tenseven.conversations.performHubSourceAction
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlin.math.abs
@@ -108,8 +113,13 @@ internal fun HubPanelsHost(
                     .hubPanelDismiss(settings) { close() }
                     .background(MaterialTheme.colorScheme.background)
                     .testTag(if (settings) "hub-settings-panel" else "hub-message-panel")
-                    .semantics { paneTitle = if (settings) "Hub settings" else "Message options" }
-                    .verticalScroll(rememberScrollState())
+                    .semantics {
+                        paneTitle =
+                            hubPaneTitle(
+                                settings,
+                                conversation?.latestNotification?.isEmail == true,
+                            )
+                    }.verticalScroll(rememberScrollState())
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -186,20 +196,23 @@ private fun HubMessagePanel(
     ui: HubConversationsUi,
     onClose: () -> Unit,
 ) {
-    var reply by remember(conversation.id) { mutableStateOf(false) }
     var remind by remember(conversation.id) { mutableStateOf(false) }
     Text(
-        "Message options",
+        io.github.aimindseye.tenseven.model.HubActionPolicy
+            .panelTitle(conversation.latestNotification.isEmail),
         Modifier.semantics { heading() },
         color = Bb10Text,
         style = MaterialTheme.typography.titleLarge,
     )
     Text(conversation.latestNotification.appName, color = Bb10Muted)
-    PanelAction("Open app") {
+    PanelAction(
+        io.github.aimindseye.tenseven.model.HubActionPolicy
+            .openLabel(conversation.latestNotification.isEmail),
+    ) {
         ui.onOpen(conversation)
         onClose()
     }
-    if (!ui.deviceLocked && conversation.replyTarget != null) PanelAction("Reply") { reply = !reply }
+    HubMessageReplyActions(conversation, ui, onClose)
     if (ui.state.unreadCount(conversation) > 0) {
         PanelAction("Mark read") {
             ui.onMarkRead(conversation)
@@ -215,7 +228,6 @@ private fun HubMessagePanel(
         onClose()
     }
     PanelAction("Remind") { remind = !remind }
-    if (reply && !ui.deviceLocked) HubPanelReply { ui.onReply(conversation, it) }
     if (remind) {
         PanelAction("Tomorrow morning") {
             ui.onRemind(
@@ -241,7 +253,7 @@ private fun HubMessagePanel(
 
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun HubPanelReply(onSend: (String) -> Boolean) {
+private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) {
     var draft by remember { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
     OutlinedTextField(
@@ -250,17 +262,18 @@ private fun HubPanelReply(onSend: (String) -> Boolean) {
             draft = it
             failed = false
         },
-        label = { Text("Reply") },
+        label = { Text(label) },
+        placeholder = { Text(stringResource(R.string.hub_reply_hint)) },
         modifier = Modifier.fillMaxWidth(),
         isError = failed,
     )
-    PanelAction("Send") {
+    PanelAction(stringResource(R.string.hub_send)) {
         if (draft.isNotBlank()) {
             failed = !onSend(draft)
             if (!failed) draft = ""
         }
     }
-    if (failed) Text("Reply could not be sent", color = MaterialTheme.colorScheme.error)
+    if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)
 }
 
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
@@ -322,4 +335,66 @@ private fun Modifier.hubPanelDismiss(
                 if (closing) onClose()
             },
         ) { _, amount -> distance += amount }
+    }
+
+/** Capabilities come from the latest selected source, not older notifications grouped with the same person. */
+@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
+@Composable
+private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConversationsUi, onClose: () -> Unit) {
+    val source = conversation.latestNotification
+    val context = LocalContext.current
+    var selected by remember(source) { mutableStateOf<HubSourceAction?>(null) }
+    var primary by remember(source) { mutableStateOf(false) }
+    var failed by remember(source) { mutableStateOf(false) }
+    if (ui.deviceLocked) return
+    val primaryLabel =
+        source.replyAction
+            ?.title
+            ?.toString()
+            ?.takeIf(String::isNotBlank) ?: "Reply"
+    if (source.canReply) {
+        PanelAction(primaryLabel) {
+            primary = !primary
+            selected = null
+        }
+    }
+    source.availableSourceActions(false).forEach { action ->
+        PanelAction(action.label) {
+            primary = false
+            if (action.acceptsText) {
+                selected = action
+            } else {
+                failed = !performHubSourceAction(context, action)
+                if (!failed) onClose()
+            }
+        }
+    }
+    if (primary) {
+        androidx.compose.runtime.key(source.key, primaryLabel) {
+            HubPanelReply(primaryLabel) { ui.onReply(conversation, it) }
+        }
+    }
+    selected?.let { action ->
+        androidx.compose.runtime.key(action) {
+            HubPanelReply(action.label) { text ->
+                val sent = performHubSourceAction(context, action, text)
+                if (sent) onClose()
+                sent
+            }
+        }
+    }
+    if (failed) {
+        Text("This action is no longer available. Open the source app.", color = MaterialTheme.colorScheme.error)
+    }
+}
+
+private fun hubPaneTitle(
+    settings: Boolean,
+    email: Boolean,
+): String =
+    if (settings) {
+        "Hub settings"
+    } else {
+        io.github.aimindseye.tenseven.model.HubActionPolicy
+            .panelTitle(email)
     }

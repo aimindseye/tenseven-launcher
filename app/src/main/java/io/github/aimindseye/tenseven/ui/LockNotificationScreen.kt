@@ -27,6 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +44,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubNotification
 import io.github.aimindseye.tenseven.design.sableFocusRing
@@ -71,6 +75,7 @@ internal fun LockNotificationScreen(
         if (content.source != selectedPackage) actions.select(content.source)
     }
     BackHandler(content.source != null) { actions.select(null) }
+    val unlockHint = stringResource(R.string.lock_hint)
     Column(
         Modifier
             .fillMaxSize()
@@ -82,10 +87,13 @@ internal fun LockNotificationScreen(
         LockClock()
         LockNotificationBody(content, actions, Modifier.weight(1f))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            LockFooterAction(if (content.source == null) "Unlock" else "Collapse") {
+            LockFooterAction(
+                if (content.source == null) "Unlock" else "Collapse",
+                if (content.source == null) unlockHint else "Collapse",
+            ) {
                 if (content.source == null) actions.unlock() else actions.select(null)
             }
-            if (content.source != null) LockFooterAction("Unlock", actions.unlock)
+            if (content.source != null) LockFooterAction("Unlock", unlockHint, actions.unlock)
             HomeBarControl("Camera", "camera", onClick = actions.camera)
         }
     }
@@ -132,7 +140,7 @@ private fun rememberLockContent(
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockNotificationBody(content: LockContent, actions: LockScreenActions, modifier: Modifier) {
-    var marker by remember { mutableStateOf(INITIAL_MARKER_PX) }
+    var marker by remember { mutableFloatStateOf(INITIAL_MARKER_PX) }
     val railScroll = rememberScrollState()
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.width(64.dp).fillMaxHeight().verticalScroll(railScroll)) {
@@ -177,13 +185,14 @@ private fun LockNotificationBody(content: LockContent, actions: LockScreenAction
 
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun LockFooterAction(label: String, onClick: () -> Unit) {
+private fun LockFooterAction(label: String, description: String, onClick: () -> Unit) {
     Text(
         label,
         Modifier
             .heightIn(min = 48.dp)
             .sableFocusRing()
             .clickable(onClick = onClick)
+            .semantics { contentDescription = description }
             .padding(12.dp),
         color = Bb10Text,
     )
@@ -193,7 +202,7 @@ private fun LockFooterAction(label: String, onClick: () -> Unit) {
 @Composable
 private fun LockClock() {
     val context = LocalContext.current
-    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
             now = System.currentTimeMillis()

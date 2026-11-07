@@ -5,8 +5,8 @@ package io.github.aimindseye.tenseven.conversations
 
 import android.app.Notification
 import android.app.PendingIntent
-import java.util.Locale
 import io.github.aimindseye.tenseven.model.HubSourceGroups
+import java.util.Locale
 
 /** One message of a conversation, as read from a notification. Held in memory only. */
 data class ConversationMessage(
@@ -37,9 +37,11 @@ data class HubNotification(
     internal val replyAction: Notification.Action?,
     /** An email notification (category email); everything else is a message. */
     val isEmail: Boolean = false,
-    /** The notification's own "mark as read" action, when the app offers one. */
-    internal val markReadAction: Notification.Action? = null,
+    /** Source-provided capabilities and intents; kept in memory with this active notification only. */
+    internal val sourceActions: List<Notification.Action> = emptyList(),
 ) {
+    internal val markReadAction: Notification.Action?
+        get() = sourceActions.firstOrNull { it.semanticAction == Notification.Action.SEMANTIC_ACTION_MARK_AS_READ }
     val canReply: Boolean get() = replyAction != null
 }
 
@@ -71,10 +73,15 @@ internal fun isConversationNotification(
         isEmailNotification(packageName, category)
 
 /** A known mail provider may omit the category; do not reinterpret explicit promotions or services. */
-internal fun isEmailNotification(packageName: String, category: String?): Boolean =
+internal fun isEmailNotification(
+    packageName: String,
+    category: String?,
+): Boolean =
     category == Notification.CATEGORY_EMAIL ||
-        (HubSourceGroups.isKnownMailPackage(packageName) &&
-            (category.isNullOrBlank() || category == Notification.CATEGORY_MESSAGE))
+        (
+            HubSourceGroups.isKnownMailPackage(packageName) &&
+                (category.isNullOrBlank() || category == Notification.CATEGORY_MESSAGE)
+        )
 
 /** InboxStyle text lines are notification content too; blank extras must not hide later fallbacks. */
 internal fun fallbackNotificationText(

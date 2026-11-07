@@ -44,13 +44,21 @@ class ConversationListenerService : NotificationListenerService() {
 
     private fun importActiveNotifications() {
         val active = readActiveNotifications()
-        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.replace(this, active)
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+            .replace(this, active)
         // Parse before choosing summaries: a malformed/empty child must not hide usable mail content.
         val parsed = active.mapNotNull { sbn -> safeHubNotification(sbn)?.let { sbn to it } }
-        val visible = NotificationGroupSelection.visibleKeys(parsed.map { (sbn, item) ->
-            NotificationGroupEntry(item.key, item.packageName, sbn.groupKey,
-                sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0)
-        })
+        val visible =
+            NotificationGroupSelection.visibleKeys(
+                parsed.map { (sbn, item) ->
+                    NotificationGroupEntry(
+                        item.key,
+                        item.packageName,
+                        sbn.groupKey,
+                        sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0,
+                    )
+                },
+            )
         ConversationHub.replace(parsed.map { it.second }.filter { it.key in visible })
         refreshLockCounts()
     }
@@ -73,17 +81,24 @@ class ConversationListenerService : NotificationListenerService() {
         importActiveNotifications()
         if (!screenOnRegistered) {
             // Receiver registration failure must not disable Hub, Peek and lock-screen counts.
-            screenOnRegistered = runCatching {
-                ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
-                true
-            }.getOrDefault(false)
+            screenOnRegistered =
+                runCatching {
+                    ContextCompat.registerReceiver(
+                        this,
+                        screenOn,
+                        IntentFilter(Intent.ACTION_SCREEN_ON),
+                        ContextCompat.RECEIVER_NOT_EXPORTED,
+                    )
+                    true
+                }.getOrDefault(false)
         }
     }
 
     override fun onListenerDisconnected() {
         live.clear()
         NotificationConnection.onDisconnected()
-        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.clear()
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+            .clear()
         ConversationHub.clear()
         LockLayerState.update(emptyMap())
         if (screenOnRegistered) {
@@ -97,8 +112,9 @@ class ConversationListenerService : NotificationListenerService() {
         if (live.get() === this) {
             live.clear()
             NotificationConnection.onDisconnected()
-            io.github.aimindseye.tenseven.platform.FrameMediaNotifications.clear()
-        ConversationHub.clear()
+            io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+                .clear()
+            ConversationHub.clear()
             LockLayerState.update(emptyMap())
         }
         if (screenOnRegistered) {
@@ -120,8 +136,9 @@ class ConversationListenerService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         // When the last mail child disappears, its summary may be the only usable row.
-        if (isEmailNotification(sbn.packageName, sbn.notification.category)) importActiveNotifications()
-        else {
+        if (isEmailNotification(sbn.packageName, sbn.notification.category)) {
+            importActiveNotifications()
+        } else {
             ConversationHub.remove(sbn.key)
             refreshLockCounts()
         }
@@ -130,14 +147,14 @@ class ConversationListenerService : NotificationListenerService() {
     private fun readActiveNotifications(): List<StatusBarNotification> =
         runCatching { activeNotifications.orEmpty().toList() }.getOrDefault(emptyList())
 
-    private fun safeHubNotification(sbn: StatusBarNotification): HubNotification? =
-        runCatching { toHubNotification(sbn) }.getOrNull()
+    private fun safeHubNotification(sbn: StatusBarNotification): HubNotification? = runCatching { toHubNotification(sbn) }.getOrNull()
 
     /** Counts per app for the lock layer: how many notifications wait, nothing of what they say. */
     private fun refreshLockCounts() {
         val enabled = startState.loadHubEnabledApps()
         val current = readActiveNotifications()
-        io.github.aimindseye.tenseven.platform.FrameMediaNotifications.replace(this, current)
+        io.github.aimindseye.tenseven.platform.FrameMediaNotifications
+            .replace(this, current)
         NotificationConnection.onSnapshot(current.size)
         val waiting =
             current.filter { it.packageName in enabled }.map {
@@ -195,16 +212,13 @@ class ConversationListenerService : NotificationListenerService() {
             contentIntent = notification.contentIntent,
             replyAction = replyActionOf(notification),
             isEmail = email,
-            markReadAction = markReadActionOf(notification),
+            sourceActions = notification.actions.orEmpty().toList(),
         )
     }
 
     /** The action behind the notification's own Reply button: the first one that takes free-form text. */
     private fun replyActionOf(notification: Notification): Notification.Action? =
         notification.actions?.firstOrNull { action -> action.remoteInputs?.any(RemoteInput::getAllowFreeFormInput) == true }
-
-    private fun markReadActionOf(notification: Notification): Notification.Action? =
-        notification.actions?.firstOrNull { it.semanticAction == Notification.Action.SEMANTIC_ACTION_MARK_AS_READ }
 
     private fun messagingStyleOf(notification: Notification): Notification.MessagingStyle? =
         runCatching {
@@ -265,13 +279,14 @@ class ConversationListenerService : NotificationListenerService() {
         conversationId: String,
         name: String,
     ): List<ConversationMessage> {
-        val body = fallbackNotificationText(
-            bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
-            text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
-            lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES).orEmpty().map { it.toString() },
-            summary = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString(),
-            title = titleOf(null, extras)?.toString(),
-        ) ?: return emptyList()
+        val body =
+            fallbackNotificationText(
+                bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
+                text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString(),
+                lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES).orEmpty().map { it.toString() },
+                summary = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString(),
+                title = titleOf(null, extras)?.toString(),
+            ) ?: return emptyList()
         return listOf(
             ConversationMessage(
                 id = "${sbn.packageName}|${sbn.postTime}|$body",

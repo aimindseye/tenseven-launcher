@@ -130,7 +130,7 @@ internal fun HubPage(
     }
 
     val conversationsUi =
-        rememberHubConversationsUi(context, refreshGeneration, ::openMessages, onOpenHubSettings)
+        rememberHubConversationsUi(context, refreshGeneration, hubSourceFallback(context), onOpenHubSettings)
 
     val actions =
         HubActions(
@@ -565,3 +565,10 @@ private fun rememberHubPeople(
     }
     return people to loaded
 }
+
+private fun hubSourceFallback(context: android.content.Context): () -> Unit =
+    {
+        android.widget.Toast
+            .makeText(context, "Source app unavailable", android.widget.Toast.LENGTH_SHORT)
+            .show()
+    }

@@ -129,18 +129,7 @@ object ConversationHub {
     fun open(
         context: Context,
         item: HubNotification,
-    ): Boolean {
-        val pendingIntent = item.contentIntent ?: return false
-        return runCatching {
-            val options =
-                ActivityOptions
-                    .makeBasic()
-                    .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                    .toBundle()
-            pendingIntent.send(context, 0, null, null, null, null, options)
-            true
-        }.getOrDefault(false)
-    }
+    ): Boolean = sendHubPendingIntent(context, item.contentIntent)
 
     /**
      * Sends [text] through the conversation's reply action, the same one the notification's own Reply button
@@ -152,7 +141,7 @@ object ConversationHub {
         text: String,
     ): Boolean {
         val clean = text.trim()
-        val target = conversation.replyTarget
+        val target = currentHubReplyTarget(context, conversation)
         val action = target?.replyAction
         val inputs: Array<RemoteInput>? = action?.remoteInputs?.filter(RemoteInput::getAllowFreeFormInput)?.toTypedArray()
         if (clean.isEmpty() || target == null || action == null || inputs.isNullOrEmpty()) return false
