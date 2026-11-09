@@ -569,7 +569,10 @@ class TenSevenPhoneActivity : Activity() {
         }
         data.emails(id).forEach { email ->
             infoRow(body, "✉", "Email", email) {
-                safeStart(Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", email, null)))
+                safeStart(Intent.createChooser(
+                    Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", email, null)),
+                    "Choose an email app",
+                ))
             }
         }
         data.company(id)?.takeIf(String::isNotBlank)?.let { infoRow(body, "▥", "Company", it) { } }
@@ -683,15 +686,44 @@ class TenSevenPhoneActivity : Activity() {
         selectedContactId = id; returnTo = origin; screen = Screen.CONTACT_DETAIL; draw()
     }
     private fun openEditor(id: Long) {
-        safeStart(Intent(Intent.ACTION_EDIT,
-            ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id)))
+        val edit = Intent(Intent.ACTION_EDIT,
+            ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id))
+        // Contact IDs are private: never expose them through a freely resolved implicit intent.
+        val editor = edit.resolveActivity(packageManager)
+        if (editor == null) {
+            // Package visibility can hide handlers; Android's chooser requires user consent.
+            safeStart(Intent.createChooser(edit, "Choose a contact editor"))
+            return
+        }
+        safeStart(edit.setComponent(editor))
     }
     private fun addContact() = safeStart(Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI))
-    private fun message(number: String) = safeStart(Intent(Intent.ACTION_SENDTO,
-        Uri.fromParts("smsto", number, null)))
-    private fun openVoicemail() = safeStart(Intent(Intent.ACTION_DIAL, Uri.parse("voicemail:")))
+    private fun message(number: String) {
+        // User-selected default SMS app, not any app that registers an smsto: filter.
+        val smsPackage = android.provider.Telephony.Sms.getDefaultSmsPackage(this)
+        if (smsPackage.isNullOrBlank()) {
+            toast("Set a default messaging app to send a message")
+            return
+        }
+        safeStart(Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number, null)).setPackage(smsPackage))
+    }
+    private fun openTrustedDialer(uri: Uri) {
+        val dialerPackage = getSystemService(TelecomManager::class.java)?.defaultDialerPackage
+        if (dialerPackage.isNullOrBlank()) {
+            toast("Set a default Phone app to place a call")
+            return
+        }
+        safeStart(Intent(Intent.ACTION_DIAL, uri).setPackage(dialerPackage))
+    }
+    private fun openVoicemail() = openTrustedDialer(Uri.parse("voicemail:"))
     private fun defaultPhoneSetup() = safeStart(Intent(this, D5PhoneRoleRequestActivity::class.java))
     private fun safeStart(intent: Intent) {
+        val sensitive = intent.action == Intent.ACTION_EDIT || intent.action == Intent.ACTION_SENDTO ||
+            intent.action == Intent.ACTION_DIAL
+        if (sensitive && intent.component == null && intent.`package`.isNullOrBlank()) {
+            toast("No trusted application was selected for this action")
+            return
+        }
         try { startActivity(intent) } catch (_: Exception) { toast("No compatible app is available for this action") }
     }
     private fun floating(parent: FrameLayout, glyph: String, description: String,
@@ -712,11 +744,12 @@ class TenSevenPhoneActivity : Activity() {
         if (number.isBlank()) { toast("Enter a number first"); return }
         val roles = getSystemService(RoleManager::class.java)
         if (roles?.isRoleHeld(RoleManager.ROLE_DIALER) != true) {
-            // Do not silently claim dialer role. Hand off to the current Phone app.
-            safeStart(Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", number, null)))
+            // Do not silently claim dialer role. Hand off only to the chosen default Phone app.
+            openTrustedDialer(Uri.fromParts("tel", number, null))
             return
         }
-        if (!isGranted(Manifest.permission.CALL_PHONE)) {
+        // Inline platform permission check: Android Lint can verify this guard.
+        if (checkSelfPermission(Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
             queuedNumber = number
             requestPermissions(arrayOf(Manifest.permission.CALL_PHONE), 203)
             return

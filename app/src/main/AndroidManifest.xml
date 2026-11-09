@@ -54,6 +54,7 @@
       "unavailable"). Replacements built from public APIs are on the roadmap (docs/ARCHITECTURE.md).
     -->
 
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <uses-permission android:name="android.permission.READ_CALL_LOG" />

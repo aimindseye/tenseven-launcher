@@ -87,7 +87,6 @@ internal fun BbHomeStatus(
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             metrics.forEach { (key, label, fraction) ->
-                val shownLabel = if (compact) shortMetricLabel(key, label) else label
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     when (mode) {
                         HomeStatusMode.Dials -> ThinStatusDial(key, label, fraction, diameter, textScale)

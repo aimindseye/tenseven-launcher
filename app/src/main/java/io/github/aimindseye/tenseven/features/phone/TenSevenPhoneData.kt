@@ -55,7 +55,6 @@ internal object TenSevenContactPhotos {
     }
 
     fun avatar(context: Context, id: Long?, displayName: String, sizeDp: Int, palette: PhonePalette): FrameLayout {
-        val px = (sizeDp * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
         val frame = FrameLayout(context).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL

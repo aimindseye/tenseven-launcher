@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.features.phone
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import io.github.aimindseye.tenseven.D5BbDialogs
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
@@ -247,6 +248,23 @@ class TenSevenInCallActivity : Activity() {
         Call.STATE_DISCONNECTED -> "Call ended"
         else -> "Phone call"
     }
+    // The default-dialer role is an Android-authorized path to silenceRinger. This API
+    // cannot be granted through a third-party MODIFY_PHONE_STATE permission request.
+    // Keep the role check and SecurityException handling; suppress only the static warning.
+    @SuppressLint("MissingPermission")
+    private fun silenceIncomingRinger() {
+        val role = getSystemService(RoleManager::class.java)
+        if (role?.isRoleHeld(RoleManager.ROLE_DIALER) != true) {
+            Toast.makeText(this, "Default Phone role required", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            getSystemService(android.telecom.TelecomManager::class.java)?.silenceRinger()
+        } catch (_: SecurityException) {
+            Toast.makeText(this, "Default Phone role required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun render() {
         TenSevenSafeViewport.darkSystemBars(this)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(ui.bg) }
@@ -297,11 +315,7 @@ class TenSevenInCallActivity : Activity() {
                     finish()
                 }
                 val secondary = row(root)
-                button(secondary, "Silence") {
-                    val telecom = getSystemService(android.telecom.TelecomManager::class.java)
-                    try { telecom?.silenceRinger() }
-                    catch (_: SecurityException) { Toast.makeText(this, "Default Phone role required", Toast.LENGTH_SHORT).show() }
-                }
+                button(secondary, "Silence") { silenceIncomingRinger() }
                 button(secondary, "Reply with text") {
                     if (call.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT)) showReply(call)
                     else Toast.makeText(this, "Text reply is unavailable for this call", Toast.LENGTH_SHORT).show()

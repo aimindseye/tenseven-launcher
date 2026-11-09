@@ -63,6 +63,9 @@ class NotificationDisplayUiTest {
         var selectedFilter = ConversationFilter()
         var calendarOpens = 0
         var remindOpens = 0
+        var composeOpens = 0
+        var searchOpens = 0
+        var viewsOpen by mutableStateOf(false)
         val ui =
             HubConversationsUi(
                 accessGranted = true,
@@ -100,34 +103,56 @@ class NotificationDisplayUiTest {
                         0,
                         onOpenCalendar = { calendarOpens++ },
                     )
+                    HubCompactBar(
+                        onViews = { viewsOpen = true },
+                        onCompose = { composeOpens++ },
+                        onSearch = { searchOpens++ },
+                    )
+                    if (viewsOpen) {
+                        HubCompactViews(
+                            ui = ui,
+                            onTabChange = { selectedTab = it },
+                            onCalendar = { calendarOpens++ },
+                            onDismiss = { viewsOpen = false },
+                        )
+                    }
                 }
             }
         }
-        val shortcuts = listOf("Hub", "Messages", "Email", "Unread", "Search", "Calls", "Calendar", "Snoozed", "Remind", "Contacts")
-        val top =
-            compose
-                .onNodeWithContentDescription("Hub")
-                .fetchSemanticsNode()
-                .boundsInRoot.top
-        shortcuts.forEach { label ->
-            val node = compose.onNodeWithContentDescription(label).performScrollTo().assertIsDisplayed()
+        // With no notifications the approved dynamic top tabs show All only.
+        compose.onNodeWithText("All").assertIsDisplayed()
+        compose.onNodeWithText("Messages").assertDoesNotExist()
+        val nav = listOf("Views", "Compose", "Search")
+        val top = compose.onNodeWithContentDescription("Views").fetchSemanticsNode().boundsInRoot.top
+        nav.forEach { label ->
+            val node = compose.onNodeWithContentDescription(label).assertIsDisplayed()
             assertEquals(top, node.fetchSemanticsNode().boundsInRoot.top, 0.1f)
         }
-        compose.onNodeWithContentDescription("More categories and active apps").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Calls").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Compose").performClick()
+        compose.onNodeWithContentDescription("Search").performClick()
+        compose.runOnIdle {
+            assertEquals(1, composeOpens)
+            assertEquals(1, searchOpens)
+        }
+        // The old ten-item icon shelf was replaced by Views; check actual routes.
+        compose.onNodeWithContentDescription("Views").performClick()
+        compose.onNodeWithText("Calls").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(HubFilter.Calls, selectedTab) }
-        compose.onNodeWithContentDescription("Calendar").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Views").performClick()
+        compose.onNodeWithText("Calendar").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, calendarOpens) }
-        compose.onNodeWithContentDescription("Snoozed").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Views").performClick()
+        compose.onNodeWithText("Snoozed").performScrollTo().performClick()
         compose.runOnIdle {
             assertTrue(selectedFilter.snoozed)
             assertEquals(HubFilter.All, selectedTab)
         }
-        compose.onNodeWithContentDescription("Remind").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Views").performClick()
+        compose.onNodeWithText("Remind").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, remindOpens) }
     }
 
-    @Test fun displayPreferencesAreIndependentAndInternalStorageNeedsNoPermission() {
+    @Test fun sharedHomeDialsAndIndependentNotificationExpansionNeedNoStoragePermission() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val state = StartStateRepository(context)
         val original =
@@ -135,14 +160,17 @@ class NotificationDisplayUiTest {
                 state.loadHomeNotificationExpanded(style) to state.loadHomeDials(style)
             }
         try {
+            // D4: notification expansion stays per-style; status dials are intentionally shared.
             state.saveHomeNotificationExpanded(HomeStyle.Bb7, true)
             state.saveHomeNotificationExpanded(HomeStyle.Bb10, false)
             state.saveHomeDials(HomeStyle.Bb7, setOf("storage"))
-            state.saveHomeDials(HomeStyle.Bb10, setOf("cpu"))
             val reload = StartStateRepository(context)
             assertTrue(reload.loadHomeNotificationExpanded(HomeStyle.Bb7))
             assertFalse(reload.loadHomeNotificationExpanded(HomeStyle.Bb10))
             assertEquals(setOf("storage"), reload.loadHomeDials(HomeStyle.Bb7))
+            assertEquals(setOf("storage"), reload.loadHomeDials(HomeStyle.Bb10))
+            reload.saveHomeDials(HomeStyle.Bb10, setOf("cpu"))
+            assertEquals(setOf("cpu"), state.loadHomeDials(HomeStyle.Bb7))
             assertEquals(setOf("cpu"), reload.loadHomeDials(HomeStyle.Bb10))
             val storage = DeviceStatsSampler().sample(context).storage
             assertNotNull(storage)
@@ -154,4 +182,5 @@ class NotificationDisplayUiTest {
             }
         }
     }
+
 }
