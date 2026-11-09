@@ -87,5 +87,25 @@ fun LauncherTheme(
         }
     }
     // The same palette the Hub and the home pages use, so every screen Tenseven draws looks like one app.
-    SableTheme(appearance = appearance) { Bb10Theme(appearance, content) }
+    SableTheme(appearance = appearance) {
+        Bb10Theme(appearance) {
+            // Apply the bounded type scale *after* the Settings palette, or the palette's
+            // MaterialTheme would override it and make the font-size preference appear inert.
+            val settingsSurface =
+                context is LauncherSettingsActivity ||
+                    context is HubSettingsActivity ||
+                    context is OnboardingActivity ||
+                    context is FrameIntegrationsActivity ||
+                    context is HomeStyleActivity ||
+                    context is DeviceCompatibilityActivity ||
+                    context is BackupActivity
+            if (settingsSurface) {
+                Settings2VisualTheme(appearance = appearance) {
+                    io.github.aimindseye.tenseven.ui.ScaledLauncherTextTheme(content)
+                }
+            } else {
+                io.github.aimindseye.tenseven.ui.ScaledLauncherTextTheme(content)
+            }
+        }
+    }
 }

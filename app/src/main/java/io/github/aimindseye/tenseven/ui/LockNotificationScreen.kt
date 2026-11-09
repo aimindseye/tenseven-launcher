@@ -234,6 +234,15 @@ private fun LockSourceIcon(
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
+    io.github.aimindseye.tenseven.iconpacks.IconPresentationState.init(context)
+    val glyph =
+        if (io.github.aimindseye.tenseven.iconpacks.IconPresentationState.selected ==
+            io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+        ) {
+            io.github.aimindseye.tenseven.model.AppGlyphs.forPackage(packageName)
+        } else {
+            null
+        }
     val icon =
         remember(packageName) {
             runCatching {
@@ -266,7 +275,11 @@ private fun LockSourceIcon(
             }.padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (icon != null) Image(icon, null, Modifier.size(28.dp)) else Text(name.take(1), color = Bb10Text)
+        when {
+            glyph != null -> SableGlyphIcon(glyph = glyph, modifier = Modifier.size(28.dp))
+            icon != null -> Image(icon, null, Modifier.size(28.dp))
+            else -> Text(name.take(1), color = Bb10Text)
+        }
         Text(
             LockLayer.countLabel(count),
             color = if (isSelected) Bb10Blue else Bb10Text,

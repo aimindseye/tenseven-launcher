@@ -27,6 +27,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -82,6 +83,7 @@ internal fun SablePeekScreen(
     // UNINSTALL_ONE_KEY=NO: a destructive action first arms, then needs an explicit confirm.
     var pendingConfirm by remember(app) { mutableStateOf<AppAction?>(null) }
     val openFocus = remember { FocusRequester() }
+    var closeFocused by remember { mutableStateOf(false) }
     LaunchedEffect(app) {
         withFrameNanos { }
         runCatching { openFocus.requestFocus() }
@@ -123,12 +125,16 @@ internal fun SablePeekScreen(
                 },
     ) {
         Text(
-            text = "close",
+            text = "Close",
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
                     .heightIn(min = 48.dp)
-                    .sableFocusRing()
+                    .onFocusChanged { closeFocused = it.hasFocus }
+                    .background(
+                        if (closeFocused) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.background,
+                    )
                     .clickable(onClick = onClose)
                     .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 12.dp),
             style = MaterialTheme.typography.titleMedium,

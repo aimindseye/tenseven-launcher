@@ -191,14 +191,14 @@ private fun HubPeekPanel(
                     .graphicsLayer { translationX = (slide.value - 1f) * size.width }
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
-            shape = RoundedCornerShape(18.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            shape = RoundedCornerShape(2.dp),
+            color = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
         ) {
             Column {
-                Box(Modifier.fillMaxWidth().height(3.dp).background(accent))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
                 Column(
                     modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -243,7 +243,17 @@ private fun PeekRow(
     packageName: String?,
     onClick: () -> Unit,
 ) {
-    val packageManager = LocalContext.current.packageManager
+    val context = LocalContext.current
+    val packageManager = context.packageManager
+    io.github.aimindseye.tenseven.iconpacks.IconPresentationState.init(context)
+    val glyph =
+        if (io.github.aimindseye.tenseven.iconpacks.IconPresentationState.selected ==
+            io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+        ) {
+            packageName?.let(io.github.aimindseye.tenseven.model.AppGlyphs::forPackage)
+        } else {
+            null
+        }
     val icon =
         remember(packageName) {
             packageName?.let { runCatching { packageManager.getApplicationIcon(it).toBitmap(120, 120).asImageBitmap() }.getOrNull() }
@@ -262,7 +272,9 @@ private fun PeekRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (icon != null) {
+            if (glyph != null) {
+                SableGlyphIcon(glyph = glyph, modifier = Modifier.size(34.dp))
+            } else if (icon != null) {
                 Image(
                     icon,
                     contentDescription = null,
@@ -304,8 +316,9 @@ private fun PeekButton(
     Surface(
         onClick = onClick,
         modifier = modifier.heightIn(min = 48.dp).sableFocusRing(),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.primary,
+        shape = RoundedCornerShape(3.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -313,10 +326,10 @@ private fun PeekButton(
         ) {
             Text(
                 label,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.labelLarge,
             )
-            Text("  \u203A", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium)
+            Text("  \u203A", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
         }
     }
 }

@@ -49,6 +49,7 @@ import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.GridSettingsPolicy
+import io.github.aimindseye.tenseven.model.HomeStatusMode
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.ThemePresets
@@ -182,15 +183,33 @@ internal fun IconGridSection(state: StartStateRepository) {
 internal fun HomeDisplaySection(state: StartStateRepository) {
     val style = homeStyleState(state).value
     var dials by remember(style) { mutableStateOf(state.loadHomeDials(style)) }
-    var strip by remember(style) { mutableStateOf(state.loadHomeNotificationStrip(style)) }
-    var expanded by remember(style) { mutableStateOf(state.loadHomeNotificationExpanded(style)) }
+    var mode by remember(style) { mutableStateOf(state.loadHomeStatusMode(style)) }
 
     Text("Home status and notifications", style = MaterialTheme.typography.titleMedium)
-    SwitchRow("Performance dials", "Show the performance gauges on this home style", dials.isNotEmpty()) { shown ->
-        dials = if (shown) io.github.aimindseye.tenseven.model.HomeDisplayPolicy.ALL_DIALS else emptySet()
-        state.saveHomeDials(style, dials)
+    Text(
+        "Notification app icons are now in Hub. Use the lower mail icon for unread items.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(
+            HomeStatusMode.Dials to "Dials",
+            HomeStatusMode.Text to "Text",
+            HomeStatusMode.Hidden to "Hidden",
+        ).forEach { (option, label) ->
+            StyleCard(
+                title = label,
+                detail = if (option == HomeStatusMode.Dials) "Blue outline" else "",
+                active = mode == option,
+                modifier = Modifier.weight(1f),
+            ) {
+                mode = option
+                state.saveHomeStatusMode(style, option)
+                dials = state.loadHomeDials(style)
+            }
+        }
     }
-    if (dials.isNotEmpty()) {
+    if (mode == HomeStatusMode.Dials) {
         listOf(
             "wifi" to "Wi-Fi",
             "mobile" to "Mobile",
@@ -204,16 +223,6 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
                 dials = if (enabled) dials + key else dials - key
                 state.saveHomeDials(style, dials)
             }
-        }
-    }
-    SwitchRow("Horizontal notification bar", "App icons and unread counts instead of a single badge", strip) {
-        strip = it
-        state.saveHomeNotificationStrip(style, it)
-    }
-    if (strip) {
-        SwitchRow("Show all notification icons on Home", "Wrap all enabled apps with unread notifications onto additional rows", expanded) {
-            expanded = it
-            state.saveHomeNotificationExpanded(style, it)
         }
     }
 }
@@ -258,7 +267,6 @@ internal fun WallpaperSection(state: StartStateRepository) {
     val scope = rememberCoroutineScope()
     var wallpaperId by remember { mutableStateOf(state.loadWallpaperSetId()) }
     var status by remember { mutableStateOf<Int?>(null) }
-    var homeWallpaper by remember { mutableStateOf(state.loadHomeWallpaper()) }
     Text(
         stringResource(R.string.ls_wallpaper_detail),
         style = MaterialTheme.typography.bodyMedium,
@@ -270,13 +278,6 @@ internal fun WallpaperSection(state: StartStateRepository) {
                 wallpaperId = set.id
                 state.saveWallpaperSetId(set.id)
             }
-        }
-    }
-    // The BlackBerry 7 home always shows the wallpaper, so this switch is for the BlackBerry 10 home only.
-    if (homeStyleState(state).value == HomeStyle.Bb10) {
-        SwitchRow(stringResource(R.string.ls_home_wallpaper), stringResource(R.string.ls_home_wallpaper_detail), homeWallpaper) {
-            homeWallpaper = it
-            state.saveHomeWallpaper(it)
         }
     }
 
@@ -307,8 +308,9 @@ internal fun IconPresentationSection(state: StartStateRepository) {
     val context = LocalContext.current
     var style by remember { mutableStateOf(state.loadIconPresentation()) }
     SwitchRow(
-        "Use TenSeven icon styling",
-        "Off: show installed apps' original icons or your selected icon pack. On: apply TenSeven's Tabler-based style where available. TenSeven's bundled apps keep their own icons.",
+        "Use TenSeven (Tabler) icons",
+        "On by default. Hub, Peek and lock rail use Tabler where mapped. " +
+            "Off: original installed and bundled icons. External packs remain optional.",
         style == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven,
     ) { enabled ->
         style =
@@ -381,15 +383,6 @@ internal fun LockLayerSection(state: StartStateRepository) {
         state.saveLockLayer(it)
     }
     if (lockLayer) {
-        if (!overlayAllowed) {
-            Card(stringResource(R.string.ls_lock_overlay), stringResource(R.string.ls_lock_overlay_detail), false) {
-                runCatching {
-                    context.startActivity(
-                        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:${context.packageName}")),
-                    )
-                }
-            }
-        }
         if (!accessAllowed) {
             Card(stringResource(R.string.ls_lock_access), stringResource(R.string.ls_lock_access_detail), false) {
                 runCatching { context.startActivity(ConversationAccess.settingsIntent()) }
@@ -518,11 +511,11 @@ internal fun Card(
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().sableFocusRing(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.extraSmall,
+        color = MaterialTheme.colorScheme.background,
         border =
             BorderStroke(
-                if (active) 2.dp else 1.dp,
+                1.dp,
                 if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
             ),
     ) {
@@ -545,8 +538,8 @@ internal fun SwitchRow(
     Surface(
         onClick = { onChange(!checked) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.extraSmall,
+        color = MaterialTheme.colorScheme.background,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(

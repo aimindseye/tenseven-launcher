@@ -222,6 +222,7 @@ private fun ConversationCard(
  * All ten Hub actions share one row; narrow windows scroll without reducing touch targets.
  * Message/mail counts roll up; utility shortcuts remain visible together without per-app filter chips.
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun HubUnifiedNavigation(
     ui: HubConversationsUi,
@@ -231,61 +232,94 @@ internal fun HubUnifiedNavigation(
     messageCount: Int,
     emailCount: Int,
     onOpenCalendar: () -> Unit,
+    searchRequest: Int = 0,
+    closeSearchRequest: Int = 0,
 ) {
     var searchOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(searchRequest) {
+        if (searchRequest > 0) {
+            searchOpen = !searchOpen
+            if (!searchOpen) ui.onFilterChange(ui.filter.copy(person = ""))
+        }
+    }
+    LaunchedEffect(closeSearchRequest) {
+        if (closeSearchRequest > 0) {
+            searchOpen = false
+            ui.onFilterChange(ui.filter.copy(person = ""))
+        }
+    }
+    BackHandler(enabled = searchOpen) {
+        searchOpen = false
+        ui.onFilterChange(ui.filter.copy(person = ""))
+    }
+    val unreadCount = ui.conversations.sumOf { ui.state.unreadCount(it) }
+    val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
+    val remindCount = ReminderPolicy.pendingCount(ui.reminders)
+    val tabs = io.github.aimindseye.tenseven.model.HubVisibleTabs.items(
+        messages = messageCount,
+        email = emailCount,
+        unread = unreadCount,
+        snoozed = snoozedCount,
+        reminders = remindCount,
+    )
 
-    fun select(
-        tab: HubFilter,
-        next: ConversationFilter = ConversationFilter(),
-    ) {
+    fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter()) {
         onTabChange(tab)
         ui.onFilterChange(next)
         ui.onSourceChange(null)
     }
+
+    fun selected(name: String): Boolean =
+        when (name) {
+            "All" -> currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null && !ui.remindersSelected
+            "Unread" -> currentTab == HubFilter.All && ui.filter.unreadOnly && !ui.remindersSelected
+            "Messages" -> currentTab == HubFilter.Messages
+            "Email" -> currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email
+            "Snoozed" -> currentTab == HubFilter.All && ui.filter.snoozed
+            "Remind" -> ui.remindersSelected
+            else -> false
+        }
+
+    fun activate(name: String) {
+        when (name) {
+            "All" -> select(HubFilter.All)
+            "Unread" -> select(HubFilter.All, ConversationFilter(unreadOnly = true))
+            "Messages" -> select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
+            "Email" -> select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
+            "Snoozed" -> select(HubFilter.All, ConversationFilter(snoozed = true))
+            "Remind" -> {
+                onTabChange(HubFilter.All)
+                ui.onShowReminders()
+            }
+        }
+    }
+
     BackHandler(enabled = ui.remindersSelected || ui.filter.snoozed) { select(HubFilter.All) }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().testTag("hub-shortcuts").horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconHubFilterButton(
-                "Hub",
-                "folder",
-                currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null && !ui.remindersSelected,
-                modifier = Modifier.focusRequester(firstTab),
-            ) { select(HubFilter.All) }
-            IconHubFilterButton("Messages", "message-dots", currentTab == HubFilter.Messages, count = messageCount) {
-                select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
+            // The approved reference is a flat, readable strip, not an always-populated icon shelf.
+            tabs.forEach { name ->
+                val active = selected(name)
+                val focus = if (name == "All") Modifier.focusRequester(firstTab) else Modifier
+                Column(
+                    modifier = focus.sableFocusRing().clickable { activate(name) }
+                        .padding(horizontal = 3.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        name,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (active) {
+                        Spacer(Modifier.fillMaxWidth().height(2.dp).background(MaterialTheme.colorScheme.primary))
+                    }
+                }
             }
-            IconHubFilterButton(
-                "Email",
-                "mail",
-                currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email,
-                count = emailCount,
-            ) {
-                select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
-            }
-            IconHubFilterButton("Unread", "list-check", currentTab == HubFilter.All && ui.filter.unreadOnly && !ui.remindersSelected) {
-                select(HubFilter.All, ConversationFilter(unreadOnly = true))
-            }
-            IconHubFilterButton("Search", "search", searchOpen) { searchOpen = !searchOpen }
-            IconHubFilterButton("Calls", "phone-call", currentTab == HubFilter.Calls) { select(HubFilter.Calls) }
-            IconHubFilterButton("Calendar", "calendar", false, onClick = onOpenCalendar)
-            val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
-            IconHubFilterButton("Snoozed", "clock", currentTab == HubFilter.All && ui.filter.snoozed, count = snoozedCount) {
-                select(HubFilter.All, ConversationFilter(snoozed = true))
-            }
-            IconHubFilterButton(
-                "Remind",
-                "list-check",
-                ui.remindersSelected,
-                count = ReminderPolicy.pendingCount(ui.reminders),
-            ) {
-                onTabChange(HubFilter.All)
-                ui.onShowReminders()
-            }
-            IconHubFilterButton("Contacts", "address-book", currentTab == HubFilter.Contacts) { select(HubFilter.Contacts) }
         }
         if (searchOpen && currentTab != HubFilter.Calls && currentTab != HubFilter.Contacts) {
             OutlinedTextField(
@@ -383,6 +417,15 @@ private fun ConversationRow(
     // Display installed source icons, not a letter avatar: several providers share initials.
     val sourcePackage = conversation.sourcePackages.firstOrNull()
     val context = LocalContext.current
+    io.github.aimindseye.tenseven.iconpacks.IconPresentationState.init(context)
+    val sourceGlyph =
+        if (io.github.aimindseye.tenseven.iconpacks.IconPresentationState.selected ==
+            io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+        ) {
+            sourcePackage?.let(io.github.aimindseye.tenseven.model.AppGlyphs::forPackage)
+        } else {
+            null
+        }
     val sourceIcon =
         remember(sourcePackage) {
             sourcePackage?.let { pkg ->
@@ -439,7 +482,9 @@ private fun ConversationRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                if (sourceIcon != null) {
+                if (sourceGlyph != null) {
+                    SableGlyphIcon(glyph = sourceGlyph, modifier = Modifier.size(30.dp))
+                } else if (sourceIcon != null) {
                     Image(
                         bitmap = sourceIcon,
                         contentDescription = source,

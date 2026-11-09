@@ -208,6 +208,14 @@ fun SableStartScreen(
     }
 
     fun launchApp(entry: AppEntry) {
+        if (
+            entry.component.className == io.github.aimindseye.tenseven.SableStartActivity::class.java.name ||
+            entry.component.className == "io.github.aimindseye.tenseven.LauncherEntry"
+        ) {
+            // The Home activity and its Android launcher alias both return to Home.
+            showPage(StartPages.HOME)
+            return
+        }
         if (onLaunchApp(entry)) {
             val key = entry.stableKey()
             recentKeys =
@@ -352,6 +360,8 @@ fun SableStartScreen(
     }
 
     SableThemeWithWidgets(appearance, widgetsController, homeWidgetIds, if (wallpaperBehind) HOME_BACKDROP_ALPHA else 1f) {
+        // Home, Hub and app grid must use the same safe reading scale as Settings.
+        ScaledLauncherTextTheme {
         val seeThrough = wallpaperBehind && destination == SableStartDestination.Start
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -440,6 +450,11 @@ fun SableStartScreen(
                                                 onStartIntent = onStartIntent,
                                                 refreshGeneration = refreshGeneration,
                                                 onRequestContactsPermission = onRequestContactsPermission,
+                                                onReturnHome = {
+                                                    pagerScope.launch {
+                                                        startPager.animateScrollToPage(StartPages.HOME + lead)
+                                                    }
+                                                },
                                             )
                                         }
                                     }
@@ -701,6 +716,7 @@ fun SableStartScreen(
                     }
                 }
             }
+        }
         }
     }
 }

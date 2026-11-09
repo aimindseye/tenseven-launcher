@@ -1,7 +1,9 @@
 package io.github.aimindseye.tenseven.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -12,14 +14,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -39,8 +48,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +60,7 @@ import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.conversations.Snooze
+import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.platform.HubSourceAction
 import io.github.aimindseye.tenseven.platform.StartStateRepository
@@ -64,6 +76,7 @@ internal val LocalHubRowSelection = staticCompositionLocalOf<(String, FocusReque
 internal fun HubPanelsHost(
     ui: HubConversationsUi,
     onAllSettings: () -> Unit,
+    onSwipeLeft: () -> Unit = {},
     content: @Composable (() -> Unit) -> Unit,
 ) {
     var settings by remember { mutableStateOf(false) }
@@ -84,11 +97,31 @@ internal fun HubPanelsHost(
         if (ui.deviceLocked || conversation == null || ui.remindersSelected) selected = null
     }
     BackHandler(settings || selected != null) { close() }
+    // Android's system Back gesture can otherwise steal a right swipe started on the
+    // left edge, taking the user Home before Hub Settings sees the gesture.
+    // Limit the exclusion to a 48dp-wide, 160dp-tall upper-left strip. Back stays
+    // available from the remainder of both edges and via the hardware/system key.
+    val density = LocalDensity.current
+    val edgePx = with(density) { 48.dp.toPx() }
+    val exclusionTopPx = with(density) { 32.dp.toPx() }
+    val exclusionHeightPx = with(density) { 160.dp.toPx() }
     Box(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).hubSettingsSwipe {
-            settings = true
-            selected = null
-        },
+        Modifier.fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .systemGestureExclusion { coordinates ->
+                Rect(0f, exclusionTopPx,
+                    edgePx.coerceAtMost(coordinates.size.width.toFloat()),
+                    (exclusionTopPx + exclusionHeightPx).coerceAtMost(coordinates.size.height.toFloat()))
+            }
+            .hubSettingsSwipe(
+            onOpen = {
+                settings = true
+                selected = null
+            },
+            onSwipeLeft = {
+                if (settings || selected != null) close() else onSwipeLeft()
+            },
+        ),
     ) {
         CompositionLocalProvider(
             LocalHubRowSelection provides { id, focus ->
@@ -129,22 +162,23 @@ internal fun HubPanelsHost(
     }
 }
 
-/** Claim horizontal intent only in the left 48dp; leave vertical scrolling and inner calendar gestures alone. */
-private fun Modifier.hubSettingsSwipe(onOpen: () -> Unit): Modifier =
-    pointerInput(onOpen) {
+/** Hub owns horizontal gestures while it is the selected page: right -> settings, left -> Home.
+ * Vertical scrolling stays unclaimed, including scrolling inside the Hub message list.
+ */
+private fun Modifier.hubSettingsSwipe(onOpen: () -> Unit, onSwipeLeft: () -> Unit): Modifier =
+    pointerInput(onOpen, onSwipeLeft) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-            if (down.position.x > 48.dp.toPx()) return@awaitEachGesture
             var claimed = false
             do {
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 val change = event.changes.firstOrNull { it.id == down.id } ?: return@awaitEachGesture
                 val dx = change.position.x - down.position.x
                 val dy = change.position.y - down.position.y
-                if (!claimed && abs(dy) > viewConfiguration.touchSlop) return@awaitEachGesture
-                if (!claimed && dx > viewConfiguration.touchSlop) {
+                if (!claimed && abs(dy) > viewConfiguration.touchSlop * 2f) return@awaitEachGesture
+                if (!claimed && abs(dx) > viewConfiguration.touchSlop * 2f) {
                     claimed = true
-                    onOpen()
+                    if (dx > 0f) onOpen() else onSwipeLeft()
                 }
                 if (claimed) change.consume()
             } while (change.pressed)
@@ -197,29 +231,47 @@ private fun HubMessagePanel(
     onClose: () -> Unit,
 ) {
     var remind by remember(conversation.id) { mutableStateOf(false) }
-    Text(
-        io.github.aimindseye.tenseven.model.HubActionPolicy
-            .panelTitle(conversation.latestNotification.kind),
-        Modifier.semantics { heading() },
-        color = Bb10Text,
-        style = MaterialTheme.typography.titleLarge,
-    )
-    Text(conversation.latestNotification.appName, color = Bb10Muted)
+    // Page 5 of the approved device review: selected context is a distinct, blue outlined region.
+    // Never show notification text when privacy says the device is locked.
+    if (!ui.deviceLocked) {
+        val preview =
+            io.github.aimindseye.tenseven.conversations.conversationPreview(
+                conversation,
+                locked = ui.deviceLocked,
+                you = "You",
+                maxChars = 180,
+            )
+        Surface(
+            modifier = Modifier.fillMaxWidth().testTag("hub-selected-message-context"),
+            shape = RoundedCornerShape(1.dp),
+            color = MaterialTheme.colorScheme.background,
+            border = BorderStroke(2.dp, Bb10Blue),
+        ) {
+            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("SELECTED MESSAGE", color = Bb10Muted, style = MaterialTheme.typography.labelSmall)
+                Text(conversation.name, color = Bb10Text, style = MaterialTheme.typography.titleMedium)
+                if (!preview.isNullOrBlank()) {
+                    Text(preview, color = Bb10Muted, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+                }
+            }
+        }
+    }
     PanelAction(
         io.github.aimindseye.tenseven.model.HubActionPolicy
             .openLabel(conversation.latestNotification.kind),
+        iconName = "mail",
     ) {
         ui.onOpen(conversation)
         onClose()
     }
     HubMessageReplyActions(conversation, ui, onClose)
     if (ui.state.unreadCount(conversation) > 0) {
-        PanelAction("Mark read") {
+        PanelAction("Mark read", iconName = "list-check") {
             ui.onMarkRead(conversation)
             onClose()
         }
     }
-    PanelAction(if (ui.filter.snoozed) "Show now" else "Snooze 1 hour") {
+    PanelAction(if (ui.filter.snoozed) "Show now" else "Snooze 1 hour", iconName = "clock") {
         if (ui.filter.snoozed) {
             ui.onWake(conversation)
         } else {
@@ -227,26 +279,34 @@ private fun HubMessagePanel(
         }
         onClose()
     }
-    PanelAction("Remind") { remind = !remind }
-    if (remind) {
-        PanelAction("Tomorrow morning") {
-            ui.onRemind(
-                conversation,
-                io.github.aimindseye.tenseven.tasks.TaskSchedule.preset(
-                    "Tomorrow morning",
-                    java.time.Instant.now(),
-                    java.time.ZoneId.systemDefault(),
-                ),
-            )
-            onClose()
+    val remindLocation = remember { BringIntoViewRequester() }
+    LaunchedEffect(remind) {
+        if (remind) {
+            withFrameNanos { }
+            remindLocation.bringIntoView()
         }
-        PanelAction("Until complete") {
-            ui.onRemind(conversation, null)
-            onClose()
-        }
-        PanelAction("Choose date and time…") {
-            ui.onCustomRemind(conversation)
-            onClose()
+    }
+    Column(Modifier.fillMaxWidth().bringIntoViewRequester(remindLocation)) {
+        PanelAction(if (remind) "Remind  ▴" else "Remind", iconName = "notes") { remind = !remind }
+        if (remind) {
+            // Keep expanded options in the same scroll region and bring the whole section into view.
+            PanelAction("Tomorrow morning", iconName = "clock") {
+                ui.onRemind(
+                    conversation,
+                    io.github.aimindseye.tenseven.tasks.TaskSchedule.preset(
+                        "Tomorrow morning", java.time.Instant.now(), java.time.ZoneId.systemDefault(),
+                    ),
+                )
+                onClose()
+            }
+            PanelAction("Until complete", iconName = "list-check") {
+                ui.onRemind(conversation, null)
+                onClose()
+            }
+            PanelAction("Choose date and time…", iconName = "calendar") {
+                ui.onCustomRemind(conversation)
+                onClose()
+            }
         }
     }
 }
@@ -281,19 +341,36 @@ private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) 
 private fun PanelAction(
     label: String,
     modifier: Modifier = Modifier,
+    iconName: String? = null,
     onClick: () -> Unit,
 ) {
-    Text(
-        label,
-        modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .sableFocusRing()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        color = Bb10Text,
-        style = MaterialTheme.typography.bodyLarge,
-    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .sableFocusRing()
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 4.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (iconName != null) {
+                LineIcon(
+                    paths = TablerGlyphPaths.BY_NAME[iconName].orEmpty(),
+                    modifier = Modifier.size(20.dp),
+                    tint = Bb10Text,
+                )
+            }
+            Text(label, color = Bb10Text, style = MaterialTheme.typography.bodyLarge)
+        }
+        Box(
+            Modifier.fillMaxWidth()
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                .heightIn(min = 1.dp),
+        )
+    }
 }
 
 private const val HUB_PANEL_FRACTION = 0.78f
@@ -312,10 +389,24 @@ private fun HubPanelBody(
         withFrameNanos { }
         first.requestFocus()
     }
-    PanelAction("Back", Modifier.focusRequester(first)) { onClose() }
     if (settings) {
+        PanelAction("Back", Modifier.focusRequester(first)) { onClose() }
         HubSettingsPanel(onAllSettings)
     } else {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                conversation?.latestNotification?.kind?.let {
+                    io.github.aimindseye.tenseven.model.HubActionPolicy.panelTitle(it)
+                } ?: "Message",
+                modifier = Modifier.weight(1f).semantics { heading() },
+                color = Bb10Text,
+                style = MaterialTheme.typography.titleLarge,
+            )
+            TextButton(
+                onClick = onClose,
+                modifier = Modifier.focusRequester(first).semantics { contentDescription = "Close message options" },
+            ) { Text("✕") }
+        }
         conversation?.let { HubMessagePanel(it, ui) { onClose() } }
     }
 }
@@ -353,7 +444,7 @@ private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConvers
             ?.toString()
             ?.takeIf(String::isNotBlank) ?: "Reply"
     if (source.canReply) {
-        PanelAction(primaryLabel) {
+        PanelAction(primaryLabel, iconName = "message-dots") {
             primary = !primary
             selected = null
         }

@@ -3,6 +3,7 @@
 package io.github.aimindseye.tenseven.extras.calculator
 
 import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import androidx.core.content.edit
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -111,7 +112,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LauncherTheme(window = window) {
-                CalculatorApp()
+                TenSeven2AppTheme { CalculatorApp() }
             }
         }
     }

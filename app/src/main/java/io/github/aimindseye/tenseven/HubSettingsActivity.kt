@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.design.DesignText
-import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HubApps
 import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.onboarding.SetupStep
@@ -57,6 +54,11 @@ import kotlinx.coroutines.withContext
  * message text.
  */
 class HubSettingsActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_FROM_LAUNCHER_SETTINGS =
+            "io.github.aimindseye.tenseven.extra.HUB_FROM_LAUNCHER_SETTINGS"
+    }
+
     private var resumeTick by mutableStateOf(0)
 
     override fun onResume() {
@@ -73,6 +75,7 @@ class HubSettingsActivity : ComponentActivity() {
         val state = StartStateRepository(this)
         val repository = LauncherAppsRepository(this)
         val calendars = HubCalendarRepository(this)
+        val fromLauncherSettings = intent.getBooleanExtra(EXTRA_FROM_LAUNCHER_SETTINGS, false)
         setContent {
             LauncherTheme(window = window) {
                 val enabled = remember { HubSourceSettings(this) }
@@ -154,6 +157,10 @@ class HubSettingsActivity : ComponentActivity() {
                                 ConversationHub.clearNow()
                                 cleared = true
                             },
+                            navigation = HubSettingsNavigation(
+                                showLauncherBack = fromLauncherSettings,
+                                onBack = { finish() },
+                            ),
                         ),
                     rows = rows,
                     enabled = enabled,
@@ -181,11 +188,17 @@ private data class HubCalendarSettings(
     val onCalendarPeek: (Boolean) -> Unit,
 )
 
+private data class HubSettingsNavigation(
+    val showLauncherBack: Boolean,
+    val onBack: () -> Unit,
+)
+
 private data class HubContentSettings(
     val showText: Boolean,
     val cleared: Boolean,
     val onShowText: (Boolean) -> Unit,
     val onClear: () -> Unit,
+    val navigation: HubSettingsNavigation,
 )
 
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
@@ -199,17 +212,55 @@ private fun HubSettings(
 ) {
     val first = remember { FocusRequester() }
     val auditContext = androidx.compose.ui.platform.LocalContext.current
+    val hubActivity = auditContext as? android.app.Activity
+    val fromFlow = hubActivity?.intent?.getBooleanExtra("tenseven.settings.flow", false) == true
+    fun navigateTo(page: String) {
+        auditContext.startActivity(
+            Intent(auditContext, LauncherSettingsActivity::class.java)
+                .putExtra("tenseven.settings.category", page)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        )
+        hubActivity?.finish()
+    }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .safeDrawingPadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+            Column(
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+            val launcherSettingsContext = androidx.compose.ui.platform.LocalContext.current
+            Settings2BackLink {
+                if (content.navigation.showLauncherBack) {
+                    // Return to the already open Settings activity; do not start a second copy.
+                    content.navigation.onBack()
+                } else {
+                    launcherSettingsContext.startActivity(
+                        Intent(launcherSettingsContext, LauncherSettingsActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    )
+                    (launcherSettingsContext as? android.app.Activity)?.finish()
+                }
+            }
             Text(stringResource(R.string.hub_settings), style = MaterialTheme.typography.titleLarge)
+            val hubComposeContext = androidx.compose.ui.platform.LocalContext.current
+            val hubComposeRepo = remember(hubComposeContext) { StartStateRepository(hubComposeContext) }
+            var composeMode by remember { mutableStateOf(hubComposeRepo.loadHubComposeMode()) }
+            Text("Hub Compose action", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Choose what Compose opens. Ask every time is closest to the original BB10 Hub.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            io.github.aimindseye.tenseven.model.HubComposeMode.entries.forEach { choice ->
+                HubRow(
+                    title = (if (choice == composeMode) "✓ " else "") + choice.label,
+                    detail = choice.description,
+                    onClick = {
+                        composeMode = choice
+                        hubComposeRepo.saveHubComposeMode(choice)
+                    },
+                )
+            }
             Text(
                 stringResource(R.string.hub_settings_intro),
                 style = MaterialTheme.typography.bodyMedium,
@@ -271,7 +322,7 @@ private fun HubSettings(
             )
             HubListenerDiagnostics(access, enabled)
             HubRow(
-                title = "Copy D0 notification audit",
+                title = "Copy notification diagnostics",
                 detail = "Per-app counts and exclusion reasons only. No messages or notification keys are copied.",
                 onClick = {
                     val clipboard =
@@ -279,7 +330,7 @@ private fun HubSettings(
                             as? android.content.ClipboardManager
                     clipboard?.setPrimaryClip(
                         android.content.ClipData.newPlainText(
-                            "TenSeven D0 notification audit",
+                            "TenSeven notification diagnostics",
                             io.github.aimindseye.tenseven.conversations.HubNotificationAudit
                                 .report(),
                         ),
@@ -336,6 +387,13 @@ private fun HubSettings(
             }
 
             HubSourceOptions(rows, enabled, enabled::toggle)
+            }
+            Settings2FlowFooter(
+                backText = "Back",
+                nextText = "Next",
+                onBack = { if (fromFlow) navigateTo("appearance_home") else hubActivity?.finish() },
+                onNext = { navigateTo("lock") },
+            )
         }
     }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
@@ -348,18 +406,7 @@ private fun HubRow(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth().sableFocusRing(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-    ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
+    Card(title = title, detail = detail, active = false, modifier = modifier, onClick = onClick)
 }
 
 @Composable
@@ -369,27 +416,7 @@ private fun HubSwitch(
     checked: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
-    Surface(
-        onClick = { onChange(!checked) },
-        modifier = Modifier.fillMaxWidth().sableFocusRing(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                if (detail.isNotEmpty()) {
-                    Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Switch(checked = checked, onCheckedChange = null)
-        }
-    }
+    SwitchRow(title, detail, checked, onChange)
 }
 
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.

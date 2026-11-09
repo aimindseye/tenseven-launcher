@@ -9,7 +9,7 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /** In-process Compose state, persisted without ever installing/replacing another app's icons. */
 object IconPresentationState {
-    var selected: IconPresentation by mutableStateOf(IconPresentation.Original)
+    var selected: IconPresentation by mutableStateOf(IconPresentation.TenSeven)
         private set
 
     private var initialized = false

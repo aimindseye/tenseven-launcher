@@ -3,6 +3,7 @@
 package io.github.aimindseye.tenseven.extras.notes
 
 import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
@@ -34,7 +35,9 @@ class MainActivity : ComponentActivity() {
         controller.load()
         setContent {
             LauncherTheme(window = window) {
-                NotesApp(controller.state, controller.actions)
+                TenSeven2AppTheme {
+                    NotesApp(controller.state, controller.actions)
+                }
             }
         }
         if (savedInstanceState == null) controller.handleIntent(intent)

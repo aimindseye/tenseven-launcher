@@ -10,13 +10,15 @@ enum class IconPresentation(val key: String) {
     TenSeven("tenseven");
 
     companion object {
-        fun decode(key: String?): IconPresentation = entries.firstOrNull { it.key == key } ?: Original
+        fun decode(key: String?): IconPresentation = entries.firstOrNull { it.key == key } ?: TenSeven
     }
 }
 
 object IconPresentationPolicy {
+    // Original mode also restores bundled-app icons; an explicit external pack takes precedence.
+    @Suppress("UNUSED_PARAMETER")
     fun useGlyph(style: IconPresentation, isTenSevenExtra: Boolean, hasExternalIconPack: Boolean): Boolean =
-        isTenSevenExtra || (style == IconPresentation.TenSeven && !hasExternalIconPack)
+        style == IconPresentation.TenSeven && !hasExternalIconPack
 
     fun useMonochrome(style: IconPresentation, hasExternalIconPack: Boolean): Boolean =
         style == IconPresentation.TenSeven && !hasExternalIconPack

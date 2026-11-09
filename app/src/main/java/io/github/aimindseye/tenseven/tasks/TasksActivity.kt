@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import kotlinx.coroutines.delay
 import java.security.MessageDigest
 import java.time.Instant
@@ -64,7 +65,7 @@ class TasksActivity : ComponentActivity() {
             .bindTo(this)
         setContent {
             LauncherTheme(window = window) {
-                TasksWorkspace(intent, resumeRevision)
+                TenSeven2AppTheme { TasksWorkspace(intent, resumeRevision) }
             }
         }
     }

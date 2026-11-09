@@ -68,6 +68,20 @@ object AppGlyphs {
     /** Canonical packages ([CoreAppIdentity.canonicalPackage]); LineageOS equivalents resolve through it. */
     val BY_PACKAGE: Map<String, AppGlyph> =
         mapOf(
+            // TenSeven itself and common Android providers on the Titan 2.
+            // Use the same outlined Tabler geometry as bundled apps when TenSeven style is enabled.
+            "io.github.aimindseye.tenseven" to AppGlyph.SETTINGS,
+            "com.whatsapp" to AppGlyph.MESSAGES,
+            "com.whatsapp.w4b" to AppGlyph.MESSAGES,
+            "com.google.android.apps.messaging" to AppGlyph.MESSAGES,
+            "org.thoughtcrime.securesms" to AppGlyph.MESSAGES,
+            "com.discord" to AppGlyph.MESSAGES,
+            "com.google.android.gm" to AppGlyph.MAIL,
+            "com.yahoo.mobile.client.android.mail" to AppGlyph.MAIL,
+            "com.microsoft.office.outlook" to AppGlyph.MAIL,
+            "com.google.android.youtube" to AppGlyph.VIDEO_CAMERA,
+            "com.google.android.apps.youtube.music" to AppGlyph.MEDIA,
+            "com.spotify.music" to AppGlyph.MEDIA,
             // Sable apps (product/q25/apps.tsv).
             "org.sableos.hub" to AppGlyph.MESSAGES,
             "org.sableos.messages" to AppGlyph.MESSAGES,

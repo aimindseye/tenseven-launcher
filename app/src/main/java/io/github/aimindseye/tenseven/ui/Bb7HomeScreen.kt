@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.ui
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.view.KeyEvent
 import android.widget.Toast
@@ -76,6 +77,7 @@ import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.HomeApps
+import io.github.aimindseye.tenseven.model.HomeStatusMode
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.LauncherKeys
 import io.github.aimindseye.tenseven.model.StartText.t
@@ -141,6 +143,8 @@ fun Bb7HomeScreen(
     val resources = LocalResources.current
     val displayState = remember(context) { StartStateRepository(context) }
     val enabledDials = remember(refreshGeneration) { displayState.loadHomeDials(HomeStyle.Bb7) }
+    val wallpaperEnabled = remember(refreshGeneration) { displayState.loadHomeWallpaper() }
+    val statusMode = remember(refreshGeneration) { displayState.loadHomeStatusMode(HomeStyle.Bb7) }
     val showStrip = remember(refreshGeneration) { displayState.loadHomeNotificationStrip(HomeStyle.Bb7) }
     val stripExpanded = remember(refreshGeneration) { displayState.loadHomeNotificationExpanded(HomeStyle.Bb7) }
     val hubSources = remember(refreshGeneration) { displayState.loadHubEnabledApps() }
@@ -239,67 +243,46 @@ fun Bb7HomeScreen(
                 add(t("open") to { onLaunchApp(app) })
                 if (key in desktopKeys) {
                     if (fromDesktop) add(t("move_2") to { moving = true })
-                    add(
-                        resources.getString(R.string.bb7_remove_home) to {
-                            onDesktopChanged(desktopKeys.filterNot { it == key })
-                            if (desktopKeys.size <= 1) inDesktopZone = false
-                        },
-                    )
+                    add(resources.getString(R.string.bb7_remove_home) to {
+                        onDesktopChanged(desktopKeys.filterNot { it == key })
+                    })
                 } else {
-                    add(
-                        resources.getString(R.string.bb7_add_home) to { addToDesktop(app) },
-                    )
+                    add(resources.getString(R.string.bb7_add_home) to { addToDesktop(app) })
                 }
                 if (key in favorites) {
-                    if (panel == Bb7Panel.Favorites && !searching && !fromDesktop) add(t("move_2") to { moving = true })
-                    add(
-                        resources.getString(
-                            R.string.bb7_remove_favorites,
-                        ) to { onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key)) },
-                    )
+                    add(resources.getString(R.string.bb7_remove_favorites) to {
+                        onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key))
+                    })
                 } else {
                     add(resources.getString(R.string.bb7_add_favorites) to { addToFavorites(key) })
                 }
                 add(t("app_info") to { onOpenAppInfo(app) })
-            }
-            if (!open && !searching && homeRows < Bb7Home.MAX_HOME_ROWS) {
-                add(t("show_more_rows") to { onHomeRowsChanged(homeRows + 1) })
-            }
-            if (!open && !searching && homeRows > Bb7Home.MIN_HOME_ROWS) {
-                add(t("show_fewer_rows") to { onHomeRowsChanged(homeRows - 1) })
-            }
-            if (!searching && panel != Bb7Panel.All) {
-                // Add icons to the home screen: pick them in All (Menu or long-press an icon, Add to Favorites).
-                add(resources.getString(R.string.bb7_add_apps) to openApps)
-            }
-            if (!searching) {
-                // Panels: show or hide each one (the last one stays); the banner and tray can be more see-through.
-                Bb7Panel.entries.forEach { p ->
-                    if (p in panels && panels.size == 1) return@forEach
-                    val text = panelActionLabel(resources, p, p in panels)
-                    add(text to { onPanelsChanged(Bb7Panels.toggle(panels, p)) })
-                }
-                if (scrimLevel >
-                    Bb7Scrim.MIN
-                ) {
-                    add(resources.getString(R.string.bb7_clearer) to { onScrimChanged(Bb7Scrim.step(scrimLevel, -1)) })
-                }
-                if (scrimLevel <
-                    Bb7Scrim.MAX
-                ) {
-                    add(resources.getString(R.string.bb7_darker) to { onScrimChanged(Bb7Scrim.step(scrimLevel, 1)) })
-                }
-                add(resources.getString(R.string.bb7_wallpaper) to onOpenWallpaper)
+            } else {
+                // Four Home-only actions; advanced tray, panel, wallpaper and row controls live in Settings.
+                add("Add shortcut" to { openApps(); pickingDesktop = true })
+                add("Customize Home" to {
+                    context.startActivity(
+                        Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java)
+                            .putExtra("tenseven.settings.category", "home"),
+                    )
+                })
+                add("Command" to { onOpenCommand() })
+                add("Launcher Settings" to {
+                    context.startActivity(Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java))
+                })
             }
         }
     }
 
     SableTheme(appearance = appearance) {
         Bb10Theme(appearance) {
+            ScaledLauncherTextTheme {
             BoxWithConstraints(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        // Keep a dark BB10-compatible canvas when wallpaper is disabled.
+                        .background(if (wallpaperEnabled) Color.Transparent else Color.Black)
                         .windowInsetsPadding(WindowInsets.safeDrawing)
                         .focusRequester(focus)
                         .focusable()
@@ -518,6 +501,7 @@ fun Bb7HomeScreen(
                         notificationCounts = live.hubApps,
                         hubSources = hubSources,
                         enabledDials = enabledDials,
+                        statusMode = statusMode,
                         showStrip = showStrip,
                         stripExpanded = stripExpanded,
                         compact = open || searching,
@@ -616,6 +600,7 @@ fun Bb7HomeScreen(
                     )
                 }
             }
+            }
         }
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -632,6 +617,7 @@ private fun Bb7Banner(
     notificationCounts: List<io.github.aimindseye.tenseven.live.AppUnreadCount>,
     hubSources: Set<String>,
     enabledDials: Set<String>,
+    statusMode: HomeStatusMode,
     showStrip: Boolean,
     stripExpanded: Boolean,
     compact: Boolean,
@@ -646,24 +632,22 @@ private fun Bb7Banner(
                 .background(scrim)
                 .padding(horizontal = 12.dp, vertical = if (compact) 4.dp else 8.dp),
     ) {
-        if (!compact &&
-            enabledDials.isNotEmpty()
-        ) {
-            SableStatusRings(modifier = Modifier.fillMaxWidth(), ringSize = RING_DP.dp, visible = enabledDials)
+        val header = rememberHeaderOptions()
+        if (!compact && statusMode != HomeStatusMode.Hidden) {
+            BbHomeStatus(statusMode, enabledDials, Modifier.fillMaxWidth().padding(vertical = 6.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f).padding(top = if (compact) 0.dp else 6.dp)) {
                 Text(
                     text = dateText,
                     color = Color.White,
-                    style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium,
+                    fontSize = ((if (compact) 16f else 22f) * header.size.multiplier).sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                 )
+                if (!compact) HomeWeatherLine(header, modifier = Modifier.fillMaxWidth())
             }
-            SoundProfileButton()
             Spacer(Modifier.width(6.dp))
-            if (!showStrip) UnreadBadge(unread, onOpenHub)
         }
         if (showStrip && !compact) {
             HomeNotificationStrip(
@@ -749,19 +733,19 @@ private fun Bb7Tray(
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TrayArrow("‹") { onStep(-1) }
             Text(
-                text = title + if (open) "  ▾" else "  ▴",
+                text = title,
                 color = Color.White,
                 style = MaterialTheme.typography.labelLarge,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).clickable(onClick = onToggle),
+                modifier = Modifier.weight(1f).clickable(onClick = onToggle).padding(start = 12.dp),
             )
+            // Keep panel stepping accessible; do not infer hardware Menu/Call scan codes.
+            TrayArrow("‹") { onStep(-1) }
             TrayArrow("›") { onStep(1) }
-            // Android's Titan 2 has no Menu key: this button (or Alt+Enter) opens the same menu.
-            TrayArrow("⋮") { onMenu() }
+            TrayArrow("☰") { onMenu() }
         }
         if (apps.isEmpty()) {
             Text(
@@ -829,7 +813,7 @@ private fun Bb7IconCell(
             Text(
                 text = app.label,
                 color = Color.White,
-                fontSize = 11.sp,
+                fontSize = MaterialTheme.typography.labelSmall.fontSize,
                 // The wallpaper shows behind these icons, so the name gets a shadow to stay readable.
                 style = TextStyle(shadow = Shadow(Color.Black, blurRadius = 6f)),
                 maxLines = 1,
@@ -912,7 +896,6 @@ private fun TrayArrow(
 }
 
 private const val DATE_TICK_MS = 60_000L
-private const val RING_DP = 34
 private const val SWIPE_DP = 72
 
 /** A tray row's height, the drag that shows one more or one fewer row. */

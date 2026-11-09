@@ -3,7 +3,7 @@
      equal to StartText.EN), so this file is where the launcher's name and new Tenseven-only text live.
      The new text is English only until it is translated; Android falls back to it in every language. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-    <string name="tenseven_app_name" translatable="false">Tenseven</string>
+    <string name="tenseven_app_name" translatable="false">TenSeven Launcher</string>
 
     <!-- Setup (OnboardingActivity) -->
     <string name="setup_menu">Setup and permissions</string>

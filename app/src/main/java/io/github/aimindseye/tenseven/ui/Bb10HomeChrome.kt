@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -48,6 +49,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
@@ -62,6 +64,9 @@ import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.Bb10Gestures
 import io.github.aimindseye.tenseven.model.HomeHeader
+import io.github.aimindseye.tenseven.model.HomeStatusMode
+import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.model.LauncherKeys
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.SpeedDialKeys
@@ -240,10 +245,13 @@ internal fun StartStrip(
         HorizontalPager(
             state = state,
             beyondViewportPageCount = 0,
+            // Hub handles right swipe -> its Settings panel; left swipe -> Home.
+            userScrollEnabled = state.currentPage - pageLead != StartPages.HUB,
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { index -> page(index) }
-        ReferenceHomeBar(
-            slots = quickSlots,
+        if (state.currentPage != StartPages.HUB + pageLead) {
+            ReferenceHomeBar(
+                slots = quickSlots,
             pages = HomeBarPages(state.currentPage, pageCount, pageLead),
             actions =
                 HomeBarActions(
@@ -252,7 +260,8 @@ internal fun StartStrip(
                     onSlotOptions,
                     peek = onHubPeek,
                 ) { phoneSlotFocused = it },
-        )
+            )
+        }
     }
 }
 
@@ -347,29 +356,49 @@ internal fun pageDescription(
     }
 
 /** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) and the Settings gear. */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun StatusDialsRow(
     onOpenSettings: () -> Unit,
     visible: Set<String>,
 ) {
+    val context = LocalContext.current
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var mode by remember(context) {
+        mutableStateOf(StartStateRepository(context).loadHomeStatusMode(HomeStyle.Bb10))
+    }
+    var selectedMetrics by remember(context, visible) {
+        mutableStateOf(StartStateRepository(context).loadHomeDials(HomeStyle.Bb10))
+    }
+    DisposableEffect(lifecycle, context) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                val saved = StartStateRepository(context)
+                mode = saved.loadHomeStatusMode(HomeStyle.Bb10)
+                selectedMetrics = saved.loadHomeDials(HomeStyle.Bb10)
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = FRAME_PADDING, end = 2.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SableStatusRings(modifier = Modifier.weight(1f), ringSize = STATUS_RING_SIZE, visible = visible)
+        if (mode == HomeStatusMode.Hidden) {
+            androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+        } else {
+            BbHomeStatus(mode = mode, visible = selectedMetrics, modifier = Modifier.weight(1f))
+        }
         Text(
             text = "⚙",
-            fontSize = 22.sp,
             color = Bb10Text,
-            modifier =
-                Modifier
-                    .heightIn(min = 44.dp)
-                    .width(44.dp)
-                    .sableFocusRing()
-                    .clickable(onClick = onOpenSettings)
-                    .semantics { contentDescription = t("settings") }
-                    .padding(top = 8.dp),
+            fontSize = 22.sp,
             textAlign = TextAlign.Center,
+            modifier = Modifier.heightIn(min = 44.dp).width(44.dp)
+                .sableFocusRing().clickable(onClick = onOpenSettings)
+                .semantics { contentDescription = "Launcher Settings" }
+                .padding(top = 8.dp),
         )
     }
 }
@@ -378,6 +407,7 @@ internal fun StatusDialsRow(
  * Today's date under the status dials. The date follows the
  * locale and turns over at midnight; there is no clock here.
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun DateHeader(
     refreshGeneration: Int,
@@ -407,48 +437,29 @@ internal fun DateHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
-            text = dateText,
-            style = MaterialTheme.typography.titleMedium,
-            color = Bb10Text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).semantics { contentDescription = dateText },
-        )
+        val header = rememberHeaderOptions()
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = dateText,
+                fontSize = (23.sp * header.size.multiplier),
+                color = Bb10Text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = dateText },
+            )
+            HomeWeatherLine(header, modifier = Modifier.fillMaxWidth())
+        }
         if (onOpenSettings != null) {
             Text(
-                "⚙",
+                text = "⚙",
                 color = Bb10Text,
                 fontSize = 22.sp,
-                modifier =
-                    Modifier
-                        .sableFocusRing()
-                        .clickable(onClick = onOpenSettings)
-                        .padding(horizontal = 10.dp)
-                        .semantics { contentDescription = "Launcher settings" },
+                modifier = Modifier.heightIn(min = 44.dp).width(44.dp)
+                    .sableFocusRing().clickable(onClick = onOpenSettings)
+                    .semantics { contentDescription = "Launcher Settings" },
+                textAlign = TextAlign.Center,
             )
         }
-        // Notifications: a bell with the unread count; it opens the Hub. Beside it, the sound profile.
-        if (showLegacyBadge) {
-            Row(
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (unread > 0) Bb10Blue else Color.Black.copy(alpha = 0.35f))
-                        .sableFocusRing()
-                        .clickable(onClick = onShowHub)
-                        .semantics { contentDescription = "Notifications $unread" }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                LineIcon(paths = LineIconPaths.BELL, modifier = Modifier.size(22.dp), tint = Color.White)
-                if (unread > 0) {
-                    Text(text = unread.toString(), style = MaterialTheme.typography.titleMedium, color = Color.White)
-                }
-            }
-        }
-        SoundProfileButton()
     }
 }
 

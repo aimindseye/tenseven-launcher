@@ -22,6 +22,8 @@ object ExtraApps {
 
     val ALL: List<ExtraApp> =
         listOf(
+            ExtraApp("tenseven_phone", "TenSeven Phone", "BlackBerry-style keypad and contacts with Android Phone handoff", "io.github.aimindseye.tenseven.features.phone.TenSevenPhoneActivity", AppGlyph.PHONE, ExtraGroup.Tools),
+            ExtraApp("tenseven_calendar", "TenSeven Calendar", "Month busy arcs, agenda and multiple synced calendars", "io.github.aimindseye.tenseven.features.calendar.TenSevenCalendarActivity", AppGlyph.CALENDAR, ExtraGroup.Tools),
             ExtraApp("calculator", "Calc Plus", "Exact arithmetic, scientific functions and unit conversion", ROOT + "calculator.MainActivity", AppGlyph.CALCULATOR, ExtraGroup.Tools),
             ExtraApp("tasks", "Tasks", "To-dos, due dates, repeating tasks and reminders; a separate app alongside Notes", "io.github.aimindseye.tenseven.tasks.TasksLauncherActivity", AppGlyph.TASKS, ExtraGroup.Tools),
             ExtraApp("notes", "Notes", "Notes and checklists kept on the phone; share text into a new note", ROOT + "notes.MainActivity", AppGlyph.NOTES, ExtraGroup.Tools),

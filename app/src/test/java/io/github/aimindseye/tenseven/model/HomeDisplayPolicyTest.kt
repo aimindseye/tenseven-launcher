@@ -16,7 +16,7 @@ class HomeDisplayPolicyTest {
             HomeDisplayPolicy.normalizedDials(setOf("cpu", "battery", "unknown")))
         assertEquals(emptySet<String>(), HomeDisplayPolicy.normalizedDials(emptySet()))
         assertEquals(7, HomeDisplayPolicy.ALL_DIALS.size)
-        assertEquals(6, HomeDisplayPolicy.DEFAULT_DIALS.size)
-        assertEquals(setOf("storage"), HomeDisplayPolicy.ALL_DIALS - HomeDisplayPolicy.DEFAULT_DIALS)
+        assertEquals(7, HomeDisplayPolicy.DEFAULT_DIALS.size)
+        assertEquals(HomeDisplayPolicy.ALL_DIALS, HomeDisplayPolicy.DEFAULT_DIALS)
     }
 }

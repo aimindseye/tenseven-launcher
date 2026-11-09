@@ -226,11 +226,60 @@ class StartStateRepository(
         preferences.edit().putString(KEY_HOME_STYLE, style.stableValue).apply()
     }
 
+    /** Safe launcher-owned font preset: do not alter Android system font scale. */
+    fun loadLauncherTextSize(): io.github.aimindseye.tenseven.model.LauncherTextSize =
+        io.github.aimindseye.tenseven.model.LauncherTextSize.decode(
+            preferences.getString("launcher_text_size", null),
+        )
+
+    fun saveLauncherTextSize(value: io.github.aimindseye.tenseven.model.LauncherTextSize) {
+        preferences.edit().putString("launcher_text_size", value.name).apply()
+    }
+
+    /** Opt-in city, never inferred from location or IP address. */
+    fun loadHomeWeatherEnabled(): Boolean = preferences.getBoolean("home_weather_enabled", false)
+
+    fun saveHomeWeatherEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean("home_weather_enabled", enabled).apply()
+    }
+
+    fun loadHomeWeatherCity(): String = preferences.getString("home_weather_city", "").orEmpty()
+
+    fun saveHomeWeatherCity(value: String) {
+        preferences.edit().putString("home_weather_city", value.trim().take(90)).apply()
+    }
+
     /** Whether the setup flow has been shown (finished, skipped or backed out of); it opens once on first run. */
     fun loadOnboardingDone(): Boolean = preferences.getBoolean(KEY_ONBOARDING_DONE, false)
 
     fun saveOnboardingDone() {
         preferences.edit().putBoolean(KEY_ONBOARDING_DONE, true).apply()
+    }
+
+    /** Observes Home weather and font changes without requiring a restart of Settings or Home. */
+    fun onHomeReadabilityChanged(listener: () -> Unit): () -> Unit {
+        val callback = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "launcher_text_size" || key == "home_weather_enabled" || key == "home_weather_city" || key == "home_weather_use_device_location" || key == "home_status_size") {
+                listener()
+            }
+        }
+        preferences.registerOnSharedPreferenceChangeListener(callback)
+        return { preferences.unregisterOnSharedPreferenceChangeListener(callback) }
+    }
+
+    /** Explicit opt-in; manual city remains available when permission is denied or unavailable. */
+    fun loadHomeWeatherUseDeviceLocation(): Boolean = preferences.getBoolean("home_weather_use_device_location", false)
+
+    fun saveHomeWeatherUseDeviceLocation(enabled: Boolean) {
+        preferences.edit().putBoolean("home_weather_use_device_location", enabled).apply()
+    }
+
+    /** One status readout size for BB7/BB10; no migration of dial selections needed. */
+    fun loadHomeStatusSize(): io.github.aimindseye.tenseven.model.HomeStatusSize =
+        io.github.aimindseye.tenseven.model.HomeStatusSize.decode(preferences.getString("home_status_size", null))
+
+    fun saveHomeStatusSize(size: io.github.aimindseye.tenseven.model.HomeStatusSize) {
+        preferences.edit().putString("home_status_size", size.stableValue).apply()
     }
 
     /** Double-tap on empty Home space locks the screen (needs the accessibility service); off until chosen. */
@@ -251,7 +300,7 @@ class StartStateRepository(
             }.apply()
     }
 
-    /** Original installed icons by default; Tabler-derived TenSeven glyphs are opt-in. */
+    /** Release 2 defaults to TenSeven/Tabler glyphs; persisted Original remains an explicit opt-out. */
     fun loadIconPresentation(): io.github.aimindseye.tenseven.model.IconPresentation =
         io.github.aimindseye.tenseven.model.IconPresentation.decode(
             preferences.getString(KEY_ICON_PRESENTATION, null),
@@ -306,7 +355,7 @@ class StartStateRepository(
     }
 
     /** Whether the BlackBerry 10 home lets the wallpaper show through, dimmed. On by default. */
-    fun loadHomeWallpaper(): Boolean = preferences.getInt(KEY_HOME_WALLPAPER, 1) != 0
+    fun loadHomeWallpaper(): Boolean = preferences.getInt(KEY_HOME_WALLPAPER, 0) != 0
 
     fun saveHomeWallpaper(shown: Boolean) {
         preferences.edit().putInt(KEY_HOME_WALLPAPER, if (shown) 1 else 0).apply()
@@ -325,26 +374,47 @@ class StartStateRepository(
         hubSources.saveManual(packages)
     }
 
-    /** Visibility is independent per selected home style, including an empty dial set. */
+    /** Shared Home metrics, migrated from the currently selected style on first read. */
     fun loadHomeDials(style: HomeStyle): Set<String> =
         HomeDisplayPolicy.normalizedDials(
-            preferences.getStringSet(HomeDisplayPolicy.dialPreference(style), null)
+            preferences.getStringSet("home_status_metrics_shared", null)
+                ?: preferences.getStringSet(HomeDisplayPolicy.dialPreference(loadHomeStyle()), null)
                 ?: HomeDisplayPolicy.DEFAULT_DIALS,
         )
 
-    fun saveHomeDials(
-        style: HomeStyle,
-        selected: Set<String>,
-    ) {
-        preferences
-            .edit()
-            .putStringSet(
-                HomeDisplayPolicy.dialPreference(style),
-                HomeDisplayPolicy.normalizedDials(selected),
-            ).apply()
+    fun saveHomeDials(style: HomeStyle, selected: Set<String>) {
+        preferences.edit().putStringSet(
+            "home_status_metrics_shared", HomeDisplayPolicy.normalizedDials(selected),
+        ).apply()
     }
 
-    fun loadHomeNotificationStrip(style: HomeStyle): Boolean = preferences.getInt(HomeDisplayPolicy.stripPreference(style), 1) != 0
+    /** One Home status mode, shared across BB7/BB10. The old selected-style choice is retained. */
+    fun loadHomeStatusMode(style: HomeStyle): io.github.aimindseye.tenseven.model.HomeStatusMode =
+        io.github.aimindseye.tenseven.model.HomeStatusMode.decode(
+            preferences.getString("home_status_mode_shared", null)
+                ?: preferences.getString(io.github.aimindseye.tenseven.model.HomeStatusMode.preference(loadHomeStyle()), null),
+            loadHomeDials(style).size,
+        )
+
+    fun saveHomeStatusMode(style: HomeStyle, mode: io.github.aimindseye.tenseven.model.HomeStatusMode) {
+        preferences.edit().putString("home_status_mode_shared", mode.key).apply()
+    }
+
+    /** Per-user Hub Compose preference. Android remains the authority for the chosen default app. */
+    internal fun loadHubComposeMode(): io.github.aimindseye.tenseven.model.HubComposeMode =
+        io.github.aimindseye.tenseven.model.HubComposeMode.decode(
+            preferences.getString("hub_compose_mode_2", null),
+        )
+
+    internal fun saveHubComposeMode(mode: io.github.aimindseye.tenseven.model.HubComposeMode) {
+        preferences.edit().putString("hub_compose_mode_2", mode.key).apply()
+    }
+
+    /** D4r3: the Home duplicate notification shelf is retired. Hub remains the entry point.
+     * The old stored preference is deliberately not erased so upgrades and backups remain compatible.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun loadHomeNotificationStrip(style: HomeStyle): Boolean = false
 
     fun saveHomeNotificationStrip(
         style: HomeStyle,

@@ -12,6 +12,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import io.github.aimindseye.tenseven.extras.ExtraKeyAction
 import io.github.aimindseye.tenseven.extras.ExtraKeys
 
@@ -35,7 +36,8 @@ abstract class GameActivity(
 
         setContent {
             LauncherTheme(window = window) {
-                CompositionLocalProvider(LocalGameKeyHost provides keyHost) {
+                TenSeven2AppTheme {
+                    CompositionLocalProvider(LocalGameKeyHost provides keyHost) {
                     when (game) {
                         "sudoku" -> SudokuScreen()
                         "minesweeper" -> MinesweeperScreen()
@@ -48,6 +50,7 @@ abstract class GameActivity(
                         "mahjong" -> MahjongScreen()
                         "words" -> WordsScreen()
                         else -> error("Unsupported game: $game")
+                    }
                     }
                 }
             }
