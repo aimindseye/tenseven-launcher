@@ -255,15 +255,19 @@ internal fun HubUnifiedNavigation(
     val unreadCount = ui.conversations.sumOf { ui.state.unreadCount(it) }
     val snoozedCount = ConversationView.snoozedCount(ui.conversations, ui.state, ui.now)
     val remindCount = ReminderPolicy.pendingCount(ui.reminders)
-    val tabs = io.github.aimindseye.tenseven.model.HubVisibleTabs.items(
-        messages = messageCount,
-        email = emailCount,
-        unread = unreadCount,
-        snoozed = snoozedCount,
-        reminders = remindCount,
-    )
+    val tabs =
+        io.github.aimindseye.tenseven.model.HubVisibleTabs.items(
+            messages = messageCount,
+            email = emailCount,
+            unread = unreadCount,
+            snoozed = snoozedCount,
+            reminders = remindCount,
+        )
 
-    fun select(tab: HubFilter, next: ConversationFilter = ConversationFilter()) {
+    fun select(
+        tab: HubFilter,
+        next: ConversationFilter = ConversationFilter(),
+    ) {
         onTabChange(tab)
         ui.onFilterChange(next)
         ui.onSourceChange(null)
@@ -282,11 +286,26 @@ internal fun HubUnifiedNavigation(
 
     fun activate(name: String) {
         when (name) {
-            "All" -> select(HubFilter.All)
-            "Unread" -> select(HubFilter.All, ConversationFilter(unreadOnly = true))
-            "Messages" -> select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
-            "Email" -> select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
-            "Snoozed" -> select(HubFilter.All, ConversationFilter(snoozed = true))
+            "All" -> {
+                select(HubFilter.All)
+            }
+
+            "Unread" -> {
+                select(HubFilter.All, ConversationFilter(unreadOnly = true))
+            }
+
+            "Messages" -> {
+                select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
+            }
+
+            "Email" -> {
+                select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
+            }
+
+            "Snoozed" -> {
+                select(HubFilter.All, ConversationFilter(snoozed = true))
+            }
+
             "Remind" -> {
                 onTabChange(HubFilter.All)
                 ui.onShowReminders()
@@ -306,8 +325,11 @@ internal fun HubUnifiedNavigation(
                 val active = selected(name)
                 val focus = if (name == "All") Modifier.focusRequester(firstTab) else Modifier
                 Column(
-                    modifier = focus.sableFocusRing().clickable { activate(name) }
-                        .padding(horizontal = 3.dp, vertical = 6.dp),
+                    modifier =
+                        focus
+                            .sableFocusRing()
+                            .clickable { activate(name) }
+                            .padding(horizontal = 3.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
@@ -417,7 +439,8 @@ private fun ConversationRow(
     // Display installed source icons, not a letter avatar: several providers share initials.
     val sourcePackage = conversation.sourcePackages.firstOrNull()
     val context = LocalContext.current
-    io.github.aimindseye.tenseven.iconpacks.IconPresentationState.init(context)
+    io.github.aimindseye.tenseven.iconpacks.IconPresentationState
+        .init(context)
     val sourceGlyph =
         if (io.github.aimindseye.tenseven.iconpacks.IconPresentationState.selected ==
             io.github.aimindseye.tenseven.model.IconPresentation.TenSeven

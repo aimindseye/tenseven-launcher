@@ -22,16 +22,22 @@ internal object NativeBridge {
 
     // ---- Sudoku -------------------------------------------------------------------------------------------
 
-    private enum class SudokuError(val code: String) {
+    private enum class SudokuError(
+        val code: String,
+    ) {
         InvalidPuzzle("ERR:INVALID_PUZZLE"),
         FixedCell("ERR:FIXED_CELL"),
         Conflict("ERR:CONFLICT"),
         OutOfRange("ERR:SUDOKU"),
     }
 
-    private class SudokuFail(val error: SudokuError) : Exception()
+    private class SudokuFail(
+        val error: SudokuError,
+    ) : Exception()
 
-    private class SudokuBoard(puzzle: String) {
+    private class SudokuBoard(
+        puzzle: String,
+    ) {
         val cells = IntArray(81)
         private val fixed = BooleanArray(81)
 
@@ -158,12 +164,20 @@ internal object NativeBridge {
     ) {
         fun encode() = "$MINESWEEPER_PREFIX:$width:$height:$mines:${java.lang.Long.toUnsignedString(seed)}:$operations"
 
-        fun with(operation: String) = MineState(width, height, mines, seed, if (operations.isEmpty()) operation else "$operations;$operation")
+        fun with(operation: String) =
+            MineState(width, height, mines, seed, if (operations.isEmpty()) operation else "$operations;$operation")
     }
 
-    private class MineFail(val code: String) : Exception()
+    private class MineFail(
+        val code: String,
+    ) : Exception()
 
-    private class MineBoard(val width: Int, val height: Int, mineCount: Int, seed: Long) {
+    private class MineBoard(
+        val width: Int,
+        val height: Int,
+        mineCount: Int,
+        seed: Long,
+    ) {
         private val mines: BooleanArray
         private val state: Array<Cell>
 
@@ -179,7 +193,10 @@ internal object NativeBridge {
                 rng = rng xor (rng shl 13)
                 rng = rng xor (rng ushr 7)
                 rng = rng xor (rng shl 17)
-                val index = java.lang.Long.remainderUnsigned(rng, count).toInt()
+                val index =
+                    java.lang.Long
+                        .remainderUnsigned(rng, count)
+                        .toInt()
                 if (!mines[index]) {
                     mines[index] = true
                     placed++
@@ -283,19 +300,25 @@ internal object NativeBridge {
                 if (x >= state.width || y >= state.height) throw MineFail("ERR:OUT_OF_BOUNDS")
                 val index = y * state.width + x
                 when (fields[0]) {
-                    "R" ->
+                    "R" -> {
                         when (val result = board.reveal(x, y)) {
                             MineBoard.MINE -> view[index] = '*'
                             MineBoard.IGNORED -> Unit
                             else -> view[index] = '0' + result
                         }
-                    "F" ->
+                    }
+
+                    "F" -> {
                         when (board.toggleFlag(x, y)) {
                             Cell.Hidden -> view[index] = 'H'
                             Cell.Flagged -> view[index] = 'F'
                             Cell.Revealed -> Unit
                         }
-                    else -> throw MineFail("ERR:INVALID_STATE")
+                    }
+
+                    else -> {
+                        throw MineFail("ERR:INVALID_STATE")
+                    }
                 }
             }
         }
@@ -363,10 +386,11 @@ internal object NativeBridge {
         val cells = board.copyOf()
         var score = 0L
         for (index in 0..3) {
-            val line = IntArray(4) { position ->
-                val (row, col) = coords(direction, index, position)
-                cells[row * 4 + col]
-            }
+            val line =
+                IntArray(4) { position ->
+                    val (row, col) = coords(direction, index, position)
+                    cells[row * 4 + col]
+                }
             val merged = IntArray(4)
             val compact = line.filter { it != 0 }
             var src = 0

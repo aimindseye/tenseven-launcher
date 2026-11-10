@@ -7,12 +7,13 @@ import org.junit.Test
 
 class PhoneUiRulesTest {
     @Test fun dialerMatchesSubstringsWithoutDuplicateContact() {
-        val pool = listOf(
-            PhoneUiRules.Match(1, "Alex Rivera", "+1 (555) 0100"),
-            PhoneUiRules.Match(1, "Alex Rivera", "555-0199"),
-            PhoneUiRules.Match(2, "Aisha Khan", "555-0142"),
-            PhoneUiRules.Match(3, "Bree", "333-9292"),
-        )
+        val pool =
+            listOf(
+                PhoneUiRules.Match(1, "Alex Rivera", "+1 (555) 0100"),
+                PhoneUiRules.Match(1, "Alex Rivera", "555-0199"),
+                PhoneUiRules.Match(2, "Aisha Khan", "555-0142"),
+                PhoneUiRules.Match(3, "Bree", "333-9292"),
+            )
         assertEquals(listOf(1L, 2L), PhoneUiRules.dialMatches("555", pool, 2).map { it.contactId })
         assertTrue(PhoneUiRules.dialMatches("5", pool, 2).isEmpty())
         assertEquals(1, PhoneUiRules.dialMatches("555", pool, 1).size)

@@ -37,7 +37,7 @@ class SoundProfilesTest {
                 volumePercent = 140,
                 vibrate = false,
                 light = false,
-                ringtone = "content://r/1"
+                ringtone = "content://r/1",
             )
         val loud = SoundProfiles.plan(SoundProfile.LOUD, s)
         assertEquals("clamped", 100, loud.volumePercent)
@@ -46,7 +46,7 @@ class SoundProfilesTest {
         assertEquals("content://r/1", loud.ringtone)
         assertNull(
             "vibrate only has no volume",
-            SoundProfiles.plan(SoundProfile.VIBRATE_ONLY, s).volumePercent
+            SoundProfiles.plan(SoundProfile.VIBRATE_ONLY, s).volumePercent,
         )
         val off = SoundProfiles.plan(SoundProfile.ALL_ALERTS_OFF, ProfileSettings(vibrate = true))
         assertFalse("all alerts off never vibrates", off.vibrateWhenRinging)
@@ -60,7 +60,7 @@ class SoundProfilesTest {
         assertEquals(ProfileSettings(), SoundProfiles.parse(null))
         assertEquals(
             ProfileSettings(volumePercent = 100),
-            SoundProfiles.parse("volume=250\nbogus\nlight=maybe")
+            SoundProfiles.parse("volume=250\nbogus\nlight=maybe"),
         )
     }
 

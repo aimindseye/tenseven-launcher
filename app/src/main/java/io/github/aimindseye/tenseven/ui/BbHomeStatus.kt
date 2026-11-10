@@ -33,8 +33,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import io.github.aimindseye.tenseven.model.HomeDisplayPolicy
 import io.github.aimindseye.tenseven.model.HomeStatusMode
 import io.github.aimindseye.tenseven.platform.DeviceStats
-import io.github.aimindseye.tenseven.platform.DeviceStatsSampler
 import io.github.aimindseye.tenseven.platform.DeviceStatsFormat
+import io.github.aimindseye.tenseven.platform.DeviceStatsSampler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -65,15 +65,16 @@ internal fun BbHomeStatus(
     }
     // Every selected metric is rendered. Network activity uses the existing throughput heat
     // normalization; a value of "–" means Android did not provide a reading.
-    val metrics = listOf(
-        Triple(HomeDisplayPolicy.CPU, "CPU", stats?.cpu),
-        Triple(HomeDisplayPolicy.RAM, "RAM", stats?.ram),
-        Triple(HomeDisplayPolicy.BATTERY, "BAT", stats?.battery),
-        Triple(HomeDisplayPolicy.WIFI, "Wi-Fi", stats?.wifiDown?.let(DeviceStatsFormat::heat)),
-        Triple(HomeDisplayPolicy.MOBILE, "Mobile", stats?.mobileDown?.let(DeviceStatsFormat::heat)),
-        Triple(HomeDisplayPolicy.CELL, "Cell", stats?.signal),
-        Triple(HomeDisplayPolicy.STORAGE, "Storage", stats?.storage),
-    ).filter { it.first in visible }
+    val metrics =
+        listOf(
+            Triple(HomeDisplayPolicy.CPU, "CPU", stats?.cpu),
+            Triple(HomeDisplayPolicy.RAM, "RAM", stats?.ram),
+            Triple(HomeDisplayPolicy.BATTERY, "BAT", stats?.battery),
+            Triple(HomeDisplayPolicy.WIFI, "Wi-Fi", stats?.wifiDown?.let(DeviceStatsFormat::heat)),
+            Triple(HomeDisplayPolicy.MOBILE, "Mobile", stats?.mobileDown?.let(DeviceStatsFormat::heat)),
+            Triple(HomeDisplayPolicy.CELL, "Cell", stats?.signal),
+            Triple(HomeDisplayPolicy.STORAGE, "Storage", stats?.storage),
+        ).filter { it.first in visible }
     val header = rememberHeaderOptions()
     val textScale = header.statusSize.multiplier
     // Width-adaptive, but ALWAYS a single line. Seven selected metrics remain visible on
@@ -82,26 +83,44 @@ internal fun BbHomeStatus(
         val count = metrics.size.coerceAtLeast(1)
         val cellWidth = maxWidth / count
         val compact = metrics.size > 4 || cellWidth < 56.dp
-        val diameter = (cellWidth - 4.dp).coerceIn(
-            23.dp, if (header.statusSize == io.github.aimindseye.tenseven.model.HomeStatusSize.Larger) 47.dp else 43.dp,
-        )
+        val diameter =
+            (cellWidth - 4.dp).coerceIn(
+                23.dp,
+                if (header.statusSize == io.github.aimindseye.tenseven.model.HomeStatusSize.Larger) 47.dp else 43.dp,
+            )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             metrics.forEach { (key, label, fraction) ->
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     when (mode) {
-                        HomeStatusMode.Dials -> ThinStatusDial(key, label, fraction, diameter, textScale)
-                        HomeStatusMode.Text -> Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            modifier = Modifier.semantics { contentDescription = "$label ${statusPercent(fraction)}" },
-                        ) {
-                            LineIcon(paths = statusMetricIcon(key), modifier = Modifier.size(if (compact) 13.dp else 17.dp),
-                                tint = MaterialTheme.colorScheme.onBackground)
-                            Text(statusPercent(fraction), color = MaterialTheme.colorScheme.onBackground,
-                                fontSize = ((if (compact) 9f else 11f) * textScale).sp,
-                                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+                        HomeStatusMode.Dials -> {
+                            ThinStatusDial(key, label, fraction, diameter, textScale)
                         }
-                        HomeStatusMode.Hidden -> Unit
+
+                        HomeStatusMode.Text -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                modifier = Modifier.semantics { contentDescription = "$label ${statusPercent(fraction)}" },
+                            ) {
+                                LineIcon(
+                                    paths = statusMetricIcon(key),
+                                    modifier = Modifier.size(if (compact) 13.dp else 17.dp),
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                )
+                                Text(
+                                    statusPercent(fraction),
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontSize = ((if (compact) 9f else 11f) * textScale).sp,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+
+                        HomeStatusMode.Hidden -> {
+                            Unit
+                        }
                     }
                 }
             }
@@ -110,18 +129,54 @@ internal fun BbHomeStatus(
 }
 
 /** Minimal original outline paths; each metric retains its full accessible label. */
-private fun statusMetricIcon(key: String): List<String> = when (key) {
-    HomeDisplayPolicy.CPU -> listOf("M7 7h10v10H7z", "M10 10h4v4h-4z", "M3 8h4", "M3 12h4", "M3 16h4", "M17 8h4", "M17 12h4", "M17 16h4")
-    HomeDisplayPolicy.RAM -> listOf("M3 7h18v10H3z", "M7 10v4", "M11 10v4", "M15 10v4", "M5 17v3", "M19 17v3")
-    HomeDisplayPolicy.BATTERY -> listOf("M3 7h16v10H3z", "M19 10h2v4", "M7 10v4", "M10 10v4")
-    HomeDisplayPolicy.WIFI -> listOf("M3 9c5 -5 13 -5 18 0", "M6 12c4 -3 8 -3 12 0", "M9 15c2 -2 4 -2 6 0", "M12 18h.01")
-    HomeDisplayPolicy.MOBILE -> listOf("M5 3h14v18H5z", "M9 17h6")
-    HomeDisplayPolicy.CELL -> listOf("M4 20v-3", "M9 20v-7", "M14 20v-11", "M19 20v-16")
-    HomeDisplayPolicy.STORAGE -> listOf("M4 7c0 -4 16 -4 16 0", "M4 7v11c0 4 16 4 16 0V7", "M4 12c0 4 16 4 16 0")
-    else -> listOf("M4 12h16")
-}
+private fun statusMetricIcon(key: String): List<String> =
+    when (key) {
+        HomeDisplayPolicy.CPU -> {
+            listOf(
+                "M7 7h10v10H7z",
+                "M10 10h4v4h-4z",
+                "M3 8h4",
+                "M3 12h4",
+                "M3 16h4",
+                "M17 8h4",
+                "M17 12h4",
+                "M17 16h4",
+            )
+        }
 
-private fun shortMetricLabel(key: String, full: String): String =
+        HomeDisplayPolicy.RAM -> {
+            listOf("M3 7h18v10H3z", "M7 10v4", "M11 10v4", "M15 10v4", "M5 17v3", "M19 17v3")
+        }
+
+        HomeDisplayPolicy.BATTERY -> {
+            listOf("M3 7h16v10H3z", "M19 10h2v4", "M7 10v4", "M10 10v4")
+        }
+
+        HomeDisplayPolicy.WIFI -> {
+            listOf("M3 9c5 -5 13 -5 18 0", "M6 12c4 -3 8 -3 12 0", "M9 15c2 -2 4 -2 6 0", "M12 18h.01")
+        }
+
+        HomeDisplayPolicy.MOBILE -> {
+            listOf("M5 3h14v18H5z", "M9 17h6")
+        }
+
+        HomeDisplayPolicy.CELL -> {
+            listOf("M4 20v-3", "M9 20v-7", "M14 20v-11", "M19 20v-16")
+        }
+
+        HomeDisplayPolicy.STORAGE -> {
+            listOf("M4 7c0 -4 16 -4 16 0", "M4 7v11c0 4 16 4 16 0V7", "M4 12c0 4 16 4 16 0")
+        }
+
+        else -> {
+            listOf("M4 12h16")
+        }
+    }
+
+private fun shortMetricLabel(
+    key: String,
+    full: String,
+): String =
     when (key) {
         HomeDisplayPolicy.MOBILE -> "Mob"
         HomeDisplayPolicy.STORAGE -> "Sto"
@@ -134,11 +189,20 @@ private fun statusPercent(value: Float?): String =
     value?.takeIf { it.isFinite() }?.let { "${(it.coerceIn(0f, 1f) * 100).roundToInt()}%" } ?: "–"
 
 @Composable
-private fun ThinStatusDial(key: String, label: String, fraction: Float?, diameter: Dp, textScale: Float) {
+private fun ThinStatusDial(
+    key: String,
+    label: String,
+    fraction: Float?,
+    diameter: Dp,
+    textScale: Float,
+) {
     val progress = fraction?.takeIf { it.isFinite() }?.coerceIn(0f, 1f)
     val accent = MaterialTheme.colorScheme.primary
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Box(Modifier.size(diameter).semantics { contentDescription = "$label ${statusPercent(progress)}" }, contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(diameter).semantics { contentDescription = "$label ${statusPercent(progress)}" },
+            contentAlignment = Alignment.Center,
+        ) {
             Canvas(Modifier.size(diameter - 4.dp)) {
                 drawArc(
                     color = StatusTrack.copy(alpha = 0.65f),
@@ -157,12 +221,20 @@ private fun ThinStatusDial(key: String, label: String, fraction: Float?, diamete
                     )
                 }
             }
-            Text(statusPercent(progress).removeSuffix("%"), color = MaterialTheme.colorScheme.onBackground,
-                fontSize = ((if (diameter < 30.dp) 8f else 10f) * textScale).sp, maxLines = 1)
+            Text(
+                statusPercent(progress).removeSuffix("%"),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = ((if (diameter < 30.dp) 8f else 10f) * textScale).sp,
+                maxLines = 1,
+            )
         }
-        LineIcon(paths = statusMetricIcon(key),
-            modifier = Modifier.size(if (diameter < 30.dp) 11.dp else 14.dp)
-                .semantics { contentDescription = label },
-            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        LineIcon(
+            paths = statusMetricIcon(key),
+            modifier =
+                Modifier
+                    .size(if (diameter < 30.dp) 11.dp else 14.dp)
+                    .semantics { contentDescription = label },
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

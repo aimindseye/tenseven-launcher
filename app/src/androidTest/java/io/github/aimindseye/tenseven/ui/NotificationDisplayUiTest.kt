@@ -3,11 +3,19 @@ package io.github.aimindseye.tenseven.ui
 import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import io.github.aimindseye.tenseven.LauncherTheme
@@ -18,7 +26,10 @@ import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.platform.DeviceStatsSampler
 import io.github.aimindseye.tenseven.platform.StartStateRepository
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -122,12 +133,18 @@ class NotificationDisplayUiTest {
         // With no notifications the approved dynamic top tabs show All only.
         compose.onNodeWithText("All").assertIsDisplayed()
         compose.onNodeWithText("Messages").assertDoesNotExist()
-        val nav = listOf("Views", "Compose", "Search")
-        val top = compose.onNodeWithContentDescription("Views").fetchSemanticsNode().boundsInRoot.top
-        nav.forEach { label ->
-            val node = compose.onNodeWithContentDescription(label).assertIsDisplayed()
-            assertEquals(top, node.fetchSemanticsNode().boundsInRoot.top, 0.1f)
-        }
+        // At 2x font scale, individual labels can have different heights. Prove the three
+        // controls remain left-to-right in ONE overlapping row, without requiring equal top edges.
+        val bounds =
+            listOf("Views", "Compose", "Search").map { label ->
+                compose
+                    .onNodeWithContentDescription(label)
+                    .assertIsDisplayed()
+                    .fetchSemanticsNode()
+                    .boundsInRoot
+            }
+        assertTrue(bounds.zipWithNext().all { (left, right) -> left.left < right.left })
+        assertTrue(bounds.maxOf { it.top } < bounds.minOf { it.bottom })
         compose.onNodeWithContentDescription("Compose").performClick()
         compose.onNodeWithContentDescription("Search").performClick()
         compose.runOnIdle {
@@ -182,5 +199,4 @@ class NotificationDisplayUiTest {
             }
         }
     }
-
 }

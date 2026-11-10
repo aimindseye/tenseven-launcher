@@ -23,13 +23,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -101,23 +101,24 @@ internal fun ReferenceHomeBar(
     if (homeMenuOpen.value) {
         CompactHomeMenu(
             onDismiss = { homeMenuOpen.value = false },
-            actions = listOf(
-                "Phone" to { actions.openSlot(QuickSlot(QuickBar.PHONE, "Phone", null)) },
-                "Command" to { actions.openSlot(QuickSlot(QuickBar.COMMAND, "Command", null)) },
-                "Camera" to { actions.openSlot(QuickSlot(QuickBar.CAMERA, "Camera", null)) },
-                "Hub" to { actions.showPage(StartPages.HUB + pages.lead) },
-                "Calendar" to {
-                    runCatching {
-                        context.startActivity(
-                            android.content.Intent.makeMainSelectorActivity(
-                                android.content.Intent.ACTION_MAIN,
-                                android.content.Intent.CATEGORY_APP_CALENDAR,
-                            ),
-                        )
-                    }
-                    Unit
-                },
-            ),
+            actions =
+                listOf(
+                    "Phone" to { actions.openSlot(QuickSlot(QuickBar.PHONE, "Phone", null)) },
+                    "Command" to { actions.openSlot(QuickSlot(QuickBar.COMMAND, "Command", null)) },
+                    "Camera" to { actions.openSlot(QuickSlot(QuickBar.CAMERA, "Camera", null)) },
+                    "Hub" to { actions.showPage(StartPages.HUB + pages.lead) },
+                    "Calendar" to {
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent.makeMainSelectorActivity(
+                                    android.content.Intent.ACTION_MAIN,
+                                    android.content.Intent.CATEGORY_APP_CALENDAR,
+                                ),
+                            )
+                        }
+                        Unit
+                    },
+                ),
         )
     }
 }
@@ -142,7 +143,9 @@ private fun HomePageControls(
         ) { onShowPage(StartPages.HOME + pages.lead) }
         val firstApps = StartPages.FIRST_GRID + pages.lead
         HomeBarControl(
-            "All Apps", "apps", pages.current >= firstApps,
+            "All Apps",
+            "apps",
+            pages.current >= firstApps,
             onLongClick = onCommand,
         ) { onShowPage(firstApps) }
     }

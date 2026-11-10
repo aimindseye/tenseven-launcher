@@ -138,8 +138,7 @@ object QuickBar {
         tokens: List<String>,
         slotToken: String?,
         stableKey: String,
-    ): List<String> =
-        if (slotToken != null) remove(tokens, tokens.indexOf(slotToken)) else add(tokens, appToken(stableKey))
+    ): List<String> = if (slotToken != null) remove(tokens, tokens.indexOf(slotToken)) else add(tokens, appToken(stableKey))
 
     /**
      * Slot shortcuts: Fn+1..Fn+3 on keyboards with an Fn key (Titan 2), and
@@ -156,10 +155,17 @@ object QuickBar {
     ): Int? {
         val index =
             when {
-                metaState and META_FUNCTION_ON != 0 -> keyCode - KEYCODE_1
-                metaState and META_ALT_ON != 0 ->
+                metaState and META_FUNCTION_ON != 0 -> {
+                    keyCode - KEYCODE_1
+                }
+
+                metaState and META_ALT_ON != 0 -> {
                     if (unicode in '1'.code..'9'.code) unicode - '1'.code else keyCode - KEYCODE_1
-                else -> return null
+                }
+
+                else -> {
+                    return null
+                }
             }
         return index.takeIf { it in 0 until minOf(slotCount, MAX_SLOTS) }
     }

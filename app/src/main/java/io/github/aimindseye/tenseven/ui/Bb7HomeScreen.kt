@@ -243,33 +243,46 @@ fun Bb7HomeScreen(
                 add(t("open") to { onLaunchApp(app) })
                 if (key in desktopKeys) {
                     if (fromDesktop) add(t("move_2") to { moving = true })
-                    add(resources.getString(R.string.bb7_remove_home) to {
-                        onDesktopChanged(desktopKeys.filterNot { it == key })
-                    })
+                    add(
+                        resources.getString(R.string.bb7_remove_home) to {
+                            onDesktopChanged(desktopKeys.filterNot { it == key })
+                        },
+                    )
                 } else {
                     add(resources.getString(R.string.bb7_add_home) to { addToDesktop(app) })
                 }
                 if (key in favorites) {
-                    add(resources.getString(R.string.bb7_remove_favorites) to {
-                        onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key))
-                    })
+                    add(
+                        resources.getString(R.string.bb7_remove_favorites) to {
+                            onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key))
+                        },
+                    )
                 } else {
                     add(resources.getString(R.string.bb7_add_favorites) to { addToFavorites(key) })
                 }
                 add(t("app_info") to { onOpenAppInfo(app) })
             } else {
                 // Four Home-only actions; advanced tray, panel, wallpaper and row controls live in Settings.
-                add("Add shortcut" to { openApps(); pickingDesktop = true })
-                add("Customize Home" to {
-                    context.startActivity(
-                        Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java)
-                            .putExtra("tenseven.settings.category", "home"),
-                    )
-                })
+                add(
+                    "Add shortcut" to {
+                        openApps()
+                        pickingDesktop = true
+                    },
+                )
+                add(
+                    "Customize Home" to {
+                        context.startActivity(
+                            Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java)
+                                .putExtra("tenseven.settings.category", "home"),
+                        )
+                    },
+                )
                 add("Command" to { onOpenCommand() })
-                add("Launcher Settings" to {
-                    context.startActivity(Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java))
-                })
+                add(
+                    "Launcher Settings" to {
+                        context.startActivity(Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java))
+                    },
+                )
             }
         }
     }
@@ -277,329 +290,329 @@ fun Bb7HomeScreen(
     SableTheme(appearance = appearance) {
         Bb10Theme(appearance) {
             ScaledLauncherTextTheme {
-            BoxWithConstraints(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        // Keep a dark BB10-compatible canvas when wallpaper is disabled.
-                        .background(if (wallpaperEnabled) Color.Transparent else Color.Black)
-                        .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .focusRequester(focus)
-                        .focusable()
-                        .onPreviewKeyEvent { event ->
-                            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                            val native = event.nativeKeyEvent
-                            val columns = keyColumns
-                            val visible = if (open || searching) shown.size else minOf(shown.size, columns * homeRows)
-                            if (moving) {
-                                when (native.keyCode) {
-                                    KeyEvent.KEYCODE_DPAD_LEFT -> moveBy(-1)
-                                    KeyEvent.KEYCODE_DPAD_RIGHT -> moveBy(1)
-                                    KeyEvent.KEYCODE_DPAD_UP -> moveBy(-columns)
-                                    KeyEvent.KEYCODE_DPAD_DOWN -> moveBy(columns)
-                                    else -> moving = false
-                                }
-                                return@onPreviewKeyEvent true
-                            }
-                            if (inDesktop) {
-                                val key = native.keyCode
-                                val alt = native.isAltPressed
-                                val done =
-                                    when {
-                                        alt && key == KeyEvent.KEYCODE_ENTER -> {
-                                            onOpenMenu(menuFor(desktopApps[deskIndex], true))
-                                            true
-                                        }
-
-                                        alt -> {
-                                            false
-                                        }
-
-                                        key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                            val dx = if (key == KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
-                                            deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, dx, 0)
-                                            true
-                                        }
-
-                                        key == KeyEvent.KEYCODE_DPAD_UP -> {
-                                            if (deskIndex >= columns) {
-                                                deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, 0, -1)
-                                            } else {
-                                                // Past the top row: the whole panel opens, as from the tray's first row.
-                                                inDesktopZone = false
-                                                open = true
-                                                selected = 0
-                                            }
-                                            true
-                                        }
-
-                                        key == KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                            if (deskIndex + columns < desktopApps.size) {
-                                                deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, 0, 1)
-                                            } else {
-                                                inDesktopZone = false
-                                                selected = (deskIndex % columns).coerceAtMost((visible - 1).coerceAtLeast(0))
-                                            }
-                                            true
-                                        }
-
-                                        key == KeyEvent.KEYCODE_ENTER || key == KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                            onLaunchApp(desktopApps[deskIndex])
-                                            true
-                                        }
-
-                                        key == KeyEvent.KEYCODE_MENU -> {
-                                            onOpenMenu(menuFor(desktopApps[deskIndex], true))
-                                            true
-                                        }
-
-                                        key == KeyEvent.KEYCODE_ESCAPE || key == KeyEvent.KEYCODE_BACK -> {
-                                            inDesktopZone = false
-                                            true
-                                        }
-
-                                        else -> {
-                                            false
-                                        }
-                                    }
-                                if (done) return@onPreviewKeyEvent true
-                            }
-                            when {
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && native.isAltPressed -> {
-                                    if (open || searching) {
-                                        panel = Bb7Home.step(panel, -1, panels)
-                                        selected = 0
-                                    } else {
-                                        onOpenHub()
-                                    }
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && native.isAltPressed -> {
-                                    if (open || searching) {
-                                        panel = Bb7Home.step(panel, 1, panels)
-                                        selected = 0
-                                    } else {
-                                        openApps()
-                                    }
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                    selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, -1, 0)
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                    selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 1, 0)
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_UP -> {
-                                    if (open || searching || selected >= columns) {
-                                        selected = Bb7Home.move(selected, visible, columns, 0, -1)
-                                    } else if (desktopApps.isNotEmpty()) {
-                                        // Up from the tray's first row goes to the icons above it, in the same column.
-                                        inDesktopZone = true
-                                        deskSelected =
-                                            (desktopApps.lastIndex / columns * columns + selected % columns).coerceAtMost(
-                                                desktopApps.lastIndex,
-                                            )
-                                    } else {
-                                        open = true
-                                    }
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                    if (open && selected + columns >= visible) {
-                                        open = false
-                                        selected = -1
-                                    } else {
-                                        selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 0, 1)
-                                    }
-                                }
-
-                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu -> {
-                                    onOpenMenu(menuFor(shown.getOrNull(selected), false))
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_ENTER ||
-                                    native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                    shown.getOrNull(selected)?.let { onLaunchApp(it) }
-                                }
-
-                                DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Command -> {
-                                    onOpenCommand()
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_SPACE && !searching -> {
-                                    panel = Bb7Home.step(panel, 1, panels)
-                                    selected = 0
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_DEL && searching -> {
-                                    query = query.dropLast(1)
-                                    selected = 0
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_ESCAPE || native.keyCode == KeyEvent.KEYCODE_BACK -> {
-                                    if (searching || open) {
-                                        query = ""
-                                        open = false
-                                        selected = 0
-                                    } else {
-                                        return@onPreviewKeyEvent false
-                                    }
-                                }
-
-                                native.keyCode == KeyEvent.KEYCODE_MENU -> {
-                                    onOpenMenu(menuFor(shown.getOrNull(selected), false))
-                                }
-
-                                else -> {
-                                    val ch = native.unicodeChar.takeIf { it > 0 }?.toChar()
-                                    if (ch == null || !(ch.isLetterOrDigit() || (ch == ' ' && searching))) {
-                                        return@onPreviewKeyEvent false
-                                    }
-                                    query += ch
-                                    selected = 0
-                                }
-                            }
-                            true
-                        },
-            ) {
-                val columns = bb7Columns(gridColumns, maxWidth.value.toInt(), iconSize.cellDp)
-                SideEffect { keyColumns = columns }
-                val swipe = with(LocalDensity.current) { SWIPE_DP.dp.toPx() }
-                val rowPx = with(LocalDensity.current) { ROW_DP.dp.toPx() }
-                Column(
+                BoxWithConstraints(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .pointerInput(swipe) {
-                                var dragged = 0f
-                                detectHorizontalDragGestures(
-                                    onDragStart = { dragged = 0f },
-                                    onDragEnd = {
-                                        when (Bb7Home.swipe(dragged, swipe)) {
-                                            Bb7Swipe.Hub -> onOpenHub()
-                                            Bb7Swipe.Apps -> openApps()
-                                            null -> Unit
-                                        }
-                                    },
-                                ) { _, amount -> dragged += amount }
-                            }.pointerInput(onDoubleTapEmpty, open) {
-                                // Only empty space: taps on icons and rows are consumed by them first.
-                                // Long-press empty space: open All to pick icons for the home screen.
-                                if (!open) {
-                                    detectTapGestures(
-                                        onDoubleTap = { onDoubleTapEmpty?.invoke() },
-                                        onLongPress = { openApps() },
-                                    )
+                            // Keep a dark BB10-compatible canvas when wallpaper is disabled.
+                            .background(if (wallpaperEnabled) Color.Transparent else Color.Black)
+                            .windowInsetsPadding(WindowInsets.safeDrawing)
+                            .focusRequester(focus)
+                            .focusable()
+                            .onPreviewKeyEvent { event ->
+                                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                                val native = event.nativeKeyEvent
+                                val columns = keyColumns
+                                val visible = if (open || searching) shown.size else minOf(shown.size, columns * homeRows)
+                                if (moving) {
+                                    when (native.keyCode) {
+                                        KeyEvent.KEYCODE_DPAD_LEFT -> moveBy(-1)
+                                        KeyEvent.KEYCODE_DPAD_RIGHT -> moveBy(1)
+                                        KeyEvent.KEYCODE_DPAD_UP -> moveBy(-columns)
+                                        KeyEvent.KEYCODE_DPAD_DOWN -> moveBy(columns)
+                                        else -> moving = false
+                                    }
+                                    return@onPreviewKeyEvent true
                                 }
+                                if (inDesktop) {
+                                    val key = native.keyCode
+                                    val alt = native.isAltPressed
+                                    val done =
+                                        when {
+                                            alt && key == KeyEvent.KEYCODE_ENTER -> {
+                                                onOpenMenu(menuFor(desktopApps[deskIndex], true))
+                                                true
+                                            }
+
+                                            alt -> {
+                                                false
+                                            }
+
+                                            key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                                val dx = if (key == KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
+                                                deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, dx, 0)
+                                                true
+                                            }
+
+                                            key == KeyEvent.KEYCODE_DPAD_UP -> {
+                                                if (deskIndex >= columns) {
+                                                    deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, 0, -1)
+                                                } else {
+                                                    // Past the top row: the whole panel opens, as from the tray's first row.
+                                                    inDesktopZone = false
+                                                    open = true
+                                                    selected = 0
+                                                }
+                                                true
+                                            }
+
+                                            key == KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                                if (deskIndex + columns < desktopApps.size) {
+                                                    deskSelected = Bb7Home.move(deskIndex, desktopApps.size, columns, 0, 1)
+                                                } else {
+                                                    inDesktopZone = false
+                                                    selected = (deskIndex % columns).coerceAtMost((visible - 1).coerceAtLeast(0))
+                                                }
+                                                true
+                                            }
+
+                                            key == KeyEvent.KEYCODE_ENTER || key == KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                                onLaunchApp(desktopApps[deskIndex])
+                                                true
+                                            }
+
+                                            key == KeyEvent.KEYCODE_MENU -> {
+                                                onOpenMenu(menuFor(desktopApps[deskIndex], true))
+                                                true
+                                            }
+
+                                            key == KeyEvent.KEYCODE_ESCAPE || key == KeyEvent.KEYCODE_BACK -> {
+                                                inDesktopZone = false
+                                                true
+                                            }
+
+                                            else -> {
+                                                false
+                                            }
+                                        }
+                                    if (done) return@onPreviewKeyEvent true
+                                }
+                                when {
+                                    native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && native.isAltPressed -> {
+                                        if (open || searching) {
+                                            panel = Bb7Home.step(panel, -1, panels)
+                                            selected = 0
+                                        } else {
+                                            onOpenHub()
+                                        }
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && native.isAltPressed -> {
+                                        if (open || searching) {
+                                            panel = Bb7Home.step(panel, 1, panels)
+                                            selected = 0
+                                        } else {
+                                            openApps()
+                                        }
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                        selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, -1, 0)
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                        selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 1, 0)
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_DPAD_UP -> {
+                                        if (open || searching || selected >= columns) {
+                                            selected = Bb7Home.move(selected, visible, columns, 0, -1)
+                                        } else if (desktopApps.isNotEmpty()) {
+                                            // Up from the tray's first row goes to the icons above it, in the same column.
+                                            inDesktopZone = true
+                                            deskSelected =
+                                                (desktopApps.lastIndex / columns * columns + selected % columns).coerceAtMost(
+                                                    desktopApps.lastIndex,
+                                                )
+                                        } else {
+                                            open = true
+                                        }
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                        if (open && selected + columns >= visible) {
+                                            open = false
+                                            selected = -1
+                                        } else {
+                                            selected = if (selected < 0) 0 else Bb7Home.move(selected, visible, columns, 0, 1)
+                                        }
+                                    }
+
+                                    DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu -> {
+                                        onOpenMenu(menuFor(shown.getOrNull(selected), false))
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_ENTER ||
+                                        native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                        shown.getOrNull(selected)?.let { onLaunchApp(it) }
+                                    }
+
+                                    DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Command -> {
+                                        onOpenCommand()
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_SPACE && !searching -> {
+                                        panel = Bb7Home.step(panel, 1, panels)
+                                        selected = 0
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_DEL && searching -> {
+                                        query = query.dropLast(1)
+                                        selected = 0
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_ESCAPE || native.keyCode == KeyEvent.KEYCODE_BACK -> {
+                                        if (searching || open) {
+                                            query = ""
+                                            open = false
+                                            selected = 0
+                                        } else {
+                                            return@onPreviewKeyEvent false
+                                        }
+                                    }
+
+                                    native.keyCode == KeyEvent.KEYCODE_MENU -> {
+                                        onOpenMenu(menuFor(shown.getOrNull(selected), false))
+                                    }
+
+                                    else -> {
+                                        val ch = native.unicodeChar.takeIf { it > 0 }?.toChar()
+                                        if (ch == null || !(ch.isLetterOrDigit() || (ch == ' ' && searching))) {
+                                            return@onPreviewKeyEvent false
+                                        }
+                                        query += ch
+                                        selected = 0
+                                    }
+                                }
+                                true
                             },
                 ) {
-                    Bb7Banner(
-                        dateText = DateFormat.getDateInstance(DateFormat.FULL).format(Date(today)),
-                        unread = live.hubApps.filter { it.packageName in hubSources }.sumOf { it.count },
-                        notificationCounts = live.hubApps,
-                        hubSources = hubSources,
-                        enabledDials = enabledDials,
-                        statusMode = statusMode,
-                        showStrip = showStrip,
-                        stripExpanded = stripExpanded,
-                        compact = open || searching,
-                        scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
-                        onOpenHub = onOpenHub,
-                        onOpenNotificationApp = { pkg ->
-                            apps.firstOrNull { it.inLauncherUser && it.component.packageName == pkg }?.let(onLaunchApp)
-                        },
-                    )
-                    if (!open && !searching) {
-                        Bb7Desktop(
-                            apps = desktopApps,
-                            columns = columns,
-                            iconDp = iconSize.iconDp,
-                            showLabels = showLabels,
-                            selected = if (inDesktop) deskIndex else -1,
-                            moving = moving,
-                            modifier = Modifier.weight(1f),
-                            onLaunch = { onLaunchApp(it) },
-                            onEmptyTap = {
-                                // An empty wallpaper tap is a discoverable route to All Apps;
-                                // long-press an app there and choose Add to home screen.
-                                selected = -1
-                                inDesktopZone = false
-                                openApps()
-                                pickingDesktop = true
-                                Toast.makeText(context, "Tap an app to add to Home", Toast.LENGTH_SHORT).show()
-                            },
-                            onLongPress = { app ->
-                                inDesktopZone = true
-                                deskSelected = desktopApps.indexOf(app).coerceAtLeast(0)
-                                onOpenMenu(menuFor(app, true))
+                    val columns = bb7Columns(gridColumns, maxWidth.value.toInt(), iconSize.cellDp)
+                    SideEffect { keyColumns = columns }
+                    val swipe = with(LocalDensity.current) { SWIPE_DP.dp.toPx() }
+                    val rowPx = with(LocalDensity.current) { ROW_DP.dp.toPx() }
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .pointerInput(swipe) {
+                                    var dragged = 0f
+                                    detectHorizontalDragGestures(
+                                        onDragStart = { dragged = 0f },
+                                        onDragEnd = {
+                                            when (Bb7Home.swipe(dragged, swipe)) {
+                                                Bb7Swipe.Hub -> onOpenHub()
+                                                Bb7Swipe.Apps -> openApps()
+                                                null -> Unit
+                                            }
+                                        },
+                                    ) { _, amount -> dragged += amount }
+                                }.pointerInput(onDoubleTapEmpty, open) {
+                                    // Only empty space: taps on icons and rows are consumed by them first.
+                                    // Long-press empty space: open All to pick icons for the home screen.
+                                    if (!open) {
+                                        detectTapGestures(
+                                            onDoubleTap = { onDoubleTapEmpty?.invoke() },
+                                            onLongPress = { openApps() },
+                                        )
+                                    }
+                                },
+                    ) {
+                        Bb7Banner(
+                            dateText = DateFormat.getDateInstance(DateFormat.FULL).format(Date(today)),
+                            unread = live.hubApps.filter { it.packageName in hubSources }.sumOf { it.count },
+                            notificationCounts = live.hubApps,
+                            hubSources = hubSources,
+                            enabledDials = enabledDials,
+                            statusMode = statusMode,
+                            showStrip = showStrip,
+                            stripExpanded = stripExpanded,
+                            compact = open || searching,
+                            scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(scrimLevel)),
+                            onOpenHub = onOpenHub,
+                            onOpenNotificationApp = { pkg ->
+                                apps.firstOrNull { it.inLauncherUser && it.component.packageName == pkg }?.let(onLaunchApp)
                             },
                         )
-                    }
-                    Bb7Tray(
-                        title = trayTitle,
-                        apps = if (open || searching) shown else shown.take(columns * homeRows),
-                        columns = columns,
-                        open = open || searching,
-                        iconDp = iconSize.iconDp,
-                        showLabels = showLabels,
-                        moving = moving,
-                        scrim = Color.Black.copy(alpha = Bb7Scrim.trayAlpha(scrimLevel)),
-                        onResize = { dragged ->
-                            val rows = Bb7Home.resizeRows(homeRows, dragged, rowPx)
-                            if (rows > Bb7Home.MAX_HOME_ROWS) {
-                                open = true
-                            } else if (rows != homeRows) {
-                                onHomeRowsChanged(rows)
-                                selected = selected.coerceAtMost(columns * rows - 1)
-                            }
-                        },
-                        selected = if (inDesktop) -1 else selected,
-                        modifier = if (open || searching) Modifier.weight(1f) else Modifier,
-                        onToggle = {
-                            open = !open
-                            query = ""
-                            selected = if (open) 0 else -1
-                            if (!open) pickingDesktop = false
-                        },
-                        onStep = { step ->
-                            query = ""
-                            panel = Bb7Home.step(panel, step, panels)
-                            selected = 0
-                        },
-                        onLaunch = { if (pickingDesktop) addToDesktop(it) else onLaunchApp(it) },
-                        onMenu = {
-                            // The ⋮ button: the menu for the highlighted icon.
-                            onOpenMenu(menuFor(shown.getOrNull(selected), false))
-                        },
-                        onLongPress = { app ->
-                            // Long-press an icon: its menu (Add to Favorites, Move, App info...).
-                            selected = shown.indexOf(app).coerceAtLeast(0)
-                            onOpenMenu(menuFor(app, false))
-                        },
-                    )
-                    Bb7ReferenceBar(
-                        apps = apps,
-                        appsOpen = open || searching,
-                        actions =
-                            Bb7BarActions(
-                                hub = onOpenHub,
-                                command = onOpenCommand,
-                                apps = openApps,
-                                favorites = {
-                                    panel = Bb7Panel.Favorites
-                                    open = false
-                                    query = ""
-                                    pickingDesktop = false
-                                    moving = false
+                        if (!open && !searching) {
+                            Bb7Desktop(
+                                apps = desktopApps,
+                                columns = columns,
+                                iconDp = iconSize.iconDp,
+                                showLabels = showLabels,
+                                selected = if (inDesktop) deskIndex else -1,
+                                moving = moving,
+                                modifier = Modifier.weight(1f),
+                                onLaunch = { onLaunchApp(it) },
+                                onEmptyTap = {
+                                    // An empty wallpaper tap is a discoverable route to All Apps;
+                                    // long-press an app there and choose Add to home screen.
                                     selected = -1
+                                    inDesktopZone = false
+                                    openApps()
+                                    pickingDesktop = true
+                                    Toast.makeText(context, "Tap an app to add to Home", Toast.LENGTH_SHORT).show()
                                 },
-                                launch = { onLaunchApp(it) },
-                            ),
-                    )
+                                onLongPress = { app ->
+                                    inDesktopZone = true
+                                    deskSelected = desktopApps.indexOf(app).coerceAtLeast(0)
+                                    onOpenMenu(menuFor(app, true))
+                                },
+                            )
+                        }
+                        Bb7Tray(
+                            title = trayTitle,
+                            apps = if (open || searching) shown else shown.take(columns * homeRows),
+                            columns = columns,
+                            open = open || searching,
+                            iconDp = iconSize.iconDp,
+                            showLabels = showLabels,
+                            moving = moving,
+                            scrim = Color.Black.copy(alpha = Bb7Scrim.trayAlpha(scrimLevel)),
+                            onResize = { dragged ->
+                                val rows = Bb7Home.resizeRows(homeRows, dragged, rowPx)
+                                if (rows > Bb7Home.MAX_HOME_ROWS) {
+                                    open = true
+                                } else if (rows != homeRows) {
+                                    onHomeRowsChanged(rows)
+                                    selected = selected.coerceAtMost(columns * rows - 1)
+                                }
+                            },
+                            selected = if (inDesktop) -1 else selected,
+                            modifier = if (open || searching) Modifier.weight(1f) else Modifier,
+                            onToggle = {
+                                open = !open
+                                query = ""
+                                selected = if (open) 0 else -1
+                                if (!open) pickingDesktop = false
+                            },
+                            onStep = { step ->
+                                query = ""
+                                panel = Bb7Home.step(panel, step, panels)
+                                selected = 0
+                            },
+                            onLaunch = { if (pickingDesktop) addToDesktop(it) else onLaunchApp(it) },
+                            onMenu = {
+                                // The ⋮ button: the menu for the highlighted icon.
+                                onOpenMenu(menuFor(shown.getOrNull(selected), false))
+                            },
+                            onLongPress = { app ->
+                                // Long-press an icon: its menu (Add to Favorites, Move, App info...).
+                                selected = shown.indexOf(app).coerceAtLeast(0)
+                                onOpenMenu(menuFor(app, false))
+                            },
+                        )
+                        Bb7ReferenceBar(
+                            apps = apps,
+                            appsOpen = open || searching,
+                            actions =
+                                Bb7BarActions(
+                                    hub = onOpenHub,
+                                    command = onOpenCommand,
+                                    apps = openApps,
+                                    favorites = {
+                                        panel = Bb7Panel.Favorites
+                                        open = false
+                                        query = ""
+                                        pickingDesktop = false
+                                        moving = false
+                                        selected = -1
+                                    },
+                                    launch = { onLaunchApp(it) },
+                                ),
+                        )
+                    }
                 }
-            }
             }
         }
     }

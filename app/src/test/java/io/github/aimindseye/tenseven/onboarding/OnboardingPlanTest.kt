@@ -90,18 +90,29 @@ class OnboardingPlanTest {
         }
         // App info overflow may not offer "Allow restricted settings" before the first request.
         assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(nothing, eligible, emptySet()))
-        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            nothing, eligible, setOf(SetupStep.NOTIFICATIONS)))
-        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            everything.copy(notificationAccess = false), eligible, setOf(SetupStep.NOTIFICATIONS)))
-        assertTrue(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            everything.copy(usageAccess = false), eligible, setOf(SetupStep.USAGE)))
-        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            everything, eligible, setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)))
-        assertFalse(OnboardingPlan.needsRestrictedSettingsOverviewHelp(
-            nothing,
-            { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, 32, null) },
-            setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)))
+        assertTrue(
+            OnboardingPlan.needsRestrictedSettingsOverviewHelp(nothing, eligible, setOf(SetupStep.NOTIFICATIONS)),
+        )
+        assertTrue(
+            OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+                everything.copy(notificationAccess = false),
+                eligible,
+                setOf(SetupStep.NOTIFICATIONS),
+            ),
+        )
+        assertTrue(
+            OnboardingPlan.needsRestrictedSettingsOverviewHelp(everything.copy(usageAccess = false), eligible, setOf(SetupStep.USAGE)),
+        )
+        assertFalse(
+            OnboardingPlan.needsRestrictedSettingsOverviewHelp(everything, eligible, setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)),
+        )
+        assertFalse(
+            OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+                nothing,
+                { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, 32, null) },
+                setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE),
+            ),
+        )
     }
 
     @Test

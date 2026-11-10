@@ -34,7 +34,11 @@ import java.time.ZonedDateTime
 @Composable
 internal fun HubRemindersPanel(records: List<TaskRecord>) {
     val context = LocalContext.current
-    val repository = remember(context) { io.github.aimindseye.tenseven.platform.taskRepository(context) }
+    val repository =
+        remember(context) {
+            io.github.aimindseye.tenseven.platform
+                .taskRepository(context)
+        }
     var editing by remember { mutableStateOf<TaskRecord?>(null) }
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Remind", style = MaterialTheme.typography.titleLarge)
@@ -45,15 +49,21 @@ internal fun HubRemindersPanel(records: List<TaskRecord>) {
             items.forEach { task ->
                 Surface(color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
                     Column(Modifier.padding(8.dp)) {
-                        TaskItem(task,
+                        TaskItem(
+                            task,
                             onOpen = { editing = task },
                             onComplete = { repository.complete(task) },
                             onDelete = { repository.delete(task.id) },
                             onTomorrow = {
-                                repository.save(task.copy(completed = false,
-                                    remindAtEpochMs = TaskSchedule.preset("Tomorrow morning", Instant.now(), ZoneId.systemDefault()),
-                                    updatedAtEpochMs = System.currentTimeMillis()))
-                            })
+                                repository.save(
+                                    task.copy(
+                                        completed = false,
+                                        remindAtEpochMs = TaskSchedule.preset("Tomorrow morning", Instant.now(), ZoneId.systemDefault()),
+                                        updatedAtEpochMs = System.currentTimeMillis(),
+                                    ),
+                                )
+                            },
+                        )
                     }
                 }
             }
@@ -61,27 +71,59 @@ internal fun HubRemindersPanel(records: List<TaskRecord>) {
     }
     editing?.let { task ->
         Dialog(onDismissRequest = { editing = null }) {
-            Surface(shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface) {
-                TaskEditor(task = task, isNew = false,
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ) {
+                TaskEditor(
+                    task = task,
+                    isNew = false,
                     onCancel = { editing = null },
-                    onSave = { repository.save(it); editing = null },
-                    onDelete = { repository.delete(it.id); editing = null },
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp))
+                    onSave = {
+                        repository.save(it)
+                        editing = null
+                    },
+                    onDelete = {
+                        repository.delete(it.id)
+                        editing = null
+                    },
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp),
+                )
             }
         }
     }
 }
 
 /** A custom time uses dialogs over the current Hub, with no persisted draft if cancelled. */
-internal fun chooseHubReminderTime(context: Context, onChosen: (Long) -> Unit) {
+internal fun chooseHubReminderTime(
+    context: Context,
+    onChosen: (Long) -> Unit,
+) {
     val zone = ZoneId.systemDefault()
     val initial = ZonedDateTime.now(zone).plusHours(1)
     DatePickerDialog(context, { _, year, month, day ->
-        TimePickerDialog(context, { _, hour, minute ->
-            val at = LocalDateTime.of(year, month + 1, day, hour, minute).atZone(zone).toInstant().toEpochMilli()
-            if (at > System.currentTimeMillis()) onChosen(at)
-            else android.widget.Toast.makeText(context, "Choose a future reminder time", android.widget.Toast.LENGTH_SHORT).show()
-        }, initial.hour, initial.minute, android.text.format.DateFormat.is24HourFormat(context)).show()
+        TimePickerDialog(
+            context,
+            { _, hour, minute ->
+                val at =
+                    LocalDateTime
+                        .of(year, month + 1, day, hour, minute)
+                        .atZone(zone)
+                        .toInstant()
+                        .toEpochMilli()
+                if (at > System.currentTimeMillis()) {
+                    onChosen(at)
+                } else {
+                    android.widget.Toast
+                        .makeText(context, "Choose a future reminder time", android.widget.Toast.LENGTH_SHORT)
+                        .show()
+                }
+            },
+            initial.hour,
+            initial.minute,
+            android.text.format.DateFormat
+                .is24HourFormat(context),
+        ).show()
     }, initial.year, initial.monthValue - 1, initial.dayOfMonth).show()
 }

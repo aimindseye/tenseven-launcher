@@ -66,7 +66,6 @@ import io.github.aimindseye.tenseven.model.Bb10Gestures
 import io.github.aimindseye.tenseven.model.HomeHeader
 import io.github.aimindseye.tenseven.model.HomeStatusMode
 import io.github.aimindseye.tenseven.model.HomeStyle
-import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.model.LauncherKeys
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.SpeedDialKeys
@@ -74,6 +73,7 @@ import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.StartTypeToSearch
 import io.github.aimindseye.tenseven.platform.DeviceCompatibility
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -252,14 +252,14 @@ internal fun StartStrip(
         if (state.currentPage != StartPages.HUB + pageLead) {
             ReferenceHomeBar(
                 slots = quickSlots,
-            pages = HomeBarPages(state.currentPage, pageCount, pageLead),
-            actions =
-                HomeBarActions(
-                    onShowPage,
-                    onQuickSlot,
-                    onSlotOptions,
-                    peek = onHubPeek,
-                ) { phoneSlotFocused = it },
+                pages = HomeBarPages(state.currentPage, pageCount, pageLead),
+                actions =
+                    HomeBarActions(
+                        onShowPage,
+                        onQuickSlot,
+                        onSlotOptions,
+                        peek = onHubPeek,
+                    ) { phoneSlotFocused = it },
             )
         }
     }
@@ -371,13 +371,14 @@ internal fun StatusDialsRow(
         mutableStateOf(StartStateRepository(context).loadHomeDials(HomeStyle.Bb10))
     }
     DisposableEffect(lifecycle, context) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                val saved = StartStateRepository(context)
-                mode = saved.loadHomeStatusMode(HomeStyle.Bb10)
-                selectedMetrics = saved.loadHomeDials(HomeStyle.Bb10)
+        val observer =
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                    val saved = StartStateRepository(context)
+                    mode = saved.loadHomeStatusMode(HomeStyle.Bb10)
+                    selectedMetrics = saved.loadHomeDials(HomeStyle.Bb10)
+                }
             }
-        }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
@@ -386,7 +387,8 @@ internal fun StatusDialsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (mode == HomeStatusMode.Hidden) {
-            androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+            androidx.compose.foundation.layout
+                .Spacer(Modifier.weight(1f))
         } else {
             BbHomeStatus(mode = mode, visible = selectedMetrics, modifier = Modifier.weight(1f))
         }
@@ -395,10 +397,14 @@ internal fun StatusDialsRow(
             color = Bb10Text,
             fontSize = 22.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.heightIn(min = 44.dp).width(44.dp)
-                .sableFocusRing().clickable(onClick = onOpenSettings)
-                .semantics { contentDescription = "Launcher Settings" }
-                .padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .heightIn(min = 44.dp)
+                    .width(44.dp)
+                    .sableFocusRing()
+                    .clickable(onClick = onOpenSettings)
+                    .semantics { contentDescription = "Launcher Settings" }
+                    .padding(top = 8.dp),
         )
     }
 }
@@ -454,9 +460,13 @@ internal fun DateHeader(
                 text = "⚙",
                 color = Bb10Text,
                 fontSize = 22.sp,
-                modifier = Modifier.heightIn(min = 44.dp).width(44.dp)
-                    .sableFocusRing().clickable(onClick = onOpenSettings)
-                    .semantics { contentDescription = "Launcher Settings" },
+                modifier =
+                    Modifier
+                        .heightIn(min = 44.dp)
+                        .width(44.dp)
+                        .sableFocusRing()
+                        .clickable(onClick = onOpenSettings)
+                        .semantics { contentDescription = "Launcher Settings" },
                 textAlign = TextAlign.Center,
             )
         }

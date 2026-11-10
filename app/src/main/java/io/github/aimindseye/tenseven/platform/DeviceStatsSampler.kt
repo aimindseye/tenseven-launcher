@@ -9,9 +9,9 @@ package io.github.aimindseye.tenseven.platform
 import android.app.ActivityManager
 import android.content.Context
 import android.net.TrafficStats
+import android.os.BatteryManager
 import android.os.Environment
 import android.os.StatFs
-import android.os.BatteryManager
 import android.os.SystemClock
 import android.telephony.TelephonyManager
 import java.io.File
@@ -43,9 +43,15 @@ data class DeviceStats(
 
 /** Pure formatting for the rings, kept separate so it can be unit tested on the JVM. */
 object DeviceStatsFormat {
-    fun usedStorage(total: Long, available: Long): Float? =
-        if (total <= 0 || available < 0) null
-        else (1.0 - available.coerceAtMost(total).toDouble() / total.toDouble()).toFloat().coerceIn(0f, 1f)
+    fun usedStorage(
+        total: Long,
+        available: Long,
+    ): Float? =
+        if (total <= 0 || available < 0) {
+            null
+        } else {
+            (1.0 - available.coerceAtMost(total).toDouble() / total.toDouble()).toFloat().coerceIn(0f, 1f)
+        }
 
     /** Throughput on a log scale: 0 below 1 KiB/s, 1 at about 30 MiB/s. */
     fun heat(bytesPerSec: Long?): Float {
@@ -98,10 +104,11 @@ class DeviceStatsSampler {
         return DeviceStats(
             cpu = procStat() ?: cpuFreq(),
             ram = ram(context),
-            storage = runCatching {
-                val disk = StatFs(Environment.getDataDirectory().absolutePath)
-                DeviceStatsFormat.usedStorage(disk.totalBytes, disk.availableBytes)
-            }.getOrNull(),
+            storage =
+                runCatching {
+                    val disk = StatFs(Environment.getDataDirectory().absolutePath)
+                    DeviceStatsFormat.usedStorage(disk.totalBytes, disk.availableBytes)
+                }.getOrNull(),
             wifiUp = net?.get(0),
             wifiDown = net?.get(1),
             mobileUp = net?.get(2),
@@ -174,6 +181,7 @@ class DeviceStatsSampler {
         val result: List<Long?> =
             if (lastNetAt > 0 && now > lastNetAt && lastTotalRx >= 0) {
                 val secs = (now - lastNetAt) / 1000.0
+
                 fun per(
                     cur: Long,
                     prev: Long,
@@ -201,7 +209,12 @@ class DeviceStatsSampler {
                     lines.firstOrNull { it.startsWith("cpu ") }
                 }
             val fields =
-                line?.trim()?.split(Regex("\\s+"))?.drop(1)?.mapNotNull { it.toLongOrNull() }.orEmpty()
+                line
+                    ?.trim()
+                    ?.split(Regex("\\s+"))
+                    ?.drop(1)
+                    ?.mapNotNull { it.toLongOrNull() }
+                    .orEmpty()
             if (fields.size < 4) {
                 null
             } else {
@@ -221,7 +234,8 @@ class DeviceStatsSampler {
     private fun cpuFreq(): Float? =
         try {
             val cores =
-                File("/sys/devices/system/cpu").listFiles { f -> f.name.matches(Regex("cpu\\d+")) }
+                File("/sys/devices/system/cpu")
+                    .listFiles { f -> f.name.matches(Regex("cpu\\d+")) }
                     .orEmpty()
             var sum = 0f
             var n = 0

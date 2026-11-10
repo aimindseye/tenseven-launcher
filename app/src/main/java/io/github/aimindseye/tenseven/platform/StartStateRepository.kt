@@ -258,11 +258,15 @@ class StartStateRepository(
 
     /** Observes Home weather and font changes without requiring a restart of Settings or Home. */
     fun onHomeReadabilityChanged(listener: () -> Unit): () -> Unit {
-        val callback = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "launcher_text_size" || key == "home_weather_enabled" || key == "home_weather_city" || key == "home_weather_use_device_location" || key == "home_status_size") {
-                listener()
+        val callback =
+            SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key == "launcher_text_size" || key == "home_weather_enabled" || key == "home_weather_city" ||
+                    key == "home_weather_use_device_location" ||
+                    key == "home_status_size"
+                ) {
+                    listener()
+                }
             }
-        }
         preferences.registerOnSharedPreferenceChangeListener(callback)
         return { preferences.unregisterOnSharedPreferenceChangeListener(callback) }
     }
@@ -276,7 +280,8 @@ class StartStateRepository(
 
     /** One status readout size for BB7/BB10; no migration of dial selections needed. */
     fun loadHomeStatusSize(): io.github.aimindseye.tenseven.model.HomeStatusSize =
-        io.github.aimindseye.tenseven.model.HomeStatusSize.decode(preferences.getString("home_status_size", null))
+        io.github.aimindseye.tenseven.model.HomeStatusSize
+            .decode(preferences.getString("home_status_size", null))
 
     fun saveHomeStatusSize(size: io.github.aimindseye.tenseven.model.HomeStatusSize) {
         preferences.edit().putString("home_status_size", size.stableValue).apply()
@@ -382,21 +387,34 @@ class StartStateRepository(
                 ?: HomeDisplayPolicy.DEFAULT_DIALS,
         )
 
-    fun saveHomeDials(style: HomeStyle, selected: Set<String>) {
-        preferences.edit().putStringSet(
-            "home_status_metrics_shared", HomeDisplayPolicy.normalizedDials(selected),
-        ).apply()
+    fun saveHomeDials(
+        style: HomeStyle,
+        selected: Set<String>,
+    ) {
+        preferences
+            .edit()
+            .putStringSet(
+                "home_status_metrics_shared",
+                HomeDisplayPolicy.normalizedDials(selected),
+            ).apply()
     }
 
     /** One Home status mode, shared across BB7/BB10. The old selected-style choice is retained. */
     fun loadHomeStatusMode(style: HomeStyle): io.github.aimindseye.tenseven.model.HomeStatusMode =
         io.github.aimindseye.tenseven.model.HomeStatusMode.decode(
             preferences.getString("home_status_mode_shared", null)
-                ?: preferences.getString(io.github.aimindseye.tenseven.model.HomeStatusMode.preference(loadHomeStyle()), null),
+                ?: preferences.getString(
+                    io.github.aimindseye.tenseven.model.HomeStatusMode
+                        .preference(loadHomeStyle()),
+                    null,
+                ),
             loadHomeDials(style).size,
         )
 
-    fun saveHomeStatusMode(style: HomeStyle, mode: io.github.aimindseye.tenseven.model.HomeStatusMode) {
+    fun saveHomeStatusMode(
+        style: HomeStyle,
+        mode: io.github.aimindseye.tenseven.model.HomeStatusMode,
+    ) {
         preferences.edit().putString("home_status_mode_shared", mode.key).apply()
     }
 

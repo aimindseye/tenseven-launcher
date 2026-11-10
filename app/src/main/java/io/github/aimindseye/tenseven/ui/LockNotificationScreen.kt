@@ -234,12 +234,14 @@ private fun LockSourceIcon(
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    io.github.aimindseye.tenseven.iconpacks.IconPresentationState.init(context)
+    io.github.aimindseye.tenseven.iconpacks.IconPresentationState
+        .init(context)
     val glyph =
         if (io.github.aimindseye.tenseven.iconpacks.IconPresentationState.selected ==
             io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
         ) {
-            io.github.aimindseye.tenseven.model.AppGlyphs.forPackage(packageName)
+            io.github.aimindseye.tenseven.model.AppGlyphs
+                .forPackage(packageName)
         } else {
             null
         }

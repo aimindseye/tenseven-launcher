@@ -30,7 +30,10 @@ internal object TenSevenSafeViewport {
         }
     }
 
-    fun show(activity: Activity, root: View) {
+    fun show(
+        activity: Activity,
+        root: View,
+    ) {
         // Required for targetSdk 35+: edge-to-edge is enforced by Android.
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         darkSystemBars(activity)
@@ -39,15 +42,17 @@ internal object TenSevenSafeViewport {
         val right = root.paddingRight
         val bottom = root.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
-            val safe = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
-            )
+            val safe =
+                insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+                )
             val targetLeft = left + safe.left
             val targetTop = top + safe.top
             val targetRight = right + safe.right
             val targetBottom = bottom + safe.bottom
             if (view.paddingLeft != targetLeft || view.paddingTop != targetTop ||
-                view.paddingRight != targetRight || view.paddingBottom != targetBottom) {
+                view.paddingRight != targetRight || view.paddingBottom != targetBottom
+            ) {
                 view.setPadding(targetLeft, targetTop, targetRight, targetBottom)
             }
             // Do not consume: child controls and IME handlers may also need insets.
@@ -64,9 +69,10 @@ internal object TenSevenSafeViewport {
      */
     fun fit(activity: Activity): D5ScreenFitPolicy.Fit {
         val metrics = activity.windowManager.currentWindowMetrics
-        val safe = metrics.windowInsets.getInsets(
-            WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
-        )
+        val safe =
+            metrics.windowInsets.getInsets(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
+            )
         val density = activity.resources.displayMetrics.density
         val width = (metrics.bounds.width() - safe.left - safe.right).coerceAtLeast(1)
         val height = (metrics.bounds.height() - safe.top - safe.bottom).coerceAtLeast(1)

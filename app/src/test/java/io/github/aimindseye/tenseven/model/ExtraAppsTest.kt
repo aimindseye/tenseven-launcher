@@ -11,16 +11,29 @@ class ExtraAppsTest {
     @Test
     fun catalogueHasToolsAndTenGames() {
         assertTrue(
-            ExtraApps.ofGroup(ExtraGroup.Tools)
+            ExtraApps
+                .ofGroup(ExtraGroup.Tools)
                 .map { it.id }
                 .toSet()
                 .containsAll(
-                    setOf("calculator", "tasks", "notes", "profiles")
+                    setOf("calculator", "tasks", "notes", "profiles"),
                 ),
         )
         assertEquals(10, ExtraApps.ofGroup(ExtraGroup.Games).size)
-        assertEquals(ExtraApps.ALL.size, ExtraApps.ALL.map { it.id }.toSet().size)
-        assertEquals(ExtraApps.ALL.size, ExtraApps.ALL.map { it.className }.toSet().size)
+        assertEquals(
+            ExtraApps.ALL.size,
+            ExtraApps.ALL
+                .map { it.id }
+                .toSet()
+                .size,
+        )
+        assertEquals(
+            ExtraApps.ALL.size,
+            ExtraApps.ALL
+                .map { it.className }
+                .toSet()
+                .size,
+        )
     }
 
     @Test

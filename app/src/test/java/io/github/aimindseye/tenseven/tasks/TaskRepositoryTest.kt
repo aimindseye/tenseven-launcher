@@ -1,15 +1,21 @@
 package io.github.aimindseye.tenseven.tasks
 
+import org.junit.Assert.*
+import org.junit.Test
 import java.io.File
 import java.nio.file.Files
 import java.time.Instant
-import org.junit.Assert.*
-import org.junit.Test
 
 class TaskRepositoryTest {
-    private class Scheduler(private val store: TaskStore) : TaskScheduler {
+    private class Scheduler(
+        private val store: TaskStore,
+    ) : TaskScheduler {
         val events = mutableListOf<String>()
-        override fun cancel(id: String) { events += "cancel:$id" }
+
+        override fun cancel(id: String) {
+            events += "cancel:$id"
+        }
+
         override fun schedule(task: TaskRecord) {
             assertTrue("Persist before changing alarms", store.list().any { it == task })
             events += "schedule:${task.id}"
@@ -32,7 +38,9 @@ class TaskRepositoryTest {
             repo.delete(task.id)
             assertTrue(repo.list().isEmpty())
             assertEquals("cancel:${task.id}", scheduler.events.last())
-        } finally { directory.deleteRecursively() }
+        } finally {
+            directory.deleteRecursively()
+        }
     }
 
     @Test fun failedPersistenceDoesNotCancelAnExistingAlarm() {
@@ -43,7 +51,9 @@ class TaskRepositoryTest {
             val scheduler = Scheduler(store)
             assertTrue(runCatching { TaskRepository(store, scheduler).save(TaskRecord(title = "New")) }.isFailure)
             assertTrue(scheduler.events.isEmpty())
-        } finally { directory.deleteRecursively() }
+        } finally {
+            directory.deleteRecursively()
+        }
     }
 
     @Test fun completionRepeatsAdvanceDueAndReminderAndCanRestoreCompletedTasks() {
@@ -52,22 +62,40 @@ class TaskRepositoryTest {
             val store = TaskStore(directory)
             val now = Instant.parse("2026-11-02T16:00:00Z").toEpochMilli()
             val repo = TaskRepository(store, Scheduler(store)) { now }
-            val dated = TaskRecord(title = "Daily", zoneId = "UTC", repeat = TaskRepeat.Daily,
-                dueAtEpochMs = now - 1000, remindAtEpochMs = now - 2000)
+            val dated =
+                TaskRecord(
+                    title = "Daily",
+                    zoneId = "UTC",
+                    repeat = TaskRepeat.Daily,
+                    dueAtEpochMs = now - 1000,
+                    remindAtEpochMs = now - 2000,
+                )
             repo.complete(dated)
             val next = repo.list().single()
             assertFalse(next.completed)
             assertTrue(next.dueAtEpochMs!! > now && next.remindAtEpochMs!! > now)
             assertEquals(now, next.updatedAtEpochMs)
-            val reminderOnly = dated.copy(id = java.util.UUID.randomUUID().toString(), dueAtEpochMs = null)
+            val reminderOnly =
+                dated.copy(
+                    id =
+                        java.util.UUID
+                            .randomUUID()
+                            .toString(),
+                    dueAtEpochMs = null,
+                )
             repo.complete(reminderOnly)
             assertNull(repo.list().single { it.id == reminderOnly.id }.dueAtEpochMs)
-            for (task in listOf(TaskRecord(title = "Once"), TaskRecord(title = "Undated repeat", repeat = TaskRepeat.Weekly),
-                TaskRecord(title = "Already done", completed = true))) {
+            for (task in listOf(
+                TaskRecord(title = "Once"),
+                TaskRecord(title = "Undated repeat", repeat = TaskRepeat.Weekly),
+                TaskRecord(title = "Already done", completed = true),
+            )) {
                 repo.complete(task)
                 assertEquals(!task.completed, repo.list().single { it.id == task.id }.completed)
             }
-        } finally { directory.deleteRecursively() }
+        } finally {
+            directory.deleteRecursively()
+        }
     }
 
     @Test fun followUpsDedupeRescheduleAndKeepOnlyHashedNotificationIdentity() {
@@ -88,6 +116,8 @@ class TaskRepositoryTest {
             val fresh = repo.followUp("example.mail", "private-original-key", "Mail", 3000L)
             assertNotEquals(updated.id, fresh.id)
             assertEquals(3, repo.list().size)
-        } finally { directory.deleteRecursively() }
+        } finally {
+            directory.deleteRecursively()
+        }
     }
 }

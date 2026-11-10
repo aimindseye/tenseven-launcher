@@ -13,8 +13,8 @@ import android.os.UserHandle
 import android.os.UserManager
 import android.provider.Settings
 import io.github.aimindseye.tenseven.model.AppEntry
-import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.AppProfiles
+import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.stableKey
 import io.github.aimindseye.tenseven.privacy.AppInstanceKey
 import io.github.aimindseye.tenseven.privacy.PrivacySnapshotCache
@@ -72,8 +72,8 @@ class LauncherAppsRepository(
                             val packageName = info.componentName.packageName
                             (
                                 packageName != appContext.packageName ||
-                                ExtraApps.isExtra(info.componentName.className) ||
-                                info.componentName.className == LAUNCHER_ENTRY
+                                    ExtraApps.isExtra(info.componentName.className) ||
+                                    info.componentName.className == LAUNCHER_ENTRY
                             ) &&
                                 packageName !in SYSTEM_HIDDEN_PACKAGES &&
                                 HiddenAppKey(packageName, userSerial) !in hiddenApps
@@ -156,8 +156,7 @@ class LauncherAppsRepository(
         runCatching { userManager.userProfiles.filter { profileLabelFor(it) == PROFILE_WORK } }.getOrDefault(emptyList())
 
     /** True when every work profile is paused, false when any runs, null when the device has no work profile. */
-    fun workProfilesPaused(): Boolean? =
-        workProfiles().takeIf { it.isNotEmpty() }?.let { profiles -> profiles.all(::isLocked) }
+    fun workProfilesPaused(): Boolean? = workProfiles().takeIf { it.isNotEmpty() }?.let { profiles -> profiles.all(::isLocked) }
 
     /** Pauses or resumes all work profiles. Resuming may show the system's own credential screen. */
     fun setWorkProfilesPaused(paused: Boolean): Boolean =
@@ -169,9 +168,12 @@ class LauncherAppsRepository(
             val type = runCatching { launcherApps.getLauncherUserInfo(user)?.userType }.getOrNull()
             return when (type) {
                 UserManager.USER_TYPE_PROFILE_MANAGED -> PROFILE_WORK
+
                 UserManager.USER_TYPE_PROFILE_PRIVATE -> PROFILE_PRIVATE
+
                 // Android's app cloning profile: Sable calls it Dual apps.
                 USER_TYPE_PROFILE_CLONE -> PROFILE_DUAL
+
                 else -> PROFILE_OTHER
             }
         }
@@ -230,8 +232,17 @@ class LauncherAppsRepository(
             runCatching {
                 val state = StartStateRepository(appContext)
                 if (state.loadFrameSettings().rememberReturnedApps) {
-                    val activity = io.github.aimindseye.tenseven.frames.LocalFrameApps.canonical(entry.component.className).takeIf { entry.component.packageName == appContext.packageName }
-                    val frameApp = io.github.aimindseye.tenseven.frames.FrameApp(entry.component.packageName, entry.user.hashCode(), activity)
+                    val activity =
+                        io.github.aimindseye.tenseven.frames.LocalFrameApps.canonical(entry.component.className).takeIf {
+                            entry.component.packageName ==
+                                appContext.packageName
+                        }
+                    val frameApp =
+                        io.github.aimindseye.tenseven.frames.FrameApp(
+                            entry.component.packageName,
+                            entry.user.hashCode(),
+                            activity,
+                        )
                     FrameWindowRepository(appContext).record(frameApp)
                     val frameKey = frameApp.key
                     state.saveFrameDismissals(state.loadFrameDismissals().filterKeys { it != frameKey && !it.startsWith("$frameKey:") })

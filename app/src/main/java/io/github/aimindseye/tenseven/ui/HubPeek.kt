@@ -245,7 +245,8 @@ private fun PeekRow(
 ) {
     val context = LocalContext.current
     val packageManager = context.packageManager
-    io.github.aimindseye.tenseven.iconpacks.IconPresentationState.init(context)
+    io.github.aimindseye.tenseven.iconpacks.IconPresentationState
+        .init(context)
     val glyph =
         if (io.github.aimindseye.tenseven.iconpacks.IconPresentationState.selected ==
             io.github.aimindseye.tenseven.model.IconPresentation.TenSeven

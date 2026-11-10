@@ -5,10 +5,15 @@ import java.time.YearMonth
 import java.time.ZoneId
 
 /** Independent, JVM-testable busy-day policy. Calendar stays read-only until Android takes over event editing. */
-data class D5TimeSpan(val startMillis: Long, val endMillis: Long, val allDay: Boolean)
+data class D5TimeSpan(
+    val startMillis: Long,
+    val endMillis: Long,
+    val allDay: Boolean,
+)
 
 object D5CalendarBusy {
     private const val MINUTES_PER_DAY = 12 * 60
+
     fun monthCells(month: YearMonth): List<LocalDate?> {
         val before = month.atDay(1).dayOfWeek.value - 1 // Monday first
         val days = (1..month.lengthOfMonth()).map(month::atDay)
@@ -17,12 +22,31 @@ object D5CalendarBusy {
     }
 
     /** Merged booked minutes 08:00–20:00, including overlaps only once. */
-    fun bookedMinutes(date: LocalDate, spans: List<D5TimeSpan>, zone: ZoneId): Int {
-        val from = date.atTime(8, 0).atZone(zone).toInstant().toEpochMilli()
-        val until = date.atTime(20, 0).atZone(zone).toInstant().toEpochMilli()
-        val intervals = spans.asSequence().filterNot { it.allDay }
-            .map { maxOf(from, it.startMillis) to minOf(until, it.endMillis) }
-            .filter { it.second > it.first }.sortedBy { it.first }.toList()
+    fun bookedMinutes(
+        date: LocalDate,
+        spans: List<D5TimeSpan>,
+        zone: ZoneId,
+    ): Int {
+        val from =
+            date
+                .atTime(8, 0)
+                .atZone(zone)
+                .toInstant()
+                .toEpochMilli()
+        val until =
+            date
+                .atTime(20, 0)
+                .atZone(zone)
+                .toInstant()
+                .toEpochMilli()
+        val intervals =
+            spans
+                .asSequence()
+                .filterNot { it.allDay }
+                .map { maxOf(from, it.startMillis) to minOf(until, it.endMillis) }
+                .filter { it.second > it.first }
+                .sortedBy { it.first }
+                .toList()
         var stop = from
         var millis = 0L
         for ((start, end) in intervals) {
@@ -33,7 +57,11 @@ object D5CalendarBusy {
         return (millis / 60_000L).toInt().coerceIn(0, MINUTES_PER_DAY)
     }
 
-    fun sweep(date: LocalDate, spans: List<D5TimeSpan>, zone: ZoneId): Float {
+    fun sweep(
+        date: LocalDate,
+        spans: List<D5TimeSpan>,
+        zone: ZoneId,
+    ): Float {
         val minutes = bookedMinutes(date, spans, zone)
         return if (minutes == 0) 0f else maxOf(24f, 360f * minutes / MINUTES_PER_DAY)
     }

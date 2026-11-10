@@ -12,9 +12,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -45,12 +45,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.aimindseye.tenseven.model.StartText.t
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import io.github.aimindseye.tenseven.platform.DeviceStats
 import io.github.aimindseye.tenseven.platform.DeviceStatsFormat
 import io.github.aimindseye.tenseven.platform.DeviceStatsSampler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -98,30 +98,39 @@ fun SableStatusRings(
         if ("mobile" in visible) NetRing(label = t("mobile"), up = st.mobileUp, down = st.mobileDown, size = ringSize)
         if ("cpu" in visible) StatRing(label = "CPU", fraction = st.cpu, color = primary, size = ringSize)
         if ("ram" in visible) StatRing(label = "RAM", fraction = st.ram, color = RingPurple, size = ringSize)
-        if ("battery" in visible) StatRing(
-            label =
-                when {
-                    st.charging -> t("bat")
-                    st.hoursLeft != null -> DeviceStatsFormat.hours(st.hoursLeft) + " left"
-                    else -> "BAT"
-                },
-            fraction = st.battery,
-            color = if (st.battery <= 0.2f && !st.charging) error else RingGreen,
-            size = ringSize,
-            hotAbove = 2f,
-        )
-        if ("storage" in visible) StatRing(
-            label = t("storage"), fraction = st.storage, color = RingPurple, size = ringSize,
-            center = listOf(st.storage?.let { "${(it * 100).roundToInt()}%" } ?: "–"),
-        )
-        if ("cell" in visible) StatRing(
-            label = t("cell"),
-            fraction = st.signal,
-            color = RingOrange,
-            size = ringSize,
-            center = listOf(st.signal?.let { "${(it * 4).roundToInt()}/4" } ?: "–"),
-            hotAbove = 2f,
-        )
+        if ("battery" in visible) {
+            StatRing(
+                label =
+                    when {
+                        st.charging -> t("bat")
+                        st.hoursLeft != null -> DeviceStatsFormat.hours(st.hoursLeft) + " left"
+                        else -> "BAT"
+                    },
+                fraction = st.battery,
+                color = if (st.battery <= 0.2f && !st.charging) error else RingGreen,
+                size = ringSize,
+                hotAbove = 2f,
+            )
+        }
+        if ("storage" in visible) {
+            StatRing(
+                label = t("storage"),
+                fraction = st.storage,
+                color = RingPurple,
+                size = ringSize,
+                center = listOf(st.storage?.let { "${(it * 100).roundToInt()}%" } ?: "–"),
+            )
+        }
+        if ("cell" in visible) {
+            StatRing(
+                label = t("cell"),
+                fraction = st.signal,
+                color = RingOrange,
+                size = ringSize,
+                center = listOf(st.signal?.let { "${(it * 4).roundToInt()}/4" } ?: "–"),
+                hotAbove = 2f,
+            )
+        }
     }
 }
 

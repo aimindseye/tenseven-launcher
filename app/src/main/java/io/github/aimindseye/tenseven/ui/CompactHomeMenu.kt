@@ -23,19 +23,27 @@ internal fun CompactHomeMenu(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Column(
-            Modifier.fillMaxWidth().background(Bb10Background)
-                .border(1.dp, Bb10Line).padding(14.dp),
+            Modifier
+                .fillMaxWidth()
+                .background(Bb10Background)
+                .border(1.dp, Bb10Line)
+                .padding(14.dp),
         ) {
             Text("Home menu", style = MaterialTheme.typography.titleLarge, color = Bb10Text)
-            Text("All actions remain touch-accessible", color = Bb10Muted,
-                style = MaterialTheme.typography.bodySmall)
+            Text(
+                "All actions remain touch-accessible",
+                color = Bb10Muted,
+                style = MaterialTheme.typography.bodySmall,
+            )
             actions.forEach { (name, action) ->
                 Text(
                     name,
-                    Modifier.fillMaxWidth().clickable {
-                        onDismiss()
-                        action()
-                    }.semantics { contentDescription = "Open $name" }
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onDismiss()
+                            action()
+                        }.semantics { contentDescription = "Open $name" }
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     color = Bb10Text,
                     style = MaterialTheme.typography.bodyLarge,

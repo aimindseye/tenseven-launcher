@@ -3,7 +3,9 @@ package io.github.aimindseye.tenseven.onboarding
 import io.github.aimindseye.tenseven.model.ExtraApps
 
 /** Seven user-facing stages; keep the existing SetupStep deep links and permission flows intact. */
-internal enum class Setup2Stage(val title: String) {
+internal enum class Setup2Stage(
+    val title: String,
+) {
     WELCOME("Welcome & Home role"),
     HOME("Home screens"),
     APPEARANCE("Appearance & themes"),

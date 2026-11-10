@@ -54,7 +54,9 @@ private fun HubCompactControl(
     onClick: () -> Unit,
 ) {
     Column(
-        modifier.heightIn(min = 52.dp).clickable(onClick = onClick)
+        modifier
+            .heightIn(min = 52.dp)
+            .clickable(onClick = onClick)
             .semantics { contentDescription = label }
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,43 +77,54 @@ internal fun HubCompactViews(
 ) {
     val choices = listOf("All", "Unread", "Messages", "Email", "Snoozed", "Remind", "Calls", "Contacts", "Calendar")
     Column(
-        Modifier.fillMaxWidth().heightIn(max = 176.dp)
-            .background(Bb10Background).verticalScroll(rememberScrollState()),
+        Modifier
+            .fillMaxWidth()
+            .heightIn(max = 176.dp)
+            .background(Bb10Background)
+            .verticalScroll(rememberScrollState()),
     ) {
         choices.chunked(3).forEach { group ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 group.forEach { choice ->
                     Text(
                         choice,
-                        modifier = Modifier.weight(1f).clickable {
-                            when (choice) {
-                                "Calendar" -> onCalendar()
-                                "Remind" -> {
-                                    onTabChange(HubFilter.All)
-                                    ui.onShowReminders()
-                                }
-                                else -> {
-                                    val next = when (choice) {
-                                        "Messages" -> ConversationFilter(kind = ConversationKind.Messages)
-                                        "Email" -> ConversationFilter(kind = ConversationKind.Email)
-                                        "Unread" -> ConversationFilter(unreadOnly = true)
-                                        "Snoozed" -> ConversationFilter(snoozed = true)
-                                        else -> ConversationFilter()
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .clickable {
+                                    when (choice) {
+                                        "Calendar" -> {
+                                            onCalendar()
+                                        }
+
+                                        "Remind" -> {
+                                            onTabChange(HubFilter.All)
+                                            ui.onShowReminders()
+                                        }
+
+                                        else -> {
+                                            val next =
+                                                when (choice) {
+                                                    "Messages" -> ConversationFilter(kind = ConversationKind.Messages)
+                                                    "Email" -> ConversationFilter(kind = ConversationKind.Email)
+                                                    "Unread" -> ConversationFilter(unreadOnly = true)
+                                                    "Snoozed" -> ConversationFilter(snoozed = true)
+                                                    else -> ConversationFilter()
+                                                }
+                                            onTabChange(
+                                                when (choice) {
+                                                    "Calls" -> HubFilter.Calls
+                                                    "Contacts" -> HubFilter.Contacts
+                                                    "Messages" -> HubFilter.Messages
+                                                    else -> HubFilter.All
+                                                },
+                                            )
+                                            ui.onFilterChange(next)
+                                            ui.onSourceChange(null)
+                                        }
                                     }
-                                    onTabChange(
-                                        when (choice) {
-                                            "Calls" -> HubFilter.Calls
-                                            "Contacts" -> HubFilter.Contacts
-                                            "Messages" -> HubFilter.Messages
-                                            else -> HubFilter.All
-                                        },
-                                    )
-                                    ui.onFilterChange(next)
-                                    ui.onSourceChange(null)
-                                }
-                            }
-                            onDismiss()
-                        }.padding(horizontal = 8.dp, vertical = 10.dp),
+                                    onDismiss()
+                                }.padding(horizontal = 8.dp, vertical = 10.dp),
                         color = Bb10Text,
                         style = MaterialTheme.typography.bodyMedium,
                     )

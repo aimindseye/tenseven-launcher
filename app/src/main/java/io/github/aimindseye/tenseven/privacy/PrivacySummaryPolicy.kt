@@ -40,12 +40,22 @@ data class PrivacyRow(
     val text: String
         get() =
             when (state) {
-                PrivacyRowState.Labels ->
+                PrivacyRowState.Labels -> {
                     (listOf(PrivacySummaryPolicy.PREFIX) + labels + overflowSuffix())
                         .joinToString(PrivacySummaryPolicy.SEPARATOR)
-                PrivacyRowState.NoneSensitive -> PrivacySummaryPolicy.TEXT_NONE_SENSITIVE
-                PrivacyRowState.NotConfirmed -> PrivacySummaryPolicy.TEXT_NOT_CONFIRMED
-                PrivacyRowState.Unavailable -> PrivacySummaryPolicy.TEXT_UNAVAILABLE
+                }
+
+                PrivacyRowState.NoneSensitive -> {
+                    PrivacySummaryPolicy.TEXT_NONE_SENSITIVE
+                }
+
+                PrivacyRowState.NotConfirmed -> {
+                    PrivacySummaryPolicy.TEXT_NOT_CONFIRMED
+                }
+
+                PrivacyRowState.Unavailable -> {
+                    PrivacySummaryPolicy.TEXT_UNAVAILABLE
+                }
             }
 
     /** Spoken text: names every label, including the ones folded into +N and the badge. */
@@ -77,11 +87,9 @@ object PrivacySummaryPolicy {
     val TEXT_UNAVAILABLE: String get() = t("permissions_unavailable")
     val DETAIL_FOOTER: String get() = t("app_info_has_the_full")
 
-    fun everydayLabels(privacy: AppPrivacy): List<String> =
-        privacy.effective.filterNot { it.special }.map(privacy::labelFor)
+    fun everydayLabels(privacy: AppPrivacy): List<String> = privacy.effective.filterNot { it.special }.map(privacy::labelFor)
 
-    fun specialLabels(privacy: AppPrivacy): List<String> =
-        privacy.effective.filter { it.special }.map(privacy::labelFor)
+    fun specialLabels(privacy: AppPrivacy): List<String> = privacy.effective.filter { it.special }.map(privacy::labelFor)
 
     /**
      * Builds the compact row.
@@ -109,6 +117,7 @@ object PrivacySummaryPolicy {
         val badge = if (everyday.isEmpty()) emptyList() else special
         val limit = maxInline.coerceIn(1, MAX_INLINE_PERMISSION_LABELS)
         var shown = minOf(limit, inline.size)
+
         fun candidate(count: Int) =
             PrivacyRow(
                 state = PrivacyRowState.Labels,
@@ -184,11 +193,18 @@ enum class PrivacyFilter(
      */
     fun matches(privacy: AppPrivacy?): Boolean =
         when (this) {
-            All -> true
-            Sensitive ->
+            All -> {
+                true
+            }
+
+            Sensitive -> {
                 privacy != null &&
                     privacy.effective.any { it.special || it in HIGHLIGHTED }
-            NoneSensitive -> PrivacySummaryPolicy.compact(privacy).state == PrivacyRowState.NoneSensitive
+            }
+
+            NoneSensitive -> {
+                PrivacySummaryPolicy.compact(privacy).state == PrivacyRowState.NoneSensitive
+            }
         }
 
     companion object {

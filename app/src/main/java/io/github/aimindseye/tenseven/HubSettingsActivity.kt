@@ -157,10 +157,11 @@ class HubSettingsActivity : ComponentActivity() {
                                 ConversationHub.clearNow()
                                 cleared = true
                             },
-                            navigation = HubSettingsNavigation(
-                                showLauncherBack = fromLauncherSettings,
-                                onBack = { finish() },
-                            ),
+                            navigation =
+                                HubSettingsNavigation(
+                                    showLauncherBack = fromLauncherSettings,
+                                    onBack = { finish() },
+                                ),
                         ),
                     rows = rows,
                     enabled = enabled,
@@ -214,6 +215,7 @@ private fun HubSettings(
     val auditContext = androidx.compose.ui.platform.LocalContext.current
     val hubActivity = auditContext as? android.app.Activity
     val fromFlow = hubActivity?.intent?.getBooleanExtra("tenseven.settings.flow", false) == true
+
     fun navigateTo(page: String) {
         auditContext.startActivity(
             Intent(auditContext, LauncherSettingsActivity::class.java)
@@ -228,165 +230,165 @@ private fun HubSettings(
                 modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-            val launcherSettingsContext = androidx.compose.ui.platform.LocalContext.current
-            Settings2BackLink {
-                if (content.navigation.showLauncherBack) {
-                    // Return to the already open Settings activity; do not start a second copy.
-                    content.navigation.onBack()
-                } else {
-                    launcherSettingsContext.startActivity(
-                        Intent(launcherSettingsContext, LauncherSettingsActivity::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-                    )
-                    (launcherSettingsContext as? android.app.Activity)?.finish()
-                }
-            }
-            Text(stringResource(R.string.hub_settings), style = MaterialTheme.typography.titleLarge)
-            val hubComposeContext = androidx.compose.ui.platform.LocalContext.current
-            val hubComposeRepo = remember(hubComposeContext) { StartStateRepository(hubComposeContext) }
-            var composeMode by remember { mutableStateOf(hubComposeRepo.loadHubComposeMode()) }
-            Text("Hub Compose action", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Choose what Compose opens. Ask every time is closest to the original BB10 Hub.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            io.github.aimindseye.tenseven.model.HubComposeMode.entries.forEach { choice ->
-                HubRow(
-                    title = (if (choice == composeMode) "✓ " else "") + choice.label,
-                    detail = choice.description,
-                    onClick = {
-                        composeMode = choice
-                        hubComposeRepo.saveHubComposeMode(choice)
-                    },
-                )
-            }
-            Text(
-                stringResource(R.string.hub_settings_intro),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (!access.accessGranted && access.listenerAvailable) {
-                if (access.attemptedNotificationAccess) {
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    HubRow(
-                        title = "If Android blocked notification access",
-                        detail =
-                            "After an access request is blocked, App info may show ⋮ → Allow restricted settings. " +
-                                "Choose it only if you trust this APK, return and retry notification access. " +
-                                "This menu may be absent before the first blocked request.",
-                        onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(
-                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                        Uri.parse("package:${context.packageName}"),
-                                    ),
-                                )
-                            }
-                        },
-                    )
-                } else {
-                    Text(
-                        "First try Notification access below. If Android blocks it, return here for App info instructions.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            HubRow(
-                title = stringResource(R.string.hub_access),
-                detail =
-                    stringResource(
-                        when {
-                            !access.listenerAvailable -> {
-                                R.string.hub_access_lite
-                            }
-
-                            access.accessGranted &&
-                                !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected -> {
-                                R.string.hub_access_disconnected
-                            }
-
-                            access.accessGranted -> {
-                                R.string.hub_access_on
-                            }
-
-                            else -> {
-                                R.string.hub_access_off
-                            }
-                        },
-                    ),
-                modifier = Modifier.focusRequester(first),
-                onClick = { if (access.listenerAvailable) access.onAccess() },
-            )
-            HubListenerDiagnostics(access, enabled)
-            HubRow(
-                title = "Copy notification diagnostics",
-                detail = "Per-app counts and exclusion reasons only. No messages or notification keys are copied.",
-                onClick = {
-                    val clipboard =
-                        auditContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-                            as? android.content.ClipboardManager
-                    clipboard?.setPrimaryClip(
-                        android.content.ClipData.newPlainText(
-                            "TenSeven notification diagnostics",
-                            io.github.aimindseye.tenseven.conversations.HubNotificationAudit
-                                .report(),
-                        ),
-                    )
-                },
-            )
-            HubRow(
-                title = stringResource(R.string.hub_clear),
-                detail = stringResource(if (content.cleared) R.string.hub_cleared else R.string.hub_clear_detail),
-                onClick = content.onClear,
-            )
-            HubSwitch(
-                stringResource(R.string.hub_show_text),
-                stringResource(R.string.hub_show_text_detail),
-                content.showText,
-                content.onShowText,
-            )
-            HubSwitch(
-                stringResource(R.string.hub_calendar_peek),
-                stringResource(R.string.hub_calendar_peek_detail),
-                calendar.calendarPeek,
-                calendar.onCalendarPeek,
-            )
-            if (calendar.calendarPeek) {
-                if (!calendar.calendarPermitted) {
-                    HubRow(
-                        "Allow Calendar access",
-                        "Required to show events from calendars synchronized with Android",
-                        onClick = calendar.onCalendarPermission,
-                    )
-                } else {
-                    Text("Calendar sources", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Select the calendars whose events appear in Hub. Selection stays on this device.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    calendar.calendarSources.forEach { source ->
-                        HubSwitch(
-                            source.name,
-                            source.account,
-                            calendar.selectedCalendars == null || source.id in calendar.selectedCalendars,
-                        ) {
-                            calendar.onCalendarToggle(source.id)
-                        }
+                val launcherSettingsContext = androidx.compose.ui.platform.LocalContext.current
+                Settings2BackLink {
+                    if (content.navigation.showLauncherBack) {
+                        // Return to the already open Settings activity; do not start a second copy.
+                        content.navigation.onBack()
+                    } else {
+                        launcherSettingsContext.startActivity(
+                            Intent(launcherSettingsContext, LauncherSettingsActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                        )
+                        (launcherSettingsContext as? android.app.Activity)?.finish()
                     }
-                    if (calendar.calendarSources.isEmpty()) {
+                }
+                Text(stringResource(R.string.hub_settings), style = MaterialTheme.typography.titleLarge)
+                val hubComposeContext = androidx.compose.ui.platform.LocalContext.current
+                val hubComposeRepo = remember(hubComposeContext) { StartStateRepository(hubComposeContext) }
+                var composeMode by remember { mutableStateOf(hubComposeRepo.loadHubComposeMode()) }
+                Text("Hub Compose action", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Choose what Compose opens. Ask every time is closest to the original BB10 Hub.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                io.github.aimindseye.tenseven.model.HubComposeMode.entries.forEach { choice ->
+                    HubRow(
+                        title = (if (choice == composeMode) "✓ " else "") + choice.label,
+                        detail = choice.description,
+                        onClick = {
+                            composeMode = choice
+                            hubComposeRepo.saveHubComposeMode(choice)
+                        },
+                    )
+                }
+                Text(
+                    stringResource(R.string.hub_settings_intro),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (!access.accessGranted && access.listenerAvailable) {
+                    if (access.attemptedNotificationAccess) {
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        HubRow(
+                            title = "If Android blocked notification access",
+                            detail =
+                                "After an access request is blocked, App info may show ⋮ → Allow restricted settings. " +
+                                    "Choose it only if you trust this APK, return and retry notification access. " +
+                                    "This menu may be absent before the first blocked request.",
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(
+                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                            Uri.parse("package:${context.packageName}"),
+                                        ),
+                                    )
+                                }
+                            },
+                        )
+                    } else {
                         Text(
-                            "No visible Android calendars found",
-                            style = MaterialTheme.typography.bodyMedium,
+                            "First try Notification access below. If Android blocks it, return here for App info instructions.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
-            }
+                HubRow(
+                    title = stringResource(R.string.hub_access),
+                    detail =
+                        stringResource(
+                            when {
+                                !access.listenerAvailable -> {
+                                    R.string.hub_access_lite
+                                }
 
-            HubSourceOptions(rows, enabled, enabled::toggle)
+                                access.accessGranted &&
+                                    !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected -> {
+                                    R.string.hub_access_disconnected
+                                }
+
+                                access.accessGranted -> {
+                                    R.string.hub_access_on
+                                }
+
+                                else -> {
+                                    R.string.hub_access_off
+                                }
+                            },
+                        ),
+                    modifier = Modifier.focusRequester(first),
+                    onClick = { if (access.listenerAvailable) access.onAccess() },
+                )
+                HubListenerDiagnostics(access, enabled)
+                HubRow(
+                    title = "Copy notification diagnostics",
+                    detail = "Per-app counts and exclusion reasons only. No messages or notification keys are copied.",
+                    onClick = {
+                        val clipboard =
+                            auditContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                                as? android.content.ClipboardManager
+                        clipboard?.setPrimaryClip(
+                            android.content.ClipData.newPlainText(
+                                "TenSeven notification diagnostics",
+                                io.github.aimindseye.tenseven.conversations.HubNotificationAudit
+                                    .report(),
+                            ),
+                        )
+                    },
+                )
+                HubRow(
+                    title = stringResource(R.string.hub_clear),
+                    detail = stringResource(if (content.cleared) R.string.hub_cleared else R.string.hub_clear_detail),
+                    onClick = content.onClear,
+                )
+                HubSwitch(
+                    stringResource(R.string.hub_show_text),
+                    stringResource(R.string.hub_show_text_detail),
+                    content.showText,
+                    content.onShowText,
+                )
+                HubSwitch(
+                    stringResource(R.string.hub_calendar_peek),
+                    stringResource(R.string.hub_calendar_peek_detail),
+                    calendar.calendarPeek,
+                    calendar.onCalendarPeek,
+                )
+                if (calendar.calendarPeek) {
+                    if (!calendar.calendarPermitted) {
+                        HubRow(
+                            "Allow Calendar access",
+                            "Required to show events from calendars synchronized with Android",
+                            onClick = calendar.onCalendarPermission,
+                        )
+                    } else {
+                        Text("Calendar sources", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Select the calendars whose events appear in Hub. Selection stays on this device.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        calendar.calendarSources.forEach { source ->
+                            HubSwitch(
+                                source.name,
+                                source.account,
+                                calendar.selectedCalendars == null || source.id in calendar.selectedCalendars,
+                            ) {
+                                calendar.onCalendarToggle(source.id)
+                            }
+                        }
+                        if (calendar.calendarSources.isEmpty()) {
+                            Text(
+                                "No visible Android calendars found",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+
+                HubSourceOptions(rows, enabled, enabled::toggle)
             }
             Settings2FlowFooter(
                 backText = "Back",

@@ -168,73 +168,73 @@ internal fun HubPage(
         Column(Modifier.fillMaxSize()) {
             androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
                 HubPanelsHost(conversationsUi, onOpenHubSettings, onSwipeLeft = onReturnHome) { openPanel ->
-            val calendarPeekEnabled = StartStateRepository(context).loadHubCalendarPeek()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
-                state = listState,
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(0.dp),
-            ) {
-                item(key = "header") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        HomeBarControl("Hub settings", "menu-2", onClick = openPanel)
-                        Text(
-                            text = HUB_LABEL,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Medium,
-                            // The strip's own text colour (BB10 palette), not the appearance's content colour.
-                            color = Bb10Text,
-                            modifier = Modifier.semantics { heading() },
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    // In the approved layout, today's calendar strip precedes the category tabs.
-                    if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
-                        HubCalendarPeek(
-                            refreshGeneration = refreshGeneration,
-                            onRequestCalendarPermission = {
-                                (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
-                            },
-                            onOpenCalendar = {
-                                onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
-                            },
-                        )
-                    }
-                    HubUnifiedNavigation(
-                        ui = conversationsUi,
-                        currentTab = filter,
-                        onTabChange = onFilter,
-                        firstTab = tabFocus,
-                        messageCount = sourceGroups.messages,
-                        emailCount = sourceGroups.email,
-                        searchRequest = hubSearchRequest,
-                        closeSearchRequest = hubSearchCloseRequest,
-                        onOpenCalendar = {
-                            onStartIntent(
-                                Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR),
+                    val calendarPeekEnabled = StartStateRepository(context).loadHubCalendarPeek()
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
+                        state = listState,
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp),
+                    ) {
+                        item(key = "header") {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                HomeBarControl("Hub settings", "menu-2", onClick = openPanel)
+                                Text(
+                                    text = HUB_LABEL,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    // The strip's own text colour (BB10 palette), not the appearance's content colour.
+                                    color = Bb10Text,
+                                    modifier = Modifier.semantics { heading() },
+                                )
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            // In the approved layout, today's calendar strip precedes the category tabs.
+                            if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
+                                HubCalendarPeek(
+                                    refreshGeneration = refreshGeneration,
+                                    onRequestCalendarPermission = {
+                                        (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
+                                    },
+                                    onOpenCalendar = {
+                                        onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
+                                    },
+                                )
+                            }
+                            HubUnifiedNavigation(
+                                ui = conversationsUi,
+                                currentTab = filter,
+                                onTabChange = onFilter,
+                                firstTab = tabFocus,
+                                messageCount = sourceGroups.messages,
+                                emailCount = sourceGroups.email,
+                                searchRequest = hubSearchRequest,
+                                closeSearchRequest = hubSearchCloseRequest,
+                                onOpenCalendar = {
+                                    onStartIntent(
+                                        Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR),
+                                    )
+                                },
                             )
-                        },
-                    )
+                        }
+                        if (contactsTab) {
+                            hubContactsItems(
+                                people = people,
+                                loaded = peopleLoaded,
+                                canRead = canReadContacts,
+                                contactsApp = contactsApp,
+                                messagesPackage = messagesApp?.component?.packageName,
+                                requesterFor = ::requesterFor,
+                                actions = actions,
+                            )
+                        } else {
+                            hubSummaryItems(
+                                filter = filter,
+                                actions = actions,
+                                conversations = conversationsUi,
+                            )
+                        }
+                    }
                 }
-                if (contactsTab) {
-                    hubContactsItems(
-                        people = people,
-                        loaded = peopleLoaded,
-                        canRead = canReadContacts,
-                        contactsApp = contactsApp,
-                        messagesPackage = messagesApp?.component?.packageName,
-                        requesterFor = ::requesterFor,
-                        actions = actions,
-                    )
-                } else {
-                    hubSummaryItems(
-                        filter = filter,
-                        actions = actions,
-                        conversations = conversationsUi,
-                    )
-                }
-            }
-        }
             }
             if (hubViewsVisible) {
                 HubCompactViews(
@@ -253,11 +253,17 @@ internal fun HubPage(
                 },
                 onCompose = {
                     when (StartStateRepository(context).loadHubComposeMode()) {
-                        io.github.aimindseye.tenseven.model.HubComposeMode.Ask -> composePrompt = true
-                        io.github.aimindseye.tenseven.model.HubComposeMode.Email ->
+                        io.github.aimindseye.tenseven.model.HubComposeMode.Ask -> {
+                            composePrompt = true
+                        }
+
+                        io.github.aimindseye.tenseven.model.HubComposeMode.Email -> {
                             onStartIntent(Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:")))
-                        io.github.aimindseye.tenseven.model.HubComposeMode.Messages ->
+                        }
+
+                        io.github.aimindseye.tenseven.model.HubComposeMode.Messages -> {
                             onStartIntent(Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:")))
+                        }
                     }
                 },
                 onSearch = {

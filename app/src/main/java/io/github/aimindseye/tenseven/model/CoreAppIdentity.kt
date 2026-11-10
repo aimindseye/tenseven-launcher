@@ -41,7 +41,10 @@ object CoreAppIdentity {
     fun canonicalPackage(packageName: String): String = EQUIVALENTS[packageName] ?: packageName
 
     /** True when [packageName] is the canonical package or a known equivalent of it. */
-    fun isRole(packageName: String, canonical: String): Boolean = canonicalPackage(packageName) == canonical
+    fun isRole(
+        packageName: String,
+        canonical: String,
+    ): Boolean = canonicalPackage(packageName) == canonical
 
     /**
      * Canonical packages that can fill the Start tile for [canonical], best first.

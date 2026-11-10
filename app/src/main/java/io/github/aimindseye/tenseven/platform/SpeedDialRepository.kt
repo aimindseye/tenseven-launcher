@@ -3,9 +3,9 @@ package io.github.aimindseye.tenseven.platform
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import io.github.aimindseye.tenseven.model.SpeedDialKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import io.github.aimindseye.tenseven.model.SpeedDialKeys
 
 /**
  * The letters held on the home screen: Phone's speed dial (which letters have a number, Phone's read-only provider
@@ -17,11 +17,15 @@ class SpeedDialRepository(
     private val context: Context,
     private val shortcuts: LetterShortcutRepository? = null,
 ) {
-    suspend fun assignedLetters(): Set<Char> =
-        withContext(Dispatchers.IO) { phoneLetters() + (shortcuts?.load()?.letters.orEmpty()) }
+    suspend fun assignedLetters(): Set<Char> = withContext(Dispatchers.IO) { phoneLetters() + (shortcuts?.load()?.letters.orEmpty()) }
 
     private fun phoneLetters(): Set<Char> {
-        val uri = Uri.Builder().scheme("content").authority(SpeedDialKeys.AUTHORITY).build()
+        val uri =
+            Uri
+                .Builder()
+                .scheme("content")
+                .authority(SpeedDialKeys.AUTHORITY)
+                .build()
         return runCatching {
             context.contentResolver.query(uri, arrayOf(SpeedDialKeys.COLUMN_LETTER), null, null, null)?.use { c ->
                 buildSet { while (c.moveToNext()) c.getString(0)?.singleOrNull()?.let(::add) }

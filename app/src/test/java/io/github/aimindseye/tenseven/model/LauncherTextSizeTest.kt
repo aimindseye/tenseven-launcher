@@ -11,6 +11,7 @@ class LauncherTextSizeTest {
         assertTrue(LauncherTextSize.Small.multiplier >= .85f)
         assertTrue(LauncherTextSize.Large.multiplier <= 1.12f)
     }
+
     @Test fun weatherCodeConditions() {
         assertEquals("Clear", HomeWeatherCodes.description(0))
         assertEquals("Rain", HomeWeatherCodes.description(61))

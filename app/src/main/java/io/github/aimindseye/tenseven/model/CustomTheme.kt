@@ -77,7 +77,7 @@ object CustomThemes {
         takenIds: Set<String> = emptySet(),
     ): ThemeParse {
         if (text.length > MAX_BYTES) return refused("The file is larger than ${MAX_BYTES / 1024} KB.")
-        val root = MiniJson.parse(text.removePrefix("﻿")) as? Map<*, *> ?: return refused("The file is not valid theme JSON.")
+        val root = MiniJson.parse(text.removePrefix("")) as? Map<*, *> ?: return refused("The file is not valid theme JSON.")
         if (root["format"] != FORMAT) return refused("This is not a Tenseven theme file (format must be \"$FORMAT\").")
         val version = (root["version"] as? Double)?.toInt()
         if (version == null || version > VERSION) return refused("This theme file needs a newer Tenseven (version $version).")
@@ -93,7 +93,14 @@ object CustomThemes {
             }
         val palette = readPalette(root["palette"]) ?: return refused("palette has a value that is not a colour like #141414.")
         val wallpaper =
-            if (root["wallpaper"] == null) null else readWallpaper(root["wallpaper"]) ?: return refused("wallpaper needs top, bottom, glow and ridge colours and a seed from 0 to 9999.")
+            if (root["wallpaper"] ==
+                null
+            ) {
+                null
+            } else {
+                readWallpaper(root["wallpaper"])
+                    ?: return refused("wallpaper needs top, bottom, glow and ridge colours and a seed from 0 to 9999.")
+            }
         val problem = readability(mode, accent, onAccent, palette)
         if (problem != null) return refused(problem)
         val theme = CustomTheme(uniqueId(name, takenIds), name, mode, accent or OPAQUE, onAccent or OPAQUE, palette, wallpaper)
@@ -134,13 +141,18 @@ object CustomThemes {
         if (backgrounds.any { contrast(accent, it) < ACCENT_CONTRAST }) {
             return "The accent colour is hard to see on the background (needs a contrast of at least 3)."
         }
-        if (contrast(onAccent, accent) < ON_ACCENT_CONTRAST) return "onAccent is hard to read on the accent colour (needs a contrast of at least 2.5)."
+        if (contrast(onAccent, accent) <
+            ON_ACCENT_CONTRAST
+        ) {
+            return "onAccent is hard to read on the accent colour (needs a contrast of at least 2.5)."
+        }
         return null
     }
 
     private fun readPalette(value: Any?): CustomPalette? {
         if (value == null) return CustomPalette()
         val map = value as? Map<*, *> ?: return null
+
         fun pick(key: String): Pair<Boolean, Int?> = if (map[key] == null) true to null else color(map[key]).let { (it != null) to it }
         val parts = listOf("background", "card", "tile", "line", "text", "muted", "dim").map { it to pick(it) }
         if (parts.any { !it.second.first }) return null
@@ -190,7 +202,15 @@ object CustomThemes {
         name: String,
         taken: Set<String>,
     ): String {
-        val slug = name.lowercase().map { if (it.isLetterOrDigit()) it else '-' }.joinToString("").trim('-').replace(Regex("-+"), "-").ifEmpty { "theme" }
+        val slug =
+            name
+                .lowercase()
+                .map {
+                    if (it.isLetterOrDigit()) it else '-'
+                }.joinToString("")
+                .trim('-')
+                .replace(Regex("-+"), "-")
+                .ifEmpty { "theme" }
         var id = "custom-$slug"
         var n = 2
         while (id in taken) id = "custom-$slug-${n++}"

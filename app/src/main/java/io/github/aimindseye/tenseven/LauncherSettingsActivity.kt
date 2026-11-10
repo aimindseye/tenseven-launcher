@@ -9,10 +9,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +45,7 @@ private fun settingsCategory(candidate: String?): String =
 
 class LauncherSettingsActivity : ComponentActivity() {
     private val resumeGeneration = androidx.compose.runtime.mutableIntStateOf(0)
+
     // Kept on the Activity, outside the resume-generation composition key.
     // Android permission screens may pause/resume Settings without resetting its page.
     private val settingsPage = androidx.compose.runtime.mutableStateOf("root")
@@ -69,10 +70,11 @@ class LauncherSettingsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settingsPage.value = settingsCategory(
-            savedInstanceState?.getString("tenseven.settings.saved_category")
-                ?: intent?.getStringExtra("tenseven.settings.category"),
-        )
+        settingsPage.value =
+            settingsCategory(
+                savedInstanceState?.getString("tenseven.settings.saved_category")
+                    ?: intent?.getStringExtra("tenseven.settings.category"),
+            )
         StartText.t.bindTo(this)
         DesignText.t.bindTo(this)
         val state = StartStateRepository(this)
@@ -128,7 +130,11 @@ private fun LauncherSettings(
         }
     }
     androidx.activity.compose.BackHandler(enabled = destination != "root") {
-        when (val previous = io.github.aimindseye.tenseven.model.Settings2Flow.previous(destination)) {
+        when (
+            val previous =
+                io.github.aimindseye.tenseven.model.Settings2Flow
+                    .previous(destination)
+        ) {
             "hub" -> openHubFlow()
             null -> destination = "root"
             else -> destination = previous
@@ -144,115 +150,199 @@ private fun LauncherSettings(
                 modifier = Modifier.weight(1f).verticalScroll(pageScroll).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-            if (destination == "root") {
-                Text("TenSeven Launcher", style = MaterialTheme.typography.titleLarge)
-                Text("Launcher Settings", style = MaterialTheme.typography.titleMedium)
-                Settings2Category("permissions", "1. Permissions", "Contacts, photos, recent apps and notifications") { destination = it }
-                Settings2Category("appearance_home", "2. Appearance & Home", "Home style, status, icons, theme and wallpaper") { destination = it }
-                Settings2Category("hub", "3. Hub Settings", "Compose, notifications, sources and diagnostics") { openHubFlow() }
-                Settings2Category("lock", "4. Lockscreen Settings", "Notifications, Peek and privacy") { destination = it }
-                Settings2Category("frames", "5. Active Frames Settings", "Media, app summaries and controls") { destination = it }
-                Settings2Category("apps", "6. Apps & Features", "Optional TenSeven apps and integrations") { destination = it }
-                Settings2Category("review", "7. Review & Finish", "Confirm settings and return to Home") { destination = it }
-            } else {
-                if (destination == "themes") {
-                    androidx.compose.material3.TextButton(onClick = { destination = "appearance_home" }) {
-                        Text("← Appearance & Home")
+                if (destination == "root") {
+                    Text("TenSeven Launcher", style = MaterialTheme.typography.titleLarge)
+                    Text("Launcher Settings", style = MaterialTheme.typography.titleMedium)
+                    Settings2Category(
+                        "permissions",
+                        "1. Permissions",
+                        "Contacts, photos, recent apps and notifications",
+                    ) { destination = it }
+                    Settings2Category("appearance_home", "2. Appearance & Home", "Home style, status, icons, theme and wallpaper") {
+                        destination =
+                            it
                     }
-                } else Settings2BackLink { destination = "root" }
-                Text(when (destination) {
-                    "permissions" -> "Permissions"
-                    "appearance_home" -> "Appearance & Home"
-                    "themes" -> "Other Themes, Wallpapers"
-                    "lock" -> "Lockscreen Settings"
-                    "frames" -> "Active Frames Settings"
-                    "apps" -> "Apps & Features"
-                    else -> "Review & Finish"
-                }, style = MaterialTheme.typography.titleLarge)
-                ProvideHomeStyle(state) {
-                    when (destination) {
-                        "permissions" -> Settings2Permissions(context)
-                        "appearance_home" -> {
-                            Section("Home style")
-                            HomeStyleSection(state, first)
-                            Section("Home status")
-                            Settings2UnifiedHomeStatus(state)
-                            Section("Home readability")
-                            Settings2ReadabilityOptions(state)
-                            Section("Icons & layout")
-                            IconGridSection(state)
-                            IconPresentationSection(state)
-                            if (homeStyleState(state).value == io.github.aimindseye.tenseven.model.HomeStyle.Bb7) {
-                                Section("BlackBerry 7 options")
-                                Settings2Bb7Options(state)
-                            }
-                            Section("Theme & wallpapers")
-                            Settings2AppearanceChoices(state) { destination = "themes" }
+                    Settings2Category("hub", "3. Hub Settings", "Compose, notifications, sources and diagnostics") { openHubFlow() }
+                    Settings2Category("lock", "4. Lockscreen Settings", "Notifications, Peek and privacy") { destination = it }
+                    Settings2Category("frames", "5. Active Frames Settings", "Media, app summaries and controls") { destination = it }
+                    Settings2Category("apps", "6. Apps & Features", "Optional TenSeven apps and integrations") { destination = it }
+                    Settings2Category("review", "7. Review & Finish", "Confirm settings and return to Home") { destination = it }
+                } else {
+                    if (destination == "themes") {
+                        androidx.compose.material3.TextButton(onClick = { destination = "appearance_home" }) {
+                            Text("← Appearance & Home")
                         }
-                        "themes" -> {
-                            Section("Additional themes")
-                            ThemeSection(state)
-                            Section("Wallpapers")
-                            WallpaperSection(state)
-                        }
-                        "lock" -> LockLayerSection(state)
-                        "frames" -> {
-                            val bb10 = homeStyleState(state).value == io.github.aimindseye.tenseven.model.HomeStyle.Bb10
-                            val access = io.github.aimindseye.tenseven.conversations.ConversationAccess.isGranted(context)
-                            if (!bb10) Text("Active Frames appears on BlackBerry 10 Home. Settings remain saved when BlackBerry 7 is selected.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            if (!access) Card("Enable Notification access", "Required for notification-derived media and message summaries", false) {
-                                runCatching { context.startActivity(io.github.aimindseye.tenseven.conversations.ConversationAccess.settingsIntent()) }
+                    } else {
+                        Settings2BackLink { destination = "root" }
+                    }
+                    Text(
+                        when (destination) {
+                            "permissions" -> "Permissions"
+                            "appearance_home" -> "Appearance & Home"
+                            "themes" -> "Other Themes, Wallpapers"
+                            "lock" -> "Lockscreen Settings"
+                            "frames" -> "Active Frames Settings"
+                            "apps" -> "Apps & Features"
+                            else -> "Review & Finish"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    ProvideHomeStyle(state) {
+                        when (destination) {
+                            "permissions" -> {
+                                Settings2Permissions(context)
                             }
-                            if (bb10 && access) {
-                                FrameSettingsSection(state)
-                            } else {
-                                var frameOptions by remember { mutableStateOf(state.loadFrameSettings()) }
-                                io.github.aimindseye.tenseven.ui.FrameSettingsPanel(
-                                    frameOptions, io.github.aimindseye.tenseven.ui.rememberPlatformCapabilities(),
-                                ) { updated ->
-                                    frameOptions = updated.normalized()
-                                    state.saveFrameSettings(frameOptions)
+
+                            "appearance_home" -> {
+                                Section("Home style")
+                                HomeStyleSection(state, first)
+                                Section("Home status")
+                                Settings2UnifiedHomeStatus(state)
+                                Section("Home readability")
+                                Settings2ReadabilityOptions(state)
+                                Section("Icons & layout")
+                                IconGridSection(state)
+                                IconPresentationSection(state)
+                                if (homeStyleState(state).value == io.github.aimindseye.tenseven.model.HomeStyle.Bb7) {
+                                    Section("BlackBerry 7 options")
+                                    Settings2Bb7Options(state)
                                 }
-                                Card("Configure app summaries", "Radio/player sources and optional notification excerpts", false) {
-                                    context.startActivity(Intent(context, FrameIntegrationsActivity::class.java))
+                                Section("Theme & wallpapers")
+                                Settings2AppearanceChoices(state) { destination = "themes" }
+                            }
+
+                            "themes" -> {
+                                Section("Additional themes")
+                                ThemeSection(state)
+                                Section("Wallpapers")
+                                WallpaperSection(state)
+                            }
+
+                            "lock" -> {
+                                LockLayerSection(state)
+                            }
+
+                            "frames" -> {
+                                val bb10 = homeStyleState(state).value == io.github.aimindseye.tenseven.model.HomeStyle.Bb10
+                                val access =
+                                    io.github.aimindseye.tenseven.conversations.ConversationAccess
+                                        .isGranted(context)
+                                if (!bb10) {
+                                    Text(
+                                        "Active Frames appears on BlackBerry 10 Home. Settings remain saved when BlackBerry 7 is selected.",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                if (!access) {
+                                    Card(
+                                        "Enable Notification access",
+                                        "Required for notification-derived media and message summaries",
+                                        false,
+                                    ) {
+                                        runCatching {
+                                            context.startActivity(
+                                                io.github.aimindseye.tenseven.conversations.ConversationAccess
+                                                    .settingsIntent(),
+                                            )
+                                        }
+                                    }
+                                }
+                                if (bb10 && access) {
+                                    FrameSettingsSection(state)
+                                } else {
+                                    var frameOptions by remember { mutableStateOf(state.loadFrameSettings()) }
+                                    io.github.aimindseye.tenseven.ui.FrameSettingsPanel(
+                                        frameOptions,
+                                        io.github.aimindseye.tenseven.ui
+                                            .rememberPlatformCapabilities(),
+                                    ) { updated ->
+                                        frameOptions = updated.normalized()
+                                        state.saveFrameSettings(frameOptions)
+                                    }
+                                    Card("Configure app summaries", "Radio/player sources and optional notification excerpts", false) {
+                                        context.startActivity(Intent(context, FrameIntegrationsActivity::class.java))
+                                    }
                                 }
                             }
-                        }
-                        "apps" -> {
-                            OptionalAppsSettings2()
-                            Section("Other features")
-                            var typeToSearch by remember { mutableStateOf(state.loadTypeToSearch()) }
-                            SwitchRow("Type to search", "Start app search with the physical keyboard", typeToSearch) {
-                                typeToSearch = it
-                                state.saveTypeToSearch(it)
+
+                            "apps" -> {
+                                OptionalAppsSettings2()
+                                Section("Other features")
+                                var typeToSearch by remember { mutableStateOf(state.loadTypeToSearch()) }
+                                SwitchRow("Type to search", "Start app search with the physical keyboard", typeToSearch) {
+                                    typeToSearch = it
+                                    state.saveTypeToSearch(it)
+                                }
+                                DeviceCompatibilityLink()
                             }
-                            DeviceCompatibilityLink()
-                        }
-                        "review" -> {
-                            val access = io.github.aimindseye.tenseven.onboarding.SetupStatus.read(context)
-                            Card("Home style", state.loadHomeStyle().let { if (it == io.github.aimindseye.tenseven.model.HomeStyle.Bb7) "BlackBerry 7" else "BlackBerry 10" }, false) { destination = "appearance_home" }
-                            Card("Home status", state.loadHomeStatusMode(state.loadHomeStyle()).name.let { if (it == "Text") "Icons" else it }, false) { destination = "appearance_home" }
-                            val overlayAllowedForReview = android.provider.Settings.canDrawOverlays(context)
-                            val weatherLocationForReview = context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            Card("Permissions", listOf(access.contactsGranted, access.photosGranted,
-                                access.usageAccess, access.notificationAccess,
-                                overlayAllowedForReview, weatherLocationForReview).count { it }.toString() +
-                                " of 6 enabled", false) { destination = "permissions" }
-                            Card("Hub", "Compose and notification source choices", false, onClick = openHubFlow)
-                            Card("Active Frames", "Saved media and recent-app settings", false) { destination = "frames" }
-                            Card("Finish & Return Home", "Save choices and open TenSeven Home", true) {
-                                state.saveOnboardingDone()
-                                context.startActivity(Intent(context, SableStartActivity::class.java)
-                                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
-                                (context as? android.app.Activity)?.finish()
+
+                            "review" -> {
+                                val access =
+                                    io.github.aimindseye.tenseven.onboarding.SetupStatus
+                                        .read(context)
+                                Card(
+                                    "Home style",
+                                    state.loadHomeStyle().let {
+                                        if (it ==
+                                            io.github.aimindseye.tenseven.model.HomeStyle.Bb7
+                                        ) {
+                                            "BlackBerry 7"
+                                        } else {
+                                            "BlackBerry 10"
+                                        }
+                                    },
+                                    false,
+                                ) {
+                                    destination =
+                                        "appearance_home"
+                                }
+                                Card(
+                                    "Home status",
+                                    state.loadHomeStatusMode(state.loadHomeStyle()).name.let {
+                                        if (it ==
+                                            "Text"
+                                        ) {
+                                            "Icons"
+                                        } else {
+                                            it
+                                        }
+                                    },
+                                    false,
+                                ) { destination = "appearance_home" }
+                                val overlayAllowedForReview = android.provider.Settings.canDrawOverlays(context)
+                                val weatherLocationForReview =
+                                    context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                                        android.content.pm.PackageManager.PERMISSION_GRANTED
+                                Card(
+                                    "Permissions",
+                                    listOf(
+                                        access.contactsGranted,
+                                        access.photosGranted,
+                                        access.usageAccess,
+                                        access.notificationAccess,
+                                        overlayAllowedForReview,
+                                        weatherLocationForReview,
+                                    ).count { it }.toString() +
+                                        " of 6 enabled",
+                                    false,
+                                ) { destination = "permissions" }
+                                Card("Hub", "Compose and notification source choices", false, onClick = openHubFlow)
+                                Card("Active Frames", "Saved media and recent-app settings", false) { destination = "frames" }
+                                Card("Finish & Return Home", "Save choices and open TenSeven Home", true) {
+                                    state.saveOnboardingDone()
+                                    context.startActivity(
+                                        Intent(context, SableStartActivity::class.java)
+                                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                                    )
+                                    (context as? android.app.Activity)?.finish()
+                                }
+                                Section("Advanced")
+                                DeviceSettingsLinks(onLanguage, onBackup, onSetup, onAndroidSettings)
+                                D5PhoneRoleSetting()
                             }
-                            Section("Advanced")
-                            DeviceSettingsLinks(onLanguage, onBackup, onSetup, onAndroidSettings)
-                D5PhoneRoleSetting()
                         }
                     }
                 }
-            }
             } // Scrollable settings content ends; navigation stays in the outer Column.
             val flow = io.github.aimindseye.tenseven.model.Settings2Flow
             Settings2FlowFooter(
@@ -267,7 +357,10 @@ private fun LauncherSettings(
                 },
                 onNext = {
                     when (val next = flow.next(destination)) {
-                        "hub" -> openHubFlow()
+                        "hub" -> {
+                            openHubFlow()
+                        }
+
                         null -> {
                             state.saveOnboardingDone()
                             context.startActivity(
@@ -276,7 +369,10 @@ private fun LauncherSettings(
                             )
                             (context as? android.app.Activity)?.finish()
                         }
-                        else -> destination = next
+
+                        else -> {
+                            destination = next
+                        }
                     }
                 },
             )
@@ -296,8 +392,10 @@ internal fun Settings2FlowFooter(
     onNext: () -> Unit,
 ) {
     androidx.compose.foundation.layout.Row(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         androidx.compose.material3.OutlinedButton(
@@ -322,76 +420,133 @@ internal fun Settings2BackLink(onBack: () -> Unit) {
 @Composable
 private fun Settings2Permissions(context: android.content.Context) {
     var permissionRefresh by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    val access = remember(permissionRefresh) { io.github.aimindseye.tenseven.onboarding.SetupStatus.read(context) }
-    Text("Each permission is optional. Select a row to review Android's access request and its impact.",
+    val access =
+        remember(permissionRefresh) {
+            io.github.aimindseye.tenseven.onboarding.SetupStatus
+                .read(context)
+        }
+    Text(
+        "Each permission is optional. Select a row to review Android's access request and its impact.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodyMedium)
+        style = MaterialTheme.typography.bodyMedium,
+    )
     // Runtime permission results refresh this page rather than opening old Setup.
-    val contactsRequest = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-    ) { permissionRefresh++ }
-    val photosRequest = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-    ) { permissionRefresh++ }
+    val contactsRequest =
+        androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts
+                .RequestPermission(),
+        ) { permissionRefresh++ }
+    val photosRequest =
+        androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts
+                .RequestPermission(),
+        ) { permissionRefresh++ }
     val openAppInfo = {
-        context.startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-            .setData(android.net.Uri.parse("package:${context.packageName}")))
+        context.startActivity(
+            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(android.net.Uri.parse("package:${context.packageName}")),
+        )
     }
     val granted = { permission: String ->
         context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
     if (!access.homeRoleHeld) {
-        Card("Default Home · Not selected",
-            "Choose TenSeven as your Home app for the full launcher experience. You can do this later.", false) {
+        Card(
+            "Default Home · Not selected",
+            "Choose TenSeven as your Home app for the full launcher experience. You can do this later.",
+            false,
+        ) {
             context.startActivity(Intent(android.provider.Settings.ACTION_HOME_SETTINGS))
         }
     }
-    Card("Contacts · " + if (access.contactsGranted) "Allowed" else "Not allowed",
-        "Names and contact actions in Hub and Phone. Without access: generic sender details and no contact lookup.", false) {
-        if (granted(android.Manifest.permission.READ_CONTACTS)) openAppInfo()
-        else contactsRequest.launch(android.Manifest.permission.READ_CONTACTS)
+    Card(
+        "Contacts · " + if (access.contactsGranted) "Allowed" else "Not allowed",
+        "Names and contact actions in Hub and Phone. Without access: generic sender details and no contact lookup.",
+        false,
+    ) {
+        if (granted(android.Manifest.permission.READ_CONTACTS)) {
+            openAppInfo()
+        } else {
+            contactsRequest.launch(android.Manifest.permission.READ_CONTACTS)
+        }
     }
-    Card("Photos · " + if (access.photosGranted) "Allowed" else "Not allowed",
-        "Optional access to images for wallpaper and media features. Without access: built-in backgrounds and Home continue to work.", false) {
-        val permission = io.github.aimindseye.tenseven.onboarding.SetupStatus.photosPermission()
+    Card(
+        "Photos · " + if (access.photosGranted) "Allowed" else "Not allowed",
+        "Optional access to images for wallpaper and media features. Without access: built-in backgrounds and Home continue to work.",
+        false,
+    ) {
+        val permission =
+            io.github.aimindseye.tenseven.onboarding.SetupStatus
+                .photosPermission()
         if (granted(permission)) openAppInfo() else photosRequest.launch(permission)
     }
-    Card("Recent apps / Usage · " + if (access.usageAccess) "Allowed" else "Not allowed",
-        "Used for recent-app activity and Active Frames on BlackBerry 10. Without access: recent-app frames may be limited.", false) {
-        context.startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
-            .setData(android.net.Uri.parse("package:${context.packageName}")))
+    Card(
+        "Recent apps / Usage · " + if (access.usageAccess) "Allowed" else "Not allowed",
+        "Used for recent-app activity and Active Frames on BlackBerry 10. Without access: recent-app frames may be limited.",
+        false,
+    ) {
+        context.startActivity(
+            Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                .setData(android.net.Uri.parse("package:${context.packageName}")),
+        )
     }
-    Card("Notifications · " + if (access.notificationAccess) "Allowed" else "Not allowed",
-        "Needed by Hub, notification Peek, lock notification counts and media summaries. Without access: notification-driven features are unavailable.", false) {
-        context.startActivity(io.github.aimindseye.tenseven.conversations.ConversationAccess.settingsIntent())
+    Card(
+        "Notifications · " + if (access.notificationAccess) "Allowed" else "Not allowed",
+        "Needed by Hub, notification Peek, lock notification counts and media summaries. Without access: notification-driven features are unavailable.",
+        false,
+    ) {
+        context.startActivity(
+            io.github.aimindseye.tenseven.conversations.ConversationAccess
+                .settingsIntent(),
+        )
     }
     // Special Android access, not a runtime permission; never silently grant it.
     val overlayAllowed = android.provider.Settings.canDrawOverlays(context)
-    Card("Display over other apps · " + if (overlayAllowed) "Allowed" else "Not allowed",
-        "Required only for the optional TenSeven lock screen to appear over other apps. Without it, Home and Hub still work.", false) {
+    Card(
+        "Display over other apps · " + if (overlayAllowed) "Allowed" else "Not allowed",
+        "Required only for the optional TenSeven lock screen to appear over other apps. Without it, Home and Hub still work.",
+        false,
+    ) {
         runCatching {
             context.startActivity(
-                Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    android.net.Uri.parse("package:${context.packageName}")),
+                Intent(
+                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:${context.packageName}"),
+                ),
             )
         }
     }
     val locationPermission = android.Manifest.permission.ACCESS_COARSE_LOCATION
-    var locationGranted by remember(context) { mutableStateOf(
-        context.checkSelfPermission(locationPermission) == android.content.pm.PackageManager.PERMISSION_GRANTED
-    ) }
-    val requestLocation = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-    ) { granted -> locationGranted = granted }
-    Card("Weather location · " + if (locationGranted) "Allowed" else "Not allowed",
-        "Approximate location only, while TenSeven is open. Used for optional Home weather. If declined, enter a city manually; Home and Hub still work.", false) {
-        if (!locationGranted) requestLocation.launch(locationPermission)
-        else context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-            .setData(android.net.Uri.parse("package:${context.packageName}")))
+    var locationGranted by remember(context) {
+        mutableStateOf(
+            context.checkSelfPermission(locationPermission) == android.content.pm.PackageManager.PERMISSION_GRANTED,
+        )
     }
-    Text("Android controls these permissions. Restrictions and profile privacy remain enforced.",
+    val requestLocation =
+        androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts
+                .RequestPermission(),
+        ) { granted -> locationGranted = granted }
+    Card(
+        "Weather location · " + if (locationGranted) "Allowed" else "Not allowed",
+        "Approximate location only, while TenSeven is open. Used for optional Home weather. If declined, enter a city manually; Home and Hub still work.",
+        false,
+    ) {
+        if (!locationGranted) {
+            requestLocation.launch(locationPermission)
+        } else {
+            context.startActivity(
+                android.content
+                    .Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(android.net.Uri.parse("package:${context.packageName}")),
+            )
+        }
+    }
+    Text(
+        "Android controls these permissions. Restrictions and profile privacy remain enforced.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodySmall)
+        style = MaterialTheme.typography.bodySmall,
+    )
 }
 
 @Composable
@@ -399,8 +554,10 @@ private fun Settings2UnifiedHomeStatus(state: StartStateRepository) {
     val style = homeStyleState(state).value
     var mode by remember { mutableStateOf(state.loadHomeStatusMode(style)) }
     var metrics by remember { mutableStateOf(state.loadHomeDials(style)) }
-    Text("One status configuration shared by BlackBerry 7 and BlackBerry 10.",
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        "One status configuration shared by BlackBerry 7 and BlackBerry 10.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         io.github.aimindseye.tenseven.model.HomeStatusMode.entries.forEach { choice ->
             StyleCard(if (choice.name == "Text") "Icons" else choice.name, "", choice == mode, Modifier.weight(1f)) {
@@ -421,12 +578,22 @@ private fun Settings2UnifiedHomeStatus(state: StartStateRepository) {
             }
         }
         Section("Status items")
-        val choices = listOf(
-            "cpu" to "CPU", "ram" to "RAM", "battery" to "Battery", "wifi" to "Wi-Fi",
-            "mobile" to "Mobile", "cell" to "Cell", "storage" to "Storage",
-        )
+        val choices =
+            listOf(
+                "cpu" to "CPU",
+                "ram" to "RAM",
+                "battery" to "Battery",
+                "wifi" to "Wi-Fi",
+                "mobile" to "Mobile",
+                "cell" to "Cell",
+                "storage" to "Storage",
+            )
         choices.forEach { (key, label) ->
-            SwitchRow(label, "Shown in ${if (mode.name == "Text") "icons" else mode.name.lowercase()} mode when Android supplies a reading", key in metrics) { selected ->
+            SwitchRow(
+                label,
+                "Shown in ${if (mode.name == "Text") "icons" else mode.name.lowercase()} mode when Android supplies a reading",
+                key in metrics,
+            ) { selected ->
                 metrics = if (selected) metrics + key else metrics - key
                 state.saveHomeDials(style, metrics)
             }
@@ -447,8 +614,11 @@ private fun Settings2ReadabilityOptions(state: StartStateRepository) {
             }
         }
     }
-    Text("Small / Default / Large scales reading text only; dock icons and system status stay fixed.",
-        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        "Small / Default / Large scales reading text only; dock icons and system status stay fixed.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     var weather by remember { mutableStateOf(state.loadHomeWeatherEnabled()) }
     SwitchRow("Show weather on Home", "Optional current conditions; location access is not required", weather) {
         weather = it
@@ -456,7 +626,11 @@ private fun Settings2ReadabilityOptions(state: StartStateRepository) {
     }
     if (weather) {
         var useDevice by remember { mutableStateOf(state.loadHomeWeatherUseDeviceLocation()) }
-        SwitchRow("Use approximate device location", "Optional. Grant Weather location under Permissions; otherwise the manual city is used.", useDevice) {
+        SwitchRow(
+            "Use approximate device location",
+            "Optional. Grant Weather location under Permissions; otherwise the manual city is used.",
+            useDevice,
+        ) {
             useDevice = it
             state.saveHomeWeatherUseDeviceLocation(it)
         }
@@ -473,7 +647,11 @@ private fun Settings2ReadabilityOptions(state: StartStateRepository) {
             modifier = Modifier.fillMaxWidth(),
         )
         val context = androidx.compose.ui.platform.LocalContext.current
-        val client = remember(context) { io.github.aimindseye.tenseven.platform.HomeWeatherClient(context) }
+        val client =
+            remember(context) {
+                io.github.aimindseye.tenseven.platform
+                    .HomeWeatherClient(context)
+            }
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         var checking by remember { mutableStateOf(false) }
         var feedback by remember { mutableStateOf("") }
@@ -485,30 +663,45 @@ private fun Settings2ReadabilityOptions(state: StartStateRepository) {
                 scope.launch {
                     val locale = java.util.Locale.getDefault()
                     val result = client.current(city.trim(), locale.country.equals("US", ignoreCase = true))
-                    feedback = if (result != null) "Current conditions available · Open-Meteo" else
-                        "City not found or Internet unavailable. Try City, State/Country."
+                    feedback =
+                        if (result != null) {
+                            "Current conditions available · Open-Meteo"
+                        } else {
+                            "City not found or Internet unavailable. Try City, State/Country."
+                        }
                     checking = false
                 }
             },
         ) { Text(if (checking) "Checking city…" else "Check city weather") }
-        if (feedback.isNotBlank()) Text(feedback, style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("Weather data: Open-Meteo (CC BY 4.0). Internet is used only when enabled.",
+        if (feedback.isNotBlank()) {
+            Text(
+                feedback,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            "Weather data: Open-Meteo (CC BY 4.0). Internet is used only when enabled.",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
 private fun Settings2Bb7Options(state: StartStateRepository) {
-    Text("Favorites tray rows and icon labels are configured under Icons & layout.",
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        "Favorites tray rows and icon labels are configured under Icons & layout.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Text("Tray darkness", style = MaterialTheme.typography.titleMedium)
     var darkness by remember { mutableStateOf(state.loadBb7Scrim()) }
     androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf("Lighter" to -1, "Darker" to 1).forEach { (label, step) ->
             Card(label, "", false, Modifier.weight(1f)) {
-                darkness = io.github.aimindseye.tenseven.model.Bb7Scrim.step(darkness, step)
+                darkness =
+                    io.github.aimindseye.tenseven.model.Bb7Scrim
+                        .step(darkness, step)
                 state.saveBb7Scrim(darkness)
             }
         }
@@ -522,15 +715,39 @@ private fun Settings2Category(
     detail: String,
     onSelect: (String) -> Unit,
 ) {
-    val paths = when (id) {
-        "permissions" -> listOf("M12 2l8 4v6c0 5-3 8-8 10-5-2-8-5-8-10v-6z", "M9 12l2 2 4-4")
-        "appearance_home" -> listOf("M12 3a9 9 0 1 0 0 18 3 3 0 0 0 3-3c0-2-2-2-2-4 0-1 2-2 2-4a3 3 0 0 0-3-3", "M7 9h.01M9 5h.01M6 15h.01")
-        "hub" -> listOf("M3 5h18v14h-18z", "M3 6l9 8 9-8")
-        "lock" -> listOf("M5 11h14v10h-14z", "M8 11v-4a4 4 0 0 1 8 0v4")
-        "frames" -> listOf("M3 5h12v10h-12z", "M9 9h12v10h-12z")
-        "apps" -> listOf("M3 3h7v7h-7z", "M14 3h7v7h-7z", "M3 14h7v7h-7z", "M14 14h7v7h-7z")
-        else -> listOf("M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20", "M7 12l3 3 7-7")
-    }
+    val paths =
+        when (id) {
+            "permissions" -> {
+                listOf("M12 2l8 4v6c0 5-3 8-8 10-5-2-8-5-8-10v-6z", "M9 12l2 2 4-4")
+            }
+
+            "appearance_home" -> {
+                listOf(
+                    "M12 3a9 9 0 1 0 0 18 3 3 0 0 0 3-3c0-2-2-2-2-4 0-1 2-2 2-4a3 3 0 0 0-3-3",
+                    "M7 9h.01M9 5h.01M6 15h.01",
+                )
+            }
+
+            "hub" -> {
+                listOf("M3 5h18v14h-18z", "M3 6l9 8 9-8")
+            }
+
+            "lock" -> {
+                listOf("M5 11h14v10h-14z", "M8 11v-4a4 4 0 0 1 8 0v4")
+            }
+
+            "frames" -> {
+                listOf("M3 5h12v10h-12z", "M9 9h12v10h-12z")
+            }
+
+            "apps" -> {
+                listOf("M3 3h7v7h-7z", "M14 3h7v7h-7z", "M3 14h7v7h-7z", "M14 14h7v7h-7z")
+            }
+
+            else -> {
+                listOf("M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20", "M7 12l3 3 7-7")
+            }
+        }
     Surface(
         onClick = { onSelect(id) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
@@ -543,19 +760,28 @@ private fun Settings2Category(
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
             io.github.aimindseye.tenseven.ui.LineIcon(
-                paths = paths, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurface)
-            androidx.compose.foundation.layout.Spacer(Modifier.size(12.dp))
+                paths = paths,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+            androidx.compose.foundation.layout
+                .Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(detail, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            Text("›", color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleLarge)
+            Text(
+                "›",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleLarge,
+            )
         }
     }
 }
-
 
 /** A single persisted feature source, shared with the existing Setup extras picker. */
 @Composable
@@ -564,18 +790,23 @@ private fun OptionalAppsSettings2() {
     val control = io.github.aimindseye.tenseven.platform.ExtraAppsControl
     val apps = io.github.aimindseye.tenseven.model.ExtraApps
     val minimum = io.github.aimindseye.tenseven.onboarding.Setup2Plan.essentials
-    val full = io.github.aimindseye.tenseven.onboarding.Setup2Plan.full()
+    val full =
+        io.github.aimindseye.tenseven.onboarding.Setup2Plan
+            .full()
     var enabled by remember(context) { mutableStateOf(control.enabledIds(context)) }
 
-    val selection = when (enabled) {
-        minimum -> "Minimum"
-        full -> "Full"
-        else -> "Custom"
-    }
+    val selection =
+        when (enabled) {
+            minimum -> "Minimum"
+            full -> "Full"
+            else -> "Custom"
+        }
     Section("Bundled app selection")
-    Text("Minimum enables Calculator, Tasks and Notes. Full enables all bundled tools and games. Custom uses the switches below.",
+    Text(
+        "Minimum enables Calculator, Tasks and Notes. Full enables all bundled tools and games. Custom uses the switches below.",
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Card("Minimum apps · Essentials", "Calc Plus, Tasks and Notes", selection == "Minimum") {
         control.apply(context, minimum)
         enabled = control.enabledIds(context)
@@ -584,9 +815,11 @@ private fun OptionalAppsSettings2() {
         control.apply(context, full)
         enabled = control.enabledIds(context)
     }
-    Text("Selection: $selection · ${enabled.size} of ${full.size} apps enabled",
+    Text(
+        "Selection: $selection · ${enabled.size} of ${full.size} apps enabled",
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Section("Custom app selection")
     for (group in io.github.aimindseye.tenseven.model.ExtraGroup.entries) {
         Section(if (group == io.github.aimindseye.tenseven.model.ExtraGroup.Tools) "Tools" else "Games")
@@ -597,9 +830,11 @@ private fun OptionalAppsSettings2() {
             }
         }
     }
-    Text("These options show or hide bundled app entries. They do not switch APK editions, download apps, or change Android default apps.",
+    Text(
+        "These options show or hide bundled app entries. They do not switch APK editions, download apps, or change Android default apps.",
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
@@ -610,24 +845,29 @@ internal fun Settings2AppearanceChoices(
     // Capture Compose context while composing, never inside a click callback.
     val themeLaunchContext = androidx.compose.ui.platform.LocalContext.current
     var customSelected by remember {
-        mutableStateOf(state.loadAppearanceMode() != null || state.loadAppearanceAccent() != null ||
-            state.loadActiveCustomThemeId() != null)
+        mutableStateOf(
+            state.loadAppearanceMode() != null || state.loadAppearanceAccent() != null ||
+                state.loadActiveCustomThemeId() != null,
+        )
     }
     androidx.compose.runtime.DisposableEffect(state) {
-        val unsubscribe = state.onAppearanceChanged {
-            customSelected = state.loadAppearanceMode() != null ||
-                state.loadAppearanceAccent() != null || state.loadActiveCustomThemeId() != null
-        }
+        val unsubscribe =
+            state.onAppearanceChanged {
+                customSelected = state.loadAppearanceMode() != null ||
+                    state.loadAppearanceAccent() != null || state.loadActiveCustomThemeId() != null
+            }
         onDispose { unsubscribe() }
     }
-    Card("BlackBerry 10 theme",
+    Card(
+        "BlackBerry 10 theme",
         "Black background, white text and blue selection. Preserves saved wallpaper images.",
         !customSelected,
     ) {
         state.saveAppearance(null, null)
         customSelected = false
     }
-    Card("Other Themes, Wallpapers",
+    Card(
+        "Other Themes, Wallpapers",
         "Open optional themes, Android colors and saved wallpapers",
         customSelected,
     ) {
@@ -637,10 +877,11 @@ internal fun Settings2AppearanceChoices(
             onOtherThemes()
         } else {
             themeLaunchContext.startActivity(
-                android.content.Intent(
-                    themeLaunchContext,
-                    LauncherSettingsActivity::class.java,
-                ).putExtra("tenseven.settings.category", "themes"),
+                android.content
+                    .Intent(
+                        themeLaunchContext,
+                        LauncherSettingsActivity::class.java,
+                    ).putExtra("tenseven.settings.category", "themes"),
             )
         }
     }

@@ -3,7 +3,6 @@ package io.github.aimindseye.tenseven.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -14,22 +13,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -40,10 +40,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -60,8 +60,8 @@ import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationView
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.conversations.Snooze
-import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.design.sableFocusRing
+import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.platform.HubSourceAction
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.availableSourceActions
@@ -106,22 +106,25 @@ internal fun HubPanelsHost(
     val exclusionTopPx = with(density) { 32.dp.toPx() }
     val exclusionHeightPx = with(density) { 160.dp.toPx() }
     Box(
-        Modifier.fillMaxSize()
+        Modifier
+            .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .systemGestureExclusion { coordinates ->
-                Rect(0f, exclusionTopPx,
+                Rect(
+                    0f,
+                    exclusionTopPx,
                     edgePx.coerceAtMost(coordinates.size.width.toFloat()),
-                    (exclusionTopPx + exclusionHeightPx).coerceAtMost(coordinates.size.height.toFloat()))
-            }
-            .hubSettingsSwipe(
-            onOpen = {
-                settings = true
-                selected = null
-            },
-            onSwipeLeft = {
-                if (settings || selected != null) close() else onSwipeLeft()
-            },
-        ),
+                    (exclusionTopPx + exclusionHeightPx).coerceAtMost(coordinates.size.height.toFloat()),
+                )
+            }.hubSettingsSwipe(
+                onOpen = {
+                    settings = true
+                    selected = null
+                },
+                onSwipeLeft = {
+                    if (settings || selected != null) close() else onSwipeLeft()
+                },
+            ),
     ) {
         CompositionLocalProvider(
             LocalHubRowSelection provides { id, focus ->
@@ -165,7 +168,10 @@ internal fun HubPanelsHost(
 /** Hub owns horizontal gestures while it is the selected page: right -> settings, left -> Home.
  * Vertical scrolling stays unclaimed, including scrolling inside the Hub message list.
  */
-private fun Modifier.hubSettingsSwipe(onOpen: () -> Unit, onSwipeLeft: () -> Unit): Modifier =
+private fun Modifier.hubSettingsSwipe(
+    onOpen: () -> Unit,
+    onSwipeLeft: () -> Unit,
+): Modifier =
     pointerInput(onOpen, onSwipeLeft) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -294,7 +300,9 @@ private fun HubMessagePanel(
                 ui.onRemind(
                     conversation,
                     io.github.aimindseye.tenseven.tasks.TaskSchedule.preset(
-                        "Tomorrow morning", java.time.Instant.now(), java.time.ZoneId.systemDefault(),
+                        "Tomorrow morning",
+                        java.time.Instant.now(),
+                        java.time.ZoneId.systemDefault(),
                     ),
                 )
                 onClose()
@@ -366,7 +374,8 @@ private fun PanelAction(
             Text(label, color = Bb10Text, style = MaterialTheme.typography.bodyLarge)
         }
         Box(
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
                 .heightIn(min = 1.dp),
         )
@@ -396,7 +405,8 @@ private fun HubPanelBody(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 conversation?.latestNotification?.kind?.let {
-                    io.github.aimindseye.tenseven.model.HubActionPolicy.panelTitle(it)
+                    io.github.aimindseye.tenseven.model.HubActionPolicy
+                        .panelTitle(it)
                 } ?: "Message",
                 modifier = Modifier.weight(1f).semantics { heading() },
                 color = Bb10Text,

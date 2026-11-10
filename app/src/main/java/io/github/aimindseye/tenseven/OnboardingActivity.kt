@@ -51,11 +51,11 @@ import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.ExtraGroup
 import io.github.aimindseye.tenseven.model.StartText
 import io.github.aimindseye.tenseven.onboarding.OnboardingPlan
+import io.github.aimindseye.tenseven.onboarding.Setup2Plan
+import io.github.aimindseye.tenseven.onboarding.Setup2Stage
 import io.github.aimindseye.tenseven.onboarding.SetupState
 import io.github.aimindseye.tenseven.onboarding.SetupStatus
 import io.github.aimindseye.tenseven.onboarding.SetupStep
-import io.github.aimindseye.tenseven.onboarding.Setup2Plan
-import io.github.aimindseye.tenseven.onboarding.Setup2Stage
 import io.github.aimindseye.tenseven.onboarding.SpecialAccessAttemptStore
 import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 import io.github.aimindseye.tenseven.platform.StartStateRepository
@@ -81,11 +81,14 @@ class OnboardingActivity : ComponentActivity() {
         // Fresh-install and reopened Setup use the same seven-section Settings
         // as Home > Launcher Settings. Feature-specific step links still work.
         if (intent?.getStringExtra(EXTRA_STEP).isNullOrBlank()) {
-            val opened = runCatching {
-                startActivity(Intent(this, LauncherSettingsActivity::class.java)
-                    .putExtra("tenseven.settings.category", "permissions"))
-                true
-            }.getOrDefault(false)
+            val opened =
+                runCatching {
+                    startActivity(
+                        Intent(this, LauncherSettingsActivity::class.java)
+                            .putExtra("tenseven.settings.category", "permissions"),
+                    )
+                    true
+                }.getOrDefault(false)
             if (opened) {
                 StartStateRepository(this).saveOnboardingDone()
                 finish()
@@ -116,7 +119,9 @@ class OnboardingActivity : ComponentActivity() {
                     if (only == null) {
                         SetupWizard2(
                             state = setup.value ?: state,
-                            showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
+                            showRestrictedHelp = { step ->
+                                OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer)
+                            },
                             attemptedSpecialAccess = attemptedSpecialAccess.value,
                             onAction = ::perform,
                             onManage = ::manage,
@@ -133,7 +138,9 @@ class OnboardingActivity : ComponentActivity() {
                             steps = steps,
                             startOnOverview = overview,
                             state = setup.value ?: state,
-                            showRestrictedHelp = { step -> OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer) },
+                            showRestrictedHelp = { step ->
+                                OnboardingPlan.needsRestrictedSettingsHelp(step, Build.VERSION.SDK_INT, installer)
+                            },
                             attemptedSpecialAccess = attemptedSpecialAccess.value,
                             onAction = ::perform,
                             enabledExtras = ExtraAppsControl.enabledIds(this),
@@ -221,10 +228,14 @@ class OnboardingActivity : ComponentActivity() {
         val roles = getSystemService(RoleManager::class.java)
         // Never disable an activity while Android still holds its default-Phone role.
         if ("tenseven_phone" in old && "tenseven_phone" !in ids &&
-            roles?.isRoleHeld(RoleManager.ROLE_DIALER) == true) {
-            android.widget.Toast.makeText(this,
-                "Choose another default Phone app in Android Settings before disabling TenSeven Phone",
-                android.widget.Toast.LENGTH_LONG).show()
+            roles?.isRoleHeld(RoleManager.ROLE_DIALER) == true
+        ) {
+            android.widget.Toast
+                .makeText(
+                    this,
+                    "Choose another default Phone app in Android Settings before disabling TenSeven Phone",
+                    android.widget.Toast.LENGTH_LONG,
+                ).show()
             runCatching { startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) }
             refresh()
             return
@@ -235,17 +246,23 @@ class OnboardingActivity : ComponentActivity() {
         if ("tenseven_phone" in ids &&
             !getSharedPreferences("d5_phone_role_offer", MODE_PRIVATE).getBoolean("offered", false) &&
             roles != null && roles.isRoleAvailable(RoleManager.ROLE_DIALER) &&
-            !roles.isRoleHeld(RoleManager.ROLE_DIALER)) {
+            !roles.isRoleHeld(RoleManager.ROLE_DIALER)
+        ) {
             // A user-triggered Save can offer once, even on upgrades that already enabled Phone.
             // After decline, use the explicit Launcher Settings button instead of nagging.
-            getSharedPreferences("d5_phone_role_offer", MODE_PRIVATE).edit()
-                .putBoolean("offered", true).apply()
+            getSharedPreferences("d5_phone_role_offer", MODE_PRIVATE)
+                .edit()
+                .putBoolean("offered", true)
+                .apply()
             window.decorView.post {
                 runCatching { startActivity(Intent(this, D5PhoneRoleRequestActivity::class.java)) }
                     .onFailure {
-                        android.widget.Toast.makeText(this,
-                            "TenSeven Phone was enabled. Choose it in Android Default Apps when ready.",
-                            android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast
+                            .makeText(
+                                this,
+                                "TenSeven Phone was enabled. Choose it in Android Default Apps when ready.",
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
                     }
             }
         }
@@ -800,8 +817,10 @@ private fun SetupWizard2(
                 }
 
                 Setup2Stage.HUB_LOCK -> {
-                    Text("Hub follows Android-delivered notifications, including silent sources. " +
-                        "Notification access is requested in the next step.")
+                    Text(
+                        "Hub follows Android-delivered notifications, including silent sources. " +
+                            "Notification access is requested in the next step.",
+                    )
                     ChoiceSection(SetupStep.HUB, settings)
                     ChoiceSection(SetupStep.LOCK, settings)
                     Text(

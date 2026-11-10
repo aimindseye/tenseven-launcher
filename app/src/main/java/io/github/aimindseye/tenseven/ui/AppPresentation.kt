@@ -291,9 +291,10 @@ internal fun AppMark(
     IconPresentationState.init(context)
     val iconStyle = IconPresentationState.selected
     // Explicit Original mode means original installed artwork, not a leftover external pack.
-    val iconPack = IconPacks.selected.takeIf {
-        iconStyle == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
-    }
+    val iconPack =
+        IconPacks.selected.takeIf {
+            iconStyle == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+        }
     val isOwnExtra =
         app.component.packageName == context.packageName &&
             ExtraApps.byClassName(app.component.className) != null

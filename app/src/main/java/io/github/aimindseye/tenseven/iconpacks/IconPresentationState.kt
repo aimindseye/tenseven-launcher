@@ -13,13 +13,17 @@ object IconPresentationState {
         private set
 
     private var initialized = false
+
     fun init(context: Context) {
         if (initialized) return
         selected = StartStateRepository(context).loadIconPresentation()
         initialized = true
     }
 
-    fun choose(context: Context, next: IconPresentation) {
+    fun choose(
+        context: Context,
+        next: IconPresentation,
+    ) {
         selected = next
         StartStateRepository(context).saveIconPresentation(next)
     }

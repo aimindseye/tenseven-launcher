@@ -2,8 +2,6 @@
 // Apache License 2.0. Changed: package and imports renamed for Tenseven; native Rust calls replaced by Kotlin where noted.
 package io.github.aimindseye.tenseven.extras.notes
 
-import io.github.aimindseye.tenseven.LauncherTheme
-import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
@@ -11,6 +9,8 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import io.github.aimindseye.tenseven.extras.ExtraKeyAction
 import io.github.aimindseye.tenseven.extras.ExtraKeys
 import io.github.aimindseye.tenseven.extras.notes.core.NotesKeys
@@ -23,13 +23,16 @@ import io.github.aimindseye.tenseven.extras.notes.ui.NotesApp
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
-        io.github.aimindseye.tenseven.platform.FrameWindowRepository.local(this, javaClass.name)
+        io.github.aimindseye.tenseven.platform.FrameWindowRepository
+            .local(this, javaClass.name)
     }
+
     private lateinit var controller: NotesController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        io.github.aimindseye.tenseven.design.DesignText.t.bindTo(this)
+        io.github.aimindseye.tenseven.design.DesignText.t
+            .bindTo(this)
         enableEdgeToEdge()
         controller = NotesController(this)
         controller.load()
@@ -61,6 +64,7 @@ class MainActivity : ComponentActivity() {
                 finish()
                 return true
             }
+
             ExtraKeyAction.Help -> {
                 AlertDialog
                     .Builder(this)
@@ -70,7 +74,10 @@ class MainActivity : ComponentActivity() {
                     .show()
                 return true
             }
-            null -> Unit
+
+            null -> {
+                Unit
+            }
         }
         return super.onKeyDown(keyCode, event)
     }

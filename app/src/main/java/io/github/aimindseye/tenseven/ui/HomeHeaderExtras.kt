@@ -42,15 +42,21 @@ internal fun rememberHeaderOptions(): HeaderOptions {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val repository = remember(context) { StartStateRepository(context) }
-    fun read() = HeaderOptions(
-        repository.loadLauncherTextSize(), repository.loadHomeWeatherEnabled(), repository.loadHomeWeatherCity(),
-        repository.loadHomeWeatherUseDeviceLocation(), repository.loadHomeStatusSize(),
-    )
+
+    fun read() =
+        HeaderOptions(
+            repository.loadLauncherTextSize(),
+            repository.loadHomeWeatherEnabled(),
+            repository.loadHomeWeatherCity(),
+            repository.loadHomeWeatherUseDeviceLocation(),
+            repository.loadHomeStatusSize(),
+        )
     var current by remember(context) { mutableStateOf(read()) }
     DisposableEffect(lifecycle, repository) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) current = read()
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) current = read()
+            }
         lifecycle.addObserver(observer)
         // Preference changes must update active settings too, not only after leaving the Activity.
         val stop = repository.onHomeReadabilityChanged { current = read() }
@@ -66,7 +72,10 @@ internal fun TextUnit.safeLauncherScale(value: LauncherTextSize): TextUnit = thi
 
 /** Current conditions are optional; no placeholder or made-up temperature is displayed. */
 @Composable
-internal fun HomeWeatherLine(options: HeaderOptions, modifier: Modifier = Modifier) {
+internal fun HomeWeatherLine(
+    options: HeaderOptions,
+    modifier: Modifier = Modifier,
+) {
     if (!options.showWeather || (!options.useDeviceLocation && options.city.isBlank())) return
     val context = LocalContext.current.applicationContext
     val locale = Locale.getDefault()
@@ -82,9 +91,13 @@ internal fun HomeWeatherLine(options: HeaderOptions, modifier: Modifier = Modifi
     ) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
-                value = if (options.useDeviceLocation) {
-                    client.currentNearDevice(fahrenheit) ?: options.city.takeIf { it.isNotBlank() }?.let { client.current(it, fahrenheit) }
-                } else client.current(options.city, fahrenheit)
+                value =
+                    if (options.useDeviceLocation) {
+                        client.currentNearDevice(fahrenheit)
+                            ?: options.city.takeIf { it.isNotBlank() }?.let { client.current(it, fahrenheit) }
+                    } else {
+                        client.current(options.city, fahrenheit)
+                    }
                 delay(HomeWeatherClient.CACHE_LIFETIME_MS)
             }
         }
@@ -93,9 +106,12 @@ internal fun HomeWeatherLine(options: HeaderOptions, modifier: Modifier = Modifi
     val uriHandler = LocalUriHandler.current
     // Display actual locality if Android's coarse-location geocoder provided it.
     // If unavailable, be transparent instead of claiming an invented nearby city.
-    val locality = if (options.useDeviceLocation) {
-        conditions.locationName ?: options.city.trim().takeIf { it.isNotBlank() } ?: "Approximate location"
-    } else options.city.trim().ifBlank { "Selected city" }
+    val locality =
+        if (options.useDeviceLocation) {
+            conditions.locationName ?: options.city.trim().takeIf { it.isNotBlank() } ?: "Approximate location"
+        } else {
+            options.city.trim().ifBlank { "Selected city" }
+        }
     Column(modifier = modifier) {
         Text(
             "$locality · ${conditions.temperature}${conditions.unit} ${conditions.condition}",
@@ -121,18 +137,19 @@ internal fun ScaledLauncherTextTheme(content: @Composable () -> Unit) {
     val multiplier = rememberHeaderOptions().size.multiplier
     val base = MaterialTheme.typography
     MaterialTheme(
-        typography = base.copy(
-            headlineSmall = base.headlineSmall.copy(fontSize = base.headlineSmall.fontSize * multiplier),
-            titleLarge = base.titleLarge.copy(fontSize = base.titleLarge.fontSize * multiplier),
-            titleMedium = base.titleMedium.copy(fontSize = base.titleMedium.fontSize * multiplier),
-            bodyLarge = base.bodyLarge.copy(fontSize = base.bodyLarge.fontSize * multiplier),
-            bodyMedium = base.bodyMedium.copy(fontSize = base.bodyMedium.fontSize * multiplier),
-            bodySmall = base.bodySmall.copy(fontSize = base.bodySmall.fontSize * multiplier),
-            labelLarge = base.labelLarge.copy(fontSize = base.labelLarge.fontSize * multiplier),
-            labelMedium = base.labelMedium.copy(fontSize = base.labelMedium.fontSize * multiplier),
-            labelSmall = base.labelSmall.copy(fontSize = base.labelSmall.fontSize * multiplier),
-            titleSmall = base.titleSmall.copy(fontSize = base.titleSmall.fontSize * multiplier),
-        ),
+        typography =
+            base.copy(
+                headlineSmall = base.headlineSmall.copy(fontSize = base.headlineSmall.fontSize * multiplier),
+                titleLarge = base.titleLarge.copy(fontSize = base.titleLarge.fontSize * multiplier),
+                titleMedium = base.titleMedium.copy(fontSize = base.titleMedium.fontSize * multiplier),
+                bodyLarge = base.bodyLarge.copy(fontSize = base.bodyLarge.fontSize * multiplier),
+                bodyMedium = base.bodyMedium.copy(fontSize = base.bodyMedium.fontSize * multiplier),
+                bodySmall = base.bodySmall.copy(fontSize = base.bodySmall.fontSize * multiplier),
+                labelLarge = base.labelLarge.copy(fontSize = base.labelLarge.fontSize * multiplier),
+                labelMedium = base.labelMedium.copy(fontSize = base.labelMedium.fontSize * multiplier),
+                labelSmall = base.labelSmall.copy(fontSize = base.labelSmall.fontSize * multiplier),
+                titleSmall = base.titleSmall.copy(fontSize = base.titleSmall.fontSize * multiplier),
+            ),
         content = content,
     )
 }

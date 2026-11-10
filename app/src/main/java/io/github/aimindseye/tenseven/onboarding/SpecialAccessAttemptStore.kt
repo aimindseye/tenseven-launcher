@@ -17,9 +17,15 @@ object SpecialAccessAttemptStore {
             .filter { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(it.name, false) }
             .toSet()
 
-    fun markAttempted(context: Context, step: SetupStep) {
+    fun markAttempted(
+        context: Context,
+        step: SetupStep,
+    ) {
         if (!step.isSpecialAccess) return
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putBoolean(step.name, true).apply()
+        context
+            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(step.name, true)
+            .apply()
     }
 }
