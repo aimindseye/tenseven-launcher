@@ -1,7 +1,6 @@
 package io.github.aimindseye.tenseven.features.phone
 
 import android.Manifest
-import android.app.Activity
 import android.app.role.RoleManager
 import android.content.ContentUris
 import android.content.Intent
@@ -28,9 +27,60 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.D5BbDialogs
 import io.github.aimindseye.tenseven.D5PhoneRoleRequestActivity
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
+
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val PHONE_BLOCKLIST_MAX_25 = 25
+private const val PHONE_BLOCKLIST_VALUE_7 = 7
+private const val PHONE_CONTACTS_VALUE_14 = 14
+private const val PHONE_CONTACT_DETAILS_SP_23_F = 23f
+private const val PHONE_CONTACT_DETAILS_VALUE_10 = 10
+private const val PHONE_CONTACT_DETAILS_VALUE_78 = 78
+private const val PHONE_DETAIL_HEADER_RATIO_24_F = 24f
+private const val PHONE_DETAIL_HEADER_SP_16_F = 16f
+private const val PHONE_DIAL_DP_1 = 1
+private const val PHONE_DIAL_DP_43 = 43
+private const val PHONE_DIAL_DP_52 = 52
+private const val PHONE_DIAL_RATIO_25_F = 25f
+private const val PHONE_DIAL_SP_24_F = 24f
+private const val PHONE_DIAL_SP_28_F = 28f
+private const val PHONE_FLOATING_RATIO_28_F = 28f
+private const val PHONE_INFO_ROW_DP_2 = 2
+private const val PHONE_KEYPAD_DP_126 = 126
+private const val PHONE_KEYPAD_DP_145 = 145
+private const val PHONE_KEYPAD_DP_8 = 8
+private const val PHONE_KEYPAD_RATIO_9_F = 9f
+private const val PHONE_KEYPAD_SP_10_F = 10f
+private const val PHONE_KEYPAD_SP_23_F = 23f
+private const val PHONE_KEYPAD_SP_9_F = 9f
+private const val PHONE_KEYPAD_VALUE_15 = 15
+private const val PHONE_KEYPAD_VALUE_16 = 16
+private const val PHONE_KEYPAD_VALUE_24 = 24
+private const val PHONE_KEYPAD_VALUE_3 = 3
+private const val PHONE_MATCHES_DP_1 = 1
+private const val PHONE_MATCHES_DP_2 = 2
+private const val PHONE_MATCHES_DP_36 = 36
+private const val PHONE_MATCHES_DP_37 = 37
+private const val PHONE_MATCHES_DP_43 = 43
+private const val PHONE_MATCHES_DP_44 = 44
+private const val PHONE_MATCHES_SP_11_F = 11f
+private const val PHONE_MATCHES_VALUE_32 = 32
+private const val PHONE_OPEN_MENU_VALUE_3 = 3
+private const val PHONE_POPULATE_VALUE_36 = 36
+private const val PHONE_QUICK_ACTION_RATIO_23_F = 23f
+private const val PHONE_RECENTS_DP_1 = 1
+private const val PHONE_RECENTS_DP_2 = 2
+private const val PHONE_RECENTS_RATIO_25_F = 25f
+private const val PHONE_RECENTS_SP_11_F = 11f
+private const val PHONE_RECENTS_SP_21_F = 21f
+private const val PHONE_RECENTS_SP_24_F = 24f
+private const val PHONE_RECENTS_VALUE_15 = 15
+private const val PHONE_RECENTS_VALUE_16 = 16
 
 /**
  * D5-R9.1: FULL REWRITE of the Phone activity's presentation.
@@ -40,7 +90,65 @@ import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
  * This file does not own Android call state. TenSevenInCallService remains in TenSevenTelecom.kt.
  * It does not change Android default dialer roles without an explicit user action.
  */
-class TenSevenPhoneActivity : Activity() {
+class TenSevenPhoneActivity : ComponentActivity() {
+    // D5 approved Phone layout tokens: preserve exact Titan 2 spacing and typography.
+    private companion object {
+        // Remaining D5-approved Phone dimensions; retain exact original spacing.
+        const val PHONE_AUXILIARY_INSET_DP = 15
+        const val PHONE_DETAIL_CAPTION_HEIGHT_DP = 21
+        const val PHONE_MINI_ICON_EDGE_DP = 24
+        const val PHONE_CONTACT_LETTER_HEADING_DP = 26
+        const val PHONE_LIST_FOOTER_INSET_DP = 29
+        const val PHONE_COMPACT_AVATAR_EDGE_DP = 32
+        const val PHONE_OPTIONS_ICON_EDGE_DP = 35
+        const val PHONE_CONTACT_AVATAR_EDGE_DP = 36
+        const val PHONE_COMPACT_MATCH_HEIGHT_DP = 37
+        const val PHONE_CALL_TYPE_ICON_WIDTH_DP = 39
+        const val PHONE_BLOCK_ACTION_HEIGHT_DP = 41
+        const val PHONE_SEARCH_AND_ACTION_HEIGHT_DP = 42
+        const val PHONE_COMPACT_NAVIGATION_HEIGHT_DP = 43
+        const val PHONE_STANDARD_NAVIGATION_HEIGHT_DP = 44
+        const val PHONE_MENU_ACTION_HEIGHT_DP = 46
+        const val PHONE_MENU_ROW_HEIGHT_DP = 47
+        const val PHONE_CONTACT_OR_MENU_ROW_DP = 49
+        const val PHONE_FLOATING_ACTION_EDGE_DP = 51
+        const val PHONE_EXPANDED_INPUT_HEIGHT_DP = 52
+        const val PHONE_SEARCH_BAND_HEIGHT_DP = 54
+        const val PHONE_VOICEMAIL_ACTION_HEIGHT_DP = 60
+        const val PHONE_RECENT_CALL_ROW_HEIGHT_DP = 62
+        const val PHONE_ALPHABET_SCROLL_MARGIN_DP = 64
+        const val PHONE_CONTACT_LIST_BOTTOM_INSET_DP = 70
+        const val PHONE_CONTACT_QUICK_ACTION_HEIGHT_DP = 74
+        const val PHONE_RECENTS_BOTTOM_INSET_DP = 75
+        const val PHONE_CONTACT_PHOTO_EDGE_DP = 78
+        const val PHONE_CONTACT_PHOTO_AREA_HEIGHT_DP = 86
+        const val PHONE_HAIRLINE_DP = 1
+        const val PHONE_MICRO_INSET_DP = 2
+        const val PHONE_EXTRA_TIGHT_INSET_DP = 3
+        const val PHONE_TIGHT_INSET_DP = 4
+        const val PHONE_COMPACT_INSET_DP = 5
+        const val PHONE_SMALL_INSET_DP = 6
+        const val PHONE_NARROW_GUTTER_DP = 7
+        const val PHONE_STANDARD_INSET_DP = 8
+        const val PHONE_ROW_CONTENT_GUTTER_DP = 9
+        const val PHONE_SECTION_INSET_DP = 10
+        const val PHONE_LIST_CONTROL_INSET_DP = 11
+        const val PHONE_PAGE_CONTENT_INSET_DP = 12
+        const val PHONE_LIST_CONTENT_INSET_DP = 13
+        const val PHONE_DETAIL_CONTENT_INSET_DP = 14
+        const val PHONE_CALLOUT_CONTENT_INSET_DP = 16
+        const val PHONE_CALLOUT_TOP_INSET_DP = 18
+        const val PHONE_BODY_TEXT_SP = 15f
+        const val PHONE_CAPTION_TEXT_SP = 12f
+        const val PHONE_SECONDARY_TEXT_SP = 14f
+        const val PHONE_COMPACT_TEXT_SP = 13f
+        const val PHONE_SYMBOL_TEXT_SP = 22f
+        const val PHONE_LARGE_SYMBOL_TEXT_SP = 29f
+        const val PHONE_REQUEST_CONTACTS = 201
+        const val PHONE_REQUEST_CALL_LOG = 202
+        const val PHONE_REQUEST_CALL = 203
+    }
+
     private enum class Screen { DIAL, CONTACTS, RECENTS, CONTACT_DETAIL, BLOCKLIST }
 
     private var screen = Screen.DIAL
@@ -59,6 +167,18 @@ class TenSevenPhoneActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (!navigatePhoneBack()) {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                        isEnabled = true
+                    }
+                }
+            },
+        )
         if (savedInstanceState != null) {
             dialNumber = savedInstanceState.getString("dial", "")
             contactSearch = savedInstanceState.getString("contactSearch", "")
@@ -92,25 +212,25 @@ class TenSevenPhoneActivity : Activity() {
         outState.putLong("contactId", selectedContactId ?: 0L)
     }
 
-    @Deprecated("Use the screen-specific back hierarchy")
-    override fun onBackPressed() {
+    private fun navigatePhoneBack(): Boolean =
         when (screen) {
             Screen.CONTACT_DETAIL -> {
                 screen = returnTo
                 selectedContactId = null
                 draw()
+                true
             }
 
             Screen.BLOCKLIST -> {
                 screen = Screen.RECENTS
                 draw()
+                true
             }
 
             else -> {
-                super.onBackPressed()
+                false
             }
         }
-    }
 
     private fun readIntent(intent: Intent?) {
         if (intent?.action == Intent.ACTION_DIAL) {
@@ -133,7 +253,7 @@ class TenSevenPhoneActivity : Activity() {
 
     private fun label(
         value: String,
-        size: Float = 15f,
+        size: Float = PHONE_BODY_TEXT_SP,
         color: Int = colors.fg,
         bold: Boolean = false,
     ): TextView =
@@ -147,7 +267,13 @@ class TenSevenPhoneActivity : Activity() {
         }
 
     private fun rule(parent: LinearLayout) =
-        parent.addView(View(this).apply { setBackgroundColor(colors.line) }, LinearLayout.LayoutParams(-1, px(1)))
+        parent.addView(
+            View(this).apply { setBackgroundColor(colors.line) },
+            LinearLayout.LayoutParams(
+                -1,
+                px(PHONE_HAIRLINE_DP),
+            ),
+        )
 
     private fun round(
         color: Int,
@@ -156,7 +282,7 @@ class TenSevenPhoneActivity : Activity() {
     ) = GradientDrawable().apply {
         cornerRadius = px(radius).toFloat()
         setColor(color)
-        if (stroke) setStroke(px(1), this@TenSevenPhoneActivity.colors.line)
+        if (stroke) setStroke(px(PHONE_HAIRLINE_DP), this@TenSevenPhoneActivity.colors.line)
     }
 
     private fun circular(color: Int) =
@@ -168,7 +294,7 @@ class TenSevenPhoneActivity : Activity() {
     private fun clickLabel(
         text: String,
         description: String = text,
-        size: Float = 15f,
+        size: Float = PHONE_BODY_TEXT_SP,
         action: () -> Unit,
     ): TextView =
         label(text, size).apply {
@@ -185,15 +311,25 @@ class TenSevenPhoneActivity : Activity() {
         action: String? = null,
         onClick: (() -> Unit)? = null,
     ) {
-        val note = label(message, 14f, colors.muted)
-        note.setPadding(px(16), px(18), px(16), px(14))
+        val note = label(message, PHONE_SECONDARY_TEXT_SP, colors.muted)
+        note.setPadding(
+            px(PHONE_CALLOUT_CONTENT_INSET_DP),
+            px(PHONE_CALLOUT_TOP_INSET_DP),
+            px(PHONE_CALLOUT_CONTENT_INSET_DP),
+            px(PHONE_DETAIL_CONTENT_INSET_DP),
+        )
         body.addView(note)
         if (action != null && onClick != null) {
             val go =
-                clickLabel(action, action, 15f, onClick).apply {
+                clickLabel(action, action, PHONE_BODY_TEXT_SP, onClick).apply {
                     setTextColor(colors.accent)
                     gravity = Gravity.CENTER_VERTICAL
-                    setPadding(px(16), px(6), px(16), px(12))
+                    setPadding(
+                        px(PHONE_CALLOUT_CONTENT_INSET_DP),
+                        px(PHONE_SMALL_INSET_DP),
+                        px(PHONE_CALLOUT_CONTENT_INSET_DP),
+                        px(PHONE_PAGE_CONTENT_INSET_DP),
+                    )
                 }
             body.addView(go)
         }
@@ -223,7 +359,7 @@ class TenSevenPhoneActivity : Activity() {
     /** The only main navigation bar; no redundant 'TenSeven Phone' heading. */
     private fun tabs(shell: LinearLayout) {
         val navigation = row()
-        shell.addView(navigation, LinearLayout.LayoutParams(-1, px(43)))
+        shell.addView(navigation, LinearLayout.LayoutParams(-1, px(PHONE_COMPACT_NAVIGATION_HEIGHT_DP)))
         val tabRegion = row()
         navigation.addView(tabRegion, LinearLayout.LayoutParams(0, -1, 1f))
         listOf(
@@ -245,44 +381,49 @@ class TenSevenPhoneActivity : Activity() {
                     }
                 }
             tab.addView(
-                label(title, 15f, if (selected) colors.fg else colors.muted).apply {
+                label(title, PHONE_BODY_TEXT_SP, if (selected) colors.fg else colors.muted).apply {
                     gravity = Gravity.CENTER
                 },
                 LinearLayout.LayoutParams(-1, 0, 1f),
             )
             tab.addView(
                 View(this).apply { setBackgroundColor(if (selected) colors.accent else colors.bg) },
-                LinearLayout.LayoutParams(-1, px(3)),
+                LinearLayout.LayoutParams(-1, px(PHONE_EXTRA_TIGHT_INSET_DP)),
             )
             tabRegion.addView(tab, LinearLayout.LayoutParams(0, -1, 1f))
         }
         navigation.addView(
-            clickLabel("⋮", "Phone options", 22f) { openMenu() },
-            LinearLayout.LayoutParams(px(35), -1),
+            clickLabel("⋮", "Phone options", PHONE_SYMBOL_TEXT_SP) { openMenu() },
+            LinearLayout.LayoutParams(px(PHONE_OPTIONS_ICON_EDGE_DP), -1),
         )
         rule(shell)
     }
 
     private fun detailHeader(shell: LinearLayout) {
-        val head = row().apply { setPadding(px(7), 0, px(8), 0) }
-        shell.addView(head, LinearLayout.LayoutParams(-1, px(44)))
-        head.addView(clickLabel("‹", "Back", 29f) { onBackPressed() }, LinearLayout.LayoutParams(px(43), -1))
+        val head = row().apply { setPadding(px(PHONE_NARROW_GUTTER_DP), 0, px(PHONE_STANDARD_INSET_DP), 0) }
+        shell.addView(head, LinearLayout.LayoutParams(-1, px(PHONE_STANDARD_NAVIGATION_HEIGHT_DP)))
         head.addView(
-            label(if (screen == Screen.BLOCKLIST) "Spam & Blocklist" else "", 16f),
+            clickLabel("‹", "Back", PHONE_LARGE_SYMBOL_TEXT_SP) {
+                onBackPressedDispatcher.onBackPressed()
+            },
+            LinearLayout.LayoutParams(px(PHONE_COMPACT_NAVIGATION_HEIGHT_DP), -1),
+        )
+        head.addView(
+            label(if (screen == Screen.BLOCKLIST) "Spam & Blocklist" else "", PHONE_DETAIL_HEADER_SP_16_F),
             LinearLayout.LayoutParams(0, -1, 1f),
         )
         if (screen == Screen.CONTACT_DETAIL) {
             val favorite = selectedContactId?.let { id -> data.people().firstOrNull { it.id == id }?.favorite } == true
             head.addView(
-                clickLabel(if (favorite) "★" else "☆", "Edit favorite in Contacts", 24f) {
+                clickLabel(if (favorite) "★" else "☆", "Edit favorite in Contacts", PHONE_DETAIL_HEADER_RATIO_24_F) {
                     selectedContactId?.let(::openEditor)
                 },
-                LinearLayout.LayoutParams(px(44), -1),
+                LinearLayout.LayoutParams(px(PHONE_STANDARD_NAVIGATION_HEIGHT_DP), -1),
             )
         }
         head.addView(
-            clickLabel("⋮", "Phone options", 22f) { openMenu() },
-            LinearLayout.LayoutParams(px(42), -1),
+            clickLabel("⋮", "Phone options", PHONE_SYMBOL_TEXT_SP) { openMenu() },
+            LinearLayout.LayoutParams(px(PHONE_SEARCH_AND_ACTION_HEIGHT_DP), -1),
         )
         rule(shell)
     }
@@ -296,85 +437,22 @@ class TenSevenPhoneActivity : Activity() {
         val widthDp = (metrics.bounds.width() - safe.left - safe.right) / density
         val heightDp = (metrics.bounds.height() - safe.top - safe.bottom) / density
         val size = PhoneUiRules.bounds(widthDp, heightDp)
-        val panel = column().apply { setPadding(px(10), px(3), px(10), px(5)) }
+        val panel =
+            column().apply {
+                setPadding(
+                    px(PHONE_SECTION_INSET_DP),
+                    px(PHONE_EXTRA_TIGHT_INSET_DP),
+                    px(PHONE_SECTION_INSET_DP),
+                    px(PHONE_COMPACT_INSET_DP),
+                )
+            }
         frame.addView(panel, FrameLayout.LayoutParams(-1, -1))
 
-        val numberRow = row()
-        panel.addView(numberRow, LinearLayout.LayoutParams(-1, px(if (size.compact) 43 else 52)))
-        val input =
-            EditText(this).apply {
-                setSingleLine(true)
-                inputType = InputType.TYPE_CLASS_PHONE
-                showSoftInputOnFocus = false // Hardware QWERTY and touch keys both remain available.
-                textSize = if (size.compact) 24f else 28f
-                gravity = Gravity.CENTER
-                setTextColor(colors.fg)
-                setHintTextColor(colors.muted)
-                hint = "Enter number"
-                background = null
-                setText(dialNumber)
-                setSelection(text.length)
-            }
-        numberRow.addView(input, LinearLayout.LayoutParams(0, -1, 1f))
-        numberRow.addView(
-            clickLabel("⌫", "Delete last digit", 25f) {
-                if (input.text.isNotEmpty()) input.text.delete(input.length() - 1, input.length())
-            }.apply {
-                setOnLongClickListener {
-                    input.text.clear()
-                    true
-                }
-            },
-            LinearLayout.LayoutParams(px(44), -1),
-        )
-        rule(panel)
-
+        val input = renderDialInput(panel, size)
         val matches = column()
         panel.addView(matches, LinearLayout.LayoutParams(-1, 0))
         val people = if (isGranted(Manifest.permission.READ_CONTACTS)) data.people() else emptyList()
 
-        fun updateMatches(text: String) {
-            dialNumber = text
-            matches.removeAllViews()
-            val results =
-                PhoneUiRules.dialMatches(
-                    text,
-                    people.map {
-                        PhoneUiRules.Match(it.id, it.name, it.number)
-                    },
-                    size.maxMatches,
-                )
-            // No blank reserved match panel when the number matches nobody.
-            matches.layoutParams = LinearLayout.LayoutParams(-1, px(results.size * (if (size.compact) 37 else 44)))
-            results.forEach { match ->
-                val cell =
-                    row().apply {
-                        setPadding(px(6), px(2), px(7), px(2))
-                        isClickable = true
-                        isFocusable = true
-                        contentDescription = "Dial ${match.name} ${match.number}"
-                        setOnClickListener {
-                            input.setText(match.number)
-                            input.setSelection(input.length())
-                        }
-                    }
-                matches.addView(cell, LinearLayout.LayoutParams(-1, px(if (size.compact) 36 else 43)))
-                cell.addView(
-                    TenSevenContactPhotos.avatar(this, match.contactId, match.name, 32, colors),
-                    LinearLayout.LayoutParams(px(32), px(32)),
-                )
-                val names =
-                    LinearLayout(this).apply {
-                        orientation = LinearLayout.VERTICAL
-                        setPadding(px(9), 0, 0, 0)
-                    }
-                cell.addView(names, LinearLayout.LayoutParams(0, -2, 1f))
-                names.addView(label(match.name, 13f, bold = true))
-                names.addView(label(match.number, 11f, colors.muted))
-                cell.addView(label("›", 22f, colors.muted))
-                rule(matches)
-            }
-        }
         input.addTextChangedListener(
             object : TextWatcher {
                 override fun beforeTextChanged(
@@ -390,16 +468,149 @@ class TenSevenPhoneActivity : Activity() {
                     before: Int,
                     count: Int,
                 ) {
-                    updateMatches(s?.toString().orEmpty())
+                    updateDialMatches(s?.toString().orEmpty(), people, size, matches, input)
                 }
 
                 override fun afterTextChanged(s: Editable?) = Unit
             },
         )
-        updateMatches(dialNumber)
+        updateDialMatches(dialNumber, people, size, matches, input)
 
         val keypad = column()
         panel.addView(keypad, LinearLayout.LayoutParams(-1, 0, 1f))
+        renderDialKeypad(keypad, input, size)
+        renderDialCallAction(panel, input, size)
+    }
+
+    private fun renderDialInput(
+        panel: LinearLayout,
+        size: PhoneUiRules.Bounds,
+    ): EditText {
+        val numberRow = row()
+        panel.addView(
+            numberRow,
+            LinearLayout.LayoutParams(
+                -PHONE_DIAL_DP_1,
+                px(
+                    if (size
+                            .compact
+                    ) {
+                        PHONE_DIAL_DP_43
+                    } else {
+                        PHONE_DIAL_DP_52
+                    },
+                ),
+            ),
+        )
+        val input =
+            EditText(this).apply {
+                setSingleLine(true)
+                inputType = InputType.TYPE_CLASS_PHONE
+                showSoftInputOnFocus = false // Hardware QWERTY and touch keys both remain available.
+                textSize = if (size.compact) PHONE_DIAL_SP_24_F else PHONE_DIAL_SP_28_F
+                gravity = Gravity.CENTER
+                setTextColor(colors.fg)
+                setHintTextColor(colors.muted)
+                hint = "Enter number"
+                background = null
+                setText(dialNumber)
+                setSelection(text.length)
+            }
+        numberRow.addView(input, LinearLayout.LayoutParams(0, -1, 1f))
+        numberRow.addView(
+            clickLabel("⌫", "Delete last digit", PHONE_DIAL_RATIO_25_F) {
+                if (input.text.isNotEmpty()) input.text.delete(input.length() - 1, input.length())
+            }.apply {
+                setOnLongClickListener {
+                    input.text.clear()
+                    true
+                }
+            },
+            LinearLayout.LayoutParams(px(PHONE_STANDARD_NAVIGATION_HEIGHT_DP), -1),
+        )
+        rule(panel)
+
+        return input
+    }
+
+    private fun updateDialMatches(
+        text: String,
+        people: List<TenSevenPhoneData.Person>,
+        size: PhoneUiRules.Bounds,
+        matches: LinearLayout,
+        input: EditText,
+    ) {
+        dialNumber = text
+        matches.removeAllViews()
+        val results =
+            PhoneUiRules.dialMatches(
+                text,
+                people.map {
+                    PhoneUiRules.Match(it.id, it.name, it.number)
+                },
+                size.maxMatches,
+            )
+        // No blank reserved match panel when the number matches nobody.
+        matches.layoutParams =
+            LinearLayout.LayoutParams(
+                -PHONE_MATCHES_DP_1,
+                px(results.size * (if (size.compact) PHONE_MATCHES_DP_37 else PHONE_MATCHES_DP_44)),
+            )
+        results.forEach { match ->
+            addDialMatchRow(matches, input, size, match)
+        }
+    }
+
+    private fun addDialMatchRow(
+        matches: LinearLayout,
+        input: EditText,
+        size: PhoneUiRules.Bounds,
+        match: PhoneUiRules.Match,
+    ) {
+        val cell =
+            row().apply {
+                setPadding(
+                    px(PHONE_SMALL_INSET_DP),
+                    px(PHONE_MICRO_INSET_DP),
+                    px(PHONE_NARROW_GUTTER_DP),
+                    px(PHONE_MICRO_INSET_DP),
+                )
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Dial ${match.name} ${match.number}"
+                setOnClickListener {
+                    input.setText(match.number)
+                    input.setSelection(input.length())
+                }
+            }
+        matches.addView(
+            cell,
+            LinearLayout.LayoutParams(
+                -PHONE_MATCHES_DP_1,
+                px(if (size.compact) PHONE_MATCHES_DP_36 else PHONE_MATCHES_DP_43),
+            ),
+        )
+        cell.addView(
+            TenSevenContactPhotos.avatar(this, match.contactId, match.name, PHONE_MATCHES_VALUE_32, colors),
+            LinearLayout.LayoutParams(px(PHONE_COMPACT_AVATAR_EDGE_DP), px(PHONE_COMPACT_AVATAR_EDGE_DP)),
+        )
+        val names =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(px(PHONE_ROW_CONTENT_GUTTER_DP), 0, 0, 0)
+            }
+        cell.addView(names, LinearLayout.LayoutParams(0, -PHONE_MATCHES_DP_2, 1f))
+        names.addView(label(match.name, PHONE_COMPACT_TEXT_SP, bold = true))
+        names.addView(label(match.number, PHONE_MATCHES_SP_11_F, colors.muted))
+        cell.addView(label("›", PHONE_SYMBOL_TEXT_SP, colors.muted))
+        rule(matches)
+    }
+
+    private fun renderDialKeypad(
+        keypad: LinearLayout,
+        input: EditText,
+        size: PhoneUiRules.Bounds,
+    ) {
         val digits =
             listOf(
                 "1" to "",
@@ -415,62 +626,128 @@ class TenSevenPhoneActivity : Activity() {
                 "0" to "+",
                 "#" to "",
             )
-        digits.chunked(3).forEach { trio ->
+        val keyVisual = DialKeyVisual(input, size)
+        digits.chunked(PHONE_KEYPAD_VALUE_3).forEach { trio ->
             val keyRow = row()
             keypad.addView(keyRow, LinearLayout.LayoutParams(-1, 0, 1f))
             trio.forEachIndexed { index, (digit, letters) ->
-                val key =
-                    LinearLayout(this).apply {
-                        orientation = LinearLayout.VERTICAL
-                        gravity = Gravity.CENTER
-                        isClickable = true
-                        isFocusable = true
-                        contentDescription = "$digit ${letters.ifEmpty { "key" }}"
-                        setOnClickListener { input.append(digit) }
-                        if (digit == "0") {
-                            setOnLongClickListener {
-                                input.append("+")
-                                true
-                            }
-                        }
-                    }
-                keyRow.addView(key, LinearLayout.LayoutParams(0, -1, 1f))
-                key.addView(
-                    label(digit, if (size.compact) 23f else 29f).apply { gravity = Gravity.CENTER },
-                    LinearLayout.LayoutParams(-1, 0, 2f),
-                )
-                key.addView(
-                    label(letters, if (size.compact) 9f else 10f, colors.muted).apply {
-                        gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                    },
-                    LinearLayout.LayoutParams(-1, 0, 1f),
-                )
-                if (index < 2) {
-                    keyRow.addView(
-                        View(this).apply { setBackgroundColor(colors.line) },
-                        LinearLayout.LayoutParams(px(1), -1),
-                    )
-                }
+                addDialKey(keyRow, digit, letters, index, keyVisual)
             }
             rule(keypad)
         }
+    }
+
+    private data class DialKeyVisual(
+        val input: EditText,
+        val size: PhoneUiRules.Bounds,
+    )
+
+    private fun addDialKey(
+        keyRow: LinearLayout,
+        digit: String,
+        letters: String,
+        index: Int,
+        visual: DialKeyVisual,
+    ) {
+        val input = visual.input
+        val size = visual.size
+        val key =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                isClickable = true
+                isFocusable = true
+                contentDescription = "$digit ${letters.ifEmpty { "key" }}"
+                setOnClickListener { input.append(digit) }
+                if (digit == "0") {
+                    setOnLongClickListener {
+                        input.append("+")
+                        true
+                    }
+                }
+            }
+        keyRow.addView(key, LinearLayout.LayoutParams(0, -1, 1f))
+        key.addView(
+            label(digit, if (size.compact) PHONE_KEYPAD_SP_23_F else PHONE_LARGE_SYMBOL_TEXT_SP)
+                .apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, 0, 2f),
+        )
+        key.addView(
+            label(
+                letters,
+                if (size.compact) PHONE_KEYPAD_SP_9_F else PHONE_KEYPAD_SP_10_F,
+                colors.muted,
+            ).apply {
+                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            },
+            LinearLayout.LayoutParams(-1, 0, 1f),
+        )
+        if (index < 2) {
+            keyRow.addView(
+                View(this).apply { setBackgroundColor(colors.line) },
+                LinearLayout.LayoutParams(px(PHONE_HAIRLINE_DP), -1),
+            )
+        }
+    }
+
+    private fun renderDialCallAction(
+        panel: LinearLayout,
+        input: EditText,
+        size: PhoneUiRules.Bounds,
+    ) {
         val callRow = row().apply { gravity = Gravity.CENTER }
         panel.addView(callRow, LinearLayout.LayoutParams(-1, px(size.primaryCallHeightDp)))
         val call =
-            clickLabel("✆", "Place call", 29f) {
+            clickLabel("✆", "Place call", PHONE_LARGE_SYMBOL_TEXT_SP) {
                 dialNumber = input.text.toString()
                 placeCall(dialNumber)
             }.apply {
-                background = round(colors.success, 24)
+                background = round(colors.success, PHONE_KEYPAD_VALUE_24)
                 setTextColor(Color.WHITE)
             }
         callRow.addView(
             call,
             LinearLayout.LayoutParams(
-                px(if (size.compact) 126 else 145),
-                px(size.primaryCallHeightDp - 8),
+                px(if (size.compact) PHONE_KEYPAD_DP_126 else PHONE_KEYPAD_DP_145),
+                px(size.primaryCallHeightDp - PHONE_KEYPAD_DP_8),
             ),
         )
+    }
+
+    private fun appendPhoneContactRow(
+        list: LinearLayout,
+        person: TenSevenPhoneData.Person,
+    ) {
+        val entry =
+            row().apply {
+                setPadding(
+                    px(PHONE_PAGE_CONTENT_INSET_DP),
+                    px(PHONE_TIGHT_INSET_DP),
+                    px(PHONE_STANDARD_INSET_DP),
+                    px(PHONE_TIGHT_INSET_DP),
+                )
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Open ${person.name}"
+                setOnClickListener { openContact(person.id, Screen.CONTACTS) }
+            }
+        list.addView(entry, LinearLayout.LayoutParams(-1, px(PHONE_CONTACT_OR_MENU_ROW_DP)))
+        entry.addView(
+            TenSevenContactPhotos.avatar(this, person.id, person.name, PHONE_POPULATE_VALUE_36, colors),
+            LinearLayout.LayoutParams(px(PHONE_CONTACT_AVATAR_EDGE_DP), px(PHONE_CONTACT_AVATAR_EDGE_DP)),
+        )
+        entry.addView(
+            label(person.name, PHONE_BODY_TEXT_SP).apply {
+                setPadding(
+                    px(PHONE_PAGE_CONTENT_INSET_DP),
+                    0,
+                    0,
+                    0,
+                )
+            },
+            LinearLayout.LayoutParams(0, -1, 1f),
+        )
+        rule(list)
     }
 
     private fun contacts(frame: FrameLayout) {
@@ -481,24 +758,11 @@ class TenSevenPhoneActivity : Activity() {
                 container,
                 "Allow Contacts to show people stored on this device. No contact information is uploaded.",
                 "Allow Contacts",
-            ) { requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), 201) }
+            ) { requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), PHONE_REQUEST_CONTACTS) }
             return
         }
         val people = data.people().distinctBy { it.id }
-        val search =
-            EditText(this).apply {
-                setSingleLine(true)
-                textSize = 15f
-                hint = "⌕  Search contacts"
-                setTextColor(colors.fg)
-                setHintTextColor(colors.muted)
-                background = round(colors.panel, 14, true)
-                setPadding(px(13), 0, px(13), 0)
-                setText(contactSearch)
-            }
-        val searchBand = row().apply { setPadding(px(12), px(5), px(12), px(6)) }
-        container.addView(searchBand, LinearLayout.LayoutParams(-1, px(54)))
-        searchBand.addView(search, LinearLayout.LayoutParams(-1, px(42)))
+        val search = phoneContactsSearch(container)
         val area = FrameLayout(this)
         container.addView(area, LinearLayout.LayoutParams(-1, 0, 1f))
         val scroll =
@@ -507,57 +771,35 @@ class TenSevenPhoneActivity : Activity() {
                 isVerticalScrollBarEnabled = false
             }
         area.addView(scroll, FrameLayout.LayoutParams(-1, -1))
-        val list = column().apply { setPadding(0, 0, px(29), px(70)) }
+        val list =
+            column().apply {
+                setPadding(
+                    0,
+                    0,
+                    px(PHONE_LIST_FOOTER_INSET_DP),
+                    px(PHONE_CONTACT_LIST_BOTTOM_INSET_DP),
+                )
+            }
         scroll.addView(list)
         val sections = mutableMapOf<String, View>()
 
-        fun populate(query: String) {
-            contactSearch = query
-            list.removeAllViews()
-            sections.clear()
-            val normalized = query.filter(Char::isDigit)
-            val filtered =
-                people.filter {
-                    it.name.contains(query, ignoreCase = true) ||
-                        (normalized.isNotEmpty() && it.number.filter(Char::isDigit).contains(normalized))
-                }
-            if (filtered.isEmpty()) {
-                notice(list, "No matching contacts")
-                return
-            }
-            var previous = ""
-            filtered.forEach { person ->
-                val letter = PhoneUiRules.firstLetter(person.name)
-                if (letter != previous) {
-                    val heading =
-                        label(letter, 13f, bold = true).apply {
-                            setPadding(px(13), px(3), px(9), px(3))
-                            setBackgroundColor(colors.panel)
-                        }
-                    list.addView(heading, LinearLayout.LayoutParams(-1, px(26)))
-                    sections[letter] = heading
-                    previous = letter
-                }
-                val entry =
-                    row().apply {
-                        setPadding(px(12), px(4), px(8), px(4))
-                        isClickable = true
-                        isFocusable = true
-                        contentDescription = "Open ${person.name}"
-                        setOnClickListener { openContact(person.id, Screen.CONTACTS) }
-                    }
-                list.addView(entry, LinearLayout.LayoutParams(-1, px(49)))
-                entry.addView(
-                    TenSevenContactPhotos.avatar(this, person.id, person.name, 36, colors),
-                    LinearLayout.LayoutParams(px(36), px(36)),
-                )
-                entry.addView(
-                    label(person.name, 15f).apply { setPadding(px(12), 0, 0, 0) },
-                    LinearLayout.LayoutParams(0, -1, 1f),
-                )
-                rule(list)
-            }
-        }
+        attachPhoneContactSearch(search, people, list, sections)
+        populatePhoneContacts(contactSearch, people, list, sections)
+        installPhoneAlphabet(area, scroll, sections)
+        floating(
+            area,
+            "+",
+            "Add contact",
+            FloatingPosition(Gravity.END or Gravity.BOTTOM, PHONE_KEYPAD_VALUE_15, PHONE_KEYPAD_VALUE_16),
+        ) { addContact() }
+    }
+
+    private fun attachPhoneContactSearch(
+        search: EditText,
+        people: List<TenSevenPhoneData.Person>,
+        list: LinearLayout,
+        sections: MutableMap<String, View>,
+    ) {
         search.addTextChangedListener(
             object : TextWatcher {
                 override fun beforeTextChanged(
@@ -573,13 +815,86 @@ class TenSevenPhoneActivity : Activity() {
                     before: Int,
                     count: Int,
                 ) {
-                    populate(s?.toString().orEmpty())
+                    populatePhoneContacts(s?.toString().orEmpty(), people, list, sections)
                 }
 
                 override fun afterTextChanged(s: Editable?) = Unit
             },
         )
-        populate(contactSearch)
+    }
+
+    private fun populatePhoneContacts(
+        query: String,
+        people: List<TenSevenPhoneData.Person>,
+        list: LinearLayout,
+        sections: MutableMap<String, View>,
+    ) {
+        contactSearch = query
+        list.removeAllViews()
+        sections.clear()
+        val normalized = query.filter(Char::isDigit)
+        val filtered =
+            people.filter {
+                it.name.contains(query, ignoreCase = true) ||
+                    (normalized.isNotEmpty() && it.number.filter(Char::isDigit).contains(normalized))
+            }
+        if (filtered.isEmpty()) {
+            notice(list, "No matching contacts")
+            return
+        }
+        var previous = ""
+        filtered.forEach { person ->
+            val letter = PhoneUiRules.firstLetter(person.name)
+            if (letter != previous) {
+                val heading =
+                    label(letter, PHONE_COMPACT_TEXT_SP, bold = true).apply {
+                        setPadding(
+                            px(PHONE_LIST_CONTENT_INSET_DP),
+                            px(PHONE_EXTRA_TIGHT_INSET_DP),
+                            px(PHONE_ROW_CONTENT_GUTTER_DP),
+                            px(PHONE_EXTRA_TIGHT_INSET_DP),
+                        )
+                        setBackgroundColor(colors.panel)
+                    }
+                list.addView(heading, LinearLayout.LayoutParams(-1, px(PHONE_CONTACT_LETTER_HEADING_DP)))
+                sections[letter] = heading
+                previous = letter
+            }
+            appendPhoneContactRow(list, person)
+        }
+    }
+
+    private fun phoneContactsSearch(container: LinearLayout): EditText {
+        val search =
+            EditText(this).apply {
+                setSingleLine(true)
+                textSize = PHONE_BODY_TEXT_SP
+                hint = "⌕  Search contacts"
+                setTextColor(colors.fg)
+                setHintTextColor(colors.muted)
+                background = round(colors.panel, PHONE_CONTACTS_VALUE_14, true)
+                setPadding(px(PHONE_LIST_CONTENT_INSET_DP), 0, px(PHONE_LIST_CONTENT_INSET_DP), 0)
+                setText(contactSearch)
+            }
+        val searchBand =
+            row().apply {
+                setPadding(
+                    px(PHONE_PAGE_CONTENT_INSET_DP),
+                    px(PHONE_COMPACT_INSET_DP),
+                    px(PHONE_PAGE_CONTENT_INSET_DP),
+                    px(PHONE_SMALL_INSET_DP),
+                )
+            }
+        container.addView(searchBand, LinearLayout.LayoutParams(-1, px(PHONE_SEARCH_BAND_HEIGHT_DP)))
+        searchBand.addView(search, LinearLayout.LayoutParams(-1, px(PHONE_SEARCH_AND_ACTION_HEIGHT_DP)))
+        return search
+    }
+
+    private fun installPhoneAlphabet(
+        area: FrameLayout,
+        scroll: ScrollView,
+        sections: Map<String, View>,
+    ) {
         val alphabet =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -587,31 +902,59 @@ class TenSevenPhoneActivity : Activity() {
             }
         area.addView(
             alphabet,
-            FrameLayout.LayoutParams(px(24), -1, Gravity.END).apply {
-                bottomMargin = px(64)
+            FrameLayout.LayoutParams(px(PHONE_MINI_ICON_EDGE_DP), -1, Gravity.END).apply {
+                bottomMargin = px(PHONE_ALPHABET_SCROLL_MARGIN_DP)
             },
         )
         "#ABCDEFGHIJKLMNOPQRSTUVWXYZ".forEach { c ->
             val item =
-                clickLabel(c.toString(), "Jump to $c", 9f) {
+                clickLabel(c.toString(), "Jump to $c", PHONE_KEYPAD_RATIO_9_F) {
                     val anchor = sections[c.toString()]
                     if (anchor != null) scroll.post { scroll.smoothScrollTo(0, anchor.top) }
                 }
             item.setTextColor(colors.muted)
             alphabet.addView(item, LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        floating(area, "+", "Add contact", Gravity.END or Gravity.BOTTOM, 15, 16) { addContact() }
     }
 
     private fun recents(frame: FrameLayout) {
         val root = column()
         frame.addView(root, FrameLayout.LayoutParams(-1, -1))
+        renderRecentFilters(root)
+        val listArea = FrameLayout(this)
+        root.addView(listArea, LinearLayout.LayoutParams(-1, 0, 1f))
+        val scroll = ScrollView(this).apply { isFillViewport = true }
+        listArea.addView(scroll, FrameLayout.LayoutParams(-1, -1))
+        val list =
+            column().apply {
+                setPadding(
+                    0,
+                    px(PHONE_EXTRA_TIGHT_INSET_DP),
+                    0,
+                    px(PHONE_RECENTS_BOTTOM_INSET_DP),
+                )
+            }
+        scroll.addView(list)
+        renderRecentHistory(list)
+        renderVoicemailRow(list)
+        floating(
+            listArea,
+            "⠿",
+            "Open dialpad",
+            FloatingPosition(Gravity.END or Gravity.BOTTOM, PHONE_RECENTS_VALUE_15, PHONE_RECENTS_VALUE_16),
+        ) {
+            screen = Screen.DIAL
+            draw()
+        }
+    }
+
+    private fun renderRecentFilters(root: LinearLayout) {
         val filters = row()
-        root.addView(filters, LinearLayout.LayoutParams(-1, px(44)))
+        root.addView(filters, LinearLayout.LayoutParams(-1, px(PHONE_STANDARD_NAVIGATION_HEIGHT_DP)))
         listOf("All", "Missed", "Incoming", "Outgoing").forEach { name ->
             val selected = callFilter == name
             val control =
-                clickLabel(name, "Show $name calls", 12f) {
+                clickLabel(name, "Show $name calls", PHONE_CAPTION_TEXT_SP) {
                     callFilter = name
                     draw()
                 }.apply { setTextColor(if (selected) Color.WHITE else colors.muted) }
@@ -621,17 +964,14 @@ class TenSevenPhoneActivity : Activity() {
                 View(this).apply {
                     setBackgroundColor(if (selected) colors.accent else colors.bg)
                 },
-                LinearLayout.LayoutParams(-1, px(2)),
+                LinearLayout.LayoutParams(-1, px(PHONE_MICRO_INSET_DP)),
             )
             filters.addView(group, LinearLayout.LayoutParams(0, -1, 1f))
         }
         rule(root)
-        val listArea = FrameLayout(this)
-        root.addView(listArea, LinearLayout.LayoutParams(-1, 0, 1f))
-        val scroll = ScrollView(this).apply { isFillViewport = true }
-        listArea.addView(scroll, FrameLayout.LayoutParams(-1, -1))
-        val list = column().apply { setPadding(0, px(3), 0, px(75)) }
-        scroll.addView(list)
+    }
+
+    private fun renderRecentHistory(list: LinearLayout) {
         if (!isGranted(Manifest.permission.READ_CALL_LOG)) {
             notice(
                 list,
@@ -639,7 +979,7 @@ class TenSevenPhoneActivity : Activity() {
                 "Open default Phone setup",
             ) { defaultPhoneSetup() }
             notice(list, "Allow call history", "Request call-log permission") {
-                requestPermissions(arrayOf(Manifest.permission.READ_CALL_LOG), 202)
+                requestPermissions(arrayOf(Manifest.permission.READ_CALL_LOG), PHONE_REQUEST_CALL_LOG)
             }
         } else {
             val people = if (isGranted(Manifest.permission.READ_CONTACTS)) data.people() else emptyList()
@@ -658,131 +998,201 @@ class TenSevenPhoneActivity : Activity() {
             if (entries.isEmpty()) notice(list, "No ${callFilter.lowercase()} calls")
             entries.forEach { entry ->
                 val person = byNumber[PhoneBlocklist.normalize(entry.number)]
-                val kind =
-                    when (entry.kind) {
-                        CallLog.Calls.MISSED_TYPE -> "Missed"
-                        CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
-                        CallLog.Calls.INCOMING_TYPE -> "Incoming"
-                        CallLog.Calls.BLOCKED_TYPE -> "Blocked"
-                        else -> "Call"
-                    }
-                val item =
-                    row().apply {
-                        setPadding(px(11), px(6), px(10), px(6))
-                        isClickable = true
-                        isFocusable = true
-                        contentDescription = "${person?.name ?: entry.number}, $kind, ${entry.whenText}"
-                        setOnClickListener {
-                            if (person != null) {
-                                openContact(person.id, Screen.RECENTS)
-                            } else {
-                                dialNumber = entry.number
-                                screen = Screen.DIAL
-                                draw()
-                            }
-                        }
-                    }
-                list.addView(item, LinearLayout.LayoutParams(-1, px(62)))
-                val glyph =
-                    label(
-                        when (kind) {
-                            "Missed" -> "✕"
-                            "Outgoing" -> "↗"
-                            "Blocked" -> "⊘"
-                            else -> "↙"
-                        },
-                        25f,
-                        if (kind == "Missed") colors.danger else colors.accent,
-                    ).apply { gravity = Gravity.CENTER }
-                item.addView(glyph, LinearLayout.LayoutParams(px(39), -1))
-                val summary = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-                item.addView(summary, LinearLayout.LayoutParams(0, -2, 1f))
-                summary.addView(
-                    label(
-                        person?.name ?: entry.number.ifBlank { "Private number" },
-                        15f,
-                        if (kind == "Missed") colors.danger else colors.fg,
-                        bold = true,
-                    ),
-                )
-                summary.addView(label(kind, 12f, colors.muted))
-                item.addView(label(entry.whenText, 11f, colors.muted).apply { gravity = Gravity.CENTER })
-                item.addView(
-                    label("›", 21f, colors.muted).apply { gravity = Gravity.CENTER },
-                    LinearLayout.LayoutParams(px(18), -1),
-                )
-                rule(list)
+                renderRecentCallRow(list, entry, person)
             }
         }
+    }
+
+    private fun renderRecentCallRow(
+        list: LinearLayout,
+        entry: TenSevenPhoneData.Call,
+        person: TenSevenPhoneData.Person?,
+    ) {
+        val kind = recentCallKind(entry.kind)
+        val item =
+            row().apply {
+                setPadding(
+                    px(PHONE_LIST_CONTROL_INSET_DP),
+                    px(PHONE_SMALL_INSET_DP),
+                    px(PHONE_SECTION_INSET_DP),
+                    px(PHONE_SMALL_INSET_DP),
+                )
+                isClickable = true
+                isFocusable = true
+                contentDescription = "${person?.name ?: entry.number}, $kind, ${entry.whenText}"
+                setOnClickListener {
+                    if (person != null) {
+                        openContact(person.id, Screen.RECENTS)
+                    } else {
+                        dialNumber = entry.number
+                        screen = Screen.DIAL
+                        draw()
+                    }
+                }
+            }
+        list.addView(item, LinearLayout.LayoutParams(-1, px(PHONE_RECENT_CALL_ROW_HEIGHT_DP)))
+        val glyph = recentCallKindGlyph(kind)
+        item.addView(glyph, LinearLayout.LayoutParams(px(PHONE_CALL_TYPE_ICON_WIDTH_DP), -1))
+        val summary = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        item.addView(summary, LinearLayout.LayoutParams(0, -PHONE_RECENTS_DP_2, 1f))
+        summary.addView(
+            label(
+                person?.name ?: entry.number.ifBlank { "Private number" },
+                PHONE_BODY_TEXT_SP,
+                if (kind == "Missed") colors.danger else colors.fg,
+                bold = true,
+            ),
+        )
+        summary.addView(label(kind, PHONE_CAPTION_TEXT_SP, colors.muted))
+        item.addView(
+            label(entry.whenText, PHONE_RECENTS_SP_11_F, colors.muted).apply {
+                gravity =
+                    Gravity.CENTER
+            },
+        )
+        item.addView(
+            label("›", PHONE_RECENTS_SP_21_F, colors.muted).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(px(PHONE_CALLOUT_TOP_INSET_DP), -1),
+        )
+        rule(list)
+    }
+
+    private fun recentCallKind(kind: Int): String =
+        when (kind) {
+            CallLog.Calls.MISSED_TYPE -> "Missed"
+            CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
+            CallLog.Calls.INCOMING_TYPE -> "Incoming"
+            CallLog.Calls.BLOCKED_TYPE -> "Blocked"
+            else -> "Call"
+        }
+
+    private fun recentCallKindGlyph(kind: String): TextView {
+        val glyph =
+            label(
+                when (kind) {
+                    "Missed" -> "✕"
+                    "Outgoing" -> "↗"
+                    "Blocked" -> "⊘"
+                    else -> "↙"
+                },
+                PHONE_RECENTS_RATIO_25_F,
+                if (kind == "Missed") colors.danger else colors.accent,
+            ).apply { gravity = Gravity.CENTER }
+        return glyph
+    }
+
+    private fun renderVoicemailRow(list: LinearLayout) {
         // Voicemail must be visible in Recents even if call history is empty.
         val vm =
             row().apply {
-                setPadding(px(14), px(11), px(15), px(11))
+                setPadding(
+                    px(PHONE_DETAIL_CONTENT_INSET_DP),
+                    px(PHONE_LIST_CONTROL_INSET_DP),
+                    px(PHONE_AUXILIARY_INSET_DP),
+                    px(PHONE_LIST_CONTROL_INSET_DP),
+                )
                 isClickable = true
                 isFocusable = true
                 contentDescription = "Open voicemail"
                 setOnClickListener { openVoicemail() }
             }
-        list.addView(vm, LinearLayout.LayoutParams(-1, px(60)))
-        vm.addView(label("☏", 24f).apply { gravity = Gravity.CENTER }, LinearLayout.LayoutParams(px(36), -1))
+        list.addView(vm, LinearLayout.LayoutParams(-1, px(PHONE_VOICEMAIL_ACTION_HEIGHT_DP)))
+        vm.addView(
+            label("☏", PHONE_RECENTS_SP_24_F).apply { gravity = Gravity.CENTER },
+            LinearLayout
+                .LayoutParams(px(PHONE_CONTACT_AVATAR_EDGE_DP), -PHONE_RECENTS_DP_1),
+        )
         val vtext = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        vm.addView(vtext, LinearLayout.LayoutParams(0, -2, 1f))
-        vtext.addView(label("Voicemail", 15f, bold = true))
-        vtext.addView(label("Open carrier voicemail", 12f, colors.muted))
-        vm.addView(label("›", 22f, colors.muted))
+        vm.addView(vtext, LinearLayout.LayoutParams(0, -PHONE_RECENTS_DP_2, 1f))
+        vtext.addView(label("Voicemail", PHONE_BODY_TEXT_SP, bold = true))
+        vtext.addView(label("Open carrier voicemail", PHONE_CAPTION_TEXT_SP, colors.muted))
+        vm.addView(label("›", PHONE_SYMBOL_TEXT_SP, colors.muted))
         rule(list)
-        floating(listArea, "⠿", "Open dialpad", Gravity.END or Gravity.BOTTOM, 15, 16) {
-            screen = Screen.DIAL
-            draw()
-        }
     }
 
     private fun contactDetails(frame: FrameLayout) {
-        val id =
-            selectedContactId ?: run {
+        val id = selectedContactId
+        when {
+            id == null -> {
                 screen = Screen.CONTACTS
                 draw()
-                return
             }
-        if (!isGranted(Manifest.permission.READ_CONTACTS)) {
-            val root = column()
-            frame.addView(root)
-            notice(root, "Contacts permission is required to view this contact")
-            return
+
+            !isGranted(Manifest.permission.READ_CONTACTS) -> {
+                val root = column()
+                frame.addView(root)
+                notice(root, "Contacts permission is required to view this contact")
+            }
+
+            else -> {
+                val person = data.people().firstOrNull { it.id == id }
+                if (person == null) {
+                    screen = Screen.CONTACTS
+                    selectedContactId = null
+                    draw()
+                } else {
+                    renderSelectedContact(frame, id, person)
+                }
+            }
         }
-        val person =
-            data.people().firstOrNull { it.id == id } ?: run {
-                screen = Screen.CONTACTS
-                selectedContactId = null
-                draw()
-                return
-            }
+    }
+
+    private fun renderSelectedContact(
+        frame: FrameLayout,
+        id: Long,
+        person: TenSevenPhoneData.Person,
+    ) {
         val scroll = ScrollView(this).apply { isFillViewport = true }
         frame.addView(scroll, FrameLayout.LayoutParams(-1, -1))
-        val body = column().apply { setPadding(px(13), px(8), px(13), px(13)) }
+        val body =
+            column().apply {
+                setPadding(
+                    px(PHONE_LIST_CONTENT_INSET_DP),
+                    px(PHONE_STANDARD_INSET_DP),
+                    px(PHONE_LIST_CONTENT_INSET_DP),
+                    px(PHONE_LIST_CONTENT_INSET_DP),
+                )
+            }
         scroll.addView(body)
+        renderContactDetailHeader(body, id, person)
+        renderContactBlocking(body, id, person)
+        renderContactInformation(body, id, person)
+    }
+
+    private fun renderContactDetailHeader(
+        body: LinearLayout,
+        id: Long,
+        person: TenSevenPhoneData.Person,
+    ) {
         val photo = row().apply { gravity = Gravity.CENTER }
-        body.addView(photo, LinearLayout.LayoutParams(-1, px(86)))
+        body.addView(photo, LinearLayout.LayoutParams(-1, px(PHONE_CONTACT_PHOTO_AREA_HEIGHT_DP)))
         photo.addView(
-            TenSevenContactPhotos.avatar(this, id, person.name, 78, colors),
-            LinearLayout.LayoutParams(px(78), px(78)),
+            TenSevenContactPhotos.avatar(this, id, person.name, PHONE_CONTACT_DETAILS_VALUE_78, colors),
+            LinearLayout.LayoutParams(px(PHONE_CONTACT_PHOTO_EDGE_DP), px(PHONE_CONTACT_PHOTO_EDGE_DP)),
         )
         body.addView(
-            label(person.name, 23f, bold = true).apply { gravity = Gravity.CENTER },
-            LinearLayout.LayoutParams(-1, px(37)),
+            label(person.name, PHONE_CONTACT_DETAILS_SP_23_F, bold = true).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, px(PHONE_COMPACT_MATCH_HEIGHT_DP)),
         )
         val quick = row().apply { gravity = Gravity.CENTER }
-        body.addView(quick, LinearLayout.LayoutParams(-1, px(74)))
+        body.addView(quick, LinearLayout.LayoutParams(-1, px(PHONE_CONTACT_QUICK_ACTION_HEIGHT_DP)))
         quickAction(quick, "✆", "Call") { placeCall(person.number) }
         quickAction(quick, "▤", "Message") { message(person.number) }
         quickAction(quick, "✎", "Edit") { openEditor(id) }
+    }
+
+    private fun renderContactBlocking(
+        body: LinearLayout,
+        id: Long,
+        person: TenSevenPhoneData.Person,
+    ) {
         // Approved: Block is immediately under the contact actions, never buried at bottom.
         val isBlocked = PhoneBlocklist.contains(this, person.number)
         val block =
             clickLabel(
                 if (isBlocked) "⊘  Unblock contact" else "⊘  Block contact",
                 if (isBlocked) "Unblock contact" else "Block contact",
-                14f,
+                PHONE_SECONDARY_TEXT_SP,
             ) {
                 val title = if (isBlocked) "Unblock contact?" else "Block contact?"
                 D5BbDialogs.confirm(
@@ -798,11 +1208,24 @@ class TenSevenPhoneActivity : Activity() {
                     draw()
                 }
             }.apply {
-                background = round(colors.panel, 10, true)
+                background = round(colors.panel, PHONE_CONTACT_DETAILS_VALUE_10, true)
                 setTextColor(if (isBlocked) colors.muted else colors.fg)
             }
-        body.addView(block, LinearLayout.LayoutParams(-1, px(41)).apply { bottomMargin = px(10) })
+        body.addView(
+            block,
+            LinearLayout.LayoutParams(-1, px(PHONE_BLOCK_ACTION_HEIGHT_DP)).apply {
+                bottomMargin =
+                    px(PHONE_SECTION_INSET_DP)
+            },
+        )
         rule(body)
+    }
+
+    private fun renderContactInformation(
+        body: LinearLayout,
+        id: Long,
+        person: TenSevenPhoneData.Person,
+    ) {
         val nums = data.numbers(id).ifEmpty { listOf("Mobile" to person.number) }
         nums.forEach { (tag, number) ->
             infoRow(body, "✆", tag, number) { placeCall(number) }
@@ -832,14 +1255,20 @@ class TenSevenPhoneActivity : Activity() {
                 gravity = Gravity.CENTER
             }
         val icon =
-            clickLabel(symbol, caption, 23f, action).apply {
+            clickLabel(symbol, caption, PHONE_QUICK_ACTION_RATIO_23_F, action).apply {
                 background = circular(colors.accent)
                 setTextColor(Color.WHITE)
             }
-        holder.addView(icon, LinearLayout.LayoutParams(px(43), px(43)))
         holder.addView(
-            label(caption, 12f).apply { gravity = Gravity.CENTER },
-            LinearLayout.LayoutParams(-1, px(21)),
+            icon,
+            LinearLayout.LayoutParams(
+                px(PHONE_COMPACT_NAVIGATION_HEIGHT_DP),
+                px(PHONE_COMPACT_NAVIGATION_HEIGHT_DP),
+            ),
+        )
+        holder.addView(
+            label(caption, PHONE_CAPTION_TEXT_SP).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, px(PHONE_DETAIL_CAPTION_HEIGHT_DP)),
         )
         parent.addView(holder, LinearLayout.LayoutParams(0, -1, 1f))
     }
@@ -853,26 +1282,59 @@ class TenSevenPhoneActivity : Activity() {
     ) {
         val item =
             row().apply {
-                setPadding(px(6), px(8), px(6), px(8))
+                setPadding(
+                    px(PHONE_SMALL_INSET_DP),
+                    px(PHONE_STANDARD_INSET_DP),
+                    px(PHONE_SMALL_INSET_DP),
+                    px(PHONE_STANDARD_INSET_DP),
+                )
                 isClickable = true
                 isFocusable = true
                 setOnClickListener { action() }
             }
-        parent.addView(item, LinearLayout.LayoutParams(-1, px(52)))
-        item.addView(label(symbol, 22f).apply { gravity = Gravity.CENTER }, LinearLayout.LayoutParams(px(37), -1))
+        parent.addView(item, LinearLayout.LayoutParams(-1, px(PHONE_EXPANDED_INPUT_HEIGHT_DP)))
+        item.addView(
+            label(symbol, PHONE_SYMBOL_TEXT_SP).apply {
+                gravity = Gravity.CENTER
+            },
+            LinearLayout.LayoutParams(px(PHONE_COMPACT_MATCH_HEIGHT_DP), -1),
+        )
         val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        item.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
-        texts.addView(label(title, 12f, colors.muted))
-        texts.addView(label(detail, 14f))
+        item.addView(texts, LinearLayout.LayoutParams(0, -PHONE_INFO_ROW_DP_2, 1f))
+        texts.addView(label(title, PHONE_CAPTION_TEXT_SP, colors.muted))
+        texts.addView(label(detail, PHONE_SECONDARY_TEXT_SP))
         rule(parent)
     }
 
     private fun blocklist(frame: FrameLayout) {
         val scroll = ScrollView(this)
         frame.addView(scroll, FrameLayout.LayoutParams(-1, -1))
-        val body = column().apply { setPadding(px(13), px(10), px(13), px(16)) }
+        val body =
+            column().apply {
+                setPadding(
+                    px(PHONE_LIST_CONTENT_INSET_DP),
+                    px(PHONE_SECTION_INSET_DP),
+                    px(PHONE_LIST_CONTENT_INSET_DP),
+                    px(PHONE_CALLOUT_CONTENT_INSET_DP),
+                )
+            }
         scroll.addView(body)
-        notice(body, "Numbers you explicitly block are screened when TenSeven holds the optional Android screening role.")
+        notice(
+            body,
+            "Numbers you explicitly block are screened when TenSeven holds " +
+                "the optional Android screening role.",
+        )
+        blockNumberEntry(body)
+        renderBlockedNumberRows(body)
+        renderCallScreeningSetting(body)
+        allowNumberEntry(body)
+        renderAllowedNumberRows(body)
+        renderUnknownCallerSilencer(body)
+        renderBlockedCallHistory(body)
+        notice(body, "Unknown calls are only silenced when screening is enabled and Contacts access is allowed.")
+    }
+
+    private fun blockNumberEntry(body: LinearLayout) {
         val input =
             EditText(this).apply {
                 hint = "Number with country code"
@@ -884,15 +1346,18 @@ class TenSevenPhoneActivity : Activity() {
         body.addView(
             clickLabel("Block number", "Block number") {
                 val value = PhoneBlocklist.normalize(input.text.toString())
-                if (value.length < 7) {
+                if (value.length < PHONE_BLOCKLIST_VALUE_7) {
                     toast("Enter a full number")
                 } else {
                     PhoneBlocklist.block(this, value)
                     draw()
                 }
             }.apply { setTextColor(colors.accent) },
-            LinearLayout.LayoutParams(-1, px(47)),
+            LinearLayout.LayoutParams(-1, px(PHONE_MENU_ROW_HEIGHT_DP)),
         )
+    }
+
+    private fun renderBlockedNumberRows(body: LinearLayout) {
         PhoneBlocklist.blocked(this).sorted().forEach { number ->
             body.addView(
                 clickLabel("$number     Unblock", "Unblock $number") {
@@ -901,10 +1366,13 @@ class TenSevenPhoneActivity : Activity() {
                         draw()
                     }
                 },
-                LinearLayout.LayoutParams(-1, px(43)),
+                LinearLayout.LayoutParams(-1, px(PHONE_COMPACT_NAVIGATION_HEIGHT_DP)),
             )
             rule(body)
         }
+    }
+
+    private fun renderCallScreeningSetting(body: LinearLayout) {
         body.addView(
             clickLabel("Allowed numbers / screening settings", "Screening settings") {
                 val roles = getSystemService(RoleManager::class.java)
@@ -916,8 +1384,11 @@ class TenSevenPhoneActivity : Activity() {
                     D5BbDialogs.message(this, "Call screening", "Review Android Default Apps to change call screening.")
                 }
             }.apply { setTextColor(colors.accent) },
-            LinearLayout.LayoutParams(-1, px(49)),
+            LinearLayout.LayoutParams(-1, px(PHONE_CONTACT_OR_MENU_ROW_DP)),
         )
+    }
+
+    private fun allowNumberEntry(body: LinearLayout) {
         // Preserve existing explicit allowlist without auto-blocking unknown callers.
         val allow =
             EditText(this).apply {
@@ -930,15 +1401,18 @@ class TenSevenPhoneActivity : Activity() {
         body.addView(
             clickLabel("Allow number", "Allow number") {
                 val number = PhoneBlocklist.normalize(allow.text.toString())
-                if (number.length < 7) {
+                if (number.length < PHONE_BLOCKLIST_VALUE_7) {
                     toast("Enter a full number")
                 } else {
                     PhoneBlocklist.allow(this, number)
                     draw()
                 }
             },
-            LinearLayout.LayoutParams(-1, px(46)),
+            LinearLayout.LayoutParams(-1, px(PHONE_MENU_ACTION_HEIGHT_DP)),
         )
+    }
+
+    private fun renderAllowedNumberRows(body: LinearLayout) {
         PhoneBlocklist.allowed(this).sorted().forEach { number ->
             body.addView(
                 clickLabel("$number     Remove", "Remove allowed $number") {
@@ -947,22 +1421,32 @@ class TenSevenPhoneActivity : Activity() {
                         draw()
                     }
                 },
-                LinearLayout.LayoutParams(-1, px(43)),
+                LinearLayout.LayoutParams(-1, px(PHONE_COMPACT_NAVIGATION_HEIGHT_DP)),
             )
         }
+    }
+
+    private fun renderUnknownCallerSilencer(body: LinearLayout) {
         body.addView(
             clickLabel("Silence unknown: ${if (PhoneBlocklist.silenceUnknown(this)) "ON" else "OFF"}") {
                 PhoneBlocklist.setSilenceUnknown(this, !PhoneBlocklist.silenceUnknown(this))
                 draw()
             },
-            LinearLayout.LayoutParams(-1, px(44)),
+            LinearLayout.LayoutParams(-1, px(PHONE_STANDARD_NAVIGATION_HEIGHT_DP)),
         )
+    }
+
+    private fun renderBlockedCallHistory(body: LinearLayout) {
         body.addView(
             clickLabel("Blocked call history", "View blocked calls") {
                 if (!isGranted(Manifest.permission.READ_CALL_LOG)) {
-                    requestPermissions(arrayOf(Manifest.permission.READ_CALL_LOG), 202)
+                    requestPermissions(arrayOf(Manifest.permission.READ_CALL_LOG), PHONE_REQUEST_CALL_LOG)
                 } else {
-                    val recent = data.calls().filter { it.kind == CallLog.Calls.BLOCKED_TYPE }.take(25)
+                    val recent =
+                        data
+                            .calls()
+                            .filter { it.kind == CallLog.Calls.BLOCKED_TYPE }
+                            .take(PHONE_BLOCKLIST_MAX_25)
                     D5BbDialogs.message(
                         this,
                         "Blocked calls",
@@ -974,9 +1458,8 @@ class TenSevenPhoneActivity : Activity() {
                     )
                 }
             },
-            LinearLayout.LayoutParams(-1, px(44)),
+            LinearLayout.LayoutParams(-1, px(PHONE_STANDARD_NAVIGATION_HEIGHT_DP)),
         )
-        notice(body, "Unknown calls are only silenced when screening is enabled and Contacts access is allowed.")
     }
 
     private fun openMenu() {
@@ -998,7 +1481,7 @@ class TenSevenPhoneActivity : Activity() {
                     defaultPhoneSetup()
                 }
 
-                3 -> {
+                PHONE_OPEN_MENU_VALUE_3 -> {
                     safeStart(Intent(this, TenSevenFloatingDialpadActivity::class.java))
                 }
             }
@@ -1054,7 +1537,7 @@ class TenSevenPhoneActivity : Activity() {
         safeStart(Intent(Intent.ACTION_DIAL, uri).setPackage(dialerPackage))
     }
 
-    private fun openVoicemail() = openTrustedDialer(Uri.parse("voicemail:"))
+    private fun openVoicemail() = openTrustedDialer("voicemail:".toUri())
 
     private fun defaultPhoneSetup() = safeStart(Intent(this, D5PhoneRoleRequestActivity::class.java))
 
@@ -1073,27 +1556,36 @@ class TenSevenPhoneActivity : Activity() {
         }
     }
 
+    private data class FloatingPosition(
+        val alignment: Int,
+        val right: Int,
+        val bottom: Int,
+    )
+
     private fun floating(
         parent: FrameLayout,
         glyph: String,
         description: String,
-        alignment: Int,
-        right: Int,
-        bottom: Int,
+        position: FloatingPosition,
         action: () -> Unit,
     ) {
         val control =
-            clickLabel(glyph, description, 28f, action).apply {
+            clickLabel(glyph, description, PHONE_FLOATING_RATIO_28_F, action).apply {
                 background = circular(colors.accent)
                 setTextColor(Color.WHITE)
-                elevation = px(4).toFloat()
+                elevation = px(PHONE_TIGHT_INSET_DP).toFloat()
             }
         parent.addView(
             control,
-            FrameLayout.LayoutParams(px(51), px(51), alignment).apply {
-                rightMargin = px(right)
-                bottomMargin = px(bottom)
-            },
+            FrameLayout
+                .LayoutParams(
+                    px(PHONE_FLOATING_ACTION_EDGE_DP),
+                    px(PHONE_FLOATING_ACTION_EDGE_DP),
+                    position.alignment,
+                ).apply {
+                    rightMargin = px(position.right)
+                    bottomMargin = px(position.bottom)
+                },
         )
     }
 
@@ -1107,29 +1599,26 @@ class TenSevenPhoneActivity : Activity() {
         if (roles?.isRoleHeld(RoleManager.ROLE_DIALER) != true) {
             // Do not silently claim dialer role. Hand off only to the chosen default Phone app.
             openTrustedDialer(Uri.fromParts("tel", number, null))
-            return
-        }
-        // Inline platform permission check: Android Lint can verify this guard.
-        if (checkSelfPermission(Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+        } else if (checkSelfPermission(Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
             queuedNumber = number
-            requestPermissions(arrayOf(Manifest.permission.CALL_PHONE), 203)
-            return
-        }
-        try {
-            getSystemService(TelecomManager::class.java)?.placeCall(Uri.fromParts("tel", number, null), Bundle())
-                ?: toast("Telecom is unavailable")
-        } catch (_: Exception) {
-            toast("Call could not start; check SIM and Phone access")
+            requestPermissions(arrayOf(Manifest.permission.CALL_PHONE), PHONE_REQUEST_CALL)
+        } else {
+            try {
+                getSystemService(TelecomManager::class.java)?.placeCall(Uri.fromParts("tel", number, null), Bundle())
+                    ?: toast("Telecom is unavailable")
+            } catch (_: Exception) {
+                toast("Call could not start; check SIM and Phone access")
+            }
         }
     }
 
     override fun onRequestPermissionsResult(
         code: Int,
-        names: Array<out String>,
+        names: Array<String>,
         grants: IntArray,
     ) {
         super.onRequestPermissionsResult(code, names, grants)
-        if (code == 203 && isGranted(Manifest.permission.CALL_PHONE)) {
+        if (code == PHONE_REQUEST_CALL && isGranted(Manifest.permission.CALL_PHONE)) {
             queuedNumber?.let { number ->
                 queuedNumber = null
                 placeCall(number)

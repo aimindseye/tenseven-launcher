@@ -47,8 +47,6 @@ internal fun HomeNotificationStrip(
     modifier: Modifier = Modifier,
     onOpenApp: ((String) -> Unit)? = null,
 ) {
-    val context = LocalContext.current
-    val pm = context.packageManager
     val items =
         remember(counts, enabledPackages) {
             HubBar.items(counts.filter { it.packageName in enabledPackages }) { true }
@@ -58,52 +56,7 @@ internal fun HomeNotificationStrip(
     val hidden = (items.size - shown.size).coerceAtLeast(0)
     val icons: @Composable () -> Unit = {
         shown.forEach { item ->
-            val icon =
-                remember(item.packageName) {
-                    runCatching { pm.getApplicationIcon(item.packageName).toBitmap(72, 72).asImageBitmap() }.getOrNull()
-                }
-            val label =
-                remember(item.packageName) {
-                    runCatching {
-                        pm
-                            .getApplicationLabel(
-                                pm.getApplicationInfo(item.packageName, 0),
-                            ).toString()
-                    }.getOrDefault(item.packageName)
-                }
-            Row(
-                modifier =
-                    Modifier
-                        .testTag("home-notification-${item.packageName}")
-                        .sableFocusRing()
-                        .clickable {
-                            if (onOpenApp != null) {
-                                onOpenApp(item.packageName)
-                            } else {
-                                runCatching {
-                                    pm.getLaunchIntentForPackage(item.packageName)?.let { context.startActivity(it) }
-                                }
-                            }
-                        }.semantics { contentDescription = "Open $label: ${item.count} unread" }
-                        .padding(vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                if (icon != null) {
-                    Image(
-                        icon,
-                        contentDescription = item.packageName,
-                        modifier = Modifier.size(23.dp).clip(RoundedCornerShape(5.dp)),
-                    )
-                } else {
-                    Text("•", color = Color.White)
-                }
-                Text(
-                    item.count.coerceAtMost(HubBar.MAX_COUNT).toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
-                )
-            }
+            HomeNotificationAppChip(item, onOpenApp)
         }
         if (hidden > 0) {
             Text(
@@ -131,6 +84,63 @@ internal fun HomeNotificationStrip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(13.dp),
             content = { icons() },
+        )
+    }
+}
+
+// Isolate app icon loading and click handling from the Home strip layout.
+@Suppress("FunctionNaming")
+@Composable
+private fun HomeNotificationAppChip(
+    item: HubBar.Item,
+    onOpenApp: ((String) -> Unit)?,
+) {
+    val context = LocalContext.current
+    val pm = context.packageManager
+    val icon =
+        remember(item.packageName) {
+            runCatching { pm.getApplicationIcon(item.packageName).toBitmap(72, 72).asImageBitmap() }.getOrNull()
+        }
+    val label =
+        remember(item.packageName) {
+            runCatching {
+                pm
+                    .getApplicationLabel(
+                        pm.getApplicationInfo(item.packageName, 0),
+                    ).toString()
+            }.getOrDefault(item.packageName)
+        }
+    Row(
+        modifier =
+            Modifier
+                .testTag("home-notification-${item.packageName}")
+                .sableFocusRing()
+                .clickable {
+                    if (onOpenApp != null) {
+                        onOpenApp(item.packageName)
+                    } else {
+                        runCatching {
+                            pm.getLaunchIntentForPackage(item.packageName)?.let { context.startActivity(it) }
+                        }
+                    }
+                }.semantics { contentDescription = "Open $label: ${item.count} unread" }
+                .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (icon != null) {
+            Image(
+                icon,
+                contentDescription = item.packageName,
+                modifier = Modifier.size(23.dp).clip(RoundedCornerShape(5.dp)),
+            )
+        } else {
+            Text("•", color = Color.White)
+        }
+        Text(
+            item.count.coerceAtMost(HubBar.MAX_COUNT).toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
         )
     }
 }

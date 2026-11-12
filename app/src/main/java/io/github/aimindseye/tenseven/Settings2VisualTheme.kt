@@ -7,11 +7,18 @@ import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.design.SableAppearance
 
+private val TENSEVEN_CLASSIC_ACCENT_COLOR = Color(0xFF4D9CFF)
+
+private val TENSEVEN_CLASSIC_SURFACE_COLOR = Color(0xFF0D1115)
+
+private val TENSEVEN_CLASSIC_OUTLINE_COLOR = Color(0xFF444A52)
+
 /**
  * One Settings/Setup surface palette. No launcher Home, Peek, Active Frames source, or system UI
  * is altered. The BB10 default uses black/white with distinct blue borders rather than legacy
  * cyan-filled emphasis; selected nondefault palettes keep their user-specified accent.
  */
+@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2VisualTheme(
     appearance: SableAppearance,
@@ -22,15 +29,15 @@ internal fun Settings2VisualTheme(
             appearance.accent == AccentPreset.Blue &&
             appearance.custom == null
     val current = MaterialTheme.colorScheme
-    val selectedAccent = if (classic) Color(0xFF4D9CFF) else current.primary
+    val selectedAccent = if (classic) TENSEVEN_CLASSIC_ACCENT_COLOR else current.primary
     MaterialTheme(
         colorScheme =
             current.copy(
                 primary = selectedAccent,
                 onPrimary = if (classic) Color.White else current.onPrimary,
                 // Thin neutral outlines for unselected rows; only focus/selection is blue.
-                outlineVariant = if (classic) Color(0xFF444A52) else current.outlineVariant,
-                surfaceVariant = if (classic) Color(0xFF0D1115) else current.surfaceVariant,
+                outlineVariant = if (classic) TENSEVEN_CLASSIC_OUTLINE_COLOR else current.outlineVariant,
+                surfaceVariant = if (classic) TENSEVEN_CLASSIC_SURFACE_COLOR else current.surfaceVariant,
             ),
         typography = MaterialTheme.typography,
         shapes = MaterialTheme.shapes,

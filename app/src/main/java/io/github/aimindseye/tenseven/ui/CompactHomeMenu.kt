@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 /** Touch fallback for secondary Home destinations on Q25; no hardcoded physical key codes. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun CompactHomeMenu(
     onDismiss: () -> Unit,

@@ -1,8 +1,8 @@
 package io.github.aimindseye.tenseven.design
 
+import io.github.aimindseye.tenseven.design.DesignText
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import io.github.aimindseye.tenseven.design.DesignText
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 

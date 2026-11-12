@@ -70,27 +70,38 @@ internal fun HubRemindersPanel(records: List<TaskRecord>) {
         }
     }
     editing?.let { task ->
-        Dialog(onDismissRequest = { editing = null }) {
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ) {
-                TaskEditor(
-                    task = task,
-                    isNew = false,
-                    onCancel = { editing = null },
-                    onSave = {
-                        repository.save(it)
-                        editing = null
-                    },
-                    onDelete = {
-                        repository.delete(it.id)
-                        editing = null
-                    },
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp),
-                )
-            }
+        HubReminderEditor(task, repository) { editing = null }
+    }
+}
+
+// Keep the editing dialog in the Hub while isolating save/delete callbacks.
+@Suppress("FunctionNaming")
+@Composable
+private fun HubReminderEditor(
+    task: TaskRecord,
+    repository: TaskRepository,
+    onClose: () -> Unit,
+) {
+    Dialog(onDismissRequest = { onClose() }) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ) {
+            TaskEditor(
+                task = task,
+                isNew = false,
+                onCancel = { onClose() },
+                onSave = {
+                    repository.save(it)
+                    onClose()
+                },
+                onDelete = {
+                    repository.delete(it.id)
+                    onClose()
+                },
+                modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp),
+            )
         }
     }
 }

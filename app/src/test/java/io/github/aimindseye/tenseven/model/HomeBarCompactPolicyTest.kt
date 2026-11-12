@@ -14,7 +14,13 @@ class HomeBarCompactPolicyTest {
 
     @Test fun titan2RetainsTwoOptionalShortcuts() {
         assertFalse(HomeBarCompactPolicy.compact("Titan 2", 360))
-        assertEquals(listOf(QuickBar.PHONE, QuickBar.COMMAND), HomeBarCompactPolicy.optionalTokens(QuickBar.DEFAULT, false))
+        assertEquals(
+            listOf(QuickBar.PHONE, QuickBar.COMMAND),
+            HomeBarCompactPolicy.optionalTokens(
+                QuickBar.DEFAULT,
+                false,
+            ),
+        )
     }
 
     @Test fun customShortcutsAreNotErasedOrDuplicated() {

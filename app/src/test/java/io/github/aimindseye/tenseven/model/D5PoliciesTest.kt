@@ -37,7 +37,21 @@ class D5PoliciesTest {
                 .atZone(z)
                 .toInstant()
                 .toEpochMilli()
-        assertEquals(120, D5CalendarBusy.bookedMinutes(d, listOf(D5TimeSpan(a, b, false), D5TimeSpan(a + 30 * 60_000, c, false)), z))
+        assertEquals(
+            120,
+            D5CalendarBusy.bookedMinutes(
+                d,
+                listOf(
+                    D5TimeSpan(a, b, false),
+                    D5TimeSpan(
+                        a + 30 * 60_000,
+                        c,
+                        false,
+                    ),
+                ),
+                z,
+            ),
+        )
     }
 
     @Test fun dialInputIsBounded() {

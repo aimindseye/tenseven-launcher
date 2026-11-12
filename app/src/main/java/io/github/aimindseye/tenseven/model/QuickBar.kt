@@ -138,7 +138,15 @@ object QuickBar {
         tokens: List<String>,
         slotToken: String?,
         stableKey: String,
-    ): List<String> = if (slotToken != null) remove(tokens, tokens.indexOf(slotToken)) else add(tokens, appToken(stableKey))
+    ): List<String> =
+        if (slotToken != null) {
+            remove(tokens, tokens.indexOf(slotToken))
+        } else {
+            add(
+                tokens,
+                appToken(stableKey),
+            )
+        }
 
     /**
      * Slot shortcuts: Fn+1..Fn+3 on keyboards with an Fn key (Titan 2), and

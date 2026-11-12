@@ -386,7 +386,14 @@ fun SableStartScreen(
                                 peekOpen = hubPeek,
                                 edgeEnabled = currentPage == StartPages.HOME,
                                 onPeekChange = { hubPeek = it },
-                                onOpenHub = { pagerScope.launch { startPager.animateScrollToPage(StartPages.HUB + lead) } },
+                                onOpenHub = {
+                                    pagerScope.launch {
+                                        startPager.animateScrollToPage(
+                                            StartPages.HUB +
+                                                lead,
+                                        )
+                                    }
+                                },
                             ) {
                                 StartStrip(
                                     state = startPager,
@@ -440,16 +447,22 @@ fun SableStartScreen(
                                                 onRefresh = onRefreshLive,
                                             ) {
                                                 HubPage(
-                                                    snapshot = liveSnapshot,
-                                                    apps = apps,
-                                                    filter = hubFilter,
-                                                    active = settledPage == StartPages.HUB,
-                                                    onFilter = { hubFilter = it },
-                                                    onLaunchApp = ::launchApp,
-                                                    onOpenHubSettings = ::openHubSettings,
-                                                    onStartIntent = onStartIntent,
-                                                    refreshGeneration = refreshGeneration,
-                                                    onRequestContactsPermission = onRequestContactsPermission,
+                                                    model =
+                                                        HubPageModel(
+                                                            snapshot = liveSnapshot,
+                                                            apps = apps,
+                                                            filter = hubFilter,
+                                                            active = settledPage == StartPages.HUB,
+                                                            refreshGeneration = refreshGeneration,
+                                                        ),
+                                                    events =
+                                                        HubPageEvents(
+                                                            onFilter = { hubFilter = it },
+                                                            onLaunchApp = ::launchApp,
+                                                            onOpenHubSettings = ::openHubSettings,
+                                                            onStartIntent = onStartIntent,
+                                                            onRequestContactsPermission = onRequestContactsPermission,
+                                                        ),
                                                     onReturnHome = {
                                                         pagerScope.launch {
                                                             startPager.animateScrollToPage(StartPages.HOME + lead)
@@ -469,7 +482,13 @@ fun SableStartScreen(
                                                 apps = apps,
                                                 hiddenSections = hiddenSections,
                                                 onOpenSettings = {
-                                                    onStartIntent(Intent(homeContext, LauncherSettingsActivity::class.java))
+                                                    onStartIntent(
+                                                        Intent(
+                                                            homeContext,
+                                                            LauncherSettingsActivity::class
+                                                                .java,
+                                                        ),
+                                                    )
                                                 },
                                                 onSearch = { openSearch(SableStartDestination.Start) },
                                                 snapshot = liveSnapshot,
@@ -677,40 +696,49 @@ fun SableStartScreen(
                                 val key = app.stableKey()
                                 val barIndex = quickSlots.indexOfFirst { it.app?.stableKey() == key }
                                 SablePeekScreen(
-                                    app = app,
-                                    inBaseBar = QuickBar.appState(app.inLauncherUser, barIndex >= 0),
-                                    hasSecondInstance = secondInstance(app) != null,
-                                    onToggleBaseBar = {
-                                        val slotToken = quickSlots.getOrNull(barIndex)?.token
-                                        if (slotToken == null && QuickBar.needsSlotPicker(quickBarTokens)) {
-                                            destination = SableStartDestination.SlotPicker
-                                        } else {
-                                            val next = QuickBar.toggleApp(quickBarTokens, slotToken, key)
-                                            if (next != quickBarTokens) {
-                                                quickBarTokens = next
-                                                onQuickBarChanged(next)
-                                            }
-                                        }
-                                    },
-                                    onClose = ::navigateBack,
-                                    onOpen = { launchApp(app) },
-                                    onOpenSecond = { launchSecond(app) },
-                                    onOpenAppInfo = { onOpenAppInfo(app) },
-                                    onOpenNotificationSettings = { onOpenNotificationSettings(app) },
-                                    onUninstall = { onUninstallApp(app) },
-                                    letterShortcut =
-                                        remember(app, shortcutVersion) {
-                                            letterShortcuts?.load()?.letterOf(app.component.flattenToString())
-                                        },
-                                    shortcutsAvailable = letterShortcuts != null && app.inLauncherUser,
-                                    onSetLetterShortcut = { letter ->
-                                        if (letter == null) {
-                                            letterShortcuts?.remove(app.component)
-                                        } else {
-                                            letterShortcuts?.assign(letter, app.component)
-                                        }
-                                        shortcutVersion += 1
-                                    },
+                                    model =
+                                        PeekAppState(
+                                            app = app,
+                                            inBaseBar = QuickBar.appState(app.inLauncherUser, barIndex >= 0),
+                                            hasSecondInstance = secondInstance(app) != null,
+                                            letterShortcut =
+                                                remember(app, shortcutVersion) {
+                                                    letterShortcuts?.load()?.letterOf(app.component.flattenToString())
+                                                },
+                                            shortcutsAvailable = letterShortcuts != null && app.inLauncherUser,
+                                        ),
+                                    navigation =
+                                        PeekNavigation(
+                                            onClose = ::navigateBack,
+                                            onOpen = { launchApp(app) },
+                                            onOpenSecond = { launchSecond(app) },
+                                            onOpenAppInfo = { onOpenAppInfo(app) },
+                                            onOpenNotificationSettings = { onOpenNotificationSettings(app) },
+                                        ),
+                                    edits =
+                                        PeekEdits(
+                                            onToggleBaseBar = {
+                                                val slotToken = quickSlots.getOrNull(barIndex)?.token
+                                                if (slotToken == null && QuickBar.needsSlotPicker(quickBarTokens)) {
+                                                    destination = SableStartDestination.SlotPicker
+                                                } else {
+                                                    val next = QuickBar.toggleApp(quickBarTokens, slotToken, key)
+                                                    if (next != quickBarTokens) {
+                                                        quickBarTokens = next
+                                                        onQuickBarChanged(next)
+                                                    }
+                                                }
+                                            },
+                                            onUninstall = { onUninstallApp(app) },
+                                            onSetLetterShortcut = { letter ->
+                                                if (letter == null) {
+                                                    letterShortcuts?.remove(app.component)
+                                                } else {
+                                                    letterShortcuts?.assign(letter, app.component)
+                                                }
+                                                shortcutVersion += 1
+                                            },
+                                        ),
                                 )
                             }
                         }

@@ -540,19 +540,6 @@ class SableStartActivity : ComponentActivity() {
         startBb10Detour(returnOnHome = true)
     }
 
-    /** The Widgets page from the BlackBerry 7 home: shown on the BlackBerry 10 screen like Hub, Back returns. */
-    private fun openWidgetsFromBb7() {
-        if (!screen.widgetsPageEnabled.value) {
-            runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
-            return
-        }
-        screen.homeGeneration.intValue = 0
-        screen.backGeneration.intValue = 0
-        screen.hubGeneration.intValue = 0
-        screen.widgetsGeneration.intValue += 1
-        startBb10Detour(returnOnHome = true)
-    }
-
     private fun startBb10Detour(returnOnHome: Boolean) {
         screen.bb10Detour.value = true
         screen.bb7Detour = Bb7Detour(returnOnHome = returnOnHome)

@@ -23,6 +23,7 @@ import android.widget.TextView
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.extras.profiles.core.ProfileSettings
@@ -222,7 +223,7 @@ class MainActivity : Activity() {
 
                 SoundProfileApplier.Result.PARTIAL -> {
                     startActivity(
-                        Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")),
+                        Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, "package:$packageName".toUri()),
                     )
                     t("is_on_allow_changing_system", profile.title)
                 }
@@ -418,6 +419,16 @@ private class ProfilesPalette(
     val warn: Int = 0xFFFFB300.toInt(),
 ) {
     companion object {
+        private fun profilesDarkMode(
+            mode: AppearanceMode,
+            night: Boolean,
+        ): Boolean =
+            when (mode) {
+                AppearanceMode.FollowSystem -> night
+                AppearanceMode.Light -> false
+                AppearanceMode.Dark -> true
+            }
+
         fun forLauncher(context: Context): ProfilesPalette {
             val state = StartStateRepository(context)
             val mode = state.loadAppearanceMode()
@@ -425,12 +436,8 @@ private class ProfilesPalette(
             val chosen = mode != null || accentValue != null
             val accent = if (chosen) AccentPreset.fromStableValue(accentValue) else AccentPreset.Blue
             val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-            val dark =
-                when (if (chosen) AppearanceMode.fromStableValue(mode) else AppearanceMode.Dark) {
-                    AppearanceMode.FollowSystem -> night
-                    AppearanceMode.Light -> false
-                    AppearanceMode.Dark -> true
-                }
+            val selectedMode = if (chosen) AppearanceMode.fromStableValue(mode) else AppearanceMode.Dark
+            val dark = profilesDarkMode(selectedMode, night)
             val p =
                 if (accent == AccentPreset.Phone) {
                     phonePalette(if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context))

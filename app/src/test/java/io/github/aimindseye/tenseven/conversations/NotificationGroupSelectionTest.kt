@@ -25,7 +25,16 @@ class NotificationGroupSelectionTest {
         )
         assertEquals(
             setOf("summary", "other-account"),
-            NotificationGroupSelection.visibleKeys(listOf(summary, child.copy(key = "other-account", groupKey = "account-b"))),
+            NotificationGroupSelection.visibleKeys(
+                listOf(
+                    summary,
+                    child.copy(
+                        key = "other-account",
+                        groupKey =
+                            "account-b",
+                    ),
+                ),
+            ),
         )
         assertEquals(
             setOf("summary", "child"),

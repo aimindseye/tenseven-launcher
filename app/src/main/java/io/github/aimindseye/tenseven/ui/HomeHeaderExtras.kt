@@ -28,14 +28,6 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
 import java.util.Locale
 
-internal data class HeaderOptions(
-    val size: LauncherTextSize,
-    val showWeather: Boolean,
-    val city: String,
-    val useDeviceLocation: Boolean,
-    val statusSize: io.github.aimindseye.tenseven.model.HomeStatusSize,
-)
-
 /** Home reads new settings on resume; it does not require a launcher restart. */
 @Composable
 internal fun rememberHeaderOptions(): HeaderOptions {
@@ -71,6 +63,7 @@ internal fun rememberHeaderOptions(): HeaderOptions {
 internal fun TextUnit.safeLauncherScale(value: LauncherTextSize): TextUnit = this * value.multiplier
 
 /** Current conditions are optional; no placeholder or made-up temperature is displayed. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun HomeWeatherLine(
     options: HeaderOptions,
@@ -132,6 +125,7 @@ internal fun HomeWeatherLine(
 }
 
 /** Scale only reading typography. Compact nav labels, indicators and system text keep original sizes. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun ScaledLauncherTextTheme(content: @Composable () -> Unit) {
     val multiplier = rememberHeaderOptions().size.multiplier

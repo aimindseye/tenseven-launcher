@@ -298,9 +298,9 @@ private val bb7HomePresenter: @Composable (Bb7HomeInputs) -> Unit = { input ->
     val generation = input.source.refreshGeneration
     val display =
         Bb7HomeDisplayFeed(
-            remember(generation) { stateRepo.loadHomeDials(HomeStyle.Bb7) },
+            remember(generation) { stateRepo.loadHomeDials() },
             remember(generation) { stateRepo.loadHomeWallpaper() },
-            remember(generation) { stateRepo.loadHomeStatusMode(HomeStyle.Bb7) },
+            remember(generation) { stateRepo.loadHomeStatusMode() },
             remember(generation) { stateRepo.loadHomeNotificationExpanded(HomeStyle.Bb7) },
             remember(generation) { stateRepo.loadHubEnabledApps() },
         )

@@ -166,8 +166,12 @@ object CommandRanking {
                         else -> null
                     }
                 tier?.let { Triple(item, it, recentRank(item) ?: Int.MAX_VALUE) }
-            }.sortedWith(compareBy({ it.second }, { -frequency(it.first) }, { it.third }, { label(it.first).lowercase() }))
-            .map { it.first }
+            }.sortedWith(
+                compareBy({ it.second }, { -frequency(it.first) }, { it.third }, {
+                    label(it.first)
+                        .lowercase()
+                }),
+            ).map { it.first }
     }
 }
 

@@ -3,6 +3,10 @@ package io.github.aimindseye.tenseven.tasks
 import java.time.Instant
 import java.time.ZoneId
 
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val TASK_SCHEDULE_PRESET_TIME_9 = 9
+private const val TASK_SCHEDULE_PRESET_VALUE_9 = 9
+
 /** Calendar-aware calculations; no exact timing promise. */
 object TaskSchedule {
     fun nextOccurrence(
@@ -54,7 +58,7 @@ object TaskSchedule {
                         local
                             .toLocalDate()
                             .plusDays(1)
-                            .atTime(9, 0)
+                            .atTime(TASK_SCHEDULE_PRESET_TIME_9, 0)
                             .atZone(zone)
                     } else {
                         later
@@ -66,7 +70,7 @@ object TaskSchedule {
                 }
 
                 "Tomorrow morning" -> {
-                    TaskReminderTimes.tomorrowAt(9, 0, zone, now).atZone(zone)
+                    TaskReminderTimes.tomorrowAt(TASK_SCHEDULE_PRESET_VALUE_9, 0, zone, now).atZone(zone)
                 }
 
                 "Until complete" -> {

@@ -163,7 +163,11 @@ class ConversationPreviewAndReplyTest {
         assertEquals("Bo: hi", conversationPreview(conversation(msg("1", "hi", 1, sender = "Bo"), name = "Book club"), false, "You"))
         assertEquals(
             "You: ok",
-            conversationPreview(conversation(msg("1", "hi", 1), msg("2", "ok", 2, sender = null, outgoing = true)), false, "You"),
+            conversationPreview(
+                conversation(msg("1", "hi", 1), msg("2", "ok", 2, sender = null, outgoing = true)),
+                false,
+                "You",
+            ),
         )
     }
 
@@ -181,7 +185,18 @@ class ConversationPreviewAndReplyTest {
     fun ourReplyShowsUntilTheAppEchoesIt() {
         val incoming = msg("1", "hello", 1_000)
         val notification =
-            HubNotification("k", "c", "Ann", "p", "p", 1_000, false, listOf(incoming), contentIntent = null, replyAction = null)
+            HubNotification(
+                "k",
+                "c",
+                "Ann",
+                "p",
+                "p",
+                1_000,
+                false,
+                listOf(incoming),
+                contentIntent = null,
+                replyAction = null,
+            )
         val reply = msg("local", "on my way", 5_000, sender = null, outgoing = true)
         val before = buildConversations(listOf(notification), listOf(reply)).single()
         assertEquals(listOf("hello", "on my way"), before.messages.map { it.text })
@@ -196,7 +211,18 @@ class ConversationPreviewAndReplyTest {
     @Test
     fun repliesOfOtherConversationsAreIgnored() {
         val notification =
-            HubNotification("k", "c", "Ann", "p", "p", 1, false, listOf(msg("1", "hi", 1)), contentIntent = null, replyAction = null)
+            HubNotification(
+                "k",
+                "c",
+                "Ann",
+                "p",
+                "p",
+                1,
+                false,
+                listOf(msg("1", "hi", 1)),
+                contentIntent = null,
+                replyAction = null,
+            )
         val stray = msg("local", "nope", 2, sender = null, outgoing = true, conversation = "other")
         assertEquals(1, buildConversations(listOf(notification), listOf(stray)).single().messages.size)
     }

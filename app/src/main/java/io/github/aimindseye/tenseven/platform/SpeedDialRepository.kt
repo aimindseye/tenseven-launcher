@@ -17,7 +17,11 @@ class SpeedDialRepository(
     private val context: Context,
     private val shortcuts: LetterShortcutRepository? = null,
 ) {
-    suspend fun assignedLetters(): Set<Char> = withContext(Dispatchers.IO) { phoneLetters() + (shortcuts?.load()?.letters.orEmpty()) }
+    suspend fun assignedLetters(): Set<Char> =
+        withContext(Dispatchers.IO) {
+            phoneLetters() +
+                (shortcuts?.load()?.letters.orEmpty())
+        }
 
     private fun phoneLetters(): Set<Char> {
         val uri =

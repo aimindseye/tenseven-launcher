@@ -19,6 +19,8 @@ import io.github.aimindseye.tenseven.model.ThemePresets
 import io.github.aimindseye.tenseven.model.WallpaperSets
 import io.github.aimindseye.tenseven.model.WidgetList
 
+private const val HOME_WEATHER_CITY_INPUT_LIMIT = 90
+
 /**
  * Stores launcher-only presentation state.
  *
@@ -97,12 +99,12 @@ class StartStateRepository(
 
     fun saveFavoriteKeys(keys: Set<String>) {
         preferences
-            .edit()
-            .putStringSet(
-                KEY_FAVORITE_APPS,
-                keys.toSet(),
-            ).remove(KEY_PINNED_APPS_LEGACY)
-            .apply()
+            .edit {
+                putStringSet(
+                    KEY_FAVORITE_APPS,
+                    keys.toSet(),
+                ).remove(KEY_PINNED_APPS_LEGACY)
+            }
     }
 
     /**
@@ -125,11 +127,12 @@ class StartStateRepository(
 
     fun saveStartTileKeys(keys: Set<String>) {
         preferences
-            .edit()
-            .putStringSet(
-                KEY_START_TILES,
-                keys.toSet(),
-            ).apply()
+            .edit {
+                putStringSet(
+                    KEY_START_TILES,
+                    keys.toSet(),
+                )
+            }
     }
 
     /**
@@ -145,14 +148,13 @@ class StartStateRepository(
 
     fun saveQuickBar(tokens: List<String>?) {
         preferences
-            .edit()
-            .apply {
+            .edit {
                 if (tokens == null) {
                     remove(KEY_QUICK_BAR)
                 } else {
                     putString(KEY_QUICK_BAR, tokens.joinToString(QUICK_BAR_SEPARATOR))
                 }
-            }.apply()
+            }
     }
 
     /** Ordered Home apps (see HomeApps); null means never customised. */
@@ -202,14 +204,13 @@ class StartStateRepository(
 
     fun saveHiddenHomeSections(sections: Set<String>?) {
         preferences
-            .edit()
-            .apply {
+            .edit {
                 if (sections == null) {
                     remove(KEY_HOME_HIDDEN_SECTIONS)
                 } else {
                     putStringSet(KEY_HOME_HIDDEN_SECTIONS, sections.toSet())
                 }
-            }.apply()
+            }
     }
 
     /** "list" or "tiles" (see HomeLayout); null means never customised. */
@@ -233,20 +234,20 @@ class StartStateRepository(
         )
 
     fun saveLauncherTextSize(value: io.github.aimindseye.tenseven.model.LauncherTextSize) {
-        preferences.edit().putString("launcher_text_size", value.name).apply()
+        preferences.edit { putString("launcher_text_size", value.name) }
     }
 
     /** Opt-in city, never inferred from location or IP address. */
     fun loadHomeWeatherEnabled(): Boolean = preferences.getBoolean("home_weather_enabled", false)
 
     fun saveHomeWeatherEnabled(enabled: Boolean) {
-        preferences.edit().putBoolean("home_weather_enabled", enabled).apply()
+        preferences.edit { putBoolean("home_weather_enabled", enabled) }
     }
 
     fun loadHomeWeatherCity(): String = preferences.getString("home_weather_city", "").orEmpty()
 
     fun saveHomeWeatherCity(value: String) {
-        preferences.edit().putString("home_weather_city", value.trim().take(90)).apply()
+        preferences.edit { putString("home_weather_city", value.trim().take(HOME_WEATHER_CITY_INPUT_LIMIT)) }
     }
 
     /** Whether the setup flow has been shown (finished, skipped or backed out of); it opens once on first run. */
@@ -260,11 +261,10 @@ class StartStateRepository(
     fun onHomeReadabilityChanged(listener: () -> Unit): () -> Unit {
         val callback =
             SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                if (key == "launcher_text_size" || key == "home_weather_enabled" || key == "home_weather_city" ||
-                    key == "home_weather_use_device_location" ||
-                    key == "home_status_size"
-                ) {
-                    listener()
+                when (key) {
+                    "launcher_text_size", "home_weather_enabled", "home_weather_city",
+                    "home_weather_use_device_location", "home_status_size",
+                    -> listener()
                 }
             }
         preferences.registerOnSharedPreferenceChangeListener(callback)
@@ -275,7 +275,7 @@ class StartStateRepository(
     fun loadHomeWeatherUseDeviceLocation(): Boolean = preferences.getBoolean("home_weather_use_device_location", false)
 
     fun saveHomeWeatherUseDeviceLocation(enabled: Boolean) {
-        preferences.edit().putBoolean("home_weather_use_device_location", enabled).apply()
+        preferences.edit { putBoolean("home_weather_use_device_location", enabled) }
     }
 
     /** One status readout size for BB7/BB10; no migration of dial selections needed. */
@@ -284,7 +284,7 @@ class StartStateRepository(
             .decode(preferences.getString("home_status_size", null))
 
     fun saveHomeStatusSize(size: io.github.aimindseye.tenseven.model.HomeStatusSize) {
-        preferences.edit().putString("home_status_size", size.stableValue).apply()
+        preferences.edit { putString("home_status_size", size.stableValue) }
     }
 
     /** Double-tap on empty Home space locks the screen (needs the accessibility service); off until chosen. */
@@ -299,10 +299,9 @@ class StartStateRepository(
 
     fun saveIconPack(packageName: String?) {
         preferences
-            .edit()
-            .apply {
+            .edit {
                 if (packageName.isNullOrBlank()) remove(KEY_ICON_PACK) else putString(KEY_ICON_PACK, packageName)
-            }.apply()
+            }
     }
 
     /** Release 2 defaults to TenSeven/Tabler glyphs; persisted Original remains an explicit opt-out. */
@@ -322,7 +321,14 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_TYPE_TO_SEARCH, if (enabled) 1 else 0).apply()
     }
 
-    fun loadBb7IconSize(): Bb7IconSize = Bb7IconSize.fromStable(preferences.getInt(KEY_BB7_ICON_SIZE, Bb7IconSize.DEFAULT.stable))
+    fun loadBb7IconSize(): Bb7IconSize =
+        Bb7IconSize.fromStable(
+            preferences.getInt(
+                KEY_BB7_ICON_SIZE,
+                Bb7IconSize
+                    .DEFAULT.stable,
+            ),
+        )
 
     fun saveBb7IconSize(size: Bb7IconSize) {
         preferences.edit().putInt(KEY_BB7_ICON_SIZE, size.stable).apply()
@@ -380,27 +386,29 @@ class StartStateRepository(
     }
 
     /** Shared Home metrics, migrated from the currently selected style on first read. */
-    fun loadHomeDials(style: HomeStyle): Set<String> =
+    fun loadHomeDials(): Set<String> =
         HomeDisplayPolicy.normalizedDials(
             preferences.getStringSet("home_status_metrics_shared", null)
                 ?: preferences.getStringSet(HomeDisplayPolicy.dialPreference(loadHomeStyle()), null)
                 ?: HomeDisplayPolicy.DEFAULT_DIALS,
         )
 
-    fun saveHomeDials(
-        style: HomeStyle,
-        selected: Set<String>,
-    ) {
+    /** Candidate-only legacy read for protected Active Frames. Shared dials ignore style. */
+    @Suppress("UnusedParameter", "UNUSED_PARAMETER")
+    fun loadHomeDials(style: HomeStyle): Set<String> = loadHomeDials()
+
+    fun saveHomeDials(selected: Set<String>) {
         preferences
-            .edit()
-            .putStringSet(
-                "home_status_metrics_shared",
-                HomeDisplayPolicy.normalizedDials(selected),
-            ).apply()
+            .edit {
+                putStringSet(
+                    "home_status_metrics_shared",
+                    HomeDisplayPolicy.normalizedDials(selected),
+                )
+            }
     }
 
     /** One Home status mode, shared across BB7/BB10. The old selected-style choice is retained. */
-    fun loadHomeStatusMode(style: HomeStyle): io.github.aimindseye.tenseven.model.HomeStatusMode =
+    fun loadHomeStatusMode(): io.github.aimindseye.tenseven.model.HomeStatusMode =
         io.github.aimindseye.tenseven.model.HomeStatusMode.decode(
             preferences.getString("home_status_mode_shared", null)
                 ?: preferences.getString(
@@ -408,14 +416,11 @@ class StartStateRepository(
                         .preference(loadHomeStyle()),
                     null,
                 ),
-            loadHomeDials(style).size,
+            loadHomeDials().size,
         )
 
-    fun saveHomeStatusMode(
-        style: HomeStyle,
-        mode: io.github.aimindseye.tenseven.model.HomeStatusMode,
-    ) {
-        preferences.edit().putString("home_status_mode_shared", mode.key).apply()
+    fun saveHomeStatusMode(mode: io.github.aimindseye.tenseven.model.HomeStatusMode) {
+        preferences.edit { putString("home_status_mode_shared", mode.key) }
     }
 
     /** Per-user Hub Compose preference. Android remains the authority for the chosen default app. */
@@ -425,13 +430,13 @@ class StartStateRepository(
         )
 
     internal fun saveHubComposeMode(mode: io.github.aimindseye.tenseven.model.HubComposeMode) {
-        preferences.edit().putString("hub_compose_mode_2", mode.key).apply()
+        preferences.edit { putString("hub_compose_mode_2", mode.key) }
     }
 
     /** D4r3: the Home duplicate notification shelf is retired. Hub remains the entry point.
      * The old stored preference is deliberately not erased so upgrades and backups remain compatible.
      */
-    @Suppress("UNUSED_PARAMETER")
+    @Suppress("UnusedParameter", "UNUSED_PARAMETER")
     fun loadHomeNotificationStrip(style: HomeStyle): Boolean = false
 
     fun saveHomeNotificationStrip(
@@ -539,10 +544,10 @@ class StartStateRepository(
     fun onAppearanceChanged(listener: () -> Unit): () -> Unit {
         val callback =
             SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                if (key == KEY_APPEARANCE_MODE || key == KEY_APPEARANCE_ACCENT || key == KEY_APPEARANCE_CUSTOM ||
-                    key == KEY_CUSTOM_THEMES
-                ) {
-                    listener()
+                when (key) {
+                    KEY_APPEARANCE_MODE, KEY_APPEARANCE_ACCENT,
+                    KEY_APPEARANCE_CUSTOM, KEY_CUSTOM_THEMES,
+                    -> listener()
                 }
             }
         preferences.registerOnSharedPreferenceChangeListener(callback)

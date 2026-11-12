@@ -23,7 +23,11 @@ import io.github.aimindseye.tenseven.conversations.ConversationFilter
 import io.github.aimindseye.tenseven.conversations.ConversationKind
 import io.github.aimindseye.tenseven.model.HubFilter
 
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val HUB_COMPACT_BAR_HUB_COMPACT_VIEWS_VALUE_3 = 3
+
 /** Hub's own three-action navigation: never display the shared Home dock inside Hub. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun HubCompactBar(
     onViews: () -> Unit,
@@ -46,6 +50,7 @@ internal fun HubCompactBar(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun HubCompactControl(
     label: String,
@@ -68,6 +73,7 @@ private fun HubCompactControl(
 }
 
 /** A flat list of the extra Hub views; none is mistaken for a new notification source. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun HubCompactViews(
     ui: HubConversationsUi,
@@ -83,7 +89,7 @@ internal fun HubCompactViews(
             .background(Bb10Background)
             .verticalScroll(rememberScrollState()),
     ) {
-        choices.chunked(3).forEach { group ->
+        choices.chunked(HUB_COMPACT_BAR_HUB_COMPACT_VIEWS_VALUE_3).forEach { group ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 group.forEach { choice ->
                     Text(
@@ -92,38 +98,7 @@ internal fun HubCompactViews(
                             Modifier
                                 .weight(1f)
                                 .clickable {
-                                    when (choice) {
-                                        "Calendar" -> {
-                                            onCalendar()
-                                        }
-
-                                        "Remind" -> {
-                                            onTabChange(HubFilter.All)
-                                            ui.onShowReminders()
-                                        }
-
-                                        else -> {
-                                            val next =
-                                                when (choice) {
-                                                    "Messages" -> ConversationFilter(kind = ConversationKind.Messages)
-                                                    "Email" -> ConversationFilter(kind = ConversationKind.Email)
-                                                    "Unread" -> ConversationFilter(unreadOnly = true)
-                                                    "Snoozed" -> ConversationFilter(snoozed = true)
-                                                    else -> ConversationFilter()
-                                                }
-                                            onTabChange(
-                                                when (choice) {
-                                                    "Calls" -> HubFilter.Calls
-                                                    "Contacts" -> HubFilter.Contacts
-                                                    "Messages" -> HubFilter.Messages
-                                                    else -> HubFilter.All
-                                                },
-                                            )
-                                            ui.onFilterChange(next)
-                                            ui.onSourceChange(null)
-                                        }
-                                    }
-                                    onDismiss()
+                                    onHubCompactChoice(choice, ui, onTabChange, onCalendar, onDismiss)
                                 }.padding(horizontal = 8.dp, vertical = 10.dp),
                         color = Bb10Text,
                         style = MaterialTheme.typography.bodyMedium,
@@ -132,4 +107,46 @@ internal fun HubCompactViews(
             }
         }
     }
+}
+
+/** Route a compact Hub action independently of the menu's Compose layout. */
+private fun onHubCompactChoice(
+    choice: String,
+    ui: HubConversationsUi,
+    onTabChange: (HubFilter) -> Unit,
+    onCalendar: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    when (choice) {
+        "Calendar" -> {
+            onCalendar()
+        }
+
+        "Remind" -> {
+            onTabChange(HubFilter.All)
+            ui.onShowReminders()
+        }
+
+        else -> {
+            val next =
+                when (choice) {
+                    "Messages" -> ConversationFilter(kind = ConversationKind.Messages)
+                    "Email" -> ConversationFilter(kind = ConversationKind.Email)
+                    "Unread" -> ConversationFilter(unreadOnly = true)
+                    "Snoozed" -> ConversationFilter(snoozed = true)
+                    else -> ConversationFilter()
+                }
+            onTabChange(
+                when (choice) {
+                    "Calls" -> HubFilter.Calls
+                    "Contacts" -> HubFilter.Contacts
+                    "Messages" -> HubFilter.Messages
+                    else -> HubFilter.All
+                },
+            )
+            ui.onFilterChange(next)
+            ui.onSourceChange(null)
+        }
+    }
+    onDismiss()
 }

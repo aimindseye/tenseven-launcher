@@ -9,8 +9,28 @@ internal object NativeBridge {
     private const val SUDOKU_PREFIX = "S1"
     private const val MINESWEEPER_PREFIX = "M1"
 
+    // Protocol dimensions and xorshift stages: values are part of SableOS game compatibility.
+    private const val SUDOKU_SIDE = 9
+    private const val SUDOKU_BOX_SIDE = 3
+    private const val SUDOKU_CELL_COUNT = 81
+    private const val SUDOKU_DIGIT_BUCKETS = 10
+    private const val SUDOKU_REPLAY_FIELDS = 3
+    private const val SUDOKU_REPLAY_VALUE_MAX = 255
+    private const val MINE_STATE_FIELDS = 6
+    private const val XORSHIFT_LEFT_FIRST = 13
+    private const val XORSHIFT_RIGHT = 7
+    private const val XORSHIFT_LEFT_LAST = 17
+    private const val GAME_2048_SIDE = 4
+    private const val GAME_2048_LAST_INDEX = 3
+    private const val GAME_2048_CELL_COUNT = 16
+    private const val GAME_2048_OUTPUT_COUNT = 17
+    private const val MOVE_LEFT = 0
+    private const val MOVE_RIGHT = 1
+    private const val MOVE_UP = 2
+    private const val MOVE_DOWN = 3
+
     fun selfTest(): String {
-        val started = sudokuStart("0".repeat(81))
+        val started = sudokuStart("0".repeat(SUDOKU_CELL_COUNT))
         val state = started.removePrefix("OK:").takeIf { started.startsWith("OK:") } ?: return "FAIL:games-core:start"
         val first = sudokuSet(state, 0, 0, 5)
         val next = first.removePrefix("OK:").takeIf { first.startsWith("OK:") } ?: return "FAIL:games-core:$first"
@@ -38,11 +58,16 @@ internal object NativeBridge {
     private class SudokuBoard(
         puzzle: String,
     ) {
-        val cells = IntArray(81)
-        private val fixed = BooleanArray(81)
+        val cells = IntArray(SUDOKU_CELL_COUNT)
+        private val fixed = BooleanArray(SUDOKU_CELL_COUNT)
 
         init {
-            if (puzzle.length != 81 || !puzzle.all { it in '0'..'9' }) throw SudokuFail(SudokuError.InvalidPuzzle)
+            if (puzzle.length != SUDOKU_CELL_COUNT || !puzzle.all { it in '0'..'9' }) {
+                throw SudokuFail(
+                    SudokuError
+                        .InvalidPuzzle,
+                )
+            }
             puzzle.forEachIndexed { index, c ->
                 cells[index] = c - '0'
                 fixed[index] = cells[index] != 0
@@ -55,8 +80,12 @@ internal object NativeBridge {
             col: Int,
             value: Int,
         ) {
-            if (row !in 0..8 || col !in 0..8 || value !in 0..9) throw SudokuFail(SudokuError.OutOfRange)
-            val index = row * 9 + col
+            if (row !in 0 until SUDOKU_SIDE || col !in 0 until SUDOKU_SIDE ||
+                value !in 0..SUDOKU_SIDE
+            ) {
+                throw SudokuFail(SudokuError.OutOfRange)
+            }
+            val index = row * SUDOKU_SIDE + col
             if (fixed[index]) throw SudokuFail(SudokuError.FixedCell)
             val old = cells[index]
             cells[index] = value
@@ -69,13 +98,19 @@ internal object NativeBridge {
         fun solved(): Boolean = cells.all { it != 0 } && consistent()
 
         private fun consistent(): Boolean {
-            for (i in 0..8) {
-                if (!validGroup((0..8).map { cells[i * 9 + it] })) return false
-                if (!validGroup((0..8).map { cells[it * 9 + i] })) return false
+            for (i in 0 until SUDOKU_SIDE) {
+                if (!validGroup((0 until SUDOKU_SIDE).map { cells[i * SUDOKU_SIDE + it] })) return false
+                if (!validGroup((0 until SUDOKU_SIDE).map { cells[it * SUDOKU_SIDE + i] })) return false
             }
-            for (boxRow in 0..2) {
-                for (boxCol in 0..2) {
-                    val values = (0..8).map { offset -> cells[(boxRow * 3 + offset / 3) * 9 + boxCol * 3 + offset % 3] }
+            for (boxRow in 0 until SUDOKU_BOX_SIDE) {
+                for (boxCol in 0 until SUDOKU_BOX_SIDE) {
+                    val values =
+                        (0 until SUDOKU_SIDE).map { offset ->
+                            cells[
+                                (boxRow * SUDOKU_BOX_SIDE + offset / SUDOKU_BOX_SIDE) * SUDOKU_SIDE +
+                                    boxCol * SUDOKU_BOX_SIDE + offset % SUDOKU_BOX_SIDE,
+                            ]
+                        }
                     if (!validGroup(values)) return false
                 }
             }
@@ -83,10 +118,10 @@ internal object NativeBridge {
         }
 
         private fun validGroup(values: List<Int>): Boolean {
-            val seen = BooleanArray(10)
+            val seen = BooleanArray(SUDOKU_DIGIT_BUCKETS)
             for (value in values) {
                 if (value == 0) continue
-                if (value > 9 || seen[value]) return false
+                if (value > SUDOKU_SIDE || seen[value]) return false
                 seen[value] = true
             }
             return true
@@ -103,8 +138,8 @@ internal object NativeBridge {
 
     /** The board and the state's puzzle and operations, or null for a state that does not replay. */
     private fun replaySudoku(state: String): Triple<SudokuBoard, String, String>? {
-        val fields = state.split(':', limit = 3)
-        if (fields.size != 3 || fields[0] != SUDOKU_PREFIX) return null
+        val fields = state.split(':', limit = SUDOKU_REPLAY_FIELDS)
+        if (fields.size != SUDOKU_REPLAY_FIELDS || fields[0] != SUDOKU_PREFIX) return null
         val puzzle = fields[1]
         val operations = fields[2]
         return try {
@@ -112,10 +147,10 @@ internal object NativeBridge {
             if (operations.isNotEmpty()) {
                 for (encoded in operations.split(';')) {
                     val parts = encoded.split(',')
-                    if (parts.size != 3) return null
+                    if (parts.size != SUDOKU_REPLAY_FIELDS) return null
                     val row = parts[0].toIntOrNull()?.takeIf { it >= 0 } ?: return null
                     val col = parts[1].toIntOrNull()?.takeIf { it >= 0 } ?: return null
-                    val value = parts[2].toIntOrNull()?.takeIf { it in 0..255 } ?: return null
+                    val value = parts[2].toIntOrNull()?.takeIf { it in 0..SUDOKU_REPLAY_VALUE_MAX } ?: return null
                     board.set(row, col, value)
                 }
             }
@@ -132,7 +167,7 @@ internal object NativeBridge {
         value: Int,
     ): String {
         if (row < 0 || col < 0) return "ERR:OUT_OF_BOUNDS"
-        if (value !in 0..9) return "ERR:INVALID_VALUE"
+        if (value !in 0..SUDOKU_SIDE) return "ERR:INVALID_VALUE"
         val (board, puzzle, operations) = replaySudoku(state) ?: return "ERR:INVALID_STATE"
         try {
             board.set(row, col, value)
@@ -190,9 +225,9 @@ internal object NativeBridge {
             var placed = 0
             var rng = if (java.lang.Long.compareUnsigned(seed, 1) < 0) 1L else seed
             while (placed < mineCount) {
-                rng = rng xor (rng shl 13)
-                rng = rng xor (rng ushr 7)
-                rng = rng xor (rng shl 17)
+                rng = rng xor (rng shl XORSHIFT_LEFT_FIRST)
+                rng = rng xor (rng ushr XORSHIFT_RIGHT)
+                rng = rng xor (rng shl XORSHIFT_LEFT_LAST)
                 val index =
                     java.lang.Long
                         .remainderUnsigned(rng, count)
@@ -277,8 +312,8 @@ internal object NativeBridge {
     }
 
     private fun decodeMine(encoded: String): MineState? {
-        val fields = encoded.split(':', limit = 6)
-        if (fields.size != 6 || fields[0] != MINESWEEPER_PREFIX) return null
+        val fields = encoded.split(':', limit = MINE_STATE_FIELDS)
+        if (fields.size != MINE_STATE_FIELDS || fields[0] != MINESWEEPER_PREFIX) return null
         val width = fields[1].toIntOrNull()?.takeIf { it >= 0 } ?: return null
         val height = fields[2].toIntOrNull()?.takeIf { it >= 0 } ?: return null
         val mines = fields[3].toIntOrNull()?.takeIf { it >= 0 } ?: return null
@@ -294,7 +329,7 @@ internal object NativeBridge {
         if (state.operations.isNotEmpty()) {
             for (operation in state.operations.split(';')) {
                 val fields = operation.split(',')
-                if (fields.size != 3) throw MineFail("ERR:INVALID_STATE")
+                if (fields.size != SUDOKU_REPLAY_FIELDS) throw MineFail("ERR:INVALID_STATE")
                 val x = fields[1].toIntOrNull()?.takeIf { it >= 0 } ?: throw MineFail("ERR:INVALID_STATE")
                 val y = fields[2].toIntOrNull()?.takeIf { it >= 0 } ?: throw MineFail("ERR:INVALID_STATE")
                 if (x >= state.width || y >= state.height) throw MineFail("ERR:OUT_OF_BOUNDS")
@@ -382,16 +417,20 @@ internal object NativeBridge {
         board: IntArray,
         direction: Int,
     ): LongArray {
-        require(board.size == 16 && direction in 0..3 && board.none { it < 0 }) { "invalid 2048 move" }
+        require(
+            board.size == GAME_2048_CELL_COUNT && direction in MOVE_LEFT..MOVE_DOWN &&
+                board
+                    .none { it < 0 },
+        ) { "invalid 2048 move" }
         val cells = board.copyOf()
         var score = 0L
-        for (index in 0..3) {
+        for (index in 0 until GAME_2048_SIDE) {
             val line =
-                IntArray(4) { position ->
+                IntArray(GAME_2048_SIDE) { position ->
                     val (row, col) = coords(direction, index, position)
-                    cells[row * 4 + col]
+                    cells[row * GAME_2048_SIDE + col]
                 }
-            val merged = IntArray(4)
+            val merged = IntArray(GAME_2048_SIDE)
             val compact = line.filter { it != 0 }
             var src = 0
             var dst = 0
@@ -407,12 +446,12 @@ internal object NativeBridge {
                 }
                 dst += 1
             }
-            for (position in 0..3) {
+            for (position in 0 until GAME_2048_SIDE) {
                 val (row, col) = coords(direction, index, position)
-                cells[row * 4 + col] = merged[position]
+                cells[row * GAME_2048_SIDE + col] = merged[position]
             }
         }
-        return LongArray(17) { if (it < 16) cells[it].toLong() else score }
+        return LongArray(GAME_2048_OUTPUT_COUNT) { if (it < GAME_2048_CELL_COUNT) cells[it].toLong() else score }
     }
 
     private fun coords(
@@ -421,9 +460,9 @@ internal object NativeBridge {
         position: Int,
     ): Pair<Int, Int> =
         when (direction) {
-            0 -> index to position
-            1 -> index to 3 - position
-            2 -> position to index
-            else -> 3 - position to index
+            MOVE_LEFT -> index to position
+            MOVE_RIGHT -> index to GAME_2048_LAST_INDEX - position
+            MOVE_UP -> position to index
+            else -> GAME_2048_LAST_INDEX - position to index
         }
 }

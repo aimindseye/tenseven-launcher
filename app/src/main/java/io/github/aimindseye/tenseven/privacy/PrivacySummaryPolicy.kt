@@ -87,9 +87,15 @@ object PrivacySummaryPolicy {
     val TEXT_UNAVAILABLE: String get() = t("permissions_unavailable")
     val DETAIL_FOOTER: String get() = t("app_info_has_the_full")
 
-    fun everydayLabels(privacy: AppPrivacy): List<String> = privacy.effective.filterNot { it.special }.map(privacy::labelFor)
+    fun everydayLabels(privacy: AppPrivacy): List<String> =
+        privacy.effective
+            .filterNot { it.special }
+            .map(privacy::labelFor)
 
-    fun specialLabels(privacy: AppPrivacy): List<String> = privacy.effective.filter { it.special }.map(privacy::labelFor)
+    fun specialLabels(privacy: AppPrivacy): List<String> =
+        privacy.effective
+            .filter { it.special }
+            .map(privacy::labelFor)
 
     /**
      * Builds the compact row.

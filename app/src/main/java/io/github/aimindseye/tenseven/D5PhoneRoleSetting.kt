@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.platform.ExtraAppsControl
 
 /** Explicit role request from Launcher Settings, separate from initial Apps & Features setup. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun D5PhoneRoleSetting() {
     val context = LocalContext.current
@@ -42,7 +43,8 @@ internal fun D5PhoneRoleSetting() {
         }
         if (enabled) {
             Text(
-                "In the Android dialog choose 'TenSeven Launcher'. This is the same installed APK that contains TenSeven Phone; no separate app will be listed.",
+                "In the Android dialog choose 'TenSeven Launcher'. This is the same installed APK that " +
+                    "contains TenSeven Phone; no separate app will be listed.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

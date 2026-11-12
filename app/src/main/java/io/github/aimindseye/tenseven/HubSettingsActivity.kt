@@ -31,6 +31,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.design.DesignText
@@ -55,6 +56,7 @@ import kotlinx.coroutines.withContext
  */
 class HubSettingsActivity : ComponentActivity() {
     companion object {
+        private const val HUB_CALENDAR_PERMISSION_REQUEST = 7301
         const val EXTRA_FROM_LAUNCHER_SETTINGS =
             "io.github.aimindseye.tenseven.extra.HUB_FROM_LAUNCHER_SETTINGS"
     }
@@ -78,96 +80,128 @@ class HubSettingsActivity : ComponentActivity() {
         val fromLauncherSettings = intent.getBooleanExtra(EXTRA_FROM_LAUNCHER_SETTINGS, false)
         setContent {
             LauncherTheme(window = window) {
-                val enabled = remember { HubSourceSettings(this) }
-                var showText by remember { mutableStateOf(state.loadHubPeekText()) }
-                var calendarPeek by remember { mutableStateOf(state.loadHubCalendarPeek()) }
-                var selectedCalendars by remember { mutableStateOf(state.loadHubSelectedCalendarIds()) }
-                var calendarSources by remember { mutableStateOf(emptyList<HubCalendarSource>()) }
-                val calendarPermitted = resumeTick >= 0 && calendars.hasPermission()
-                LaunchedEffect(resumeTick, calendarPeek) {
-                    calendarSources =
-                        if (calendarPeek && calendarPermitted) {
-                            withContext(Dispatchers.IO) { calendars.calendars() }
-                        } else {
-                            emptyList()
-                        }
-                }
-                var cleared by remember { mutableStateOf(false) }
-                var rows by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
-                LaunchedEffect(Unit) {
-                    rows =
-                        withContext(Dispatchers.IO) {
-                            HubApps.rows(repository.loadApps().map { it.component.packageName to it.label })
-                        }
-                }
-                HubSettings(
-                    access =
-                        HubAccessSettings(
-                            accessGranted =
-                                resumeTick >= 0 &&
-                                    io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe
-                                        .detect(this)
-                                        .hubNotifications ==
-                                    io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
-                            attemptedNotificationAccess =
-                                resumeTick >= 0 &&
-                                    SetupStep.NOTIFICATIONS in SpecialAccessAttemptStore.attempted(this),
-                            listenerAvailable =
-                                io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe
-                                    .detect(this)
-                                    .hubNotifications !=
-                                    io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
-                            onAccess = {
-                                SpecialAccessAttemptStore.markAttempted(this, SetupStep.NOTIFICATIONS)
-                                runCatching { startActivity(ConversationAccess.settingsIntent()) }
-                            },
-                            onRetryListener = {
-                                io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
-                                    .retryFromSettings(this)
-                            },
-                        ),
-                    calendar =
-                        HubCalendarSettings(
-                            calendarPeek = calendarPeek,
-                            calendarPermitted = calendarPermitted,
-                            calendarSources = calendarSources,
-                            selectedCalendars = selectedCalendars,
-                            onCalendarPermission = {
-                                requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 7301)
-                            },
-                            onCalendarToggle = { id ->
-                                val existing = selectedCalendars ?: calendarSources.map { it.id }.toSet()
-                                selectedCalendars = if (id in existing) existing - id else existing + id
-                                state.saveHubSelectedCalendarIds(selectedCalendars)
-                            },
-                            onCalendarPeek = {
-                                calendarPeek = it
-                                state.saveHubCalendarPeek(it)
-                            },
-                        ),
-                    content =
-                        HubContentSettings(
-                            showText = showText,
-                            cleared = cleared,
-                            onShowText = {
-                                showText = it
-                                state.saveHubPeekText(it)
-                            },
-                            onClear = {
-                                ConversationHub.clearNow()
-                                cleared = true
-                            },
-                            navigation =
-                                HubSettingsNavigation(
-                                    showLauncherBack = fromLauncherSettings,
-                                    onBack = { finish() },
-                                ),
-                        ),
-                    rows = rows,
-                    enabled = enabled,
-                )
+                HubSettingsContent(state, repository, calendars, fromLauncherSettings)
             }
         }
+    }
+
+    @Suppress("FunctionNaming")
+    @Composable
+    private fun HubSettingsContent(
+        state: StartStateRepository,
+        repository: LauncherAppsRepository,
+        calendars: HubCalendarRepository,
+        fromLauncherSettings: Boolean,
+    ) {
+        val enabled = remember { HubSourceSettings(this) }
+        val rows = rememberHubSourceRows(repository)
+        HubSettings(
+            access = hubAccessConfiguration(),
+            calendar = rememberHubCalendarConfiguration(state, calendars),
+            content = rememberHubContentConfiguration(state, fromLauncherSettings),
+            rows = rows,
+            enabled = enabled,
+        )
+    }
+
+    private fun hubAccessConfiguration(): HubAccessSettings =
+        HubAccessSettings(
+            accessGranted =
+                resumeTick >= 0 &&
+                    io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe
+                        .detect(this)
+                        .hubNotifications ==
+                    io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready,
+            attemptedNotificationAccess =
+                resumeTick >= 0 &&
+                    SetupStep.NOTIFICATIONS in SpecialAccessAttemptStore.attempted(this),
+            listenerAvailable =
+                io.github.aimindseye.tenseven.platform.PlatformCapabilityProbe
+                    .detect(this)
+                    .hubNotifications !=
+                    io.github.aimindseye.tenseven.platform.CapabilityStatus.Unavailable,
+            onAccess = {
+                SpecialAccessAttemptStore.markAttempted(this, SetupStep.NOTIFICATIONS)
+                runCatching { startActivity(ConversationAccess.settingsIntent()) }
+            },
+            onRetryListener = {
+                io.github.aimindseye.tenseven.platform.NotificationConnectionRecovery
+                    .retryFromSettings(this)
+            },
+        )
+
+    @Composable
+    private fun rememberHubCalendarConfiguration(
+        state: StartStateRepository,
+        calendars: HubCalendarRepository,
+    ): HubCalendarSettings {
+        var calendarPeek by remember { mutableStateOf(state.loadHubCalendarPeek()) }
+        var selectedCalendars by remember { mutableStateOf(state.loadHubSelectedCalendarIds()) }
+        var calendarSources by remember { mutableStateOf(emptyList<HubCalendarSource>()) }
+        val calendarPermitted = resumeTick >= 0 && calendars.hasPermission()
+        LaunchedEffect(resumeTick, calendarPeek) {
+            calendarSources =
+                if (calendarPeek && calendarPermitted) {
+                    withContext(Dispatchers.IO) { calendars.calendars() }
+                } else {
+                    emptyList()
+                }
+        }
+        return HubCalendarSettings(
+            calendarPeek = calendarPeek,
+            calendarPermitted = calendarPermitted,
+            calendarSources = calendarSources,
+            selectedCalendars = selectedCalendars,
+            onCalendarPermission = {
+                requestPermissions(
+                    arrayOf(Manifest.permission.READ_CALENDAR),
+                    HUB_CALENDAR_PERMISSION_REQUEST,
+                )
+            },
+            onCalendarToggle = { id ->
+                val existing = selectedCalendars ?: calendarSources.map { it.id }.toSet()
+                selectedCalendars = if (id in existing) existing - id else existing + id
+                state.saveHubSelectedCalendarIds(selectedCalendars)
+            },
+            onCalendarPeek = {
+                calendarPeek = it
+                state.saveHubCalendarPeek(it)
+            },
+        )
+    }
+
+    @Composable
+    private fun rememberHubContentConfiguration(
+        state: StartStateRepository,
+        fromLauncherSettings: Boolean,
+    ): HubContentSettings {
+        var showText by remember { mutableStateOf(state.loadHubPeekText()) }
+        var cleared by remember { mutableStateOf(false) }
+        return HubContentSettings(
+            showText = showText,
+            cleared = cleared,
+            onShowText = {
+                showText = it
+                state.saveHubPeekText(it)
+            },
+            onClear = {
+                ConversationHub.clearNow()
+                cleared = true
+            },
+            navigation = HubSettingsNavigation(showLauncherBack = fromLauncherSettings, onBack = { finish() }),
+        )
+    }
+
+    @Composable
+    private fun rememberHubSourceRows(repository: LauncherAppsRepository): List<Pair<String, String>> {
+        var rows by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
+        LaunchedEffect(Unit) {
+            rows =
+                withContext(Dispatchers.IO) {
+                    HubApps.rows(repository.loadApps().map { it.component.packageName to it.label })
+                }
+        }
+        return rows
     }
 }
 
@@ -244,150 +278,10 @@ private fun HubSettings(
                     }
                 }
                 Text(stringResource(R.string.hub_settings), style = MaterialTheme.typography.titleLarge)
-                val hubComposeContext = androidx.compose.ui.platform.LocalContext.current
-                val hubComposeRepo = remember(hubComposeContext) { StartStateRepository(hubComposeContext) }
-                var composeMode by remember { mutableStateOf(hubComposeRepo.loadHubComposeMode()) }
-                Text("Hub Compose action", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Choose what Compose opens. Ask every time is closest to the original BB10 Hub.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                io.github.aimindseye.tenseven.model.HubComposeMode.entries.forEach { choice ->
-                    HubRow(
-                        title = (if (choice == composeMode) "✓ " else "") + choice.label,
-                        detail = choice.description,
-                        onClick = {
-                            composeMode = choice
-                            hubComposeRepo.saveHubComposeMode(choice)
-                        },
-                    )
-                }
-                Text(
-                    stringResource(R.string.hub_settings_intro),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (!access.accessGranted && access.listenerAvailable) {
-                    if (access.attemptedNotificationAccess) {
-                        val context = androidx.compose.ui.platform.LocalContext.current
-                        HubRow(
-                            title = "If Android blocked notification access",
-                            detail =
-                                "After an access request is blocked, App info may show ⋮ → Allow restricted settings. " +
-                                    "Choose it only if you trust this APK, return and retry notification access. " +
-                                    "This menu may be absent before the first blocked request.",
-                            onClick = {
-                                runCatching {
-                                    context.startActivity(
-                                        Intent(
-                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                            Uri.parse("package:${context.packageName}"),
-                                        ),
-                                    )
-                                }
-                            },
-                        )
-                    } else {
-                        Text(
-                            "First try Notification access below. If Android blocks it, return here for App info instructions.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                HubRow(
-                    title = stringResource(R.string.hub_access),
-                    detail =
-                        stringResource(
-                            when {
-                                !access.listenerAvailable -> {
-                                    R.string.hub_access_lite
-                                }
-
-                                access.accessGranted &&
-                                    !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected -> {
-                                    R.string.hub_access_disconnected
-                                }
-
-                                access.accessGranted -> {
-                                    R.string.hub_access_on
-                                }
-
-                                else -> {
-                                    R.string.hub_access_off
-                                }
-                            },
-                        ),
-                    modifier = Modifier.focusRequester(first),
-                    onClick = { if (access.listenerAvailable) access.onAccess() },
-                )
-                HubListenerDiagnostics(access, enabled)
-                HubRow(
-                    title = "Copy notification diagnostics",
-                    detail = "Per-app counts and exclusion reasons only. No messages or notification keys are copied.",
-                    onClick = {
-                        val clipboard =
-                            auditContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-                                as? android.content.ClipboardManager
-                        clipboard?.setPrimaryClip(
-                            android.content.ClipData.newPlainText(
-                                "TenSeven notification diagnostics",
-                                io.github.aimindseye.tenseven.conversations.HubNotificationAudit
-                                    .report(),
-                            ),
-                        )
-                    },
-                )
-                HubRow(
-                    title = stringResource(R.string.hub_clear),
-                    detail = stringResource(if (content.cleared) R.string.hub_cleared else R.string.hub_clear_detail),
-                    onClick = content.onClear,
-                )
-                HubSwitch(
-                    stringResource(R.string.hub_show_text),
-                    stringResource(R.string.hub_show_text_detail),
-                    content.showText,
-                    content.onShowText,
-                )
-                HubSwitch(
-                    stringResource(R.string.hub_calendar_peek),
-                    stringResource(R.string.hub_calendar_peek_detail),
-                    calendar.calendarPeek,
-                    calendar.onCalendarPeek,
-                )
-                if (calendar.calendarPeek) {
-                    if (!calendar.calendarPermitted) {
-                        HubRow(
-                            "Allow Calendar access",
-                            "Required to show events from calendars synchronized with Android",
-                            onClick = calendar.onCalendarPermission,
-                        )
-                    } else {
-                        Text("Calendar sources", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Select the calendars whose events appear in Hub. Selection stays on this device.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        calendar.calendarSources.forEach { source ->
-                            HubSwitch(
-                                source.name,
-                                source.account,
-                                calendar.selectedCalendars == null || source.id in calendar.selectedCalendars,
-                            ) {
-                                calendar.onCalendarToggle(source.id)
-                            }
-                        }
-                        if (calendar.calendarSources.isEmpty()) {
-                            Text(
-                                "No visible Android calendars found",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                }
-
+                hubComposeSection()
+                hubAccessSection(access, enabled, first, auditContext)
+                hubContentSection(content)
+                hubCalendarSection(calendar)
                 HubSourceOptions(rows, enabled, enabled::toggle)
             }
             Settings2FlowFooter(
@@ -399,6 +293,167 @@ private fun HubSettings(
         }
     }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+}
+
+private val hubComposeSection: @Composable () -> Unit = {
+    val hubComposeContext = androidx.compose.ui.platform.LocalContext.current
+    val hubComposeRepo = remember(hubComposeContext) { StartStateRepository(hubComposeContext) }
+    var composeMode by remember { mutableStateOf(hubComposeRepo.loadHubComposeMode()) }
+    Text("Hub Compose action", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Choose what Compose opens. Ask every time is closest to the original BB10 Hub.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    io.github.aimindseye.tenseven.model.HubComposeMode.entries.forEach { choice ->
+        HubRow(
+            title = (if (choice == composeMode) "✓ " else "") + choice.label,
+            detail = choice.description,
+            onClick = {
+                composeMode = choice
+                hubComposeRepo.saveHubComposeMode(choice)
+            },
+        )
+    }
+}
+
+private val hubAccessSection: @Composable (
+    HubAccessSettings,
+    HubSourceSettings,
+    FocusRequester,
+    android.content.Context,
+) -> Unit = { access, enabled, first, auditContext ->
+    Text(
+        stringResource(R.string.hub_settings_intro),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (!access.accessGranted && access.listenerAvailable) {
+        if (access.attemptedNotificationAccess) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            HubRow(
+                title = "If Android blocked notification access",
+                detail =
+                    "After an access request is blocked, App info may show ⋮ → Allow " +
+                        "restricted settings. " +
+                        "Choose it only if you trust this APK, return and retry notification access. " +
+                        "This menu may be absent before the first blocked request.",
+                onClick = {
+                    runCatching {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                "package:${context.packageName}".toUri(),
+                            ),
+                        )
+                    }
+                },
+            )
+        } else {
+            Text(
+                "First try Notification access below. If Android blocks it, return here for App info instructions.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    HubRow(
+        title = stringResource(R.string.hub_access),
+        detail =
+            stringResource(
+                when {
+                    !access.listenerAvailable -> {
+                        R.string.hub_access_lite
+                    }
+
+                    access.accessGranted &&
+                        !io.github.aimindseye.tenseven.conversations.NotificationConnection.connected -> {
+                        R.string.hub_access_disconnected
+                    }
+
+                    access.accessGranted -> {
+                        R.string.hub_access_on
+                    }
+
+                    else -> {
+                        R.string.hub_access_off
+                    }
+                },
+            ),
+        modifier = Modifier.focusRequester(first),
+        onClick = { if (access.listenerAvailable) access.onAccess() },
+    )
+    HubListenerDiagnostics(access, enabled)
+    HubRow(
+        title = "Copy notification diagnostics",
+        detail = "Per-app counts and exclusion reasons only. No messages or notification keys are copied.",
+        onClick = {
+            val clipboard =
+                auditContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                    as? android.content.ClipboardManager
+            clipboard?.setPrimaryClip(
+                android.content.ClipData.newPlainText(
+                    "TenSeven notification diagnostics",
+                    io.github.aimindseye.tenseven.conversations.HubNotificationAudit
+                        .report(),
+                ),
+            )
+        },
+    )
+}
+
+private val hubContentSection: @Composable (HubContentSettings) -> Unit = { content ->
+    HubRow(
+        title = stringResource(R.string.hub_clear),
+        detail = stringResource(if (content.cleared) R.string.hub_cleared else R.string.hub_clear_detail),
+        onClick = content.onClear,
+    )
+    HubSwitch(
+        stringResource(R.string.hub_show_text),
+        stringResource(R.string.hub_show_text_detail),
+        content.showText,
+        content.onShowText,
+    )
+}
+
+private val hubCalendarSection: @Composable (HubCalendarSettings) -> Unit = { calendar ->
+    HubSwitch(
+        stringResource(R.string.hub_calendar_peek),
+        stringResource(R.string.hub_calendar_peek_detail),
+        calendar.calendarPeek,
+        calendar.onCalendarPeek,
+    )
+    if (calendar.calendarPeek) {
+        if (!calendar.calendarPermitted) {
+            HubRow(
+                "Allow Calendar access",
+                "Required to show events from calendars synchronized with Android",
+                onClick = calendar.onCalendarPermission,
+            )
+        } else {
+            Text("Calendar sources", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Select the calendars whose events appear in Hub. Selection stays on this device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            calendar.calendarSources.forEach { source ->
+                HubSwitch(
+                    source.name,
+                    source.account,
+                    calendar.selectedCalendars == null || source.id in calendar.selectedCalendars,
+                ) {
+                    calendar.onCalendarToggle(source.id)
+                }
+            }
+            if (calendar.calendarSources.isEmpty()) {
+                Text(
+                    "No visible Android calendars found",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+    }
 }
 
 @Composable

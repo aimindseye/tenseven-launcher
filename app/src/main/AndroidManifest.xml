@@ -179,7 +179,6 @@
         </activity-alias>
         <activity
             android:name="io.github.aimindseye.tenseven.SableStartActivity"
-            android:label="@string/tenseven_app_name"
             android:clearTaskOnLaunch="true"
             android:excludeFromRecents="true"
             android:exported="true"

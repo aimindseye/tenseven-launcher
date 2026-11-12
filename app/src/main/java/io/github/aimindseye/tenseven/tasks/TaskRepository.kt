@@ -4,6 +4,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import java.security.MessageDigest
 
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val TASK_REPOSITORY_FOLLOW_UP_MAX_100 = 100
+
 /** One repository for Hub follow-ups, stand-alone Tasks and Notes links. Never dependent on UI activity state. */
 interface TaskScheduler {
     fun cancel(id: String)
@@ -38,10 +41,11 @@ class TaskRepository(
     }
 
     fun complete(task: TaskRecord) {
-        val next =
-            if (!task.completed && task.repeat != TaskRepeat.Never &&
+        val recurringWithSchedule =
+            !task.completed && task.repeat != TaskRepeat.Never &&
                 (task.dueAtEpochMs != null || task.remindAtEpochMs != null)
-            ) {
+        val next =
+            if (recurringWithSchedule) {
                 val nextDue = TaskSchedule.advanceAfter(task.dueAtEpochMs, task.repeat, task.zoneId, now())
                 val nextRemind = TaskSchedule.advanceAfter(task.remindAtEpochMs, task.repeat, task.zoneId, now())
                 task.copy(dueAtEpochMs = nextDue, remindAtEpochMs = nextRemind, updatedAtEpochMs = now())
@@ -67,7 +71,7 @@ class TaskRepository(
         val task =
             existing?.copy(remindAtEpochMs = remindAt, updatedAtEpochMs = now())
                 ?: TaskRecord(
-                    title = "Follow up in " + appName.take(100),
+                    title = "Follow up in " + appName.take(TASK_REPOSITORY_FOLLOW_UP_MAX_100),
                     remindAtEpochMs = remindAt,
                     originPackage = packageName,
                     originToken = token,

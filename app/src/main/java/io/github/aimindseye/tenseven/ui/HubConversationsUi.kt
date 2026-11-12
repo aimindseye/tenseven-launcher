@@ -14,11 +14,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,8 +48,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -71,13 +67,11 @@ import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.conversations.Snooze
 import io.github.aimindseye.tenseven.conversations.conversationPreview
 import io.github.aimindseye.tenseven.design.sableFocusRing
-import io.github.aimindseye.tenseven.model.HubBar
 import io.github.aimindseye.tenseven.model.HubFilter
 import io.github.aimindseye.tenseven.model.HubStreamSelection
-import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.onboarding.SetupStep
-import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
+import io.github.aimindseye.tenseven.platform.PlatformCapabilities
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.openHubSource
 import io.github.aimindseye.tenseven.tasks.ReminderPolicy
@@ -222,19 +216,29 @@ private fun ConversationCard(
  * All ten Hub actions share one row; narrow windows scroll without reducing touch targets.
  * Message/mail counts roll up; utility shortcuts remain visible together without per-app filter chips.
  */
+internal data class HubNavigationState(
+    val currentTab: HubFilter,
+    val firstTab: FocusRequester,
+    val messageCount: Int,
+    val emailCount: Int,
+    val searchRequest: Int,
+    val closeSearchRequest: Int,
+)
+
 @Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun HubUnifiedNavigation(
     ui: HubConversationsUi,
-    currentTab: HubFilter,
+    navigation: HubNavigationState,
     onTabChange: (HubFilter) -> Unit,
-    firstTab: FocusRequester,
-    messageCount: Int,
-    emailCount: Int,
     onOpenCalendar: () -> Unit,
-    searchRequest: Int = 0,
-    closeSearchRequest: Int = 0,
 ) {
+    val currentTab = navigation.currentTab
+    val firstTab = navigation.firstTab
+    val messageCount = navigation.messageCount
+    val emailCount = navigation.emailCount
+    val searchRequest = navigation.searchRequest
+    val closeSearchRequest = navigation.closeSearchRequest
     var searchOpen by remember { mutableStateOf(false) }
     LaunchedEffect(searchRequest) {
         if (searchRequest > 0) {
@@ -264,85 +268,11 @@ internal fun HubUnifiedNavigation(
             reminders = remindCount,
         )
 
-    fun select(
-        tab: HubFilter,
-        next: ConversationFilter = ConversationFilter(),
-    ) {
-        onTabChange(tab)
-        ui.onFilterChange(next)
-        ui.onSourceChange(null)
+    BackHandler(enabled = ui.remindersSelected || ui.filter.snoozed) {
+        hubNavSelect(HubFilter.All, ui = ui, onTabChange = onTabChange)
     }
-
-    fun selected(name: String): Boolean =
-        when (name) {
-            "All" -> currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null && !ui.remindersSelected
-            "Unread" -> currentTab == HubFilter.All && ui.filter.unreadOnly && !ui.remindersSelected
-            "Messages" -> currentTab == HubFilter.Messages
-            "Email" -> currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email
-            "Snoozed" -> currentTab == HubFilter.All && ui.filter.snoozed
-            "Remind" -> ui.remindersSelected
-            else -> false
-        }
-
-    fun activate(name: String) {
-        when (name) {
-            "All" -> {
-                select(HubFilter.All)
-            }
-
-            "Unread" -> {
-                select(HubFilter.All, ConversationFilter(unreadOnly = true))
-            }
-
-            "Messages" -> {
-                select(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages))
-            }
-
-            "Email" -> {
-                select(HubFilter.All, ConversationFilter(kind = ConversationKind.Email))
-            }
-
-            "Snoozed" -> {
-                select(HubFilter.All, ConversationFilter(snoozed = true))
-            }
-
-            "Remind" -> {
-                onTabChange(HubFilter.All)
-                ui.onShowReminders()
-            }
-        }
-    }
-
-    BackHandler(enabled = ui.remindersSelected || ui.filter.snoozed) { select(HubFilter.All) }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().testTag("hub-shortcuts").horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // The approved reference is a flat, readable strip, not an always-populated icon shelf.
-            tabs.forEach { name ->
-                val active = selected(name)
-                val focus = if (name == "All") Modifier.focusRequester(firstTab) else Modifier
-                Column(
-                    modifier =
-                        focus
-                            .sableFocusRing()
-                            .clickable { activate(name) }
-                            .padding(horizontal = 3.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        name,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    )
-                    if (active) {
-                        Spacer(Modifier.fillMaxWidth().height(2.dp).background(MaterialTheme.colorScheme.primary))
-                    }
-                }
-            }
-        }
+        HubNavigationTabStrip(tabs, currentTab, ui, firstTab, onTabChange)
         if (searchOpen && currentTab != HubFilter.Calls && currentTab != HubFilter.Contacts) {
             OutlinedTextField(
                 value = ui.filter.person,
@@ -355,70 +285,131 @@ internal fun HubUnifiedNavigation(
     }
 }
 
-/** One keyboard-accessible icon with an optional unread total, not an always-enabled app chip. */
-@Composable
-private fun IconHubFilterButton(
-    label: String,
-    iconName: String,
-    selected: Boolean,
-    count: Int = 0,
-    showLabel: Boolean = false,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
+// Tab state/action routing stays separate from the navigation's Compose state.
+private fun hubNavSelect(
+    tab: HubFilter,
+    next: ConversationFilter = ConversationFilter(),
+    ui: HubConversationsUi,
+    onTabChange: (HubFilter) -> Unit,
 ) {
-    val color = MaterialTheme.colorScheme.onSurface
-    Column(
-        modifier =
-            modifier
-                .border(
-                    if (selected) 1.dp else 0.dp,
-                    if (selected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
-                ).sableFocusRing()
-                .clickable(onClick = onClick)
-                .semantics {
-                    contentDescription =
-                        if (showLabel) {
-                            "$label, $count items"
-                        } else if (count > 0) {
-                            "$label, $count notifications"
-                        } else {
-                            label
-                        }
-                    stateDescription = if (selected) "Selected" else "Not selected"
-                }.widthIn(min = if (showLabel) 88.dp else 48.dp)
-                .heightIn(min = if (showLabel) 60.dp else 48.dp)
-                .padding(horizontal = 6.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            LineIcon(
-                paths =
-                    if (iconName == "search") {
-                        LineIconPaths.SEARCH
-                    } else {
-                        TablerGlyphPaths.BY_NAME[iconName].orEmpty()
-                    },
-                modifier = Modifier.size(22.dp),
-                tint = color,
-            )
-            if (count > 0 || showLabel) {
-                Text(
-                    if (count > HubBar.MAX_COUNT) "99+" else count.toString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = color,
-                    maxLines = 1,
-                )
-            }
+    onTabChange(tab)
+    ui.onFilterChange(next)
+    ui.onSourceChange(null)
+}
+
+private fun hubNavSelected(
+    name: String,
+    currentTab: HubFilter,
+    ui: HubConversationsUi,
+): Boolean =
+    when (name) {
+        "All" -> {
+            hubAllTabSelected(currentTab, ui)
         }
-        if (showLabel) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-                maxLines = 1,
-                softWrap = false,
-            )
+
+        "Unread" -> {
+            hubUnreadTabSelected(currentTab, ui)
+        }
+
+        "Messages" -> {
+            currentTab == HubFilter.Messages
+        }
+
+        "Email" -> {
+            currentTab == HubFilter.All && ui.filter.kind == ConversationKind.Email
+        }
+
+        "Snoozed" -> {
+            currentTab == HubFilter.All && ui.filter.snoozed
+        }
+
+        "Remind" -> {
+            ui.remindersSelected
+        }
+
+        else -> {
+            false
+        }
+    }
+
+private fun hubAllTabSelected(
+    currentTab: HubFilter,
+    ui: HubConversationsUi,
+): Boolean = currentTab == HubFilter.All && !ui.filter.active && ui.sourcePackage == null && !ui.remindersSelected
+
+private fun hubUnreadTabSelected(
+    currentTab: HubFilter,
+    ui: HubConversationsUi,
+): Boolean = currentTab == HubFilter.All && ui.filter.unreadOnly && !ui.remindersSelected
+
+private fun hubNavActivate(
+    name: String,
+    ui: HubConversationsUi,
+    onTabChange: (HubFilter) -> Unit,
+) {
+    when (name) {
+        "All" -> {
+            hubNavSelect(HubFilter.All, ui = ui, onTabChange = onTabChange)
+        }
+
+        "Unread" -> {
+            hubNavSelect(HubFilter.All, ConversationFilter(unreadOnly = true), ui, onTabChange)
+        }
+
+        "Messages" -> {
+            hubNavSelect(HubFilter.Messages, ConversationFilter(kind = ConversationKind.Messages), ui, onTabChange)
+        }
+
+        "Email" -> {
+            hubNavSelect(HubFilter.All, ConversationFilter(kind = ConversationKind.Email), ui, onTabChange)
+        }
+
+        "Snoozed" -> {
+            hubNavSelect(HubFilter.All, ConversationFilter(snoozed = true), ui, onTabChange)
+        }
+
+        "Remind" -> {
+            onTabChange(HubFilter.All)
+            ui.onShowReminders()
+        }
+    }
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun HubNavigationTabStrip(
+    tabs: List<String>,
+    currentTab: HubFilter,
+    ui: HubConversationsUi,
+    firstTab: FocusRequester,
+    onTabChange: (HubFilter) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().testTag("hub-shortcuts").horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // The approved reference is a flat, readable strip, not an always-populated icon shelf.
+        tabs.forEach { name ->
+            val active = hubNavSelected(name, currentTab, ui)
+            val focus = if (name == "All") Modifier.focusRequester(firstTab) else Modifier
+            Column(
+                modifier =
+                    focus
+                        .sableFocusRing()
+                        .clickable { hubNavActivate(name, ui, onTabChange) }
+                        .padding(horizontal = 3.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
+                if (active) {
+                    Spacer(Modifier.fillMaxWidth().height(2.dp).background(MaterialTheme.colorScheme.primary))
+                }
+            }
         }
     }
 }
@@ -599,6 +590,25 @@ internal fun rememberHubConversationsUi(
     val enabledAppCount = remember(refreshGeneration) { hubSourceCount(context) }
     val state = remember(refreshGeneration, revision, accessGranted) { ConversationHub.state() }
     val now = rememberHubTime(state, conversations)
+    val selection =
+        HubConversationRenderSelection(
+            filter = filter,
+            sourcePackage = sourcePackage,
+            remindersSelected = remindersSelected,
+            onSourceChange = {
+                sourcePackage = it
+                remindersSelected = false
+            },
+            onFilterChange = {
+                filter = it
+                remindersSelected = false
+            },
+            onShowReminders = {
+                remindersSelected = true
+                filter = ConversationFilter()
+                sourcePackage = null
+            },
+        )
     return remember(
         capabilities,
         accessGranted,
@@ -612,71 +622,94 @@ internal fun rememberHubConversationsUi(
         remindersSelected,
         reminders,
     ) {
-        HubConversationsUi(
-            accessGranted = accessGranted,
-            canAllowAccess = capabilities.hubNotifications != CapabilityStatus.Unavailable,
-            enabledAppCount = enabledAppCount,
-            onChooseApps = onChooseApps,
-            deviceLocked = locked,
-            conversations = conversations,
-            filter = filter,
-            sourcePackage = sourcePackage,
-            onSourceChange = {
-                sourcePackage = it
-                remindersSelected = false
-            },
-            state = state,
-            now = now,
-            onFilterChange = {
-                filter = it
-                remindersSelected = false
-            },
-            reminders = reminders,
-            remindersSelected = remindersSelected,
-            onShowReminders = {
-                remindersSelected = true
-                filter = ConversationFilter()
-                sourcePackage = null
-            },
-            onMarkRead = { ConversationHub.markRead(context, it) },
-            onSnooze = { conversation, until -> ConversationHub.snooze(context, conversation, until) },
-            onWake = { ConversationHub.wake(context, it) },
-            onRemind = { conversation, due ->
-                val n = conversation.latestNotification
-                io.github.aimindseye.tenseven.platform
-                    .taskRepository(context)
-                    .followUp(n.packageName, n.key, n.appName, due)
-                android.widget.Toast
-                    .makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT)
-                    .show()
-            },
-            onCustomRemind = { conversation ->
-                chooseHubReminderTime(context) { due ->
-                    val n = conversation.latestNotification
-                    io.github.aimindseye.tenseven.platform
-                        .taskRepository(context)
-                        .followUp(n.packageName, n.key, n.appName, due)
-                    android.widget.Toast
-                        .makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT)
-                        .show()
-                }
-            },
-            onOpen = { conversation ->
-                openHubSource(context, conversation, onOpenFallback)
-            },
-            onReply = { conversation, text -> ConversationHub.reply(context, conversation, text) },
-            onAllowAccess = {
-                runCatching {
-                    context.startActivity(
-                        android.content
-                            .Intent(context, OnboardingActivity::class.java)
-                            .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.NOTIFICATIONS.name),
-                    )
-                }
-            },
+        buildHubConversationUi(
+            HubConversationRenderSnapshot(capabilities, conversations, enabledAppCount, state, now, reminders),
+            selection,
+            HubConversationRenderDependencies(context, onOpenFallback, onChooseApps),
         )
     }
 }
+
+private class HubConversationRenderSnapshot(
+    val capabilities: PlatformCapabilities,
+    val conversations: List<HubConversation>,
+    val enabledAppCount: Int,
+    val state: ConversationState,
+    val now: Long,
+    val reminders: List<TaskRecord>,
+)
+
+private class HubConversationRenderSelection(
+    val filter: ConversationFilter,
+    val sourcePackage: String?,
+    val remindersSelected: Boolean,
+    val onSourceChange: (String?) -> Unit,
+    val onFilterChange: (ConversationFilter) -> Unit,
+    val onShowReminders: () -> Unit,
+)
+
+private class HubConversationRenderDependencies(
+    val context: android.content.Context,
+    val onOpenFallback: () -> Unit,
+    val onChooseApps: () -> Unit,
+)
+
+private fun saveHubConversationReminder(
+    context: android.content.Context,
+    conversation: HubConversation,
+    due: Long?,
+) {
+    val n = conversation.latestNotification
+    io.github.aimindseye.tenseven.platform
+        .taskRepository(context)
+        .followUp(n.packageName, n.key, n.appName, due)
+    android.widget.Toast
+        .makeText(context, "Saved in TenSeven Remind", android.widget.Toast.LENGTH_SHORT)
+        .show()
+}
+
+private fun buildHubConversationUi(
+    snapshot: HubConversationRenderSnapshot,
+    selection: HubConversationRenderSelection,
+    dependencies: HubConversationRenderDependencies,
+): HubConversationsUi =
+    HubConversationsUi(
+        accessGranted = snapshot.capabilities.hubNotifications == CapabilityStatus.Ready,
+        canAllowAccess = snapshot.capabilities.hubNotifications != CapabilityStatus.Unavailable,
+        enabledAppCount = snapshot.enabledAppCount,
+        onChooseApps = dependencies.onChooseApps,
+        deviceLocked = snapshot.capabilities.deviceLocked,
+        conversations = snapshot.conversations,
+        filter = selection.filter,
+        sourcePackage = selection.sourcePackage,
+        onSourceChange = selection.onSourceChange,
+        state = snapshot.state,
+        now = snapshot.now,
+        onFilterChange = selection.onFilterChange,
+        reminders = snapshot.reminders,
+        remindersSelected = selection.remindersSelected,
+        onShowReminders = selection.onShowReminders,
+        onMarkRead = { ConversationHub.markRead(dependencies.context, it) },
+        onSnooze = { conversation, until -> ConversationHub.snooze(dependencies.context, conversation, until) },
+        onWake = { ConversationHub.wake(dependencies.context, it) },
+        onRemind = { conversation, due -> saveHubConversationReminder(dependencies.context, conversation, due) },
+        onCustomRemind = { conversation ->
+            chooseHubReminderTime(dependencies.context) { due ->
+                saveHubConversationReminder(dependencies.context, conversation, due)
+            }
+        },
+        onOpen = { conversation -> openHubSource(dependencies.context, conversation, dependencies.onOpenFallback) },
+        onReply = { conversation, text -> ConversationHub.reply(dependencies.context, conversation, text) },
+        onAllowAccess = {
+            runCatching {
+                dependencies.context.startActivity(
+                    android.content
+                        .Intent(dependencies.context, OnboardingActivity::class.java)
+                        .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.NOTIFICATIONS.name),
+                )
+            }
+        },
+    )
 
 private const val NOTIFICATION_ICON_BITMAP_SIZE = 96
 

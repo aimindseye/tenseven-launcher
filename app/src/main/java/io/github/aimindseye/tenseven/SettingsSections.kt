@@ -182,8 +182,8 @@ internal fun IconGridSection(state: StartStateRepository) {
 @Composable
 internal fun HomeDisplaySection(state: StartStateRepository) {
     val style = homeStyleState(state).value
-    var dials by remember(style) { mutableStateOf(state.loadHomeDials(style)) }
-    var mode by remember(style) { mutableStateOf(state.loadHomeStatusMode(style)) }
+    var dials by remember(style) { mutableStateOf(state.loadHomeDials()) }
+    var mode by remember(style) { mutableStateOf(state.loadHomeStatusMode()) }
 
     Text("Home status and notifications", style = MaterialTheme.typography.titleMedium)
     Text(
@@ -204,8 +204,8 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
                 modifier = Modifier.weight(1f),
             ) {
                 mode = option
-                state.saveHomeStatusMode(style, option)
-                dials = state.loadHomeDials(style)
+                state.saveHomeStatusMode(option)
+                dials = state.loadHomeDials()
             }
         }
     }
@@ -221,7 +221,7 @@ internal fun HomeDisplaySection(state: StartStateRepository) {
         ).forEach { (key, title) ->
             SwitchRow(title, "Show $title dial", key in dials) { enabled ->
                 dials = if (enabled) dials + key else dials - key
-                state.saveHomeDials(style, dials)
+                state.saveHomeDials(dials)
             }
         }
     }

@@ -5,7 +5,6 @@ import android.app.Dialog
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
@@ -14,15 +13,42 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.graphics.toColorInt
+
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val BB_DIALOGS_CHOICES_DP_1 = 1
+private const val BB_DIALOGS_CHOICES_DP_2 = 2
+private const val BB_DIALOGS_MULTI_CHOICE_DP_1 = 1
+private const val BB_DIALOGS_MULTI_CHOICE_DP_2 = 2
 
 /** BB10-inspired local dialogs: no platform-white alert sheets on light-mode devices. */
 object D5BbDialogs {
-    private val background = Color.rgb(7, 12, 19)
-    private val panel = Color.rgb(19, 30, 43)
+    // Approved BB10 dialog spacing, font sizes and sizing semantics.
+    private const val DIVIDER_THICKNESS_DP = 1
+    private const val CHECKBOX_PADDING_VERTICAL_DP = 6
+    private const val COMPACT_PADDING_DP = 8
+    private const val STANDARD_PADDING_VERTICAL_DP = 9
+    private const val INPUT_PADDING_HORIZONTAL_DP = 12
+    private const val LABEL_PADDING_HORIZONTAL_DP = 13
+    private const val CORNER_RADIUS_DP = 14
+    private const val CHOICE_ROW_MIN_HEIGHT_DP = 46
+    private const val ACTION_ROW_HEIGHT_DP = 48
+    private const val REPLY_INPUT_HEIGHT_DP = 85
+    private const val MULTICHOICE_LIST_HEIGHT_DP = 270
+    private const val TITLE_TEXT_SIZE_SP = 19f
+    private const val BODY_TEXT_SIZE_SP = 15f
+    private const val REPLY_TEXT_SIZE_SP = 16f
+    private const val CHOICE_TEXT_SIZE_SP = 14f
+    private const val REPLY_MAX_LINES = 3
+    private const val DIALOG_WIDTH_FRACTION = 0.92f
+    private const val ALTERNATING_ROW_PERIOD = 2
+    private val background = "#070C13".toColorInt()
+    private val panel = "#131E2B".toColorInt()
     private val textColor = Color.WHITE
-    private val secondary = Color.rgb(184, 201, 215)
-    private val accent = Color.rgb(0, 166, 237)
-    private val edge = Color.rgb(53, 75, 92)
+    private val secondary = "#B8C9D7".toColorInt()
+    private val accent = "#00A6ED".toColorInt()
+    private val edge = "#354B5C".toColorInt()
 
     private fun dp(
         activity: Activity,
@@ -32,8 +58,8 @@ object D5BbDialogs {
     private fun shape(activity: Activity) =
         GradientDrawable().apply {
             setColor(background)
-            cornerRadius = dp(activity, 14).toFloat()
-            setStroke(dp(activity, 1), edge)
+            cornerRadius = dp(activity, CORNER_RADIUS_DP).toFloat()
+            setStroke(dp(activity, DIVIDER_THICKNESS_DP), edge)
         }
 
     private fun label(
@@ -43,18 +69,32 @@ object D5BbDialogs {
     ): TextView =
         TextView(activity).apply {
             this.text = text
-            textSize = if (title) 19f else 15f
+            textSize = if (title) TITLE_TEXT_SIZE_SP else BODY_TEXT_SIZE_SP
             setTextColor(if (title) textColor else secondary)
             if (title) setTypeface(null, Typeface.BOLD)
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(activity, 13), dp(activity, 9), dp(activity, 13), dp(activity, 9))
+            setPadding(
+                dp(activity, LABEL_PADDING_HORIZONTAL_DP),
+                dp(activity, STANDARD_PADDING_VERTICAL_DP),
+                dp(activity, LABEL_PADDING_HORIZONTAL_DP),
+                dp(activity, STANDARD_PADDING_VERTICAL_DP),
+            )
         }
 
     private fun divider(
         activity: Activity,
         root: LinearLayout,
     ) {
-        root.addView(View(activity).apply { setBackgroundColor(edge) }, LinearLayout.LayoutParams(-1, dp(activity, 1)))
+        root.addView(
+            View(activity).apply { setBackgroundColor(edge) },
+            LinearLayout.LayoutParams(
+                -1,
+                dp(
+                    activity,
+                    DIVIDER_THICKNESS_DP,
+                ),
+            ),
+        )
     }
 
     fun custom(
@@ -67,16 +107,21 @@ object D5BbDialogs {
             LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
                 background = shape(activity)
-                setPadding(dp(activity, 8), dp(activity, 8), dp(activity, 8), dp(activity, 9))
+                setPadding(
+                    dp(activity, COMPACT_PADDING_DP),
+                    dp(activity, COMPACT_PADDING_DP),
+                    dp(activity, COMPACT_PADDING_DP),
+                    dp(activity, STANDARD_PADDING_VERTICAL_DP),
+                )
             }
         shell.addView(label(activity, title, true))
         divider(activity, shell)
         contents(shell, dialog)
         dialog.setContentView(shell)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
         dialog.window?.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         dialog.show()
-        val width = (activity.resources.displayMetrics.widthPixels * 0.92f).toInt()
+        val width = (activity.resources.displayMetrics.widthPixels * DIALOG_WIDTH_FRACTION).toInt()
         dialog.window?.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT)
         return dialog
     }
@@ -92,8 +137,8 @@ object D5BbDialogs {
                 val choice =
                     label(activity, name).apply {
                         setTextColor(textColor)
-                        minHeight = dp(activity, 46)
-                        setBackgroundColor(if (index % 2 == 0) panel else D5BbDialogs.background)
+                        minHeight = dp(activity, CHOICE_ROW_MIN_HEIGHT_DP)
+                        setBackgroundColor(if (index % ALTERNATING_ROW_PERIOD == 0) panel else D5BbDialogs.background)
                         isClickable = true
                         isFocusable = true
                         setOnClickListener {
@@ -101,7 +146,7 @@ object D5BbDialogs {
                             onChoice(index)
                         }
                     }
-                body.addView(choice, LinearLayout.LayoutParams(-1, -2))
+                body.addView(choice, LinearLayout.LayoutParams(-BB_DIALOGS_CHOICES_DP_1, -BB_DIALOGS_CHOICES_DP_2))
                 divider(activity, body)
             }
         }
@@ -129,7 +174,7 @@ object D5BbDialogs {
                             if (index == 1) onConfirm()
                         }
                     }
-                row.addView(b, LinearLayout.LayoutParams(0, dp(activity, 48), 1f))
+                row.addView(b, LinearLayout.LayoutParams(0, dp(activity, ACTION_ROW_HEIGHT_DP), 1f))
             }
         }
     }
@@ -152,15 +197,20 @@ object D5BbDialogs {
             val input =
                 EditText(activity).apply {
                     hint = "Type a reply"
-                    textSize = 16f
+                    textSize = REPLY_TEXT_SIZE_SP
                     setTextColor(textColor)
                     setHintTextColor(secondary)
                     setSingleLine(false)
-                    maxLines = 3
+                    maxLines = REPLY_MAX_LINES
                     background = shape(activity)
-                    setPadding(dp(activity, 12), dp(activity, 9), dp(activity, 12), dp(activity, 9))
+                    setPadding(
+                        dp(activity, INPUT_PADDING_HORIZONTAL_DP),
+                        dp(activity, STANDARD_PADDING_VERTICAL_DP),
+                        dp(activity, INPUT_PADDING_HORIZONTAL_DP),
+                        dp(activity, STANDARD_PADDING_VERTICAL_DP),
+                    )
                 }
-            body.addView(input, LinearLayout.LayoutParams(-1, dp(activity, 85)))
+            body.addView(input, LinearLayout.LayoutParams(-1, dp(activity, REPLY_INPUT_HEIGHT_DP)))
             val action =
                 label(activity, positive).apply {
                     gravity = Gravity.CENTER
@@ -173,7 +223,7 @@ object D5BbDialogs {
                         }
                     }
                 }
-            body.addView(action, LinearLayout.LayoutParams(-1, dp(activity, 48)))
+            body.addView(action, LinearLayout.LayoutParams(-1, dp(activity, ACTION_ROW_HEIGHT_DP)))
         }
     }
 
@@ -188,19 +238,30 @@ object D5BbDialogs {
             val choices = android.widget.ScrollView(activity)
             val rows = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
             choices.addView(rows)
-            body.addView(choices, LinearLayout.LayoutParams(-1, dp(activity, 270)))
+            body.addView(choices, LinearLayout.LayoutParams(-1, dp(activity, MULTICHOICE_LIST_HEIGHT_DP)))
             labels.forEachIndexed { index, value ->
                 val checkbox =
                     CheckBox(activity).apply {
                         text = value
-                        textSize = 14f
+                        textSize = CHOICE_TEXT_SIZE_SP
                         setTextColor(textColor)
                         buttonTintList = ColorStateList.valueOf(accent)
                         isChecked = checked[index]
-                        setPadding(dp(activity, 8), dp(activity, 6), dp(activity, 8), dp(activity, 6))
+                        setPadding(
+                            dp(activity, COMPACT_PADDING_DP),
+                            dp(activity, CHECKBOX_PADDING_VERTICAL_DP),
+                            dp(activity, COMPACT_PADDING_DP),
+                            dp(activity, CHECKBOX_PADDING_VERTICAL_DP),
+                        )
                         setOnCheckedChangeListener { _, state -> checked[index] = state }
                     }
-                rows.addView(checkbox, LinearLayout.LayoutParams(-1, -2))
+                rows.addView(
+                    checkbox,
+                    LinearLayout.LayoutParams(
+                        -BB_DIALOGS_MULTI_CHOICE_DP_1,
+                        -BB_DIALOGS_MULTI_CHOICE_DP_2,
+                    ),
+                )
             }
             val actions = LinearLayout(activity)
             body.addView(actions)
@@ -214,7 +275,7 @@ object D5BbDialogs {
                             if (index == 1) onSave()
                         }
                     },
-                    LinearLayout.LayoutParams(0, dp(activity, 48), 1f),
+                    LinearLayout.LayoutParams(0, dp(activity, ACTION_ROW_HEIGHT_DP), 1f),
                 )
             }
         }

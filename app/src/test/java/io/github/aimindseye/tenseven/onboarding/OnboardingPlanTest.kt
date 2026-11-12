@@ -101,10 +101,21 @@ class OnboardingPlanTest {
             ),
         )
         assertTrue(
-            OnboardingPlan.needsRestrictedSettingsOverviewHelp(everything.copy(usageAccess = false), eligible, setOf(SetupStep.USAGE)),
+            OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+                everything.copy(usageAccess = false),
+                eligible,
+                setOf(SetupStep.USAGE),
+            ),
         )
         assertFalse(
-            OnboardingPlan.needsRestrictedSettingsOverviewHelp(everything, eligible, setOf(SetupStep.NOTIFICATIONS, SetupStep.USAGE)),
+            OnboardingPlan.needsRestrictedSettingsOverviewHelp(
+                everything,
+                eligible,
+                setOf(
+                    SetupStep.NOTIFICATIONS,
+                    SetupStep.USAGE,
+                ),
+            ),
         )
         assertFalse(
             OnboardingPlan.needsRestrictedSettingsOverviewHelp(

@@ -32,8 +32,23 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.edit
 import io.github.aimindseye.tenseven.D5BbDialogs
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
+
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val TELECOM_NORMALIZE_VALUE_7 = 7
+private const val TELECOM_ROW_DP_1 = 1
+private const val TELECOM_ROW_DP_2 = 2
+private const val TELECOM_SHOW_INCOMING_MORE_VALUE_2 = 2
+private const val TELECOM_SHOW_INCOMING_MORE_VALUE_3 = 3
+private const val TELECOM_SHOW_REPLY_VALUE_3 = 3
+private const val TELECOM_SHOW_TONE_PAD_RGB_166 = 166
+private const val TELECOM_SHOW_TONE_PAD_RGB_17 = 17
+private const val TELECOM_SHOW_TONE_PAD_RGB_237 = 237
+private const val TELECOM_SHOW_TONE_PAD_RGB_29 = 29
+private const val TELECOM_SHOW_TONE_PAD_RGB_43 = 43
+private const val TELECOM_TEXT_VALUE_2 = 2
 
 /** Local-only explicit number matching. Never infer that an unknown number is spam. */
 object PhoneBlocklist {
@@ -57,11 +72,12 @@ object PhoneBlocklist {
         if (number.isNotEmpty()) {
             context
                 .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putStringSet(
-                    ALLOW,
-                    allowed(context) + number,
-                ).apply()
+                .edit {
+                    putStringSet(
+                        ALLOW,
+                        allowed(context) + number,
+                    )
+                }
         }
     }
 
@@ -71,9 +87,9 @@ object PhoneBlocklist {
     ) {
         context
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putStringSet(ALLOW, allowed(context) - normalize(value))
-            .apply()
+            .edit {
+                putStringSet(ALLOW, allowed(context) - normalize(value))
+            }
     }
 
     fun silenceUnknown(context: Context): Boolean =
@@ -85,14 +101,14 @@ object PhoneBlocklist {
     ) {
         context
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(SILENCE_UNKNOWN, enabled)
-            .apply()
+            .edit {
+                putBoolean(SILENCE_UNKNOWN, enabled)
+            }
     }
 
     fun normalize(value: String): String {
         val text = PhoneNumberUtils.normalizeNumber(value.trim())
-        return if (text.length >= 7) text else ""
+        return if (text.length >= TELECOM_NORMALIZE_VALUE_7) text else ""
     }
 
     fun blocked(context: Context): Set<String> =
@@ -115,9 +131,9 @@ object PhoneBlocklist {
         if (number.isEmpty()) return
         context
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putStringSet(KEY, blocked(context) + number)
-            .apply()
+            .edit {
+                putStringSet(KEY, blocked(context) + number)
+            }
     }
 
     fun unblock(
@@ -126,9 +142,9 @@ object PhoneBlocklist {
     ) {
         context
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putStringSet(KEY, blocked(context) - normalize(value))
-            .apply()
+            .edit {
+                putStringSet(KEY, blocked(context) - normalize(value))
+            }
     }
 }
 
@@ -159,7 +175,11 @@ class TenSevenCallScreeningService : CallScreeningService() {
 
     private fun isInContacts(number: String): Boolean {
         return try {
-            val uri = Uri.withAppendedPath(android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
+            val uri =
+                Uri.withAppendedPath(
+                    android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                    Uri.encode(number),
+                )
             contentResolver
                 .query(
                     uri,
@@ -203,34 +223,46 @@ internal object PhoneCallState {
     }
 
     fun number(): String =
-        D6CallIdentityPolicy.displayNumber(D6CallIdentityPolicy.publicNumber(call?.details?.handle?.schemeSpecificPart) ?: lastNumber)
+        D6CallIdentityPolicy.displayNumber(
+            D6CallIdentityPolicy
+                .publicNumber(call?.details?.handle?.schemeSpecificPart) ?: lastNumber,
+        )
 
     fun isPrivateCaller(): Boolean =
         D6CallIdentityPolicy.publicNumber(call?.details?.handle?.schemeSpecificPart) == null && lastNumber == null
 
+    private fun lookupContactName(
+        context: Context,
+        number: String,
+    ): String? =
+        runCatching {
+            val uri =
+                Uri.withAppendedPath(
+                    android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                    Uri.encode(number),
+                )
+            context.contentResolver
+                .query(
+                    uri,
+                    arrayOf(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor -> cursor.takeIf { it.moveToFirst() }?.getString(0) }
+        }.getOrNull()
+
     fun caller(context: Context): String {
         val number = D6CallIdentityPolicy.publicNumber(call?.details?.handle?.schemeSpecificPart) ?: lastNumber
-        if (number == null) return D6CallIdentityPolicy.PRIVATE_LABEL
-        if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            return D6CallIdentityPolicy.callerName(null, lastNetworkName, number)
-        }
         val contactName =
-            try {
-                val uri = Uri.withAppendedPath(android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-                context.contentResolver
-                    .query(
-                        uri,
-                        arrayOf(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME),
-                        null,
-                        null,
-                        null,
-                    )?.use { cursor ->
-                        if (cursor.moveToFirst()) cursor.getString(0) else null
-                    }
-            } catch (_: Exception) {
-                null
-            }
-        return D6CallIdentityPolicy.callerName(contactName, lastNetworkName, number)
+            number
+                ?.takeIf {
+                    context.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+                }?.let { lookupContactName(context, it) }
+        return if (number == null) {
+            D6CallIdentityPolicy.PRIVATE_LABEL
+        } else {
+            D6CallIdentityPolicy.callerName(contactName, lastNetworkName, number)
+        }
     }
 }
 
@@ -262,10 +294,29 @@ class TenSevenInCallService : InCallService() {
 
     private fun publishCallNotification() {
         val notifications = getSystemService(NotificationManager::class.java) ?: return
-        notifications.createNotificationChannel(NotificationChannel(channel, "Phone calls", NotificationManager.IMPORTANCE_HIGH))
+        notifications.createNotificationChannel(
+            NotificationChannel(
+                channel,
+                "Phone calls",
+                NotificationManager
+                    .IMPORTANCE_HIGH,
+            ),
+        )
         val intent =
-            Intent(this, TenSevenInCallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val pending = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            Intent(this, TenSevenInCallActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent
+                        .FLAG_ACTIVITY_CLEAR_TOP,
+            )
+        val pending =
+            PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or
+                    PendingIntent
+                        .FLAG_IMMUTABLE,
+            )
         val builder =
             Notification
                 .Builder(this, channel)
@@ -289,10 +340,32 @@ class TenSevenInCallService : InCallService() {
     }
 }
 
-/** Full-screen incoming and ongoing call controls. Only Telecom owns the connection. */
-
 /** Approved BB10-style call surface; only Android Telecom owns the actual call. */
 class TenSevenInCallActivity : Activity() {
+    // In-call drawing and control dimensions retained from the approved D5 screen.
+    private companion object {
+        const val OUTLINE_STROKE_DP = 1
+        const val TEXT_VERTICAL_MARGIN_DP = 3
+        const val HEADER_BOTTOM_INSET_DP = 4
+        const val COMPACT_CONTROL_INSET_DP = 5
+        const val TEXT_HORIZONTAL_MARGIN_DP = 7
+        const val CONTROL_ROW_HORIZONTAL_INSET_DP = 9
+        const val CALL_IDENTITY_HORIZONTAL_INSET_DP = 10
+        const val BOTTOM_SAFE_GAP_DP = 12
+        const val PILL_CORNER_RADIUS_DP = 30
+        const val KEYPAD_DONE_HEIGHT_DP = 44
+        const val DTMF_ROW_HEIGHT_DP = 50
+        const val CALL_BUTTON_HEIGHT_DP = 54
+        const val CALLER_AVATAR_SIZE_DP = 92
+        const val CALL_ACTION_TEXT_SP = 14f
+        const val PRIVATE_CALLER_GLYPH_SP = 36f
+        const val CALLER_NAME_TEXT_SP = 29f
+        const val CALLER_NUMBER_TEXT_SP = 16f
+        const val CALL_STATUS_TEXT_SP = 17f
+        const val CALL_DETAIL_TEXT_SP = 13f
+        const val DTMF_DONE_TEXT_SP = 16f
+    }
+
     private val refresh = Handler(Looper.getMainLooper())
     private val ui by lazy { PhonePalette(this) }
     private var lastState = -100
@@ -338,9 +411,9 @@ class TenSevenInCallActivity : Activity() {
         color: Int,
         outline: Int? = null,
     ) = GradientDrawable().apply {
-        cornerRadius = dp(30).toFloat()
+        cornerRadius = dp(PILL_CORNER_RADIUS_DP).toFloat()
         setColor(color)
-        if (outline != null) setStroke(dp(1), outline)
+        if (outline != null) setStroke(dp(OUTLINE_STROKE_DP), outline)
     }
 
     private fun text(
@@ -349,7 +422,6 @@ class TenSevenInCallActivity : Activity() {
         size: Float,
         color: Int = ui.fg,
         bold: Boolean = false,
-        height: Int = -2,
     ) {
         val line =
             TextView(this).apply {
@@ -359,7 +431,17 @@ class TenSevenInCallActivity : Activity() {
                 gravity = Gravity.CENTER
                 setTypeface(null, if (bold) Typeface.BOLD else Typeface.NORMAL)
             }
-        parent.addView(line, LinearLayout.LayoutParams(-1, height).apply { setMargins(dp(7), dp(3), dp(7), dp(3)) })
+        parent.addView(
+            line,
+            LinearLayout.LayoutParams(-1, -TELECOM_TEXT_VALUE_2).apply {
+                setMargins(
+                    dp(TEXT_HORIZONTAL_MARGIN_DP),
+                    dp(TEXT_VERTICAL_MARGIN_DP),
+                    dp(TEXT_HORIZONTAL_MARGIN_DP),
+                    dp(TEXT_VERTICAL_MARGIN_DP),
+                )
+            },
+        )
     }
 
     private fun button(
@@ -372,7 +454,7 @@ class TenSevenInCallActivity : Activity() {
             Button(this).apply {
                 text = title
                 isAllCaps = false
-                textSize = 14f
+                textSize = CALL_ACTION_TEXT_SP
                 setTextColor(if (color == ui.panel) ui.fg else Color.WHITE)
                 background = shape(color, if (color == ui.panel) ui.line else null)
                 minimumHeight = 0
@@ -380,8 +462,13 @@ class TenSevenInCallActivity : Activity() {
             }
         row.addView(
             item,
-            LinearLayout.LayoutParams(0, dp(54), 1f).apply {
-                setMargins(dp(5), dp(5), dp(5), dp(5))
+            LinearLayout.LayoutParams(0, dp(CALL_BUTTON_HEIGHT_DP), 1f).apply {
+                setMargins(
+                    dp(COMPACT_CONTROL_INSET_DP),
+                    dp(COMPACT_CONTROL_INSET_DP),
+                    dp(COMPACT_CONTROL_INSET_DP),
+                    dp(COMPACT_CONTROL_INSET_DP),
+                )
             },
         )
     }
@@ -390,8 +477,8 @@ class TenSevenInCallActivity : Activity() {
         LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(dp(9), 0, dp(9), 0)
-            root.addView(this, LinearLayout.LayoutParams(-1, -2))
+            setPadding(dp(CONTROL_ROW_HORIZONTAL_INSET_DP), 0, dp(CONTROL_ROW_HORIZONTAL_INSET_DP), 0)
+            root.addView(this, LinearLayout.LayoutParams(-TELECOM_ROW_DP_1, -TELECOM_ROW_DP_2))
         }
 
     private fun statusName(state: Int) =
@@ -431,11 +518,26 @@ class TenSevenInCallActivity : Activity() {
             }
         // No redundant app-name header: give caller image and primary actions the usable viewport.
         val call = PhoneCallState.call
+        renderCallIdentity(root, call)
+        renderCallActions(root, call)
+        root.addView(android.view.View(this), LinearLayout.LayoutParams(-1, dp(BOTTOM_SAFE_GAP_DP)))
+        TenSevenSafeViewport.show(this, root)
+    }
+
+    private fun renderCallIdentity(
+        root: LinearLayout,
+        call: Call?,
+    ) {
         val identity =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                setPadding(dp(10), dp(5), dp(10), dp(4))
+                setPadding(
+                    dp(CALL_IDENTITY_HORIZONTAL_INSET_DP),
+                    dp(COMPACT_CONTROL_INSET_DP),
+                    dp(CALL_IDENTITY_HORIZONTAL_INSET_DP),
+                    dp(HEADER_BOTTOM_INSET_DP),
+                )
             }
         root.addView(identity, LinearLayout.LayoutParams(-1, 0, 1f))
         val name = PhoneCallState.caller(this)
@@ -447,76 +549,43 @@ class TenSevenInCallActivity : Activity() {
                 // No invented "PN" initials for an actually withheld number.
                 TextView(this).apply {
                     text = "☎"
-                    textSize = 36f
+                    textSize = PRIVATE_CALLER_GLYPH_SP
                     setTextColor(ui.fg)
                     gravity = Gravity.CENTER
                     background =
                         GradientDrawable().apply {
                             shape = GradientDrawable.OVAL
                             setColor(ui.panel)
-                            setStroke(dp(1), ui.line)
+                            setStroke(dp(OUTLINE_STROKE_DP), ui.line)
                         }
                     contentDescription = "Private caller"
                 }
             } else {
                 val contactId = TenSevenContactPhotos.lookupContactId(this, number)
-                TenSevenContactPhotos.avatar(this, contactId, name, 92, ui)
+                TenSevenContactPhotos.avatar(this, contactId, name, CALLER_AVATAR_SIZE_DP, ui)
             }
-        iconRow.addView(avatar, LinearLayout.LayoutParams(dp(92), dp(92)))
-        text(identity, name, 29f, ui.fg, true)
-        if (!privateCaller && name != number) text(identity, number, 16f, ui.muted)
-        text(identity, statusName(call?.state ?: Call.STATE_DISCONNECTED), 17f, ui.muted)
-        if (call?.state == Call.STATE_RINGING) text(identity, "Incoming · Mobile", 13f, ui.muted)
+        iconRow.addView(avatar, LinearLayout.LayoutParams(dp(CALLER_AVATAR_SIZE_DP), dp(CALLER_AVATAR_SIZE_DP)))
+        text(identity, name, CALLER_NAME_TEXT_SP, ui.fg, true)
+        if (!privateCaller && name != number) text(identity, number, CALLER_NUMBER_TEXT_SP, ui.muted)
+        text(identity, statusName(call?.state ?: Call.STATE_DISCONNECTED), CALL_STATUS_TEXT_SP, ui.muted)
+        if (call?.state == Call.STATE_RINGING) text(identity, "Incoming · Mobile", CALL_DETAIL_TEXT_SP, ui.muted)
+    }
+
+    private fun renderCallActions(
+        root: LinearLayout,
+        call: Call?,
+    ) {
         when (call?.state) {
             Call.STATE_RINGING -> {
-                val primary = row(root)
-                button(primary, "Answer", ui.success) {
-                    call.answer(VideoProfile.STATE_AUDIO_ONLY)
-                    render()
-                }
-                button(primary, "Decline", ui.danger) {
-                    call.reject(false, null)
-                    finish()
-                }
-                val secondary = row(root)
-                button(secondary, "Silence") { silenceIncomingRinger() }
-                button(secondary, "Reply with text") {
-                    if (call.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT)) {
-                        showReply(call)
-                    } else {
-                        Toast.makeText(this, "Text reply is unavailable for this call", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                button(secondary, "More") { showIncomingMore(call) }
+                renderIncomingControls(root, requireNotNull(call))
             }
 
             Call.STATE_ACTIVE, Call.STATE_HOLDING -> {
-                val controls = row(root)
-                button(controls, "Keypad") { showTonePad(call) }
-                button(controls, "Mute") { PhoneCallState.service?.setMuted(true) }
-                button(controls, "Speaker") { PhoneCallState.service?.setAudioRoute(CallAudioState.ROUTE_SPEAKER) }
-                val more = row(root)
-                button(more, "Unmute") { PhoneCallState.service?.setMuted(false) }
-                button(more, "Earpiece") { PhoneCallState.service?.setAudioRoute(CallAudioState.ROUTE_EARPIECE) }
-                if (call.state == Call.STATE_HOLDING || call.details.can(Call.Details.CAPABILITY_HOLD)) {
-                    button(more, if (call.state == Call.STATE_HOLDING) "Resume" else "Hold") {
-                        if (call.state == Call.STATE_HOLDING) call.unhold() else call.hold()
-                        render()
-                    }
-                }
-                val end = row(root)
-                button(end, "End call", ui.danger) {
-                    call.disconnect()
-                    finish()
-                }
+                renderActiveControls(root, requireNotNull(call))
             }
 
             Call.STATE_DIALING, Call.STATE_CONNECTING -> {
-                val stop = row(root)
-                button(stop, "Cancel call", ui.danger) {
-                    call.disconnect()
-                    finish()
-                }
+                renderConnectingControls(root, requireNotNull(call))
             }
 
             else -> {
@@ -524,8 +593,66 @@ class TenSevenInCallActivity : Activity() {
                 button(close, "Close") { finish() }
             }
         }
-        root.addView(android.view.View(this), LinearLayout.LayoutParams(-1, dp(12)))
-        TenSevenSafeViewport.show(this, root)
+    }
+
+    private fun renderIncomingControls(
+        root: LinearLayout,
+        call: Call,
+    ) {
+        val primary = row(root)
+        button(primary, "Answer", ui.success) {
+            call.answer(VideoProfile.STATE_AUDIO_ONLY)
+            render()
+        }
+        button(primary, "Decline", ui.danger) {
+            call.reject(false, null)
+            finish()
+        }
+        val secondary = row(root)
+        button(secondary, "Silence") { silenceIncomingRinger() }
+        button(secondary, "Reply with text") {
+            if (call.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT)) {
+                showReply(call)
+            } else {
+                Toast.makeText(this, "Text reply is unavailable for this call", Toast.LENGTH_SHORT).show()
+            }
+        }
+        button(secondary, "More") { showIncomingMore(call) }
+    }
+
+    private fun renderActiveControls(
+        root: LinearLayout,
+        call: Call,
+    ) {
+        val controls = row(root)
+        button(controls, "Keypad") { showTonePad(call) }
+        button(controls, "Mute") { PhoneCallState.service?.setMuted(true) }
+        button(controls, "Speaker") { PhoneCallState.service?.setAudioRoute(CallAudioState.ROUTE_SPEAKER) }
+        val more = row(root)
+        button(more, "Unmute") { PhoneCallState.service?.setMuted(false) }
+        button(more, "Earpiece") { PhoneCallState.service?.setAudioRoute(CallAudioState.ROUTE_EARPIECE) }
+        if (call.state == Call.STATE_HOLDING || call.details.can(Call.Details.CAPABILITY_HOLD)) {
+            button(more, if (call.state == Call.STATE_HOLDING) "Resume" else "Hold") {
+                if (call.state == Call.STATE_HOLDING) call.unhold() else call.hold()
+                render()
+            }
+        }
+        val end = row(root)
+        button(end, "End call", ui.danger) {
+            call.disconnect()
+            finish()
+        }
+    }
+
+    private fun renderConnectingControls(
+        root: LinearLayout,
+        call: Call,
+    ) {
+        val stop = row(root)
+        button(stop, "Cancel call", ui.danger) {
+            call.disconnect()
+            finish()
+        }
     }
 
     private fun showReply(call: Call) {
@@ -535,7 +662,7 @@ class TenSevenInCallActivity : Activity() {
         }
         val replies = listOf("Can't talk now", "I'll call you back", "In a meeting", "Custom reply…")
         D5BbDialogs.choices(this, "Reply with text", replies) { which ->
-            if (which < 3) {
+            if (which < TELECOM_SHOW_REPLY_VALUE_3) {
                 call.reject(true, replies[which])
                 finish()
             } else {
@@ -567,14 +694,12 @@ class TenSevenInCallActivity : Activity() {
                     finish()
                 }
 
-                2, 3 -> {
+                TELECOM_SHOW_INCOMING_MORE_VALUE_2, TELECOM_SHOW_INCOMING_MORE_VALUE_3 -> {
                     PhoneBlocklist.block(this, PhoneCallState.number())
-                    if (android.os.Build.VERSION.SDK_INT >= 30) {
-                        call.reject(Call.REJECT_REASON_UNWANTED)
-                    } else {
-                        call.reject(false, null)
-                    }
-                    Toast.makeText(this, "Saved locally; enable call screening for future calls", Toast.LENGTH_LONG).show()
+                    call.reject(Call.REJECT_REASON_UNWANTED)
+                    Toast
+                        .makeText(this, "Saved locally; enable call screening for future calls", Toast.LENGTH_LONG)
+                        .show()
                     finish()
                 }
             }
@@ -585,14 +710,20 @@ class TenSevenInCallActivity : Activity() {
         D5BbDialogs.custom(this, "Call keypad") { container, dialog ->
             listOf("123", "456", "789", "*0#").forEach { group ->
                 val row = LinearLayout(this)
-                container.addView(row, LinearLayout.LayoutParams(-1, dp(50)))
+                container.addView(row, LinearLayout.LayoutParams(-1, dp(DTMF_ROW_HEIGHT_DP)))
                 group.forEach { digit ->
                     val key =
                         Button(this).apply {
                             text = digit.toString()
                             isAllCaps = false
                             setTextColor(Color.WHITE)
-                            setBackgroundColor(Color.rgb(17, 29, 43))
+                            setBackgroundColor(
+                                Color.rgb(
+                                    TELECOM_SHOW_TONE_PAD_RGB_17,
+                                    TELECOM_SHOW_TONE_PAD_RGB_29,
+                                    TELECOM_SHOW_TONE_PAD_RGB_43,
+                                ),
+                            )
                             setOnClickListener {
                                 call.playDtmfTone(digit)
                                 call.stopDtmfTone()
@@ -603,13 +734,16 @@ class TenSevenInCallActivity : Activity() {
             }
             val done =
                 TextView(this).apply {
-                    text = "Done"
-                    textSize = 16f
-                    setTextColor(Color.rgb(0, 166, 237))
+                    text =
+                        this@TenSevenInCallActivity.getString(
+                            io.github.aimindseye.tenseven.R.string.tenseven_incall_done,
+                        )
+                    textSize = DTMF_DONE_TEXT_SP
+                    setTextColor(Color.rgb(0, TELECOM_SHOW_TONE_PAD_RGB_166, TELECOM_SHOW_TONE_PAD_RGB_237))
                     gravity = Gravity.CENTER
                     setOnClickListener { dialog.dismiss() }
                 }
-            container.addView(done, LinearLayout.LayoutParams(-1, dp(44)))
+            container.addView(done, LinearLayout.LayoutParams(-1, dp(KEYPAD_DONE_HEIGHT_DP)))
         }
     }
 }

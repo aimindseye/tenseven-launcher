@@ -18,6 +18,14 @@ enum class HomeStatusMode(
             entries.firstOrNull { it.key == saved }
                 ?: if (legacyDialCount == 0) Hidden else Dials
 
-        fun preference(style: HomeStyle): String = if (style == HomeStyle.Bb7) "home_status_mode_bb7" else "home_status_mode_bb10"
+        fun preference(style: HomeStyle): String =
+            if (style ==
+                HomeStyle
+                    .Bb7
+            ) {
+                "home_status_mode_bb7"
+            } else {
+                "home_status_mode_bb10"
+            }
     }
 }

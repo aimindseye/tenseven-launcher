@@ -19,6 +19,23 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.log10
 
+// Stable units and physical scales used by device-status calculations.
+private const val BYTES_PER_KIB = 1024.0
+private const val KIB_PER_MIB = 1024.0
+private const val HEAT_LOG_DIVISOR = 4.5
+private const val COMPACT_KIB_THRESHOLD = 1000.0
+private const val TENTH_MIB_THRESHOLD = 10_240.0
+private const val MINUTES_PER_HOUR = 60f
+private const val COMPACT_HOURS_LIMIT = 48f
+private const val HOURS_PER_DAY = 24f
+private const val SIGNAL_FULL_SCALE = 4f
+private const val MIN_BATTERY_DRAW_UA = 20_000L
+private const val MIN_ESTIMATED_HOURS = 0.1f
+private const val MAX_ESTIMATED_HOURS = 99f
+private const val BATTERY_FULL_PERCENT = 100
+private const val BATTERY_FULL_SCALE = 100f
+private const val MILLIS_PER_SECOND = 1000.0
+
 /**
  * One reading for the Start header rings. Fractions are 0..1. A null value
  * means the device does not expose it (CPU on locked-down kernels, network
@@ -55,19 +72,19 @@ object DeviceStatsFormat {
 
     /** Throughput on a log scale: 0 below 1 KiB/s, 1 at about 30 MiB/s. */
     fun heat(bytesPerSec: Long?): Float {
-        val kib = (bytesPerSec ?: 0L) / 1024.0
-        return if (kib < 1) 0f else (log10(kib + 1) / 4.5).toFloat().coerceIn(0f, 1f)
+        val kib = (bytesPerSec ?: 0L) / BYTES_PER_KIB
+        return if (kib < 1) 0f else (log10(kib + 1) / HEAT_LOG_DIVISOR).toFloat().coerceIn(0f, 1f)
     }
 
     /** "0", "12K", "1.3M", "24M" per second. */
     fun rate(bytesPerSec: Long?): String {
         val bytes = bytesPerSec ?: return "–"
-        val kib = bytes / 1024.0
+        val kib = bytes / BYTES_PER_KIB
         return when {
             kib < 1 -> "0"
-            kib < 1000 -> "${kib.toInt()}K"
-            kib < 10_240 -> String.format(Locale.US, "%.1fM", kib / 1024)
-            else -> "${(kib / 1024).toInt()}M"
+            kib < COMPACT_KIB_THRESHOLD -> "${kib.toInt()}K"
+            kib < TENTH_MIB_THRESHOLD -> String.format(Locale.US, "%.1fM", kib / KIB_PER_MIB)
+            else -> "${(kib / KIB_PER_MIB).toInt()}M"
         }
     }
 
@@ -75,9 +92,9 @@ object DeviceStatsFormat {
     fun hours(hours: Float?): String {
         val h = hours ?: return "–"
         return when {
-            h < 1f -> "${(h * 60).toInt()}m"
-            h < 48f -> "${h.toInt()}h"
-            else -> "${(h / 24).toInt()}d"
+            h < 1f -> "${(h * MINUTES_PER_HOUR).toInt()}m"
+            h < COMPACT_HOURS_LIMIT -> "${h.toInt()}h"
+            else -> "${(h / HOURS_PER_DAY).toInt()}d"
         }
     }
 }
@@ -138,7 +155,7 @@ class DeviceStatsSampler {
             if (tm == null || tm.simState != TelephonyManager.SIM_STATE_READY) {
                 null
             } else {
-                ((tm.signalStrength?.level ?: 0) / 4f).coerceIn(0f, 1f)
+                ((tm.signalStrength?.level ?: 0) / SIGNAL_FULL_SCALE).coerceIn(0f, 1f)
             }
         } catch (_: RuntimeException) {
             null
@@ -156,13 +173,13 @@ class DeviceStatsSampler {
                 } else {
                     val chargeUah = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
                     val draw = abs(bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW))
-                    if (chargeUah > 0 && draw > 20_000) {
-                        (chargeUah.toFloat() / draw.toFloat()).coerceIn(0.1f, 99f)
+                    if (chargeUah > 0 && draw > MIN_BATTERY_DRAW_UA) {
+                        (chargeUah.toFloat() / draw.toFloat()).coerceIn(MIN_ESTIMATED_HOURS, MAX_ESTIMATED_HOURS)
                     } else {
                         null
                     }
                 }
-            Triple((level.coerceIn(0, 100)) / 100f, charging, hours)
+            Triple((level.coerceIn(0, BATTERY_FULL_PERCENT)) / BATTERY_FULL_SCALE, charging, hours)
         } catch (_: RuntimeException) {
             Triple(0f, false, null)
         }
@@ -180,7 +197,7 @@ class DeviceStatsSampler {
         val mtx = TrafficStats.getMobileTxBytes().coerceAtLeast(0)
         val result: List<Long?> =
             if (lastNetAt > 0 && now > lastNetAt && lastTotalRx >= 0) {
-                val secs = (now - lastNetAt) / 1000.0
+                val secs = (now - lastNetAt) / MILLIS_PER_SECOND
 
                 fun per(
                     cur: Long,

@@ -156,7 +156,11 @@ class LauncherAppsRepository(
         runCatching { userManager.userProfiles.filter { profileLabelFor(it) == PROFILE_WORK } }.getOrDefault(emptyList())
 
     /** True when every work profile is paused, false when any runs, null when the device has no work profile. */
-    fun workProfilesPaused(): Boolean? = workProfiles().takeIf { it.isNotEmpty() }?.let { profiles -> profiles.all(::isLocked) }
+    fun workProfilesPaused(): Boolean? =
+        workProfiles().takeIf { it.isNotEmpty() }?.let { profiles ->
+            profiles
+                .all(::isLocked)
+        }
 
     /** Pauses or resumes all work profiles. Resuming may show the system's own credential screen. */
     fun setWorkProfilesPaused(paused: Boolean): Boolean =
@@ -233,10 +237,12 @@ class LauncherAppsRepository(
                 val state = StartStateRepository(appContext)
                 if (state.loadFrameSettings().rememberReturnedApps) {
                     val activity =
-                        io.github.aimindseye.tenseven.frames.LocalFrameApps.canonical(entry.component.className).takeIf {
-                            entry.component.packageName ==
-                                appContext.packageName
-                        }
+                        io.github.aimindseye.tenseven.frames.LocalFrameApps
+                            .canonical(entry.component.className)
+                            .takeIf {
+                                entry.component.packageName ==
+                                    appContext.packageName
+                            }
                     val frameApp =
                         io.github.aimindseye.tenseven.frames.FrameApp(
                             entry.component.packageName,

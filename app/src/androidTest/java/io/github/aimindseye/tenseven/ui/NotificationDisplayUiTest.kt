@@ -106,12 +106,17 @@ class NotificationDisplayUiTest {
             LauncherTheme {
                 Column(Modifier.width(200.dp)) {
                     HubUnifiedNavigation(
-                        ui,
-                        HubFilter.All,
-                        { selectedTab = it },
-                        remember { FocusRequester() },
-                        0,
-                        0,
+                        ui = ui,
+                        navigation =
+                            HubNavigationState(
+                                currentTab = HubFilter.All,
+                                firstTab = remember { FocusRequester() },
+                                messageCount = 0,
+                                emailCount = 0,
+                                searchRequest = 0,
+                                closeSearchRequest = 0,
+                            ),
+                        onTabChange = { selectedTab = it },
                         onOpenCalendar = { calendarOpens++ },
                     )
                     HubCompactBar(
@@ -174,28 +179,28 @@ class NotificationDisplayUiTest {
         val state = StartStateRepository(context)
         val original =
             HomeStyle.entries.associateWith { style ->
-                state.loadHomeNotificationExpanded(style) to state.loadHomeDials(style)
+                state.loadHomeNotificationExpanded(style) to state.loadHomeDials()
             }
         try {
             // D4: notification expansion stays per-style; status dials are intentionally shared.
             state.saveHomeNotificationExpanded(HomeStyle.Bb7, true)
             state.saveHomeNotificationExpanded(HomeStyle.Bb10, false)
-            state.saveHomeDials(HomeStyle.Bb7, setOf("storage"))
+            state.saveHomeDials(setOf("storage"))
             val reload = StartStateRepository(context)
             assertTrue(reload.loadHomeNotificationExpanded(HomeStyle.Bb7))
             assertFalse(reload.loadHomeNotificationExpanded(HomeStyle.Bb10))
-            assertEquals(setOf("storage"), reload.loadHomeDials(HomeStyle.Bb7))
-            assertEquals(setOf("storage"), reload.loadHomeDials(HomeStyle.Bb10))
-            reload.saveHomeDials(HomeStyle.Bb10, setOf("cpu"))
-            assertEquals(setOf("cpu"), state.loadHomeDials(HomeStyle.Bb7))
-            assertEquals(setOf("cpu"), reload.loadHomeDials(HomeStyle.Bb10))
+            assertEquals(setOf("storage"), reload.loadHomeDials())
+            assertEquals(setOf("storage"), reload.loadHomeDials())
+            reload.saveHomeDials(setOf("cpu"))
+            assertEquals(setOf("cpu"), state.loadHomeDials())
+            assertEquals(setOf("cpu"), reload.loadHomeDials())
             val storage = DeviceStatsSampler().sample(context).storage
             assertNotNull(storage)
             assertTrue(storage!! in 0f..1f)
         } finally {
             original.forEach { (style, values) ->
                 state.saveHomeNotificationExpanded(style, values.first)
-                state.saveHomeDials(style, values.second)
+                state.saveHomeDials(values.second)
             }
         }
     }

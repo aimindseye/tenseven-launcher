@@ -40,10 +40,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
+private const val HOME_STATUS_PERCENT_SCALE = 100
+
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val HOME_STATUS_BB_HOME_STATUS_VALUE_4 = 4
+private const val HOME_STATUS_BB_HOME_STATUS_VALUE_56 = 56
+
 private val StatusTrack = Color(0xFF505D68)
 private const val STATUS_SAMPLE_MS = 12_000L
 
 /** One quiet, lifecycle-bound device readout, shared by BB7 and BB10. Never samples in Hidden mode. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun BbHomeStatus(
     mode: HomeStatusMode,
@@ -82,47 +89,67 @@ internal fun BbHomeStatus(
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
         val count = metrics.size.coerceAtLeast(1)
         val cellWidth = maxWidth / count
-        val compact = metrics.size > 4 || cellWidth < 56.dp
+        val compact =
+            metrics.size > HOME_STATUS_BB_HOME_STATUS_VALUE_4 ||
+                cellWidth < HOME_STATUS_BB_HOME_STATUS_VALUE_56.dp
         val diameter =
             (cellWidth - 4.dp).coerceIn(
                 23.dp,
                 if (header.statusSize == io.github.aimindseye.tenseven.model.HomeStatusSize.Larger) 47.dp else 43.dp,
             )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            metrics.forEach { (key, label, fraction) ->
-                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    when (mode) {
-                        HomeStatusMode.Dials -> {
-                            ThinStatusDial(key, label, fraction, diameter, textScale)
-                        }
+            metrics.forEach { metric ->
+                BbHomeStatusMetric(mode, metric, diameter, textScale, compact)
+            }
+        }
+    }
+}
 
-                        HomeStatusMode.Text -> {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                modifier = Modifier.semantics { contentDescription = "$label ${statusPercent(fraction)}" },
-                            ) {
-                                LineIcon(
-                                    paths = statusMetricIcon(key),
-                                    modifier = Modifier.size(if (compact) 13.dp else 17.dp),
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                )
-                                Text(
-                                    statusPercent(fraction),
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    fontSize = ((if (compact) 9f else 11f) * textScale).sp,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
+// One metric cell, preserving the parent RowScope's weight and single-line sizing.
+@Suppress("FunctionNaming")
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.BbHomeStatusMetric(
+    mode: HomeStatusMode,
+    metric: Triple<String, String, Float?>,
+    diameter: Dp,
+    textScale: Float,
+    compact: Boolean,
+) {
+    val (key, label, fraction) = metric
+    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+        when (mode) {
+            HomeStatusMode.Dials -> {
+                ThinStatusDial(key, label, fraction, diameter, textScale)
+            }
 
-                        HomeStatusMode.Hidden -> {
-                            Unit
-                        }
-                    }
+            HomeStatusMode.Text -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier =
+                        Modifier.semantics {
+                            contentDescription =
+                                "$label ${statusPercent(fraction)}"
+                        },
+                ) {
+                    LineIcon(
+                        paths = statusMetricIcon(key),
+                        modifier = Modifier.size(if (compact) 13.dp else 17.dp),
+                        tint = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        statusPercent(fraction),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = ((if (compact) 9f else 11f) * textScale).sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
+            }
+
+            HomeStatusMode.Hidden -> {
+                Unit
             }
         }
     }
@@ -173,21 +200,10 @@ private fun statusMetricIcon(key: String): List<String> =
         }
     }
 
-private fun shortMetricLabel(
-    key: String,
-    full: String,
-): String =
-    when (key) {
-        HomeDisplayPolicy.MOBILE -> "Mob"
-        HomeDisplayPolicy.STORAGE -> "Sto"
-        HomeDisplayPolicy.BATTERY -> "Bat"
-        HomeDisplayPolicy.WIFI -> "WiFi"
-        else -> full
-    }
-
 private fun statusPercent(value: Float?): String =
-    value?.takeIf { it.isFinite() }?.let { "${(it.coerceIn(0f, 1f) * 100).roundToInt()}%" } ?: "–"
+    value?.takeIf { it.isFinite() }?.let { "${(it.coerceIn(0f, 1f) * HOME_STATUS_PERCENT_SCALE).roundToInt()}%" } ?: "–"
 
+@Suppress("FunctionNaming")
 @Composable
 private fun ThinStatusDial(
     key: String,

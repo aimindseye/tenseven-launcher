@@ -11,12 +11,27 @@ import android.provider.Settings
 import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.graphics.toColorInt
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
 
 /** Explicit, user-initiated system Phone-role request, separate from Setup's Compose navigation. */
 class D5PhoneRoleRequestActivity : Activity() {
+    // Stable system role request code and approved default-Phone setup metrics.
+    private companion object {
+        const val PHONE_ROLE_REQUEST_CODE = 451
+        const val TEXT_VERTICAL_PADDING_DP = 8
+        const val ACTION_VERTICAL_PADDING_DP = 14
+        const val CONTENT_BOTTOM_PADDING_DP = 18
+        const val CONTENT_HORIZONTAL_PADDING_DP = 20
+        const val CONTENT_TOP_PADDING_DP = 22
+        const val ACTION_ROW_HEIGHT_DP = 57
+        const val ACTION_TEXT_SIZE_SP = 16f
+        const val TITLE_TEXT_SIZE_SP = 22f
+        const val BODY_TEXT_SIZE_SP = 16f
+    }
+
     private var requestStarted = false
-    private val roleRequest = 451
+    private val roleRequest = PHONE_ROLE_REQUEST_CODE
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
@@ -79,17 +94,24 @@ class D5PhoneRoleRequestActivity : Activity() {
         }
     }
 
+    private fun createPhoneRoleRoot(background: Int): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(background)
+            setPadding(
+                dp(CONTENT_HORIZONTAL_PADDING_DP),
+                dp(CONTENT_TOP_PADDING_DP),
+                dp(CONTENT_HORIZONTAL_PADDING_DP),
+                dp(CONTENT_BOTTOM_PADDING_DP),
+            )
+        }
+
     private fun render() {
-        val bg = Color.rgb(7, 12, 19)
+        val bg = "#070C13".toColorInt()
         val fg = Color.WHITE
-        val muted = Color.rgb(178, 196, 210)
-        val blue = Color.rgb(0, 167, 240)
-        val root =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setBackgroundColor(bg)
-                setPadding(dp(20), dp(22), dp(20), dp(18))
-            }
+        val muted = "#B2C4D2".toColorInt()
+        val blue = "#00A7F0".toColorInt()
+        val root = createPhoneRoleRoot(bg)
 
         fun text(
             value: String,
@@ -103,7 +125,7 @@ class D5PhoneRoleRequestActivity : Activity() {
                     textSize = size
                     setTextColor(color)
                     if (bold) setTypeface(null, android.graphics.Typeface.BOLD)
-                    setPadding(0, dp(8), 0, dp(8))
+                    setPadding(0, dp(TEXT_VERTICAL_PADDING_DP), 0, dp(TEXT_VERTICAL_PADDING_DP))
                 },
             )
         }
@@ -115,16 +137,21 @@ class D5PhoneRoleRequestActivity : Activity() {
             root.addView(
                 TextView(this).apply {
                     text = value
-                    textSize = 16f
+                    textSize = ACTION_TEXT_SIZE_SP
                     setTextColor(blue)
                     gravity = Gravity.CENTER
-                    setPadding(dp(8), dp(14), dp(8), dp(14))
+                    setPadding(
+                        dp(TEXT_VERTICAL_PADDING_DP),
+                        dp(ACTION_VERTICAL_PADDING_DP),
+                        dp(TEXT_VERTICAL_PADDING_DP),
+                        dp(ACTION_VERTICAL_PADDING_DP),
+                    )
                     setOnClickListener { onClick() }
                 },
-                LinearLayout.LayoutParams(-1, dp(57)),
+                LinearLayout.LayoutParams(-1, dp(ACTION_ROW_HEIGHT_DP)),
             )
         }
-        text("Default Phone app", 22f, fg, true)
+        text("Default Phone app", TITLE_TEXT_SIZE_SP, fg, true)
         val component =
             ComponentName(
                 packageName,
@@ -135,17 +162,22 @@ class D5PhoneRoleRequestActivity : Activity() {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
         when {
             holdsRole() -> {
-                text("TenSeven Phone is the current default Phone app.", 16f, fg)
+                text("TenSeven Phone is the current default Phone app.", BODY_TEXT_SIZE_SP, fg)
             }
 
             !enabled -> {
-                text("Enable TenSeven Phone in Apps & Features before selecting it as default.", 16f, muted)
+                text(
+                    "Enable TenSeven Phone in Apps & Features before selecting it as default.",
+                    BODY_TEXT_SIZE_SP,
+                    muted,
+                )
             }
 
             else -> {
                 text(
-                    "Android lists the bundled Phone component as 'TenSeven Launcher'. Selecting that package lets TenSeven Phone handle calls.",
-                    16f,
+                    "Android lists the bundled Phone component as 'TenSeven Launcher'. Selecting that " +
+                        "package lets TenSeven Phone handle calls.",
+                    BODY_TEXT_SIZE_SP,
                     muted,
                 )
             }

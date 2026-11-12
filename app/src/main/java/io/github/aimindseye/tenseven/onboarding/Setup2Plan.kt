@@ -21,13 +21,38 @@ internal object Setup2Plan {
 
     fun steps(stage: Setup2Stage): List<SetupStep> =
         when (stage) {
-            Setup2Stage.WELCOME -> listOf(SetupStep.HOME)
-            Setup2Stage.HOME -> listOf(SetupStep.STYLE, SetupStep.GRID, SetupStep.WIDGETS)
-            Setup2Stage.APPEARANCE -> listOf(SetupStep.LOOK)
-            Setup2Stage.APPS -> listOf(SetupStep.EXTRAS)
-            Setup2Stage.HUB_LOCK -> listOf(SetupStep.HUB, SetupStep.LOCK)
-            Setup2Stage.PERMISSIONS -> listOf(SetupStep.CONTACTS, SetupStep.PHOTOS, SetupStep.NOTIFICATIONS, SetupStep.USAGE)
-            Setup2Stage.REVIEW -> emptyList()
+            Setup2Stage.WELCOME -> {
+                listOf(SetupStep.HOME)
+            }
+
+            Setup2Stage.HOME -> {
+                listOf(SetupStep.STYLE, SetupStep.GRID, SetupStep.WIDGETS)
+            }
+
+            Setup2Stage.APPEARANCE -> {
+                listOf(SetupStep.LOOK)
+            }
+
+            Setup2Stage.APPS -> {
+                listOf(SetupStep.EXTRAS)
+            }
+
+            Setup2Stage.HUB_LOCK -> {
+                listOf(SetupStep.HUB, SetupStep.LOCK)
+            }
+
+            Setup2Stage.PERMISSIONS -> {
+                listOf(
+                    SetupStep.CONTACTS,
+                    SetupStep.PHOTOS,
+                    SetupStep.NOTIFICATIONS,
+                    SetupStep.USAGE,
+                )
+            }
+
+            Setup2Stage.REVIEW -> {
+                emptyList()
+            }
         }
 
     /** Presets choose only real, currently bundled app components. Calendar/Phone arrive later. */

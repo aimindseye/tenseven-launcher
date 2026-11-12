@@ -6,7 +6,10 @@ import org.junit.Test
 
 class Settings2FlowTest {
     @Test fun sevenPagesInImageOneOrder() {
-        assertEquals(listOf("permissions", "appearance_home", "hub", "lock", "frames", "apps", "review"), Settings2Flow.ordered)
+        assertEquals(
+            listOf("permissions", "appearance_home", "hub", "lock", "frames", "apps", "review"),
+            Settings2Flow.ordered,
+        )
     }
 
     @Test fun footerCanTraverseEachPage() {

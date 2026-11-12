@@ -94,7 +94,7 @@ internal fun LockNotificationScreen(
                 if (content.source == null) actions.unlock() else actions.select(null)
             }
             if (content.source != null) LockFooterAction("Unlock", unlockHint, actions.unlock)
-            HomeBarControl("Camera", "camera", onClick = actions.camera)
+            HomeBarControl(HomeBarControlSpec("Camera", "camera"), onClick = actions.camera)
         }
     }
 }

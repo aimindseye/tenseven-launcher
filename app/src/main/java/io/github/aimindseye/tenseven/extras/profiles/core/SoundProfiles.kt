@@ -63,60 +63,7 @@ object SoundProfiles {
         profile: SoundProfile,
         settings: ProfileSettings = ProfileSettings(),
     ): ProfilePlan {
-        val base =
-            when (profile) {
-                SoundProfile.NORMAL -> {
-                    ProfilePlan(
-                        Ringer.NORMAL,
-                        Dnd.OFF,
-                        NORMAL_VOLUME,
-                        true,
-                        true,
-                        null,
-                        null,
-                    )
-                }
-
-                SoundProfile.LOUD -> {
-                    ProfilePlan(
-                        Ringer.NORMAL,
-                        Dnd.OFF,
-                        FULL_VOLUME,
-                        true,
-                        true,
-                        null,
-                        null,
-                    )
-                }
-
-                SoundProfile.VIBRATE_ONLY -> {
-                    ProfilePlan(
-                        Ringer.VIBRATE,
-                        Dnd.OFF,
-                        null,
-                        true,
-                        true,
-                        null,
-                        null,
-                    )
-                }
-
-                SoundProfile.PHONE_CALLS_ONLY -> {
-                    ProfilePlan(Ringer.NORMAL, Dnd.CALLS_ONLY, NORMAL_VOLUME, true, false, null, null)
-                }
-
-                SoundProfile.ALL_ALERTS_OFF -> {
-                    ProfilePlan(
-                        Ringer.SILENT,
-                        Dnd.ALARMS_ONLY,
-                        null,
-                        false,
-                        false,
-                        null,
-                        null,
-                    )
-                }
-            }
+        val base = basePlan(profile)
         // A silent or vibrating profile has no volume to set; the user's volume applies only where it rings.
         val volume =
             settings.volumePercent?.coerceIn(0, FULL_VOLUME)?.takeIf {
@@ -133,6 +80,30 @@ object SoundProfiles {
             notificationTone = settings.notificationTone,
         )
     }
+
+    /** Profile defaults, independent of user overrides. */
+    private fun basePlan(profile: SoundProfile): ProfilePlan =
+        when (profile) {
+            SoundProfile.NORMAL -> {
+                ProfilePlan(Ringer.NORMAL, Dnd.OFF, NORMAL_VOLUME, true, true, null, null)
+            }
+
+            SoundProfile.LOUD -> {
+                ProfilePlan(Ringer.NORMAL, Dnd.OFF, FULL_VOLUME, true, true, null, null)
+            }
+
+            SoundProfile.VIBRATE_ONLY -> {
+                ProfilePlan(Ringer.VIBRATE, Dnd.OFF, null, true, true, null, null)
+            }
+
+            SoundProfile.PHONE_CALLS_ONLY -> {
+                ProfilePlan(Ringer.NORMAL, Dnd.CALLS_ONLY, NORMAL_VOLUME, true, false, null, null)
+            }
+
+            SoundProfile.ALL_ALERTS_OFF -> {
+                ProfilePlan(Ringer.SILENT, Dnd.ALARMS_ONLY, null, false, false, null, null)
+            }
+        }
 
     /** The next profile, for a key or tile that steps through them. */
     fun next(current: SoundProfile?): SoundProfile {

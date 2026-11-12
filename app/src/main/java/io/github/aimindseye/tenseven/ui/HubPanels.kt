@@ -137,30 +137,42 @@ internal fun HubPanelsHost(
                 selected = null
             }
         }
-        val panelOpen = settings.or(conversation != null)
-        if (panelOpen) {
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable { close() })
-            Column(
-                Modifier
-                    .align(if (settings) Alignment.CenterStart else Alignment.CenterEnd)
-                    .widthIn(max = 340.dp)
-                    .fillMaxWidth(HUB_PANEL_FRACTION)
-                    .fillMaxHeight()
-                    .hubPanelDismiss(settings) { close() }
-                    .background(MaterialTheme.colorScheme.background)
-                    .testTag(if (settings) "hub-settings-panel" else "hub-message-panel")
-                    .semantics {
-                        paneTitle =
-                            hubPaneTitle(
-                                settings,
-                                conversation?.latestNotification?.kind,
-                            )
-                    }.verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                HubPanelBody(settings, conversation, ui, onAllSettings) { close() }
-            }
+        HubSidePanel(settings, conversation, ui, onAllSettings) { close() }
+    }
+}
+
+// Panel content is kept inside the parent's BoxScope for alignment semantics.
+@Suppress("FunctionNaming")
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.HubSidePanel(
+    settings: Boolean,
+    conversation: HubConversation?,
+    ui: HubConversationsUi,
+    onAllSettings: () -> Unit,
+    onClose: () -> Unit,
+) {
+    if (settings || conversation != null) {
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable { onClose() })
+        Column(
+            Modifier
+                .align(if (settings) Alignment.CenterStart else Alignment.CenterEnd)
+                .widthIn(max = 340.dp)
+                .fillMaxWidth(HUB_PANEL_FRACTION)
+                .fillMaxHeight()
+                .hubPanelDismiss(settings) { onClose() }
+                .background(MaterialTheme.colorScheme.background)
+                .testTag(if (settings) "hub-settings-panel" else "hub-message-panel")
+                .semantics {
+                    paneTitle =
+                        hubPaneTitle(
+                            settings,
+                            conversation?.latestNotification?.kind,
+                        )
+                }.verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            HubPanelBody(settings, conversation, ui, onAllSettings) { onClose() }
         }
     }
 }
@@ -237,31 +249,7 @@ private fun HubMessagePanel(
     onClose: () -> Unit,
 ) {
     var remind by remember(conversation.id) { mutableStateOf(false) }
-    // Page 5 of the approved device review: selected context is a distinct, blue outlined region.
-    // Never show notification text when privacy says the device is locked.
-    if (!ui.deviceLocked) {
-        val preview =
-            io.github.aimindseye.tenseven.conversations.conversationPreview(
-                conversation,
-                locked = ui.deviceLocked,
-                you = "You",
-                maxChars = 180,
-            )
-        Surface(
-            modifier = Modifier.fillMaxWidth().testTag("hub-selected-message-context"),
-            shape = RoundedCornerShape(1.dp),
-            color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(2.dp, Bb10Blue),
-        ) {
-            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("SELECTED MESSAGE", color = Bb10Muted, style = MaterialTheme.typography.labelSmall)
-                Text(conversation.name, color = Bb10Text, style = MaterialTheme.typography.titleMedium)
-                if (!preview.isNullOrBlank()) {
-                    Text(preview, color = Bb10Muted, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
-                }
-            }
-        }
-    }
+    HubSelectedMessageContext(conversation, ui)
     PanelAction(
         io.github.aimindseye.tenseven.model.HubActionPolicy
             .openLabel(conversation.latestNotification.kind),
@@ -292,8 +280,34 @@ private fun HubMessagePanel(
             remindLocation.bringIntoView()
         }
     }
+    HubMessageRemindOptions(
+        remind,
+        conversation,
+        ui,
+        remindLocation,
+        RemindOptionsActions(onClose, { remind = !remind }),
+    )
+}
+
+private data class RemindOptionsActions(
+    val onClose: () -> Unit,
+    val onToggle: () -> Unit,
+)
+
+// Remind action choices are separated from their remembered expanded state.
+@Suppress("FunctionNaming")
+@Composable
+private fun HubMessageRemindOptions(
+    remind: Boolean,
+    conversation: HubConversation,
+    ui: HubConversationsUi,
+    remindLocation: BringIntoViewRequester,
+    actions: RemindOptionsActions,
+) {
+    val onClose = actions.onClose
+    val onToggle = actions.onToggle
     Column(Modifier.fillMaxWidth().bringIntoViewRequester(remindLocation)) {
-        PanelAction(if (remind) "Remind  ▴" else "Remind", iconName = "notes") { remind = !remind }
+        PanelAction(if (remind) "Remind  ▴" else "Remind", iconName = "notes") { onToggle() }
         if (remind) {
             // Keep expanded options in the same scroll region and bring the whole section into view.
             PanelAction("Tomorrow morning", iconName = "clock") {
@@ -314,6 +328,40 @@ private fun HubMessagePanel(
             PanelAction("Choose date and time…", iconName = "calendar") {
                 ui.onCustomRemind(conversation)
                 onClose()
+            }
+        }
+    }
+}
+
+// The message-context highlight is privacy-gated and has no mutable action state.
+@Suppress("FunctionNaming")
+@Composable
+private fun HubSelectedMessageContext(
+    conversation: HubConversation,
+    ui: HubConversationsUi,
+) {
+    // Page 5 of the approved device review: selected context is a distinct, blue outlined region.
+    // Never show notification text when privacy says the device is locked.
+    if (!ui.deviceLocked) {
+        val preview =
+            io.github.aimindseye.tenseven.conversations.conversationPreview(
+                conversation,
+                locked = ui.deviceLocked,
+                you = "You",
+                maxChars = 180,
+            )
+        Surface(
+            modifier = Modifier.fillMaxWidth().testTag("hub-selected-message-context"),
+            shape = RoundedCornerShape(1.dp),
+            color = MaterialTheme.colorScheme.background,
+            border = BorderStroke(2.dp, Bb10Blue),
+        ) {
+            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("SELECTED MESSAGE", color = Bb10Muted, style = MaterialTheme.typography.labelSmall)
+                Text(conversation.name, color = Bb10Text, style = MaterialTheme.typography.titleMedium)
+                if (!preview.isNullOrBlank()) {
+                    Text(preview, color = Bb10Muted, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+                }
             }
         }
     }

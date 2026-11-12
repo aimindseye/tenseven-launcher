@@ -50,9 +50,9 @@ internal object TenSevenSafeViewport {
             val targetTop = top + safe.top
             val targetRight = right + safe.right
             val targetBottom = bottom + safe.bottom
-            if (view.paddingLeft != targetLeft || view.paddingTop != targetTop ||
-                view.paddingRight != targetRight || view.paddingBottom != targetBottom
-            ) {
+            val horizontalChanged = view.paddingLeft != targetLeft || view.paddingRight != targetRight
+            val verticalChanged = view.paddingTop != targetTop || view.paddingBottom != targetBottom
+            if (horizontalChanged || verticalChanged) {
                 view.setPadding(targetLeft, targetTop, targetRight, targetBottom)
             }
             // Do not consume: child controls and IME handlers may also need insets.

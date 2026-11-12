@@ -81,7 +81,9 @@ class AppFrameSummaryRepository(
                     "messages:" + pkg,
                     latest.appName,
                     AppSummaryPolicy.text(
-                        listOf(latest.conversationName, message?.text.orEmpty()).filter(String::isNotBlank).joinToString(": "),
+                        listOf(latest.conversationName, message?.text.orEmpty())
+                            .filter(String::isNotBlank)
+                            .joinToString(": "),
                     ),
                     SummarySource.Notification,
                     pkg,
@@ -104,35 +106,12 @@ class AppFrameSummaryRepository(
                     ),
                 )
             }
-            val tasks = taskRepository(context).list().filterNot { it.completed }
-            tasks
-                .sortedWith(
-                    compareBy({ it.dueAtEpochMs ?: it.remindAtEpochMs ?: Long.MAX_VALUE }, { -it.updatedAtEpochMs }),
-                ).firstOrNull()
-                ?.let { task ->
-                    val at = task.dueAtEpochMs ?: task.remindAtEpochMs
-                    val whenText =
-                        at?.let {
-                            android.text.format.DateUtils.formatDateTime(
-                                context,
-                                it,
-                                android.text.format.DateUtils.FORMAT_SHOW_DATE or android.text.format.DateUtils.FORMAT_SHOW_TIME,
-                            )
-                        }
-                    add(
-                        AppSummary(
-                            "local:tasks",
-                            "Tasks / Remind",
-                            AppSummaryPolicy.text(
-                                "${tasks.size} open · " + task.title +
-                                    (whenText?.let { " · " + it } ?: ""),
-                            ),
-                            SummarySource.Local,
-                            updatedAt = now,
-                        ),
-                    )
-                }
-            val last = context.getSharedPreferences("calculator_frame", Context.MODE_PRIVATE).getString("last_result", null)
+            taskSummary(now)?.let { add(it) }
+            val last =
+                context.getSharedPreferences("calculator_frame", Context.MODE_PRIVATE).getString(
+                    "last_result",
+                    null,
+                )
             if (!last.isNullOrBlank()) {
                 add(
                     AppSummary(
@@ -145,6 +124,37 @@ class AppFrameSummaryRepository(
                 )
             }
         }
+
+    private fun taskSummary(now: Long): AppSummary? {
+        val tasks = taskRepository(context).list().filterNot { it.completed }
+        return tasks
+            .sortedWith(
+                compareBy({ it.dueAtEpochMs ?: it.remindAtEpochMs ?: Long.MAX_VALUE }, { -it.updatedAtEpochMs }),
+            ).firstOrNull()
+            ?.let { task ->
+                val at = task.dueAtEpochMs ?: task.remindAtEpochMs
+                val whenText =
+                    at?.let {
+                        android.text.format.DateUtils.formatDateTime(
+                            context,
+                            it,
+                            android.text.format.DateUtils.FORMAT_SHOW_DATE or
+                                android.text.format.DateUtils
+                                    .FORMAT_SHOW_TIME,
+                        )
+                    }
+                AppSummary(
+                    "local:tasks",
+                    "Tasks / Remind",
+                    AppSummaryPolicy.text(
+                        "${tasks.size} open · " + task.title +
+                            (whenText?.let { " · " + it } ?: ""),
+                    ),
+                    SummarySource.Local,
+                    updatedAt = now,
+                )
+            }
+    }
 
     private fun appName(pkg: String): String =
         runCatching {

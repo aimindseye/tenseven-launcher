@@ -29,7 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -42,14 +43,8 @@ import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.model.stableKey
 
-/** One reference-style row; central page targets scroll at large font sizes without shrinking touch targets. */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-internal fun ReferenceHomeBar(
-    slots: List<QuickSlot>,
-    pages: HomeBarPages,
-    actions: HomeBarActions,
-) {
+private fun rememberReferenceUnread(): Int {
     val capabilities = rememberPlatformCapabilities()
     val revision = rememberHubRevision()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -59,19 +54,41 @@ internal fun ReferenceHomeBar(
                 .StartStateRepository(context)
                 .loadHubEnabledApps()
         }
-    val unread =
-        if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready) {
-            io.github.aimindseye.tenseven.platform.LockLayerState.counts
-                .filterKeys { it in enabled }
-                .values
-                .sum()
-        } else {
-            0
+    return if (capabilities.hubNotifications == io.github.aimindseye.tenseven.platform.CapabilityStatus.Ready) {
+        io.github.aimindseye.tenseven.platform.LockLayerState.counts
+            .filterKeys { it in enabled }
+            .values
+            .sum()
+    } else {
+        0
+    }
+}
+
+@Composable
+private fun rememberReferenceShownSlots(slots: List<QuickSlot>): List<String> {
+    // Keep the same optional slot policy for compact devices.
+    val widthDp =
+        with(LocalDensity.current) {
+            LocalWindowInfo.current.containerSize.width
+                .toDp()
+                .value
+                .toInt()
         }
-    // One destination per icon. Q25 shows four fixed destinations; Titan 2 can show
-    // up to two saved extra shortcuts. The saved shortcut list itself is never changed.
-    val compact = HomeBarCompactPolicy.compact(Build.MODEL, LocalConfiguration.current.screenWidthDp)
-    val shown = HomeBarCompactPolicy.optionalTokens(slots.map { it.token }, compact)
+    val compact = HomeBarCompactPolicy.compact(Build.MODEL, widthDp)
+    return HomeBarCompactPolicy.optionalTokens(slots.map { it.token }, compact)
+}
+
+/** One reference-style row; central page targets scroll at large font sizes without shrinking touch targets. */
+@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
+@Composable
+internal fun ReferenceHomeBar(
+    slots: List<QuickSlot>,
+    pages: HomeBarPages,
+    actions: HomeBarActions,
+) {
+    val unread = rememberReferenceUnread()
+    val shown = rememberReferenceShownSlots(slots)
+    val context = androidx.compose.ui.platform.LocalContext.current
     val homeMenuOpen = remember { mutableStateOf(false) }
     Row(
         Modifier.testTag("home-reference-bar").background(Bb10Background).padding(horizontal = 4.dp),
@@ -90,37 +107,51 @@ internal fun ReferenceHomeBar(
         slots.filter { it.token in shown && it.token == QuickBar.COMMAND }.forEach { slot ->
             HomeShortcut(slot, actions.openSlot, actions.options, actions.phoneFocus)
         }
-        HomeBarControl(
-            "Camera",
-            "camera",
-        ) {
+        HomeBarControl(HomeBarControlSpec("Camera", "camera")) {
             val camera = slots.firstOrNull { it.token == QuickBar.CAMERA }
             actions.openSlot(camera ?: QuickSlot(QuickBar.CAMERA, "Camera", null))
         }
     }
     if (homeMenuOpen.value) {
-        CompactHomeMenu(
+        ReferenceHomeBarMenu(
+            pages = pages,
+            actions = actions,
+            context = context,
             onDismiss = { homeMenuOpen.value = false },
-            actions =
-                listOf(
-                    "Phone" to { actions.openSlot(QuickSlot(QuickBar.PHONE, "Phone", null)) },
-                    "Command" to { actions.openSlot(QuickSlot(QuickBar.COMMAND, "Command", null)) },
-                    "Camera" to { actions.openSlot(QuickSlot(QuickBar.CAMERA, "Camera", null)) },
-                    "Hub" to { actions.showPage(StartPages.HUB + pages.lead) },
-                    "Calendar" to {
-                        runCatching {
-                            context.startActivity(
-                                android.content.Intent.makeMainSelectorActivity(
-                                    android.content.Intent.ACTION_MAIN,
-                                    android.content.Intent.CATEGORY_APP_CALENDAR,
-                                ),
-                            )
-                        }
-                        Unit
-                    },
-                ),
         )
     }
+}
+
+// Menu actions are separate from the layout and its remembered open state.
+@Suppress("FunctionNaming")
+@Composable
+private fun ReferenceHomeBarMenu(
+    pages: HomeBarPages,
+    actions: HomeBarActions,
+    context: android.content.Context,
+    onDismiss: () -> Unit,
+) {
+    CompactHomeMenu(
+        onDismiss = onDismiss,
+        actions =
+            listOf(
+                "Phone" to { actions.openSlot(QuickSlot(QuickBar.PHONE, "Phone", null)) },
+                "Command" to { actions.openSlot(QuickSlot(QuickBar.COMMAND, "Command", null)) },
+                "Camera" to { actions.openSlot(QuickSlot(QuickBar.CAMERA, "Camera", null)) },
+                "Hub" to { actions.showPage(StartPages.HUB + pages.lead) },
+                "Calendar" to {
+                    runCatching {
+                        context.startActivity(
+                            android.content.Intent.makeMainSelectorActivity(
+                                android.content.Intent.ACTION_MAIN,
+                                android.content.Intent.CATEGORY_APP_CALENDAR,
+                            ),
+                        )
+                    }
+                    Unit
+                },
+            ),
+    )
 }
 
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
@@ -137,15 +168,15 @@ private fun HomePageControls(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         HomeBarControl(
-            if (pages.favorites) "Favorites" else "Active Frames",
-            if (pages.favorites) "home" else "layout-grid",
-            pages.current == StartPages.HOME + pages.lead,
+            HomeBarControlSpec(
+                if (pages.favorites) "Favorites" else "Active Frames",
+                if (pages.favorites) "home" else "layout-grid",
+                pages.current == StartPages.HOME + pages.lead,
+            ),
         ) { onShowPage(StartPages.HOME + pages.lead) }
         val firstApps = StartPages.FIRST_GRID + pages.lead
         HomeBarControl(
-            "All Apps",
-            "apps",
-            pages.current >= firstApps,
+            spec = HomeBarControlSpec("All Apps", "apps", pages.current >= firstApps),
             onLongClick = onCommand,
         ) { onShowPage(firstApps) }
     }
@@ -183,16 +214,24 @@ private fun HomeShortcut(
     }
 }
 
+internal data class HomeBarControlSpec(
+    val label: String,
+    val glyph: String,
+    val selected: Boolean = false,
+    val unread: Int = 0,
+)
+
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun HomeBarControl(
-    label: String,
-    glyph: String,
-    isSelected: Boolean = false,
-    unread: Int = 0,
+    spec: HomeBarControlSpec,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
+    val label = spec.label
+    val glyph = spec.glyph
+    val isSelected = spec.selected
+    val unread = spec.unread
     Column(
         Modifier
             .widthIn(min = 44.dp)
@@ -341,7 +380,7 @@ private fun HubBarTarget(pages: HomeBarPages, unread: Int, actions: HomeBarActio
             space && peek != null
         },
     ) {
-        HomeBarControl("Hub", "mail", pages.current == StartPages.HUB + pages.lead, unread) {
+        HomeBarControl(HomeBarControlSpec("Hub", "mail", pages.current == StartPages.HUB + pages.lead, unread)) {
             actions.showPage(StartPages.HUB + pages.lead)
         }
     }

@@ -1,5 +1,27 @@
 package io.github.aimindseye.tenseven.model
 
+// Named, immutable icon accents. Values are the approved ARGB palette;
+// no changes to icons, colors or app-to-glyph mapping.
+private const val GLYPH_ACCENT_BLUE: Long = 0xFF4D9CFF
+private const val GLYPH_ACCENT_ORANGE: Long = 0xFFF28C45
+private const val GLYPH_ACCENT_GREEN: Long = 0xFF35C66B
+private const val GLYPH_ACCENT_SLATE: Long = 0xFF64748B
+private const val GLYPH_ACCENT_PURPLE: Long = 0xFF7A42E8
+private const val GLYPH_ACCENT_MAGENTA: Long = 0xFFE8458F
+private const val GLYPH_ACCENT_GOLD: Long = 0xFFF5C542
+private const val GLYPH_ACCENT_TEAL: Long = 0xFF2BB5A0
+private const val GLYPH_ACCENT_EMERALD: Long = 0xFF3FA37A
+private const val GLYPH_ACCENT_CRIMSON: Long = 0xFFE34D59
+private const val GLYPH_ACCENT_LILAC: Long = 0xFF9A63E8
+private const val GLYPH_ACCENT_LIGHT_SLATE: Long = 0xFF94A3B8
+private const val GLYPH_ACCENT_CHERRY: Long = 0xFFD32F45
+private const val GLYPH_ACCENT_FOREST_GREEN: Long = 0xFF2E8B57
+private const val GLYPH_ACCENT_OCHRE: Long = 0xFFD9A441
+private const val GLYPH_ACCENT_VIOLET: Long = 0xFF8B5CF6
+private const val GLYPH_ACCENT_CORAL: Long = 0xFFE5534B
+private const val GLYPH_ACCENT_MUSTARD: Long = 0xFFE8B931
+private const val GLYPH_ACCENT_CYAN: Long = 0xFF34C8E8
+
 /**
  * One Start glyph per app the Q25 image ships (Q4 device review, icon style
  * Q7: one tile-free glyph set, Ripe-like). The glyph geometry is the Tabler
@@ -13,47 +35,47 @@ enum class AppGlyph(
     /** ARGB accent. */
     val accent: Long,
 ) {
-    PHONE("phone-call", 0xFF4D9CFF),
-    CONTACTS("address-book", 0xFFF28C45),
-    MESSAGES("message-dots", 0xFF35C66B),
-    MAIL("mail", 0xFF64748B),
-    CALENDAR("calendar", 0xFFF28C45),
-    WEATHER("cloud", 0xFF4D9CFF),
-    PHOTOS("photo", 0xFF7A42E8),
-    MEDIA("music", 0xFF7A42E8),
-    CAMERA("camera", 0xFFE8458F),
+    PHONE("phone-call", GLYPH_ACCENT_BLUE),
+    CONTACTS("address-book", GLYPH_ACCENT_ORANGE),
+    MESSAGES("message-dots", GLYPH_ACCENT_GREEN),
+    MAIL("mail", GLYPH_ACCENT_SLATE),
+    CALENDAR("calendar", GLYPH_ACCENT_ORANGE),
+    WEATHER("cloud", GLYPH_ACCENT_BLUE),
+    PHOTOS("photo", GLYPH_ACCENT_PURPLE),
+    MEDIA("music", GLYPH_ACCENT_PURPLE),
+    CAMERA("camera", GLYPH_ACCENT_MAGENTA),
 
     /** The base camera beside Sable Camera: Aperture keeps video and the secure camera on the Q25. */
-    VIDEO_CAMERA("video", 0xFFE8458F),
-    CALCULATOR("calculator", 0xFF4D9CFF),
-    FILES("folder", 0xFFF5C542),
-    CLOCK("clock", 0xFF64748B),
-    BROWSER("world", 0xFF4D9CFF),
-    SETTINGS("settings", 0xFF64748B),
-    RECORDER("microphone", 0xFFE5534B),
-    READER("book", 0xFF35C66B),
-    TEXT_READER("align-left", 0xFF4D9CFF),
-    NOTES("notes", 0xFFF5C542),
-    TASKS("clipboard-check", 0xFF2BB5A0),
-    TERMINAL("terminal-2", 0xFF3FA37A),
-    SUDOKU("grid-3x3", 0xFF4D9CFF),
-    MINESWEEPER("bomb", 0xFFF28C45),
-    GAME_2048("layout-grid", 0xFF64748B),
-    BRICKS("wall", 0xFFE34D59),
-    SNAKE("route", 0xFF35C66B),
-    BLOCKS("apps", 0xFF9A63E8),
-    REVERSI("circle-half-2", 0xFF94A3B8),
-    SOLITAIRE("cards", 0xFFD32F45),
-    MAHJONG("stack-2", 0xFF2E8B57),
-    WORDS("letter-case", 0xFFD9A441),
-    VAULT("lock", 0xFF8B5CF6),
-    TOOLS("tool", 0xFFE5534B),
-    RADIO("antenna-bars-5", 0xFFE5534B),
-    KEYBOARD("keyboard", 0xFFE8B931),
-    DISPLAY("frame", 0xFF34C8E8),
-    SETUP("list-check", 0xFF2BB5A0),
-    STORE("shopping-bag", 0xFF35C66B),
-    SERVICES("puzzle", 0xFF4D9CFF),
+    VIDEO_CAMERA("video", GLYPH_ACCENT_MAGENTA),
+    CALCULATOR("calculator", GLYPH_ACCENT_BLUE),
+    FILES("folder", GLYPH_ACCENT_GOLD),
+    CLOCK("clock", GLYPH_ACCENT_SLATE),
+    BROWSER("world", GLYPH_ACCENT_BLUE),
+    SETTINGS("settings", GLYPH_ACCENT_SLATE),
+    RECORDER("microphone", GLYPH_ACCENT_CORAL),
+    READER("book", GLYPH_ACCENT_GREEN),
+    TEXT_READER("align-left", GLYPH_ACCENT_BLUE),
+    NOTES("notes", GLYPH_ACCENT_GOLD),
+    TASKS("clipboard-check", GLYPH_ACCENT_TEAL),
+    TERMINAL("terminal-2", GLYPH_ACCENT_EMERALD),
+    SUDOKU("grid-3x3", GLYPH_ACCENT_BLUE),
+    MINESWEEPER("bomb", GLYPH_ACCENT_ORANGE),
+    GAME_2048("layout-grid", GLYPH_ACCENT_SLATE),
+    BRICKS("wall", GLYPH_ACCENT_CRIMSON),
+    SNAKE("route", GLYPH_ACCENT_GREEN),
+    BLOCKS("apps", GLYPH_ACCENT_LILAC),
+    REVERSI("circle-half-2", GLYPH_ACCENT_LIGHT_SLATE),
+    SOLITAIRE("cards", GLYPH_ACCENT_CHERRY),
+    MAHJONG("stack-2", GLYPH_ACCENT_FOREST_GREEN),
+    WORDS("letter-case", GLYPH_ACCENT_OCHRE),
+    VAULT("lock", GLYPH_ACCENT_VIOLET),
+    TOOLS("tool", GLYPH_ACCENT_CORAL),
+    RADIO("antenna-bars-5", GLYPH_ACCENT_CORAL),
+    KEYBOARD("keyboard", GLYPH_ACCENT_MUSTARD),
+    DISPLAY("frame", GLYPH_ACCENT_CYAN),
+    SETUP("list-check", GLYPH_ACCENT_TEAL),
+    STORE("shopping-bag", GLYPH_ACCENT_GREEN),
+    SERVICES("puzzle", GLYPH_ACCENT_BLUE),
 }
 
 /**

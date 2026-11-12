@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.onboarding
 
 import android.content.Context
+import androidx.core.content.edit
 
 /**
  * Tracks the first user-initiated Android special-access attempt, not a permission grant.
@@ -24,8 +25,8 @@ object SpecialAccessAttemptStore {
         if (!step.isSpecialAccess) return
         context
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(step.name, true)
-            .apply()
+            .edit {
+                putBoolean(step.name, true)
+            }
     }
 }
