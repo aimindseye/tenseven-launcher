@@ -163,6 +163,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- M2-B: user-initiated companion selection only; no installer capability. -->
+        <activity android:name=".CompanionWizardActivity" android:exported="false" />
         <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
 
         <!-- Remind scheduler is independent of the optional Notes and Tasks launcher icons. -->

@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven
 
+import android.content.Intent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,6 +51,13 @@ internal fun CompanionAppsStatusSection() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
+    }
+    Card(
+        "Configure companion selections",
+        "Choose Minimum, Full or individual companions; no APK will be installed",
+        false,
+    ) {
+        context.startActivity(Intent(context, CompanionWizardActivity::class.java))
     }
     Card("Refresh companion detection", "Read-only; does not install or change any application", false) {
         refresh++
