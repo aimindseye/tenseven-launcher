@@ -1,5 +1,7 @@
 # JL10 v0.6 — BBOS10 design and behavior reference (2026-11-12)
 
+**Attribution:** **JLauncher (JL10 v0.6)** is acknowledged as the creator/product source of this BBOS10-style design reference. The project owner supplied an APK, screenshots and video for review; no official public GitHub repository or source license has been supplied. This reference should be credited in TenSeven's user-facing credits when its researched interactions inform the design. Attribution is not a claim of affiliation, endorsement, code reuse or redistribution rights.
+
 **Reference only, not implementation authorization.** TenSeven's accepted [modular APK architecture](../decisions/ADR-0001-MODULAR-COMPANION-APKS.md), [roadmap](MODULARIZATION_ROADMAP.md), existing D0–D6 behavior and [design checklist](DESIGN_COMPLIANCE.md) take precedence. Do not copy JL10's code, assets, artwork or root hooks.
 
 ## Evidence reviewed
