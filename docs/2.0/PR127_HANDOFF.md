@@ -14,7 +14,7 @@
 ## Successor lineage
 
 - New integration branch: `architecture/tenseven-2.0-modular-companions-20261112`, forked **directly from the pinned PR127 head**.
-- Successor PR: created as a draft against `main` after architecture docs are committed. The PR body links this handoff and PR127.
+- Successor PR: [#128](https://github.com/aimindseye/tenseven-launcher/pull/128) is a draft against `main`, opened after the architecture docs were committed.
 - Its first commits are **documentation only**. The inherited code and unresolved findings are intentionally visible; do not mistake a new PR number for passing quality tests.
 - Subsequent feature PRs should branch from and target this integration branch, with independent ZIP/local qualification and real build/test evidence before merge. Rebase or retarget only with explicit tracking of SHAs and acceptance.
 
@@ -43,7 +43,7 @@
 | #127 | Superseded; close without merge after successor opens |
 | `6d463d3e7f4c1c2d2b029b678f09ed271611acda` | Immutable PR127 recovery commit |
 | New architecture branch | Continues from that exact commit |
-| New architecture PR | Draft integration workstream; no auto-merge |
+| [#128](https://github.com/aimindseye/tenseven-launcher/pull/128) | Draft integration workstream; no auto-merge |
 | M0 docs | ADR, roadmap, installer/release spec, README/architecture/contribution guidance |
 | M1-M7 code | Pending local build, device/CI acceptance |
 
