@@ -20,6 +20,7 @@ import io.github.aimindseye.tenseven.model.WallpaperSets
 import io.github.aimindseye.tenseven.model.WidgetList
 
 private const val HOME_WEATHER_CITY_INPUT_LIMIT = 90
+private const val HOME_NOTIFICATION_STRIP_ENABLED = false
 
 /**
  * Stores launcher-only presentation state.
@@ -437,7 +438,7 @@ class StartStateRepository(
      * The old stored preference is deliberately not erased so upgrades and backups remain compatible.
      */
     @Suppress("UnusedParameter", "UNUSED_PARAMETER")
-    fun loadHomeNotificationStrip(style: HomeStyle): Boolean = false
+    fun loadHomeNotificationStrip(style: HomeStyle): Boolean = HOME_NOTIFICATION_STRIP_ENABLED
 
     fun saveHomeNotificationStrip(
         style: HomeStyle,

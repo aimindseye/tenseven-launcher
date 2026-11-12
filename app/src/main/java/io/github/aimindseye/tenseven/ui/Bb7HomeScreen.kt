@@ -443,7 +443,12 @@ private class Bb7HomeActions(
             add("Command" to { input.extra.onOpenCommand() })
             add(
                 "Launcher Settings" to {
-                    context.startActivity(Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java))
+                    context.startActivity(
+                        Intent(
+                            context,
+                            io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java,
+                        ),
+                    )
                 },
             )
             add("Wallpaper" to { input.extra.onOpenWallpaper() })
