@@ -75,7 +75,7 @@
 
 | Deliverable | Status at M0 |
 |---|---|
-| M0 architecture docs / successor PR | In progress until new draft PR created and PR127 closed |
+| M0 architecture docs / successor PR | **COMPLETE 2026-11-12:** docs committed, PR #128 opened as draft, PR #127 closed without merge and recovery head retained |
 | M1 inventory/contracts | Not started |
 | M2 installer wizard | Not started |
 | M3 Phone APK | Not started |
