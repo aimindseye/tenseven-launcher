@@ -1,5 +1,7 @@
 # TenSeven 2.0 modularization roadmap
 
+**Tracking:** [GitHub issue #129](https://github.com/aimindseye/tenseven-launcher/issues/129) is the milestone checklist; [draft integration PR #128](https://github.com/aimindseye/tenseven-launcher/pull/128) contains the inherited code and architecture docs.
+
 **Status: Approved target, implementation pending.** This document is the delivery contract for the new architecture workstream. See [ADR-0001](../decisions/ADR-0001-MODULAR-COMPANION-APKS.md).
 
 ## Fixed rules for each deliverable
