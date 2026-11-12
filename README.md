@@ -19,6 +19,18 @@ Gradle project so it can run on any Android 14+ phone, with new icons
 ([Tabler](https://github.com/tabler/tabler-icons)) and the missing pieces filled in from
 [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch).
 
+## TenSeven 2.0 — accepted modular companion architecture (not yet released)
+
+TenSeven 2.0 will keep **one Full Launcher APK** for BBOS7/BBOS10 Home, Hub, Peek, Lock and Active Frames, while moving independent Phone, Calendar, Tasks/Remind, Notes, Calc Plus, Sound Profiles and the ten games into **optional, separately installed APKs** (initially one Games Pack). The Launcher will offer a companion-app installation wizard and optional Complete release ZIP; it will continue working with the user's existing third-party apps.
+
+**This is the approved target, not current functionality.** The 2.0 development branch still bundles these apps in `:app` until migration and Titan 2/CI acceptance are complete. Current 1.0.0 release instructions below remain unchanged.
+
+- [Architecture decision (ADR-0001)](docs/decisions/ADR-0001-MODULAR-COMPANION-APKS.md)
+- [Implementation roadmap and immutable gates](docs/2.0/MODULARIZATION_ROADMAP.md)
+- [APK/ZIP distribution, installer and migration contract](docs/2.0/COMPANION_DISTRIBUTION.md)
+- [PR127 supersession and recovery checkpoint](docs/2.0/PR127_HANDOFF.md)
+- [Design-compliance checklist](docs/2.0/DESIGN_COMPLIANCE.md)
+
 ## Version 1.0.0
 
 Android 14+ · package `io.github.aimindseye.tenseven` · version code `18`.
