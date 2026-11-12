@@ -40,7 +40,7 @@
 
 | Reference | Status |
 |---|---|
-| #127 | Superseded; close without merge after successor opens |
+| [#127](https://github.com/aimindseye/tenseven-launcher/pull/127) | **Closed without merge** 2026-11-12 after #128 opened; pinned head/branch retained |
 | `6d463d3e7f4c1c2d2b029b678f09ed271611acda` | Immutable PR127 recovery commit |
 | New architecture branch | Continues from that exact commit |
 | [#128](https://github.com/aimindseye/tenseven-launcher/pull/128) | Draft integration workstream; no auto-merge |
