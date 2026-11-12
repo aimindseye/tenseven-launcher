@@ -112,6 +112,14 @@
         <provider android:authorities="org.sableos.media.snapshot" />
         <provider android:authorities="org.sableos.dialer.speeddial" />
         <package android:name="org.sableos.messages" />
+        <!-- M2-A proposed companion identities: scoped discovery ONLY, not signer trust. -->
+        <package android:name="io.github.aimindseye.tenseven.phone" />
+        <package android:name="io.github.aimindseye.tenseven.calendar" />
+        <package android:name="io.github.aimindseye.tenseven.tasks" />
+        <package android:name="io.github.aimindseye.tenseven.notes" />
+        <package android:name="io.github.aimindseye.tenseven.calculator" />
+        <package android:name="io.github.aimindseye.tenseven.profiles" />
+        <package android:name="io.github.aimindseye.tenseven.games" />
     </queries>
 
     <application
