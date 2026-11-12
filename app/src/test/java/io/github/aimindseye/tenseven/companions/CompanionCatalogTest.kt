@@ -9,8 +9,16 @@ class CompanionCatalogTest {
     @Test
     fun `seven unique companion packages and ids`() {
         assertEquals(7, CompanionCatalog.all.size)
-        assertEquals(7, CompanionCatalog.all.map { it.id }.toSet().size)
-        assertEquals(7, CompanionCatalog.all.map { it.packageName }.toSet().size)
+        val uniqueIds =
+            CompanionCatalog.all
+                .map { it.id }
+                .toSet()
+        val uniquePackages =
+            CompanionCatalog.all
+                .map { it.packageName }
+                .toSet()
+        assertEquals(7, uniqueIds.size)
+        assertEquals(7, uniquePackages.size)
         assertFalse(CompanionCatalog.all.any { it.packageName == "io.github.aimindseye.tenseven" })
     }
 

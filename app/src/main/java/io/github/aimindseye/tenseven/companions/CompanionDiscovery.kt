@@ -18,6 +18,8 @@ data class CompanionObservation(
     val versionLabel: String?,
 )
 
+private const val MAX_VERSION_LABEL_LENGTH = 80
+
 object CompanionDiscovery {
     fun snapshot(context: Context): List<CompanionObservation> =
         CompanionCatalog.all.map { spec ->
@@ -37,7 +39,7 @@ object CompanionDiscovery {
                     } else {
                         CompanionPresence.DETECTED_SIGNER_UNVERIFIED
                     },
-                versionLabel = packageInfo?.versionName?.take(80),
+                versionLabel = packageInfo?.versionName?.take(MAX_VERSION_LABEL_LENGTH),
             )
         }
 }

@@ -41,7 +41,9 @@ internal fun CompanionAppsStatusSection() {
                         (observed.versionLabel?.let { " · reported version $it" } ?: "")
                 }
 
-                CompanionPresence.NOT_DETECTED_IN_PROFILE -> "Not detected in this Android profile"
+                CompanionPresence.NOT_DETECTED_IN_PROFILE -> {
+                    "Not detected in this Android profile"
+                }
             }
         Text(
             "${observed.spec.label} — $detail",
