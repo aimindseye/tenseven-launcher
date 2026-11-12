@@ -46,6 +46,10 @@ All companion IDs and signing decisions require registration/verification before
 - Preserve fallback to user-selected/default third-party apps when a TenSeven companion is absent; do not introduce hard dependencies.
 - Existing users keep their current launcher, settings and embedded apps until replacement-install and migration acceptance is proven.
 
+## External design references and credit
+
+[JLauncher (JL10 v0.6)](../2.0/JL10_BB10_REFERENCE_REVIEW_20261112.md) is a credited reference for the Hub source drawer, notification options, navigation/gesture feel and Active Frames presentation. The project does not have a supplied public GitHub repository. Its Xposed/System UI hooks are **not** a TenSeven runtime dependency. No source or graphics are authorized for copying based on these observations; implement any suitable behavior independently using documented Android APIs and the approved non-root architecture.
+
 ## Consequences and non-goals
 
 Benefits: independent app updates, permission minimization, smaller Launcher payload, separately testable modules and optional installation. Costs: package ownership, migration/backup tooling, installer UX, signature registration, IPC/integration contracts and more release artifacts.
