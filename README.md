@@ -145,3 +145,4 @@ BlackBerry is a trademark of its owner. Tenseven is not affiliated with or endor
 - **Notification, usage, Private Space, onboarding, icon pack, backup and command ideas and code to port:**
   [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch) by Katoa Apps (Apache-2.0).
 - **Status rings:** [Titan AI](https://github.com/andrehafner/aiassistant) by Andre Hafner (MIT).
+- **BlackBerry 10 interaction and design reference:** **JLauncher (JL10 v0.6)** — credited for the BB10-style Hub, source drawer, navigation, gestures, and Active Frames presentation reviewed for TenSeven 2.0. The author has not provided a public GitHub repository; no JLauncher code, assets, or privileged hooks have been incorporated. See the [JL10 reference review](docs/2.0/JL10_BB10_REFERENCE_REVIEW_20261112.md).
