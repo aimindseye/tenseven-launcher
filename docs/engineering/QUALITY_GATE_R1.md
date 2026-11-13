@@ -17,12 +17,34 @@ operations use fixed command shapes and full object IDs. Literal pathspec mode
 and option terminators keep filenames as data. There is no shell evaluation or
 CLI-supplied executable/subcommand schema. Invalid refs fail before side effects.
 
-`--out` remains a fresh absolute destination, under runtime temp, the platform
-`/tmp` alias, runner-provided `RUNNER_TEMP`, or the operator's Downloads folder.
-No CLI flag can expand these authorities. Traversal components, repository
-containment, arbitrary out-of-root paths and existing destinations are rejected.
-The documented local `/private/tmp/...`, `/tmp/...` and CI
-`$RUNNER_TEMP/tenseven-deliverable-quality` usages remain valid.
+R1.1 restricts `--out` to a fresh absolute destination under validated native
+runtime temp, `RUNNER_TEMP`, or Downloads. A platform-wide temp pathname is no
+longer an independently granted output authority. Every directory ancestry is
+opened from the filesystem root using no-follow descriptors and checked for
+root/current-user ownership and unsafe write permissions. Only root-owned
+sticky shared ancestors are traversable; a mode-0700 current-user workspace
+must establish a private boundary below shared storage before any allocation.
+Missing children of shared storage are never allocated by the checker.
+
+Explicit `RUNNER_TEMP` must already exist and be privately controlled; GitHub's
+owner-controlled 0755 root remains valid with protected ancestry. Local native
+private temp and Downloads are supported. For a local path elsewhere, first
+securely allocate a private workspace and select it as `RUNNER_TEMP`:
+
+```sh
+REVIEW_ROOT="$(mktemp -d)"
+RUNNER_TEMP="$REVIEW_ROOT" python3 -B tools/deliverable_quality_gate.py \
+  --repo . --base-ref <actual-parent-SHA> --out "$REVIEW_ROOT/gate"
+```
+
+A securely allocated private workspace under `/tmp` or `/private/tmp` is also
+supported when explicitly selected this way. Direct allocation into shared temp
+is rejected. No CLI flag broadens authority. User-controlled symlinks, traversal,
+foreign owners, unsafe ancestors, repository containment, arbitrary out-of-root
+paths and existing destinations fail closed. Only root-owned system aliases
+(such as macOS `/var`) may canonicalize; their ancestry and resolved target are
+still verified. Evidence allocation remains atomic exclusive mkdir0700 under a
+validated private parent, followed by descriptor/inode/linkage verification.
 
 Evidence directories are reserved with exclusive mkdir and mode 0700. Existing
 intermediate directories must be owned by the user and not group/world writable.
@@ -33,6 +55,13 @@ writing. Inode/linkage checks before and after use detect directory replacement.
 A concurrent symlink/file planting cannot redirect or overwrite a victim. A
 same-user actor can still deny service or rename its own inode; such changes
 cause HOLD and never authorize an arbitrary symlink target.
+
+R1.1 preserves ASCII-only entry validation using `re.ASCII`, combines the nine
+reported test contexts, isolates the two overlay exception actions with
+`ExitStack`, and binds policy-test loop closures explicitly. The pre-existing
+S5778 in `test_stale_reports_fail_closed` is unchanged legacy debt. Local tests
+and source review cannot certify remote Sonar closure; S5443/S6353/S9154/S5778/
+S1515 verification remains PENDING CI until the exact R1.1 source is scanned.
 
 ## Exact historical transitions
 

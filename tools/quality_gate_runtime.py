@@ -21,7 +21,7 @@ class QualityError(ValueError):
 
 OID = re.compile(r"[0-9a-f]{40}")
 REF = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,254}")
-ENTRY = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,254}")
+ENTRY = re.compile(r"\w[\w.-]{0,254}", re.ASCII)
 GIT = shutil.which("git")
 DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
 
@@ -144,11 +144,71 @@ def _entry(value):
 
 
 def trusted_roots():
-    # Environment is supplied by the operator/CI runner, never by CLI flags.
-    roots = [Path(tempfile.gettempdir()), Path("/tmp"), Path.home() / "Downloads"]
+    # Runtime temp is only a search boundary, never authority to write shared storage.
+    roots = [(Path(tempfile.gettempdir()), False)]
+    downloads = Path.home() / "Downloads"
+    if downloads.is_dir():
+        roots.append((downloads, True))
     if os.environ.get("RUNNER_TEMP"):
-        roots.append(Path(os.environ["RUNNER_TEMP"]))
-    return [(p.absolute(), p.resolve()) for p in roots if p.is_dir()]
+        roots.insert(0, (Path(os.environ["RUNNER_TEMP"]), True))
+    result = []
+    for path, private in roots:
+        canonical = _canonical_root(path)
+        descriptor = _open_trusted_directory(canonical, private)
+        os.close(descriptor)
+        result.append((path.absolute(), canonical))
+    return result
+
+
+def _canonical_root(path):
+    if not path.is_absolute() or any(part in {".", ".."} for part in str(path).split("/")):
+        raise QualityError("Runtime root must be absolute without traversal")
+    current = Path(path.anchor)
+    for part in path.parts[1:]:
+        current = current / part
+        metadata = current.lstat()
+        # Only immutable system aliases (e.g. macOS /var) may canonicalize.
+        if stat.S_ISLNK(metadata.st_mode):
+            if metadata.st_uid != 0:
+                raise QualityError("User-controlled symlink in runtime authority")
+        else:
+            _ancestry_state(metadata, True)
+    return path.resolve(strict=True)
+
+
+def _ancestry_state(metadata, protected):
+    if metadata.st_uid not in {0, os.geteuid()}:
+        raise QualityError("Foreign-owned directory in evidence ancestry")
+    mode = stat.S_IMODE(metadata.st_mode)
+    if mode & 0o022:
+        if metadata.st_uid != 0 or not mode & stat.S_ISVTX:
+            raise QualityError("Unsafe writable directory in evidence ancestry")
+        return False
+    return protected or (metadata.st_uid == os.geteuid() and not mode & 0o077)
+
+
+def _private_directory(metadata):
+    if metadata.st_uid != os.geteuid() or stat.S_IMODE(metadata.st_mode) & 0o022:
+        raise QualityError("Evidence directory is not privately controlled by the current user")
+
+
+def _open_trusted_directory(path, require_private=True):
+    descriptor = os.open(path.anchor, DIRECTORY_FLAGS)
+    try:
+        protected = _ancestry_state(os.fstat(descriptor), True)
+        for part in path.parts[1:]:
+            child = os.open(part, DIRECTORY_FLAGS, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child
+            protected = _ancestry_state(os.fstat(descriptor), protected)
+        if require_private:
+            _private_directory(os.fstat(descriptor))
+            if not protected:
+                raise QualityError("Shared temp requires an existing private workspace (mode 0700)")
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
 
 
 def _relative_destination(requested, alias, canonical):
@@ -163,6 +223,12 @@ def _relative_destination(requested, alias, canonical):
     return None
 
 
+def _authority_parts(requested, alias, canonical):
+    if _canonical_root(alias) != canonical:
+        raise QualityError("Runtime authority alias changed")
+    return _relative_destination(requested, alias, canonical)
+
+
 def evidence_destination(value, repo, roots=None):
     raw = os.fspath(value)
     if any(part in {".", ".."} for part in raw.split("/")) or "\0" in raw:
@@ -171,7 +237,7 @@ def evidence_destination(value, repo, roots=None):
     if not requested.is_absolute():
         raise QualityError("Evidence destination must be absolute")
     for alias, canonical in roots if roots is not None else trusted_roots():
-        parts = _relative_destination(requested, alias, canonical)
+        parts = _authority_parts(requested, alias, canonical)
         if parts is None:
             continue
         destination = canonical.joinpath(*parts)
@@ -181,31 +247,48 @@ def evidence_destination(value, repo, roots=None):
     raise QualityError("Evidence must be under runtime temp, RUNNER_TEMP or Downloads")
 
 
-def _open_chain(root, components):
-    descriptor = os.open(root, DIRECTORY_FLAGS)
+def _assert_directory(descriptor, path):
+    linked = _open_trusted_directory(path)
     try:
-        for part in components:
-            next_fd = os.open(part, DIRECTORY_FLAGS, dir_fd=descriptor)
+        expected, actual = os.fstat(descriptor), os.fstat(linked)
+        if (expected.st_dev, expected.st_ino) != (actual.st_dev, actual.st_ino):
+            raise QualityError("Evidence directory or ancestry was replaced")
+    finally:
+        os.close(linked)
+
+
+def _make_directory(parent, name, exclusive, parent_path):
+    try:
+        descriptor = os.open(name, DIRECTORY_FLAGS, dir_fd=parent)
+    except FileNotFoundError:
+        # Never allocate in shared storage: an existing private workspace is required.
+        _assert_directory(parent, parent_path)
+        _private_directory(os.fstat(parent))
+        return _create_directory(parent, name)
+    else:
+        if exclusive:
             os.close(descriptor)
-            descriptor = next_fd
+            raise QualityError("Evidence destination already exists") from None
+    try:
+        _private_directory(os.fstat(descriptor))
         return descriptor
     except BaseException:
         os.close(descriptor)
         raise
 
 
-def _make_directory(parent, name, exclusive):
+def _create_directory(parent, name):
     try:
         os.mkdir(name, mode=0o700, dir_fd=parent)
     except FileExistsError:
-        if exclusive:
-            raise QualityError("Evidence destination already exists") from None
+        raise QualityError("Evidence entry appeared during exclusive allocation") from None
     descriptor = os.open(name, DIRECTORY_FLAGS, dir_fd=parent)
-    metadata = os.fstat(descriptor)
-    if metadata.st_uid != os.geteuid() or stat.S_IMODE(metadata.st_mode) & 0o022:
+    try:
+        _private_directory(os.fstat(descriptor))
+        return descriptor
+    except BaseException:
         os.close(descriptor)
-        raise QualityError("Evidence parent is not privately controlled by the current user")
-    return descriptor
+        raise
 
 
 class EvidenceDirectory:
@@ -218,12 +301,14 @@ class EvidenceDirectory:
     @classmethod
     def reserve(cls, value, repo, roots=None):
         root, parts = evidence_destination(value, repo, roots)
-        parent = os.open(root, DIRECTORY_FLAGS)
+        parent = _open_trusted_directory(root, require_private=False)
         try:
             for index, part in enumerate(parts):
-                child = _make_directory(parent, part, exclusive=index == len(parts) - 1)
+                child = _make_directory(parent, part, exclusive=index == len(parts) - 1,
+                                        parent_path=root.joinpath(*parts[:index]))
                 os.close(parent)
                 parent = child
+                _assert_directory(parent, root.joinpath(*parts[:index + 1]))
             evidence = cls(root, parts, parent)
             evidence.assert_linked()
             return evidence
@@ -232,17 +317,11 @@ class EvidenceDirectory:
             raise
 
     def assert_linked(self):
-        current = _open_chain(self.root, self.components)
-        try:
-            expected, actual = os.fstat(self.fd), os.fstat(current)
-            if (expected.st_dev, expected.st_ino) != (actual.st_dev, actual.st_ino):
-                raise QualityError("Evidence directory was replaced")
-        finally:
-            os.close(current)
+        _assert_directory(self.fd, self.path)
 
     def child(self, name):
         self.assert_linked()
-        child = _make_directory(self.fd, _entry(name), exclusive=True)
+        child = _make_directory(self.fd, _entry(name), exclusive=True, parent_path=self.path)
         return EvidenceDirectory(self.root, (*self.components, name), child)
 
     def open_file(self, name):
@@ -267,7 +346,8 @@ class EvidenceDirectory:
         opened = []
         try:
             for part in parts[:-1]:
-                child = _make_directory(directory.fd, _entry(part), exclusive=False)
+                child = _make_directory(directory.fd, _entry(part), exclusive=False,
+                                        parent_path=directory.path)
                 directory = EvidenceDirectory(self.root, (*directory.components, part), child)
                 opened.append(directory)
             directory.write(parts[-1], data)

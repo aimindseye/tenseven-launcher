@@ -1,7 +1,7 @@
 """Offline regressions plus opt-in qualification against actual Gradle reports."""
 
 import importlib.util
-from contextlib import redirect_stdout
+from contextlib import ExitStack, redirect_stdout
 from dataclasses import replace
 import io
 import json
@@ -145,9 +145,8 @@ class DeliveryQualityTests(RepositoryFixture):
                              ('<checkstyle><file><error /></file></checkstyle>', 'detekt'),
                              ('<issues><issue id="X" /></issues>', 'lint')):
             path.write_text(text)
-            with self.subTest(text=text):
-                with self.assertRaises(GATE.QualityError):
-                    GATE.parse_xml_report(self.repo, path, family)
+            with self.subTest(text=text), self.assertRaises(GATE.QualityError):
+                GATE.parse_xml_report(self.repo, path, family)
 
     def test_primary_lint_location_is_counted_once(self):
         path = self.repo / 'lint.xml'
@@ -305,9 +304,8 @@ class SecurityBoundaryTests(RepositoryFixture):
                 self.git.resolve(value)
 
     def test_ref_resolution_requires_one_full_object_id(self):
-        with patch.object(self.git, '_read', return_value=b'bad\noutput\n'):
-            with self.assertRaises(GATE.QualityError):
-                self.git.resolve('HEAD')
+        with patch.object(self.git, '_read', return_value=b'bad\noutput\n'), self.assertRaises(GATE.QualityError):
+            self.git.resolve('HEAD')
 
     def test_git_filename_is_literal_and_cannot_select_other_sources(self):
         filename = 'app/:(glob)*.kt'
@@ -399,9 +397,9 @@ class SecurityBoundaryTests(RepositoryFixture):
                 evidence.path.symlink_to(outside, target_is_directory=True)
             return original_open(path, flags, *args, **kwargs)
 
-        with patch.object(RUNTIME.os, 'open', side_effect=race_open):
-            with self.assertRaises((GATE.QualityError, OSError)):
-                evidence.write('QUALITY_GATE.json', b'bad')
+        with patch.object(RUNTIME.os, 'open', side_effect=race_open), \
+                self.assertRaises((GATE.QualityError, OSError)):
+            evidence.write('QUALITY_GATE.json', b'bad')
         self.assertTrue(swapped)
         self.assertEqual([], list(outside.iterdir()))
 
@@ -417,9 +415,8 @@ class SecurityBoundaryTests(RepositoryFixture):
                 (evidence.path / path).write_bytes(b'keep')
             return original_open(path, flags, *args, **kwargs)
 
-        with patch.object(RUNTIME.os, 'open', side_effect=race_open):
-            with self.assertRaises(FileExistsError):
-                evidence.write('QUALITY_GATE.json', b'bad')
+        with patch.object(RUNTIME.os, 'open', side_effect=race_open), self.assertRaises(FileExistsError):
+            evidence.write('QUALITY_GATE.json', b'bad')
         self.assertEqual(b'keep', (evidence.path / 'QUALITY_GATE.json').read_bytes())
 
     def test_reservation_race_rejects_swapped_ancestor(self):
@@ -430,15 +427,14 @@ class SecurityBoundaryTests(RepositoryFixture):
 
         def race_open(path, flags, *args, **kwargs):
             nonlocal swapped
-            if path == 'race-parent' and not swapped:
+            if path == 'race-parent' and not swapped and (self.allowed / path).exists():
                 swapped = True
                 (self.allowed / path).rename(self.allowed / 'original-parent')
                 (self.allowed / path).symlink_to(outside, target_is_directory=True)
             return original_open(path, flags, *args, **kwargs)
 
-        with patch.object(RUNTIME.os, 'open', side_effect=race_open):
-            with self.assertRaises(OSError):
-                self.reserve('race-parent/evidence')
+        with patch.object(RUNTIME.os, 'open', side_effect=race_open), self.assertRaises(OSError):
+            self.reserve('race-parent/evidence')
         self.assertEqual([], list(outside.iterdir()))
 
     def test_archive_rejects_traversal_and_symlink_parent(self):
@@ -459,7 +455,7 @@ class SecurityBoundaryTests(RepositoryFixture):
         with self.assertRaises(GATE.QualityError):
             self.reserve('mutable/evidence')
 
-    def test_ci_runner_temp_and_platform_tmp_alias_work(self):
+    def test_ci_runner_temp_works_and_user_symlink_alias_fails(self):
         runner = self.allowed / 'runner'
         runner.mkdir()
         with patch.dict(os.environ, {'RUNNER_TEMP': str(runner)}):
@@ -467,8 +463,8 @@ class SecurityBoundaryTests(RepositoryFixture):
             evidence.close()
         alias = self.allowed / 'platform-alias'
         alias.symlink_to(runner, target_is_directory=True)
-        evidence = RUNTIME.EvidenceDirectory.reserve(alias / 'local-quality', self.repo, [(alias, runner)])
-        evidence.close()
+        with self.assertRaises(GATE.QualityError):
+            RUNTIME.EvidenceDirectory.reserve(alias / 'local-quality', self.repo, [(alias, runner)])
 
     def test_both_analyses_use_one_candidate_wrapper(self):
         evidence = self.reserve()
@@ -507,9 +503,11 @@ class SecurityBoundaryTests(RepositoryFixture):
         victim = self.allowed / 'victim'
         victim.write_bytes(b'keep')
         (root / POLICY.COMPOSE_CONFIG).symlink_to(victim)
+        overlay = POLICY.temporary_compose_overlay(root, True)
+        stack = ExitStack()
+        self.addCleanup(stack.close)
         with self.assertRaises(FileExistsError):
-            with POLICY.temporary_compose_overlay(root, True):
-                self.fail('An existing overlay must not be accepted')
+            stack.enter_context(overlay)
         self.assertEqual(b'keep', victim.read_bytes())
         self.assertEqual(POLICY.OLD_WIRING, build.read_text())
 
@@ -522,10 +520,14 @@ class SecurityBoundaryTests(RepositoryFixture):
             self.assertEqual(POLICY.NEW_WIRING, build.read_text())
         self.assertEqual(POLICY.OLD_WIRING, build.read_text())
         self.assertFalse((root / POLICY.COMPOSE_CONFIG).exists())
+        overlay = POLICY.temporary_compose_overlay(root, True)
+        stack = ExitStack()
+        self.addCleanup(stack.close)
+        stack.enter_context(overlay)
+        build.rename(root / 'original-build')
+        build.write_text('other work\n')
         with self.assertRaises(GATE.QualityError):
-            with POLICY.temporary_compose_overlay(root, True):
-                build.rename(root / 'original-build')
-                build.write_text('other work\n')
+            stack.close()
         self.assertEqual('other work\n', build.read_text())
 
 
@@ -533,12 +535,141 @@ class SecurityBoundaryTests(RepositoryFixture):
         result = {'head': self.git.head(), 'candidate_start_source_sha256': GATE.source_digest(self.repo),
                   'base_ref': self.base, 'changed_paths': sorted(self.git.changed(self.base))}
         GATE.assert_candidate_unchanged(self.git, result)
-        with patch.object(self.git, 'head', return_value='0' * 40):
-            with self.assertRaises(GATE.QualityError):
-                GATE.assert_candidate_unchanged(self.git, result)
+        with patch.object(self.git, 'head', return_value='0' * 40), self.assertRaises(GATE.QualityError):
+            GATE.assert_candidate_unchanged(self.git, result)
         (self.repo / self.source).write_text('class ConcurrentEdit\n')
         with self.assertRaises(GATE.QualityError):
             GATE.assert_candidate_unchanged(self.git, result)
+
+    def test_entry_validation_remains_ascii_only(self):
+        for entry in ('évidence', 'evidencé', '一', 'evidence_١', 'evidence\n'):
+            with self.subTest(entry=entry), self.assertRaises(GATE.QualityError):
+                RUNTIME._entry(entry)
+        self.assertEqual('Evidence_1-2.xml', RUNTIME._entry('Evidence_1-2.xml'))
+
+    def test_root_permissions_are_checked_before_allocation(self):
+        root = self.allowed / 'unsafe-root'
+        root.mkdir(mode=0o700)
+        root.chmod(0o777)
+        roots = [(root, root)]
+        with patch.object(RUNTIME.os, 'mkdir') as create, self.assertRaises(GATE.QualityError):
+            RUNTIME.EvidenceDirectory.reserve(root / 'evidence', self.repo, roots)
+        create.assert_not_called()
+
+    def test_private_leaf_cannot_authorize_unsafe_ancestor(self):
+        root = self.allowed / 'unsafe-parent'
+        root.mkdir()
+        leaf = root / 'private-root'
+        leaf.mkdir(mode=0o700)
+        root.chmod(0o777)
+        with patch.object(RUNTIME.os, 'mkdir') as create, self.assertRaises(GATE.QualityError):
+            RUNTIME.EvidenceDirectory.reserve(leaf / 'evidence', self.repo, [(leaf, leaf)])
+        create.assert_not_called()
+
+    def test_foreign_owned_authority_is_rejected(self):
+        foreign_uid = os.geteuid() + 1
+        with patch.object(RUNTIME.os, 'geteuid', return_value=foreign_uid), \
+                patch.object(RUNTIME.os, 'mkdir') as create, self.assertRaises(GATE.QualityError):
+            self.reserve()
+        create.assert_not_called()
+
+    def test_runner_temp_requires_existing_safe_authority(self):
+        unsafe = self.allowed / 'runner-unsafe'
+        unsafe.mkdir()
+        unsafe.chmod(0o777)
+        for root in (unsafe, self.allowed / 'missing', Path('relative')):
+            with self.subTest(root=root), patch.dict(os.environ, {'RUNNER_TEMP': str(root)}), \
+                    self.assertRaises((GATE.QualityError, OSError)):
+                RUNTIME.EvidenceDirectory.reserve(root / 'evidence', self.repo)
+
+    def test_runner_temp_symlink_is_rejected(self):
+        link = self.allowed / 'runner-alias'
+        link.symlink_to(self.allowed, target_is_directory=True)
+        with patch.dict(os.environ, {'RUNNER_TEMP': str(link)}), self.assertRaises(GATE.QualityError):
+            RUNTIME.EvidenceDirectory.reserve(link / 'evidence', self.repo)
+
+    def test_ci_owner_controlled_755_root_is_supported(self):
+        runner = self.allowed / 'ci-runner'
+        runner.mkdir(mode=0o755)
+        with patch.dict(os.environ, {'RUNNER_TEMP': str(runner)}):
+            evidence = RUNTIME.EvidenceDirectory.reserve(runner / 'evidence', self.repo)
+        self.addCleanup(evidence.close)
+        evidence.write('receipt.json', b'{}')
+        self.assertEqual(0o700, stat.S_IMODE(evidence.path.stat().st_mode))
+
+    def test_unsafe_root_permission_change_after_reservation_is_detected(self):
+        evidence = self.reserve('private-authority/evidence')
+        authority = self.allowed / 'private-authority'
+        authority.chmod(0o777)
+        with self.assertRaises(GATE.QualityError):
+            evidence.write('receipt.json', b'bad')
+        self.assertFalse((evidence.path / 'receipt.json').exists())
+
+    def test_authority_swap_during_allocation_cannot_redirect_writes(self):
+        root = self.allowed / 'authority'
+        root.mkdir(mode=0o700)
+        outside = self.allowed / 'outside'
+        outside.mkdir()
+        original_mkdir = RUNTIME.os.mkdir
+
+        def race_mkdir(name, *args, **kwargs):
+            if name == 'evidence':
+                root.rename(self.allowed / 'original-authority')
+                root.symlink_to(outside, target_is_directory=True)
+            return original_mkdir(name, *args, **kwargs)
+
+        with patch.object(RUNTIME.os, 'mkdir', side_effect=race_mkdir), \
+                self.assertRaises((GATE.QualityError, OSError)):
+            RUNTIME.EvidenceDirectory.reserve(root / 'evidence', self.repo, [(root, root)])
+        self.assertEqual([], list(outside.iterdir()))
+
+    def test_world_writable_parent_is_never_used_for_allocation(self):
+        root = self.allowed / 'shared'
+        root.mkdir()
+        root.chmod(0o1777)
+        parent = os.open(root, RUNTIME.DIRECTORY_FLAGS)
+        self.addCleanup(os.close, parent)
+        with patch.object(RUNTIME.os, 'mkdir') as create, self.assertRaises(GATE.QualityError):
+            RUNTIME._make_directory(parent, 'unsafe', exclusive=True, parent_path=root)
+        create.assert_not_called()
+
+    def test_sticky_system_temp_requires_private_boundary(self):
+        system = list(self.allowed.stat())
+        system[stat.ST_UID] = 0
+        system[stat.ST_MODE] = stat.S_IFDIR | 0o1777
+        self.assertFalse(RUNTIME._ancestry_state(os.stat_result(system), True))
+        private = list(self.allowed.stat())
+        private[stat.ST_MODE] = stat.S_IFDIR | 0o700
+        self.assertTrue(RUNTIME._ancestry_state(os.stat_result(private), False))
+        private[stat.ST_MODE] = stat.S_IFDIR | 0o755
+        self.assertFalse(RUNTIME._ancestry_state(os.stat_result(private), False))
+
+    def shared_workspace(self):
+        candidates = [Path(tempfile.gettempdir()).resolve(), *SOURCE.resolve().parents]
+        for path in candidates:
+            metadata = path.stat()
+            if metadata.st_uid == 0 and metadata.st_mode & stat.S_ISVTX and metadata.st_mode & 0o022:
+                workspace = tempfile.TemporaryDirectory(dir=path)
+                self.addCleanup(workspace.cleanup)
+                return path, Path(workspace.name)
+        self.skipTest('No root-owned sticky system temp exists on this platform')
+
+    def test_native_temp_without_private_boundary_cannot_allocate_first_child(self):
+        _, workspace = self.shared_workspace()
+        workspace.chmod(0o755)
+        with patch.object(RUNTIME.tempfile, 'gettempdir', return_value=str(workspace)), \
+                patch.dict(os.environ, {'RUNNER_TEMP': ''}), patch.object(RUNTIME.os, 'mkdir') as create, \
+                self.assertRaises(GATE.QualityError):
+            RUNTIME.EvidenceDirectory.reserve(workspace / 'evidence', self.repo)
+        create.assert_not_called()
+        self.assertFalse((workspace / 'evidence').exists())
+
+    def test_shared_native_temp_accepts_securely_allocated_private_workspace(self):
+        shared, workspace = self.shared_workspace()
+        evidence = RUNTIME.EvidenceDirectory.reserve(workspace / 'evidence', self.repo, [(shared, shared)])
+        self.addCleanup(evidence.close)
+        evidence.write('receipt.json', b'{}')
+        self.assertEqual(0o700, stat.S_IMODE(evidence.path.stat().st_mode))
 
 
 class HistoricalTransitionTests(RepositoryFixture):
@@ -631,12 +762,12 @@ class RealHistoricalPolicyTests(unittest.TestCase):
     def test_one_byte_change_in_either_actual_transition_is_rejected(self):
         original = POLICY.source_bytes
         for transition in POLICY.TRANSITIONS:
-            def altered(repo, filename):
+            def altered(repo, filename, transition=transition):
                 data = original(repo, filename)
                 return data + b'# altered\n' if filename == transition.path else data
-            with self.subTest(path=transition.path), patch.object(POLICY, 'source_bytes', side_effect=altered):
-                with self.assertRaises(GATE.QualityError):
-                    POLICY.verify_transition(self.repo, self.base, transition)
+            with self.subTest(path=transition.path), patch.object(POLICY, 'source_bytes', side_effect=altered), \
+                    self.assertRaises(GATE.QualityError):
+                POLICY.verify_transition(self.repo, self.base, transition)
 
 
 @unittest.skipUnless(os.environ.get('TENSEVEN_REAL_BASE'), 'Real report roots not supplied')
