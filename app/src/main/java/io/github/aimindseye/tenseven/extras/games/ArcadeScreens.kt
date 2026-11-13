@@ -26,8 +26,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import io.github.aimindseye.tenseven.extras.games.GamesText.t
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.random.Random
 

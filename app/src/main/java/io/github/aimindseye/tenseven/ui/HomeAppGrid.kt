@@ -171,25 +171,7 @@ internal fun GridCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box {
-            AppMark(app = app, size = iconDp)
-            val badge = app.profileLabel
-            if (badge != null) {
-                Text(
-                    text = AppProfiles.badge(badge),
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color.Black)
-                            .border(1.dp, Bb10Muted, RoundedCornerShape(6.dp))
-                            .padding(horizontal = 3.dp),
-                    fontSize = 8.sp,
-                    color = Color.White,
-                    maxLines = 1,
-                )
-            }
-        }
+        GridCellImage(app, iconDp)
         if (showLabel) Spacer(Modifier.height(GRID_ICON_LABEL_GAP))
         if (showLabel) {
             Text(
@@ -200,6 +182,33 @@ internal fun GridCell(
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Suppress("FunctionNaming") // Compose Unit renderers follow PascalCase for Android Lint.
+@Composable
+private fun GridCellImage(
+    app: AppEntry,
+    iconDp: Int,
+) {
+    Box {
+        AppMark(app = app, size = iconDp)
+        val badge = app.profileLabel
+        if (badge != null) {
+            Text(
+                text = AppProfiles.badge(badge),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black)
+                        .border(1.dp, Bb10Muted, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 3.dp),
+                fontSize = 8.sp,
+                color = Color.White,
+                maxLines = 1,
             )
         }
     }

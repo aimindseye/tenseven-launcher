@@ -19,7 +19,11 @@ class AppUsage private constructor(
             next = next.mapValues { it.value / 2 }.filterValues { it > 0 }
         }
         if (next.size > MAX_APPS) {
-            next = next.entries.sortedByDescending { it.value }.take(MAX_APPS).associate { it.key to it.value }
+            next =
+                next.entries
+                    .sortedByDescending { it.value }
+                    .take(MAX_APPS)
+                    .associate { it.key to it.value }
         }
         return AppUsage(next)
     }
@@ -28,7 +32,10 @@ class AppUsage private constructor(
 
     /** Keys of the apps used at least once, most used first (ties A to Z so the order is stable). */
     fun mostUsed(limit: Int): List<String> =
-        counts.entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key }).take(limit).map { it.key }
+        counts.entries
+            .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+            .take(limit)
+            .map { it.key }
 
     fun encode(): String = counts.entries.sortedBy { it.key }.joinToString("\n") { "${it.key}\t${it.value}" }
 
@@ -40,11 +47,14 @@ class AppUsage private constructor(
         /** Reads what [encode] wrote; a damaged line is dropped. */
         fun decode(text: String?): AppUsage =
             AppUsage(
-                text.orEmpty().lineSequence().mapNotNull { line ->
-                    val key = line.substringBefore('\t')
-                    val count = line.substringAfter('\t', "").toIntOrNull()
-                    if (key.isBlank() || count == null || count <= 0) null else key to count.coerceAtMost(LIMIT)
-                }.toMap(),
+                text
+                    .orEmpty()
+                    .lineSequence()
+                    .mapNotNull { line ->
+                        val key = line.substringBefore('\t')
+                        val count = line.substringAfter('\t', "").toIntOrNull()
+                        if (key.isBlank() || count == null || count <= 0) null else key to count.coerceAtMost(LIMIT)
+                    }.toMap(),
             )
     }
 }

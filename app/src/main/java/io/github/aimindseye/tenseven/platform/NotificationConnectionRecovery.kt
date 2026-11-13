@@ -25,10 +25,14 @@ object NotificationConnectionRecovery {
             connected = { NotificationConnection.connected },
             rebind = { ConversationAccess.requestReconnect(app) },
             refresh = { ConversationListenerService.refreshConnected() },
-            postDelayed = { delay, action -> handler.postDelayed({ action() }, delay); Unit },
+            postDelayed = { delay, action ->
+                handler.postDelayed({ action() }, delay)
+                Unit
+            },
         ).also { controller = it }
     }
 
     fun onLauncherResume(context: Context) = controller(context).onResume()
+
     fun retryFromSettings(context: Context) = controller(context).retryFromSettings()
 }
