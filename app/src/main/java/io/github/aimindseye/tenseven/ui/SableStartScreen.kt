@@ -33,7 +33,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import io.github.aimindseye.tenseven.HubSettingsActivity
 import io.github.aimindseye.tenseven.LauncherSettingsActivity
-import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.SableFocusMemory
 import io.github.aimindseye.tenseven.design.SableRefreshableSurface
@@ -56,7 +55,6 @@ import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -191,7 +189,8 @@ fun SableStartScreen(
 
     val startPager =
         rememberPagerState(
-            initialPage = StartPages.forScreen(initialScreen).let { if (it < 0 && lead == 0) StartPages.HOME else it } + lead,
+            initialPage =
+                StartPages.forScreen(initialScreen).let { if (it < 0 && lead == 0) StartPages.HOME else it } + lead,
         ) { pageCount }
     val currentPage = startPager.currentPage - lead
     val settledPage = startPager.settledPage - lead
@@ -359,390 +358,365 @@ fun SableStartScreen(
         if (settledPage == StartPages.HUB) onRefreshLive()
     }
 
-    SableThemeWithWidgets(appearance, widgetsController, homeWidgetIds, if (wallpaperBehind) HOME_BACKDROP_ALPHA else 1f) {
-        // Home, Hub and app grid must use the same safe reading scale as Settings.
-        ScaledLauncherTextTheme {
-            val seeThrough = wallpaperBehind && destination == SableStartDestination.Start
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = if (seeThrough) Color.Transparent else MaterialTheme.colorScheme.background,
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .windowInsetsPadding(WindowInsets.safeDrawing)
-                            .pointerInput(onDoubleTapEmpty, destination) {
-                                // Home only, and only empty space: taps on tiles and rows are consumed by them first.
-                                if (onDoubleTapEmpty != null && destination == SableStartDestination.Start) {
-                                    detectTapGestures(onDoubleTap = { onDoubleTapEmpty() })
-                                }
-                            },
+    StartContentSurface(
+        style = StartSurfaceStyle(appearance, widgetsController, homeWidgetIds, wallpaperBehind),
+        destination = destination,
+        onDoubleTapEmpty = onDoubleTapEmpty,
+    ) {
+        when (destination) {
+            SableStartDestination.Start -> {
+                Bb10ThemeWithPeek(
+                    appearance = appearance,
+                    peekOpen = hubPeek,
+                    edgeEnabled = currentPage == StartPages.HOME,
+                    onPeekChange = { hubPeek = it },
+                    onOpenHub = {
+                        pagerScope.launch {
+                            startPager.animateScrollToPage(
+                                StartPages.HUB +
+                                    lead,
+                            )
+                        }
+                    },
                 ) {
-                    when (destination) {
-                        SableStartDestination.Start -> {
-                            Bb10ThemeWithPeek(
-                                appearance = appearance,
-                                peekOpen = hubPeek,
-                                edgeEnabled = currentPage == StartPages.HOME,
-                                onPeekChange = { hubPeek = it },
-                                onOpenHub = {
-                                    pagerScope.launch {
-                                        startPager.animateScrollToPage(
-                                            StartPages.HUB +
-                                                lead,
-                                        )
-                                    }
-                                },
-                            ) {
-                                StartStrip(
-                                    state = startPager,
-                                    pageCount = pageCount,
-                                    pageLead = lead,
-                                    quickSlots = quickSlots,
-                                    onMovePage = ::movePage,
-                                    onShowPage = { page -> pagerScope.launch { startPager.animateScrollToPage(page) } },
-                                    onQuickSlot = ::activateSlot,
-                                    onSlotOptions = { slot ->
-                                        selectedSlot = slot
-                                        destination = SableStartDestination.SlotOptions
-                                    },
-                                    onHubPeek = { hubPeek = true },
-                                    onDial = { char -> dial(char.toString()) },
-                                    onTypeToSearch = { seed -> if (typeToSearch) openSearch(SableStartDestination.Start, seed) },
-                                    speedDialLetters = speedDialLetters,
-                                    onSpeedDial = { letter -> speedDial?.call(letter) },
-                                    onCommand = { openSearch(SableStartDestination.Start) },
-                                    onEditHome = { destination = SableStartDestination.EditHome },
-                                ) { pagerIndex ->
-                                    val page = pagerIndex - lead
-                                    when {
-                                        page == StartPages.WIDGETS -> {
-                                            WidgetsPage(
-                                                controller = widgetsController,
-                                                ids = widgetIds,
-                                                builtIn =
-                                                    if (glanceWidgets.isEmpty()) {
-                                                        null
-                                                    } else {
-                                                        {
-                                                            BuiltInWidgets(
-                                                                widgets = glanceWidgets,
-                                                                snapshot = liveSnapshot,
-                                                                apps = apps,
-                                                                refreshGeneration = refreshGeneration,
-                                                                onLaunchApp = ::launchApp,
-                                                                onStartIntent = onStartIntent,
-                                                                onRequestPermissions = onRequestLivePermissions,
-                                                                onShowHub = { showHub(HubFilter.All) },
-                                                            )
-                                                        }
-                                                    },
-                                            )
-                                        }
+                    StartStrip(
+                        state = startPager,
+                        pageCount = pageCount,
+                        pageLead = lead,
+                        quickSlots = quickSlots,
+                        onMovePage = ::movePage,
+                        onShowPage = { page -> pagerScope.launch { startPager.animateScrollToPage(page) } },
+                        onQuickSlot = ::activateSlot,
+                        onSlotOptions = { slot ->
+                            selectedSlot = slot
+                            destination = SableStartDestination.SlotOptions
+                        },
+                        onHubPeek = { hubPeek = true },
+                        onDial = { char -> dial(char.toString()) },
+                        onTypeToSearch = { seed ->
+                            if (typeToSearch) openSearch(SableStartDestination.Start, seed)
+                        },
+                        speedDialLetters = speedDialLetters,
+                        onSpeedDial = { letter -> speedDial?.call(letter) },
+                        onCommand = { openSearch(SableStartDestination.Start) },
+                        onEditHome = { destination = SableStartDestination.EditHome },
+                    ) { pagerIndex ->
+                        val page = pagerIndex - lead
+                        when {
+                            page == StartPages.WIDGETS -> {
+                                StartWidgetsPage(
+                                    controller = widgetsController,
+                                    ids = widgetIds,
+                                    content =
+                                        StartWidgetContent(
+                                            glanceWidgets,
+                                            liveSnapshot,
+                                            apps,
+                                            refreshGeneration,
+                                        ),
+                                    actions =
+                                        StartWidgetActions(
+                                            onLaunchApp = ::launchApp,
+                                            onStartIntent = onStartIntent,
+                                            onRequestPermissions = onRequestLivePermissions,
+                                            onShowHub = { showHub(HubFilter.All) },
+                                        ),
+                                )
+                            }
 
-                                        page == StartPages.HUB -> {
-                                            SableRefreshableSurface(
-                                                isRefreshing = liveRefreshing,
-                                                onRefresh = onRefreshLive,
-                                            ) {
-                                                HubPage(
-                                                    model =
-                                                        HubPageModel(
-                                                            snapshot = liveSnapshot,
-                                                            apps = apps,
-                                                            filter = hubFilter,
-                                                            active = settledPage == StartPages.HUB,
-                                                            refreshGeneration = refreshGeneration,
-                                                        ),
-                                                    events =
-                                                        HubPageEvents(
-                                                            onFilter = { hubFilter = it },
-                                                            onLaunchApp = ::launchApp,
-                                                            onOpenHubSettings = ::openHubSettings,
-                                                            onStartIntent = onStartIntent,
-                                                            onRequestContactsPermission = onRequestContactsPermission,
-                                                        ),
-                                                    onReturnHome = {
-                                                        pagerScope.launch {
-                                                            startPager.animateScrollToPage(StartPages.HOME + lead)
-                                                        }
-                                                    },
-                                                )
-                                            }
-                                        }
-
-                                        page == StartPages.HOME && blankHomePage -> {
-                                            Spacer(Modifier.fillMaxSize())
-                                        }
-
-                                        page == StartPages.HOME -> {
-                                            ActiveFramesPage(
-                                                state = framesState,
-                                                apps = apps,
-                                                hiddenSections = hiddenSections,
-                                                onOpenSettings = {
-                                                    onStartIntent(
-                                                        Intent(
-                                                            homeContext,
-                                                            LauncherSettingsActivity::class
-                                                                .java,
-                                                        ),
-                                                    )
-                                                },
-                                                onSearch = { openSearch(SableStartDestination.Start) },
+                            page == StartPages.HUB -> {
+                                SableRefreshableSurface(
+                                    isRefreshing = liveRefreshing,
+                                    onRefresh = onRefreshLive,
+                                ) {
+                                    HubPage(
+                                        model =
+                                            HubPageModel(
                                                 snapshot = liveSnapshot,
+                                                apps = apps,
+                                                filter = hubFilter,
+                                                active = settledPage == StartPages.HUB,
                                                 refreshGeneration = refreshGeneration,
-                                                frameSnapshot = frameSnapshot,
-                                                active = settledPage == StartPages.HOME,
-                                                onResume = ::resumeFrame,
-                                                onClose = onCloseFrame,
-                                                onShowHub = { showHub(HubFilter.All) },
-                                                onOpenNotificationApp = ::openNotificationApp,
-                                                onAllowUsageAccess = onAllowUsageAccess,
-                                            )
-                                        }
-
-                                        else -> {
-                                            val index = page - StartPages.FIRST_GRID
-                                            AppGridPage(
-                                                apps = AppGrid.page(gridApps, index, gridPerPage),
-                                                rows = gridRows,
-                                                columns = gridColumns,
-                                                iconScale = gridIconScale,
-                                                gridLabels = gridLabels,
-                                                active = settledPage == page,
+                                            ),
+                                        events =
+                                            HubPageEvents(
+                                                onFilter = { hubFilter = it },
                                                 onLaunchApp = ::launchApp,
-                                                onLaunchSecond = ::launchSecond,
-                                                onOpenPeek = { app -> openPeek(app, SableStartDestination.Start) },
-                                                onEditHome = { destination = SableStartDestination.EditHome },
-                                                showLabels = showIconLabels,
-                                            )
-                                        }
-                                    }
+                                                onOpenHubSettings = ::openHubSettings,
+                                                onStartIntent = onStartIntent,
+                                                onRequestContactsPermission = onRequestContactsPermission,
+                                            ),
+                                        onReturnHome = {
+                                            pagerScope.launch {
+                                                startPager.animateScrollToPage(StartPages.HOME + lead)
+                                            }
+                                        },
+                                    )
                                 }
                             }
-                        }
 
-                        SableStartDestination.SlotOptions -> {
-                            val slot = selectedSlot
-                            if (slot == null) {
-                                destination = SableStartDestination.Start
-                            } else {
-                                SlotOptionsScreen(
-                                    slot = slot,
-                                    apps = apps,
-                                    onBack = ::navigateBack,
-                                    onOpen = {
-                                        destination = SableStartDestination.Start
-                                        activateSlot(slot)
-                                    },
-                                    onHubFilter = ::showHub,
-                                    onOpenHubSettings = {
-                                        destination = SableStartDestination.Start
-                                        openHubSettings()
-                                    },
-                                    onStartIntent = { intent ->
-                                        destination = SableStartDestination.Start
-                                        onStartIntent(intent)
-                                    },
-                                    onLaunchApp = { app ->
-                                        destination = SableStartDestination.Start
-                                        launchApp(app)
-                                    },
-                                    onAppInfo = { app -> onOpenAppInfo(app) },
-                                    onEditHome = { destination = SableStartDestination.EditHome },
-                                )
+                            page == StartPages.HOME && blankHomePage -> {
+                                Spacer(Modifier.fillMaxSize())
                             }
-                        }
 
-                        SableStartDestination.SlotPicker -> {
-                            val app = selectedApp
-                            if (app == null) {
-                                destination = SableStartDestination.Start
-                            } else {
-                                SlotPickerScreen(
-                                    app = app,
-                                    tokens = quickBarTokens,
+                            page == StartPages.HOME -> {
+                                ActiveFramesPage(
+                                    state = framesState,
                                     apps = apps,
-                                    appByKey = appByKey,
-                                    onBack = { destination = SableStartDestination.Peek },
-                                    onReplace = { index ->
-                                        val next = QuickBar.replace(quickBarTokens, index, QuickBar.appToken(app.stableKey()))
-                                        if (next != quickBarTokens) {
-                                            quickBarTokens = next
-                                            onQuickBarChanged(next)
-                                        }
-                                        destination = SableStartDestination.Peek
-                                    },
-                                )
-                            }
-                        }
-
-                        SableStartDestination.EditHome -> {
-                            EditHomeScreen(
-                                showFrameOptions =
-                                    !blankHomePage &&
-                                        rememberPlatformCapabilities(refreshGeneration).hubNotifications ==
-                                        CapabilityStatus.Ready,
-                                apps = apps,
-                                initial =
-                                    HomeEdit(
-                                        gridOrder = gridKeys,
-                                        quickBar = quickBarTokens,
-                                        glanceWidgets = glanceWidgets,
-                                        hiddenSections = hiddenSections,
-                                    ),
-                                defaults =
-                                    HomeEdit(
-                                        gridOrder =
-                                            AppGrid.resolve(
-                                                saved = null,
-                                                preferredFirst = defaultHomeKeys,
-                                                installed = gridCandidates.map { it.stableKey() },
+                                    hiddenSections = hiddenSections,
+                                    onOpenSettings = {
+                                        onStartIntent(
+                                            Intent(
+                                                homeContext,
+                                                LauncherSettingsActivity::class
+                                                    .java,
                                             ),
-                                        quickBar = QuickBar.DEFAULT,
-                                        glanceWidgets = GlanceWidgets.DEFAULT,
-                                        hiddenSections = HomeLayout.DEFAULT_HIDDEN,
-                                    ),
-                                backGeneration = editBackGeneration,
-                                onCancel = { destination = SableStartDestination.Start },
-                                onDone = { edit ->
-                                    setGridOrder(edit.gridOrder)
-                                    quickBarTokens = QuickBar.normalize(edit.quickBar)
-                                    onQuickBarChanged(if (quickBarTokens == QuickBar.DEFAULT) null else quickBarTokens)
-                                    glanceWidgets = edit.glanceWidgets
-                                    onGlanceWidgetsChanged(edit.glanceWidgets)
-                                    hiddenSections = edit.hiddenSections
-                                    onHiddenHomeSectionsChanged(edit.hiddenSections)
-                                    destination = SableStartDestination.Start
-                                    pagerScope.launch { startPager.scrollToPage(StartPages.HOME + lead) }
-                                },
-                                onAppearance = {
-                                    returnDestination = SableStartDestination.Start
-                                    destination = SableStartDestination.Appearance
-                                },
-                            )
-                        }
+                                        )
+                                    },
+                                    onSearch = { openSearch(SableStartDestination.Start) },
+                                    snapshot = liveSnapshot,
+                                    refreshGeneration = refreshGeneration,
+                                    frameSnapshot = frameSnapshot,
+                                    active = settledPage == StartPages.HOME,
+                                    onResume = ::resumeFrame,
+                                    onClose = onCloseFrame,
+                                    onShowHub = { showHub(HubFilter.All) },
+                                    onOpenNotificationApp = ::openNotificationApp,
+                                    onAllowUsageAccess = onAllowUsageAccess,
+                                )
+                            }
 
-                        SableStartDestination.Apps -> {
-                            AppsScreen(
-                                apps = apps,
-                                focusMemory = focusMemory,
-                                onBack = ::navigateBack,
-                                onSearch = {
-                                    openSearch(SableStartDestination.Apps)
-                                },
-                                onLaunchApp = ::launchApp,
-                                onLaunchSecond = ::launchSecond,
-                                onOpenPeek = { app ->
-                                    openPeek(app, SableStartDestination.Apps)
-                                },
-                                onOpenAppInfo = onOpenAppInfo,
-                                privateSpaceLocked = privateSpaceLocked,
-                                onTogglePrivateSpace = onTogglePrivateSpace,
-                            )
-                        }
-
-                        SableStartDestination.Search -> {
-                            SearchScreen(
-                                apps = apps,
-                                recentKeys = recentKeys,
-                                letterShortcuts = letterShortcuts,
-                                initialQuery = searchSeed,
-                                privateSpaceLocked = privateSpaceLocked,
-                                onTogglePrivateSpace = onTogglePrivateSpace,
-                                workProfilePaused = workProfilePaused,
-                                onToggleWorkProfile = onToggleWorkProfile,
-                                onBack = ::navigateBack,
-                                onLaunchApp = ::launchApp,
-                                secondInstanceOf = ::secondInstance,
-                                onOpenAppInfo = onOpenAppInfo,
-                                onOpenPeek = { app ->
-                                    openPeek(app, SableStartDestination.Search)
-                                },
-                                onAllApps = {
-                                    destination = SableStartDestination.Apps
-                                },
-                                onAppearance = {
-                                    returnDestination = SableStartDestination.Start
-                                    destination = SableStartDestination.Appearance
-                                },
-                                onFrames = if (blankHomePage) null else ({ showPage(StartPages.HOME) }),
-                                onGrid = { showPage(StartPages.FIRST_GRID) },
-                                onHub = ::showHub,
-                                onEditHome = {
-                                    destination = SableStartDestination.EditHome
-                                },
-                                onOpenSettings = onOpenSystemSettings,
-                                onStartIntent = onStartIntent,
-                            )
-                        }
-
-                        SableStartDestination.Appearance -> {
-                            AppearanceScreen(
-                                appearance = appearance,
-                                onBack = ::navigateBack,
-                                onAppearanceChanged = onAppearanceChanged,
-                                onReset = onResetAppearance,
-                            )
-                        }
-
-                        SableStartDestination.Peek -> {
-                            val app = selectedApp
-                            if (app == null) {
-                                destination = returnDestination
-                            } else {
-                                val key = app.stableKey()
-                                val barIndex = quickSlots.indexOfFirst { it.app?.stableKey() == key }
-                                SablePeekScreen(
-                                    model =
-                                        PeekAppState(
-                                            app = app,
-                                            inBaseBar = QuickBar.appState(app.inLauncherUser, barIndex >= 0),
-                                            hasSecondInstance = secondInstance(app) != null,
-                                            letterShortcut =
-                                                remember(app, shortcutVersion) {
-                                                    letterShortcuts?.load()?.letterOf(app.component.flattenToString())
-                                                },
-                                            shortcutsAvailable = letterShortcuts != null && app.inLauncherUser,
-                                        ),
-                                    navigation =
-                                        PeekNavigation(
-                                            onClose = ::navigateBack,
-                                            onOpen = { launchApp(app) },
-                                            onOpenSecond = { launchSecond(app) },
-                                            onOpenAppInfo = { onOpenAppInfo(app) },
-                                            onOpenNotificationSettings = { onOpenNotificationSettings(app) },
-                                        ),
-                                    edits =
-                                        PeekEdits(
-                                            onToggleBaseBar = {
-                                                val slotToken = quickSlots.getOrNull(barIndex)?.token
-                                                if (slotToken == null && QuickBar.needsSlotPicker(quickBarTokens)) {
-                                                    destination = SableStartDestination.SlotPicker
-                                                } else {
-                                                    val next = QuickBar.toggleApp(quickBarTokens, slotToken, key)
-                                                    if (next != quickBarTokens) {
-                                                        quickBarTokens = next
-                                                        onQuickBarChanged(next)
-                                                    }
-                                                }
-                                            },
-                                            onUninstall = { onUninstallApp(app) },
-                                            onSetLetterShortcut = { letter ->
-                                                if (letter == null) {
-                                                    letterShortcuts?.remove(app.component)
-                                                } else {
-                                                    letterShortcuts?.assign(letter, app.component)
-                                                }
-                                                shortcutVersion += 1
-                                            },
-                                        ),
+                            else -> {
+                                val index = page - StartPages.FIRST_GRID
+                                AppGridPage(
+                                    apps = AppGrid.page(gridApps, index, gridPerPage),
+                                    rows = gridRows,
+                                    columns = gridColumns,
+                                    iconScale = gridIconScale,
+                                    gridLabels = gridLabels,
+                                    active = settledPage == page,
+                                    onLaunchApp = ::launchApp,
+                                    onLaunchSecond = ::launchSecond,
+                                    onOpenPeek = { app -> openPeek(app, SableStartDestination.Start) },
+                                    onEditHome = { destination = SableStartDestination.EditHome },
+                                    showLabels = showIconLabels,
                                 )
                             }
                         }
                     }
+                }
+            }
+
+            SableStartDestination.SlotOptions -> {
+                val slot = selectedSlot
+                if (slot == null) {
+                    destination = SableStartDestination.Start
+                } else {
+                    SlotOptionsScreen(
+                        slot = slot,
+                        apps = apps,
+                        onBack = ::navigateBack,
+                        onOpen = {
+                            destination = SableStartDestination.Start
+                            activateSlot(slot)
+                        },
+                        onHubFilter = ::showHub,
+                        onOpenHubSettings = {
+                            destination = SableStartDestination.Start
+                            openHubSettings()
+                        },
+                        onStartIntent = { intent ->
+                            destination = SableStartDestination.Start
+                            onStartIntent(intent)
+                        },
+                        onLaunchApp = { app ->
+                            destination = SableStartDestination.Start
+                            launchApp(app)
+                        },
+                        onAppInfo = { app -> onOpenAppInfo(app) },
+                        onEditHome = { destination = SableStartDestination.EditHome },
+                    )
+                }
+            }
+
+            SableStartDestination.SlotPicker -> {
+                val app = selectedApp
+                if (app == null) {
+                    destination = SableStartDestination.Start
+                } else {
+                    SlotPickerScreen(
+                        app = app,
+                        tokens = quickBarTokens,
+                        apps = apps,
+                        appByKey = appByKey,
+                        onBack = { destination = SableStartDestination.Peek },
+                        onReplace = { index ->
+                            val next =
+                                QuickBar.replace(
+                                    quickBarTokens,
+                                    index,
+                                    QuickBar.appToken(app.stableKey()),
+                                )
+                            if (next != quickBarTokens) {
+                                quickBarTokens = next
+                                onQuickBarChanged(next)
+                            }
+                            destination = SableStartDestination.Peek
+                        },
+                    )
+                }
+            }
+
+            SableStartDestination.EditHome -> {
+                EditHomeScreen(
+                    showFrameOptions =
+                        !blankHomePage &&
+                            rememberPlatformCapabilities(refreshGeneration).hubNotifications ==
+                            CapabilityStatus.Ready,
+                    apps = apps,
+                    initial =
+                        HomeEdit(
+                            gridOrder = gridKeys,
+                            quickBar = quickBarTokens,
+                            glanceWidgets = glanceWidgets,
+                            hiddenSections = hiddenSections,
+                        ),
+                    defaults = startHomeEditDefaults(defaultHomeKeys, gridCandidates.map { it.stableKey() }),
+                    backGeneration = editBackGeneration,
+                    onCancel = { destination = SableStartDestination.Start },
+                    onDone = { edit ->
+                        setGridOrder(edit.gridOrder)
+                        quickBarTokens = QuickBar.normalize(edit.quickBar)
+                        onQuickBarChanged(if (quickBarTokens == QuickBar.DEFAULT) null else quickBarTokens)
+                        glanceWidgets = edit.glanceWidgets
+                        onGlanceWidgetsChanged(edit.glanceWidgets)
+                        hiddenSections = edit.hiddenSections
+                        onHiddenHomeSectionsChanged(edit.hiddenSections)
+                        destination = SableStartDestination.Start
+                        pagerScope.launch { startPager.scrollToPage(StartPages.HOME + lead) }
+                    },
+                    onAppearance = {
+                        returnDestination = SableStartDestination.Start
+                        destination = SableStartDestination.Appearance
+                    },
+                )
+            }
+
+            SableStartDestination.Apps -> {
+                AppsScreen(
+                    apps = apps,
+                    focusMemory = focusMemory,
+                    onBack = ::navigateBack,
+                    onSearch = {
+                        openSearch(SableStartDestination.Apps)
+                    },
+                    onLaunchApp = ::launchApp,
+                    onLaunchSecond = ::launchSecond,
+                    onOpenPeek = { app ->
+                        openPeek(app, SableStartDestination.Apps)
+                    },
+                    onOpenAppInfo = onOpenAppInfo,
+                    privateSpaceLocked = privateSpaceLocked,
+                    onTogglePrivateSpace = onTogglePrivateSpace,
+                )
+            }
+
+            SableStartDestination.Search -> {
+                SearchScreen(
+                    apps = apps,
+                    recentKeys = recentKeys,
+                    letterShortcuts = letterShortcuts,
+                    initialQuery = searchSeed,
+                    privateSpaceLocked = privateSpaceLocked,
+                    onTogglePrivateSpace = onTogglePrivateSpace,
+                    workProfilePaused = workProfilePaused,
+                    onToggleWorkProfile = onToggleWorkProfile,
+                    onBack = ::navigateBack,
+                    onLaunchApp = ::launchApp,
+                    secondInstanceOf = ::secondInstance,
+                    onOpenAppInfo = onOpenAppInfo,
+                    onOpenPeek = { app ->
+                        openPeek(app, SableStartDestination.Search)
+                    },
+                    onAllApps = {
+                        destination = SableStartDestination.Apps
+                    },
+                    onAppearance = {
+                        returnDestination = SableStartDestination.Start
+                        destination = SableStartDestination.Appearance
+                    },
+                    onFrames = if (blankHomePage) null else ({ showPage(StartPages.HOME) }),
+                    onGrid = { showPage(StartPages.FIRST_GRID) },
+                    onHub = ::showHub,
+                    onEditHome = {
+                        destination = SableStartDestination.EditHome
+                    },
+                    onOpenSettings = onOpenSystemSettings,
+                    onStartIntent = onStartIntent,
+                )
+            }
+
+            SableStartDestination.Appearance -> {
+                AppearanceScreen(
+                    appearance = appearance,
+                    onBack = ::navigateBack,
+                    onAppearanceChanged = onAppearanceChanged,
+                    onReset = onResetAppearance,
+                )
+            }
+
+            SableStartDestination.Peek -> {
+                val app = selectedApp
+                if (app == null) {
+                    destination = returnDestination
+                } else {
+                    val key = app.stableKey()
+                    val barIndex = quickSlots.indexOfFirst { it.app?.stableKey() == key }
+                    SablePeekScreen(
+                        model =
+                            PeekAppState(
+                                app = app,
+                                inBaseBar = QuickBar.appState(app.inLauncherUser, barIndex >= 0),
+                                hasSecondInstance = secondInstance(app) != null,
+                                letterShortcut =
+                                    remember(app, shortcutVersion) {
+                                        letterShortcuts?.load()?.letterOf(app.component.flattenToString())
+                                    },
+                                shortcutsAvailable = letterShortcuts != null && app.inLauncherUser,
+                            ),
+                        navigation =
+                            PeekNavigation(
+                                onClose = ::navigateBack,
+                                onOpen = { launchApp(app) },
+                                onOpenSecond = { launchSecond(app) },
+                                onOpenAppInfo = { onOpenAppInfo(app) },
+                                onOpenNotificationSettings = { onOpenNotificationSettings(app) },
+                            ),
+                        edits =
+                            PeekEdits(
+                                onToggleBaseBar = {
+                                    val slotToken = quickSlots.getOrNull(barIndex)?.token
+                                    if (slotToken == null && QuickBar.needsSlotPicker(quickBarTokens)) {
+                                        destination = SableStartDestination.SlotPicker
+                                    } else {
+                                        val next = QuickBar.toggleApp(quickBarTokens, slotToken, key)
+                                        if (next != quickBarTokens) {
+                                            quickBarTokens = next
+                                            onQuickBarChanged(next)
+                                        }
+                                    }
+                                },
+                                onUninstall = { onUninstallApp(app) },
+                                onSetLetterShortcut = { letter ->
+                                    if (letter == null) {
+                                        letterShortcuts?.remove(app.component)
+                                    } else {
+                                        letterShortcuts?.assign(letter, app.component)
+                                    }
+                                    shortcutVersion += 1
+                                },
+                            ),
+                    )
                 }
             }
         }

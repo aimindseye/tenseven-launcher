@@ -7,7 +7,7 @@ import org.junit.Test
 
 class CompanionCatalogTest {
     @Test
-    fun `seven unique companion packages and ids`() {
+    fun sevenUniqueCompanionPackagesAndIds() {
         assertEquals(7, CompanionCatalog.all.size)
         val uniqueIds =
             CompanionCatalog.all
@@ -23,7 +23,7 @@ class CompanionCatalogTest {
     }
 
     @Test
-    fun `minimum and full are independent companion presets`() {
+    fun minimumAndFullAreIndependentCompanionPresets() {
         assertEquals(setOf("tasks", "notes", "calculator"), CompanionCatalog.minimumPreset)
         assertEquals(7, CompanionCatalog.fullPreset.size)
         assertTrue(CompanionCatalog.fullPreset.containsAll(CompanionCatalog.minimumPreset))
@@ -31,7 +31,7 @@ class CompanionCatalogTest {
     }
 
     @Test
-    fun `ten games are one companion package`() {
+    fun tenGamesAreOneCompanionPackage() {
         assertEquals(1, CompanionCatalog.all.count { it.id == "games" })
     }
 }
