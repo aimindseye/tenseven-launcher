@@ -23,6 +23,7 @@ import android.widget.TextView
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.extras.profiles.core.ProfileSettings
@@ -222,7 +223,7 @@ class MainActivity : Activity() {
 
                 SoundProfileApplier.Result.PARTIAL -> {
                     startActivity(
-                        Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")),
+                        Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, "package:$packageName".toUri()),
                     )
                     t("is_on_allow_changing_system", profile.title)
                 }
@@ -332,23 +333,11 @@ class MainActivity : Activity() {
             val detailView = text(detail, SMALL_SP, palette.muted)
             addView(titleView)
             addView(detailView)
-            // Focus: accent fill and its text colour, the same font (BlackBerry 7 highlight).
+            // Match D3 flat list rows: never fill a whole focused row in accent blue.
             val paint = { has: Boolean ->
-                background =
-                    box(
-                        if (has) palette.accent else palette.surface,
-                        if (on) palette.accent else palette.surface,
-                    )
-                titleView.setTextColor(
-                    if (has) {
-                        palette.onAccent
-                    } else if (on) {
-                        palette.accent
-                    } else {
-                        palette.text
-                    },
-                )
-                detailView.setTextColor(if (has) palette.onAccent else palette.muted)
+                background = box(palette.window, if (has || on) palette.accent else palette.surface)
+                titleView.setTextColor(if (on) palette.accent else palette.text)
+                detailView.setTextColor(palette.muted)
             }
             paint(false)
             setOnFocusChangeListener { _, has -> paint(has) }
@@ -407,8 +396,8 @@ class MainActivity : Activity() {
     private companion object {
         const val PAD = 12
         const val GAP = 6
-        const val STROKE = 2
-        const val CORNER = 8f
+        const val STROKE = 1
+        const val CORNER = 2f
         const val TITLE_SP = 18f
         const val BODY_SP = 14f
         const val SMALL_SP = 11f
@@ -430,6 +419,16 @@ private class ProfilesPalette(
     val warn: Int = 0xFFFFB300.toInt(),
 ) {
     companion object {
+        private fun profilesDarkMode(
+            mode: AppearanceMode,
+            night: Boolean,
+        ): Boolean =
+            when (mode) {
+                AppearanceMode.FollowSystem -> night
+                AppearanceMode.Light -> false
+                AppearanceMode.Dark -> true
+            }
+
         fun forLauncher(context: Context): ProfilesPalette {
             val state = StartStateRepository(context)
             val mode = state.loadAppearanceMode()
@@ -437,25 +436,27 @@ private class ProfilesPalette(
             val chosen = mode != null || accentValue != null
             val accent = if (chosen) AccentPreset.fromStableValue(accentValue) else AccentPreset.Blue
             val night = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-            val dark =
-                when (if (chosen) AppearanceMode.fromStableValue(mode) else AppearanceMode.Dark) {
-                    AppearanceMode.FollowSystem -> night
-                    AppearanceMode.Light -> false
-                    AppearanceMode.Dark -> true
-                }
+            val selectedMode = if (chosen) AppearanceMode.fromStableValue(mode) else AppearanceMode.Dark
+            val dark = profilesDarkMode(selectedMode, night)
             val p =
                 if (accent == AccentPreset.Phone) {
                     phonePalette(if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context))
                 } else {
                     startPalette(dark, accent)
                 }
+            // Imported TenSeven themes use the same palette as launcher-owned Compose apps.
+            val selectedTheme =
+                state.loadActiveCustomThemeId()?.let { themeId ->
+                    state.loadCustomThemes().firstOrNull { it.id == themeId }
+                }
+            val custom = selectedTheme?.palette
             return ProfilesPalette(
-                window = p.background.toArgb(),
-                surface = p.card.toArgb(),
-                text = p.text.toArgb(),
-                muted = p.muted.toArgb(),
-                accent = p.accent.toArgb(),
-                onAccent = p.onAccent.toArgb(),
+                window = custom?.background ?: p.background.toArgb(),
+                surface = custom?.card ?: p.card.toArgb(),
+                text = custom?.text ?: p.text.toArgb(),
+                muted = custom?.muted ?: p.muted.toArgb(),
+                accent = selectedTheme?.accent ?: p.accent.toArgb(),
+                onAccent = selectedTheme?.onAccent ?: p.onAccent.toArgb(),
             )
         }
     }

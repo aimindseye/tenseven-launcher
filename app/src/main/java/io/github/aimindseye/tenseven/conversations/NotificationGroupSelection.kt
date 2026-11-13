@@ -12,7 +12,9 @@ internal data class NotificationGroupEntry(
 internal object NotificationGroupSelection {
     fun visibleKeys(entries: List<NotificationGroupEntry>): Set<String> {
         val childGroups = entries.filterNot { it.summary }.map { it.packageName to it.groupKey }.toSet()
-        return entries.filter { !it.summary || it.groupKey == null || (it.packageName to it.groupKey) !in childGroups }
-            .map { it.key }.toSet()
+        return entries
+            .filter { !it.summary || it.groupKey == null || (it.packageName to it.groupKey) !in childGroups }
+            .map { it.key }
+            .toSet()
     }
 }

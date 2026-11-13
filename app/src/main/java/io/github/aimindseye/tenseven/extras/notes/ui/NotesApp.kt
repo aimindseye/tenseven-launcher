@@ -32,7 +32,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -41,9 +40,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
-import kotlinx.coroutines.delay
 import io.github.aimindseye.tenseven.design.SableActionButton
 import io.github.aimindseye.tenseven.design.SableListFocus
 import io.github.aimindseye.tenseven.design.SableListKeys
@@ -61,6 +60,7 @@ import io.github.aimindseye.tenseven.extras.notes.core.NoteTime
 import io.github.aimindseye.tenseven.extras.notes.core.NotesKeys
 import io.github.aimindseye.tenseven.extras.notes.core.NotesText.t
 import io.github.aimindseye.tenseven.extras.notes.core.Tasks
+import kotlinx.coroutines.delay
 
 private const val NOTICE_MS = 3_000L
 

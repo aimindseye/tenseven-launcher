@@ -1,5 +1,9 @@
 package io.github.aimindseye.tenseven.design
 
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_2 = 2
+private const val SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_4 = 4
+
 /*
  * DESIGN-KF-B semantic token table for Sable-owned and Sable-themed system
  * surfaces (status bar, Quick Settings, shade, Keyguard presentation,
@@ -227,7 +231,7 @@ data class SableQuickSettingsLayout(
             when (displayClass) {
                 // sable-quick-settings-titan2: three columns of small labeled square tiles,
                 // one compact row of four.
-                SableDisplayClass.SquareKeyboard ->
+                SableDisplayClass.SquareKeyboard -> {
                     SableQuickSettingsLayout(
                         gridColumns = 3,
                         largeTileSpan = 2,
@@ -236,8 +240,25 @@ data class SableQuickSettingsLayout(
                         compactColumns = 4,
                         smallTileLabels = true,
                     )
-                SableDisplayClass.CompactPortrait -> SableQuickSettingsLayout(4, 2, 2, allDefaultTilesLarge = false)
-                SableDisplayClass.Tall -> SableQuickSettingsLayout(4, 2, 2, allDefaultTilesLarge = false)
+                }
+
+                SableDisplayClass.CompactPortrait -> {
+                    SableQuickSettingsLayout(
+                        SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_4,
+                        SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_2,
+                        SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_2,
+                        allDefaultTilesLarge = false,
+                    )
+                }
+
+                SableDisplayClass.Tall -> {
+                    SableQuickSettingsLayout(
+                        SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_4,
+                        SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_2,
+                        SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_2,
+                        allDefaultTilesLarge = false,
+                    )
+                }
             }
     }
 }

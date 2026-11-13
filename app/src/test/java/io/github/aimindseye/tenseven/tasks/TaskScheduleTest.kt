@@ -13,8 +13,10 @@ class TaskScheduleTest {
 
     @Test fun springForwardTomorrowMorningPreservesLocalTime() {
         val now = Instant.parse("2026-03-07T21:00:00Z")
-        assertEquals(Instant.parse("2026-03-08T13:00:00Z").toEpochMilli(),
-            TaskSchedule.preset("Tomorrow morning", now, ny))
+        assertEquals(
+            Instant.parse("2026-03-08T13:00:00Z").toEpochMilli(),
+            TaskSchedule.preset("Tomorrow morning", now, ny),
+        )
     }
 
     @Test fun nextDailyOccurrenceAcrossDst() {
@@ -33,8 +35,10 @@ class TaskScheduleTest {
     @Test fun earlyCompletionStillMovesRepeatForward() {
         val original = Instant.parse("2026-03-09T13:00:00Z").toEpochMilli()
         val completed = Instant.parse("2026-03-08T19:00:00Z").toEpochMilli()
-        assertEquals(Instant.parse("2026-03-10T13:00:00Z").toEpochMilli(),
-            TaskSchedule.advanceAfter(original, TaskRepeat.Daily, ny.id, completed))
+        assertEquals(
+            Instant.parse("2026-03-10T13:00:00Z").toEpochMilli(),
+            TaskSchedule.advanceAfter(original, TaskRepeat.Daily, ny.id, completed),
+        )
     }
 
     @Test fun untilCompleteHasNoAndroidAlarm() {
@@ -46,19 +50,33 @@ class TaskScheduleTest {
         val dir = Files.createTempDirectory("task-source-").toFile()
         try {
             val token = "a".repeat(64)
-            val item = TaskRecord(title = "Follow up in Mail", originPackage = "example.mail",
-                originToken = token, linkedNoteId = "note-42")
+            val item =
+                TaskRecord(
+                    title = "Follow up in Mail",
+                    originPackage = "example.mail",
+                    originToken = token,
+                    linkedNoteId = "note-42",
+                )
             val store = TaskStore(dir)
             store.save(item)
             assertEquals(item, store.list().single())
-            assertTrue(store.list().single().details.isEmpty())
+            assertTrue(
+                store
+                    .list()
+                    .single()
+                    .details
+                    .isEmpty(),
+            )
             store.delete(item.id)
             assertTrue(store.list().isEmpty())
-        } finally { dir.deleteRecursively() }
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     @Test fun groupingUsesLocalCalendarDatesForEveryListSection() {
         val now = Instant.parse("2026-11-02T16:00:00Z")
+
         fun task(days: Long) = TaskRecord(title = "Dated", dueAtEpochMs = now.plusSeconds(days * 86400).toEpochMilli())
         assertEquals("Today", TaskSchedule.group(task(-1), now, ny))
         assertEquals("Today", TaskSchedule.group(task(0), now, ny))

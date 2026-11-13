@@ -43,8 +43,18 @@ class ActiveFramesUiTest {
         val state = mutableStateOf(FramesState(items = values))
         compose.setContent {
             MaterialTheme {
-                ActiveFramesGrid(state.value, emptyList(), snapshot, emptySet(), emptyList(), { _, _ -> null },
-                    true, {}, { closed -> state.value = state.value.copy(items = state.value.items - closed) }, Modifier.size(360.dp))
+                ActiveFramesGrid(
+                    state.value,
+                    emptyList(),
+                    snapshot,
+                    emptySet(),
+                    emptyList(),
+                    { _, _ -> null },
+                    true,
+                    {},
+                    { closed -> state.value = state.value.copy(items = state.value.items - closed) },
+                    Modifier.size(360.dp),
+                )
             }
         }
         val first = compose.onNodeWithTag(values[0].key).fetchSemanticsNode().boundsInRoot
@@ -65,9 +75,21 @@ class ActiveFramesUiTest {
         var captures = 0
         compose.setContent {
             MaterialTheme {
-                ActiveFramesGrid(state.value, emptyList(), snapshot, emptySet(),
+                ActiveFramesGrid(
+                    state.value,
+                    emptyList(),
+                    snapshot,
+                    emptySet(),
                     listOf(FrameTileView("tile:calendar", "Calendar", "Meeting at 3")),
-                    { _, _ -> captures++; null }, true, {}, {}, Modifier.size(360.dp))
+                    { _, _ ->
+                        captures++
+                        null
+                    },
+                    true,
+                    {},
+                    {},
+                    Modifier.size(360.dp),
+                )
             }
         }
         compose.onNodeWithText("Live tile", useUnmergedTree = true).assertExists()
@@ -75,14 +97,35 @@ class ActiveFramesUiTest {
         compose.onNodeWithTag(item.key).assertDoesNotExist()
         compose.runOnIdle { assertTrue(captures <= 1) }
     }
+
     @Test fun liveSummaryReplacesRecentBadgeOnMatchingAppEvenWithFullGrid() {
         val media = snapshot.copy(music = LiveDatum("Music", "Song by Artist", LiveAvailability.LIVE, sourcePackage = "yt.music"))
-        val items = listOf(FrameItem(FrameApp("yt.music", android.os.Process.myUserHandle().hashCode()))) +
-            (1..3).map { FrameItem(FrameApp("app$it", 0)) }
+        val items =
+            listOf(
+                FrameItem(
+                    FrameApp(
+                        "yt.music",
+                        android.os.Process
+                            .myUserHandle()
+                            .hashCode(),
+                    ),
+                ),
+            ) +
+                (1..3).map { FrameItem(FrameApp("app$it", 0)) }
         compose.setContent {
             MaterialTheme {
-                ActiveFramesGrid(FramesState(items, notificationsAllowed = true, settings = FrameSettings(maximum = 4)),
-                    emptyList(), media, emptySet(), emptyList(), { _, _ -> null }, true, {}, {}, Modifier.size(360.dp))
+                ActiveFramesGrid(
+                    FramesState(items, notificationsAllowed = true, settings = FrameSettings(maximum = 4)),
+                    emptyList(),
+                    media,
+                    emptySet(),
+                    emptyList(),
+                    { _, _ -> null },
+                    true,
+                    {},
+                    {},
+                    Modifier.size(360.dp),
+                )
             }
         }
         compose.onNodeWithText("Song by Artist", useUnmergedTree = true).assertIsDisplayed()
@@ -93,9 +136,23 @@ class ActiveFramesUiTest {
         var stopped = false
         compose.setContent {
             MaterialTheme {
-                ActiveFramesGrid(FramesState((1..4).map { FrameItem(FrameApp("app$it", 0)) }, settings = FrameSettings(maximum = 4)),
-                    emptyList(), snapshot, emptySet(), listOf(FrameTileView("tile:capture", "Shared screen", "Frozen", onClose = { stopped = true })),
-                    { _, _ -> null }, true, {}, {}, Modifier.size(360.dp))
+                ActiveFramesGrid(
+                    FramesState((1..4).map { FrameItem(FrameApp("app$it", 0)) }, settings = FrameSettings(maximum = 4)),
+                    emptyList(),
+                    snapshot,
+                    emptySet(),
+                    listOf(
+                        FrameTileView("tile:capture", "Shared screen", "Frozen", onClose = {
+                            stopped =
+                                true
+                        }),
+                    ),
+                    { _, _ -> null },
+                    true,
+                    {},
+                    {},
+                    Modifier.size(360.dp),
+                )
             }
         }
         compose.onNodeWithTag("tile:capture").assertIsDisplayed()
@@ -106,12 +163,29 @@ class ActiveFramesUiTest {
 
     @Test fun ownedIntegrationsDoNotDisplaceLiveAppFromFullGrid() {
         val media = snapshot.copy(music = LiveDatum("Music", "Playing track", LiveAvailability.LIVE, sourcePackage = "yt.music"))
-        val item = FrameItem(FrameApp("yt.music", android.os.Process.myUserHandle().hashCode()))
+        val item =
+            FrameItem(
+                FrameApp(
+                    "yt.music",
+                    android.os.Process
+                        .myUserHandle()
+                        .hashCode(),
+                ),
+            )
         compose.setContent {
             MaterialTheme {
-                ActiveFramesGrid(FramesState(listOf(item), notificationsAllowed = true, settings = FrameSettings(maximum = 4)),
-                    emptyList(), media, emptySet(), (1..4).map { FrameTileView("owned:$it", "Local $it", "Saved data") },
-                    { _, _ -> null }, true, {}, {}, Modifier.size(360.dp))
+                ActiveFramesGrid(
+                    FramesState(listOf(item), notificationsAllowed = true, settings = FrameSettings(maximum = 4)),
+                    emptyList(),
+                    media,
+                    emptySet(),
+                    (1..4).map { FrameTileView("owned:$it", "Local $it", "Saved data") },
+                    { _, _ -> null },
+                    true,
+                    {},
+                    {},
+                    Modifier.size(360.dp),
+                )
             }
         }
         compose.onNodeWithText("Playing track", useUnmergedTree = true).assertIsDisplayed()
@@ -119,17 +193,38 @@ class ActiveFramesUiTest {
     }
 
     @Test fun notificationsCalendarAndLocalDataNeverCreateFrames() {
-        io.github.aimindseye.tenseven.platform.ScreenCaptureState.stopped()
-        val live = snapshot.copy(calendar = LiveDatum("Calendar", "Old calendar event", LiveAvailability.LIVE),
-            appSummaries = listOf(
-                AppSummary("messages:mail", "Mail", "Old mail text", SummarySource.Notification, "mail"),
-                AppSummary("local:notes", "Notes", "Old note", SummarySource.Local)))
+        io.github.aimindseye.tenseven.platform.ScreenCaptureState
+            .stopped()
+        val live =
+            snapshot.copy(
+                calendar = LiveDatum("Calendar", "Old calendar event", LiveAvailability.LIVE),
+                appSummaries =
+                    listOf(
+                        AppSummary("messages:mail", "Mail", "Old mail text", SummarySource.Notification, "mail"),
+                        AppSummary("local:notes", "Notes", "Old note", SummarySource.Local),
+                    ),
+            )
         compose.setContent {
             MaterialTheme {
-                ActiveFramesPage(FramesState(usageAllowed = true, calendarAllowed = true, notificationsAllowed = true),
-                    emptyList(), setOf(io.github.aimindseye.tenseven.model.HomeLayout.STATUS_RINGS,
-                        io.github.aimindseye.tenseven.model.HomeLayout.WEATHER, io.github.aimindseye.tenseven.model.HomeLayout.SEARCH_ROW),
-                    {}, {}, live, 0, { _, _ -> null }, true, {}, {}, {}, {})
+                ActiveFramesPage(
+                    FramesState(usageAllowed = true, calendarAllowed = true, notificationsAllowed = true),
+                    emptyList(),
+                    setOf(
+                        io.github.aimindseye.tenseven.model.HomeLayout.STATUS_RINGS,
+                        io.github.aimindseye.tenseven.model.HomeLayout.WEATHER,
+                        io.github.aimindseye.tenseven.model.HomeLayout.SEARCH_ROW,
+                    ),
+                    {},
+                    {},
+                    live,
+                    0,
+                    { _, _ -> null },
+                    true,
+                    {},
+                    {},
+                    {},
+                    {},
+                )
             }
         }
         compose.onNodeWithTag("frames-empty").assertIsDisplayed()
@@ -137,5 +232,4 @@ class ActiveFramesUiTest {
         compose.onNodeWithText("Old mail text").assertDoesNotExist()
         compose.onNodeWithText("Old note").assertDoesNotExist()
     }
-
 }

@@ -65,7 +65,8 @@ internal data class SolitaireGame(
 
     /** A: the top card of [from] to the first foundation that takes it. */
     fun toFoundation(from: Int): SolitaireGame? =
-        (FOUNDATION_FIRST until TABLEAU_FIRST).firstNotNullOfOrNull { move(from, it) }
+        (FOUNDATION_FIRST until TABLEAU_FIRST)
+            .firstNotNullOfOrNull { move(from, it) }
 
     private fun movableRun(from: Int): List<PlayCard> {
         val source = piles[from]

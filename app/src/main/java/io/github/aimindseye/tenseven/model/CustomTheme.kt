@@ -58,6 +58,24 @@ sealed interface ThemeParse {
  * Only `format`, `version`, `name`, `mode` and `accent` are required. Colours are `#RRGGBB`.
  */
 object CustomThemes {
+    private const val BYTES_PER_KIB = 1024
+    private const val HEX_LENGTH = 7
+    private const val HEX_RADIX = 16
+    private const val CONTRAST_EPSILON = 0.05
+    private const val CHANNEL_MASK = 0xFF
+    private const val RGB_MASK = 0xFFFFFF
+    private const val MAX_CHANNEL_VALUE = 255.0
+    private const val LINEAR_CHANNEL_THRESHOLD = 0.03928
+    private const val LINEAR_CHANNEL_DIVISOR = 12.92
+    private const val GAMMA_OFFSET = 0.055
+    private const val GAMMA_DIVISOR = 1.055
+    private const val GAMMA_EXPONENT = 2.4
+    private const val RED_WEIGHT = 0.2126
+    private const val GREEN_WEIGHT = 0.7152
+    private const val BLUE_WEIGHT = 0.0722
+    private const val RED_SHIFT = 16
+    private const val GREEN_SHIFT = 8
+    private const val BLUE_SHIFT = 0
     const val FORMAT = "tenseven-theme"
     const val VERSION = 1
     const val MAX_BYTES = 64 * 1024
@@ -76,8 +94,10 @@ object CustomThemes {
         text: String,
         takenIds: Set<String> = emptySet(),
     ): ThemeParse {
-        if (text.length > MAX_BYTES) return refused("The file is larger than ${MAX_BYTES / 1024} KB.")
-        val root = MiniJson.parse(text.removePrefix("﻿")) as? Map<*, *> ?: return refused("The file is not valid theme JSON.")
+        if (text.length > MAX_BYTES) return refused("The file is larger than ${MAX_BYTES / BYTES_PER_KIB} KB.")
+        val root =
+            MiniJson.parse(text.removePrefix("")) as? Map<*, *>
+                ?: return refused("The file is not valid theme JSON.")
         if (root["format"] != FORMAT) return refused("This is not a Tenseven theme file (format must be \"$FORMAT\").")
         val version = (root["version"] as? Double)?.toInt()
         if (version == null || version > VERSION) return refused("This theme file needs a newer Tenseven (version $version).")
@@ -87,13 +107,20 @@ object CustomThemes {
         val accent = color(root["accent"]) ?: return refused("accent must be a colour like #00A8DF.")
         val onAccent =
             if (root["onAccent"] == null) {
-                if (contrast(0xFFFFFF, accent) >= contrast(0x000000, accent)) 0xFFFFFF else 0x000000
+                if (contrast(DARK_TEXT, accent) >= contrast(DARK_BACKGROUND, accent)) DARK_TEXT else DARK_BACKGROUND
             } else {
                 color(root["onAccent"]) ?: return refused("onAccent must be a colour like #FFFFFF.")
             }
         val palette = readPalette(root["palette"]) ?: return refused("palette has a value that is not a colour like #141414.")
         val wallpaper =
-            if (root["wallpaper"] == null) null else readWallpaper(root["wallpaper"]) ?: return refused("wallpaper needs top, bottom, glow and ridge colours and a seed from 0 to 9999.")
+            if (root["wallpaper"] ==
+                null
+            ) {
+                null
+            } else {
+                readWallpaper(root["wallpaper"])
+                    ?: return refused("wallpaper needs top, bottom, glow and ridge colours and a seed from 0 to 9999.")
+            }
         val problem = readability(mode, accent, onAccent, palette)
         if (problem != null) return refused(problem)
         val theme = CustomTheme(uniqueId(name, takenIds), name, mode, accent or OPAQUE, onAccent or OPAQUE, palette, wallpaper)
@@ -134,13 +161,18 @@ object CustomThemes {
         if (backgrounds.any { contrast(accent, it) < ACCENT_CONTRAST }) {
             return "The accent colour is hard to see on the background (needs a contrast of at least 3)."
         }
-        if (contrast(onAccent, accent) < ON_ACCENT_CONTRAST) return "onAccent is hard to read on the accent colour (needs a contrast of at least 2.5)."
+        if (contrast(onAccent, accent) <
+            ON_ACCENT_CONTRAST
+        ) {
+            return "onAccent is hard to read on the accent colour (needs a contrast of at least 2.5)."
+        }
         return null
     }
 
     private fun readPalette(value: Any?): CustomPalette? {
         if (value == null) return CustomPalette()
         val map = value as? Map<*, *> ?: return null
+
         fun pick(key: String): Pair<Boolean, Int?> = if (map[key] == null) true to null else color(map[key]).let { (it != null) to it }
         val parts = listOf("background", "card", "tile", "line", "text", "muted", "dim").map { it to pick(it) }
         if (parts.any { !it.second.first }) return null
@@ -164,8 +196,12 @@ object CustomThemes {
     /** `#RRGGBB` as 0xRRGGBB, else null. */
     fun color(value: Any?): Int? {
         val text = value as? String ?: return null
-        if (text.length != 7 || text[0] != '#') return null
-        return text.substring(1).toIntOrNull(16)?.takeIf { text.substring(1).all { c -> c.isDigit() || c in 'a'..'f' || c in 'A'..'F' } }
+        if (text.length != HEX_LENGTH || text[0] != '#') return null
+        return text.substring(1).toIntOrNull(HEX_RADIX)?.takeIf {
+            text.substring(1).all { c ->
+                c.isDigit() || c in 'a'..'f' || c in 'A'..'F'
+            }
+        }
     }
 
     /** WCAG contrast ratio of two RRGGBB colours. */
@@ -175,29 +211,43 @@ object CustomThemes {
     ): Double {
         val la = luminance(a)
         val lb = luminance(b)
-        return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
+        return (maxOf(la, lb) + CONTRAST_EPSILON) / (minOf(la, lb) + CONTRAST_EPSILON)
     }
 
     private fun luminance(rgb: Int): Double {
         fun channel(shift: Int): Double {
-            val c = ((rgb shr shift) and 0xFF) / 255.0
-            return if (c <= 0.03928) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
+            val c = ((rgb shr shift) and CHANNEL_MASK) / MAX_CHANNEL_VALUE
+            return if (c <=
+                LINEAR_CHANNEL_THRESHOLD
+            ) {
+                c / LINEAR_CHANNEL_DIVISOR
+            } else {
+                ((c + GAMMA_OFFSET) / GAMMA_DIVISOR).pow(GAMMA_EXPONENT)
+            }
         }
-        return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0)
+        return RED_WEIGHT * channel(RED_SHIFT) + GREEN_WEIGHT * channel(GREEN_SHIFT) + BLUE_WEIGHT * channel(BLUE_SHIFT)
     }
 
     private fun uniqueId(
         name: String,
         taken: Set<String>,
     ): String {
-        val slug = name.lowercase().map { if (it.isLetterOrDigit()) it else '-' }.joinToString("").trim('-').replace(Regex("-+"), "-").ifEmpty { "theme" }
+        val slug =
+            name
+                .lowercase()
+                .map {
+                    if (it.isLetterOrDigit()) it else '-'
+                }.joinToString("")
+                .trim('-')
+                .replace(Regex("-+"), "-")
+                .ifEmpty { "theme" }
         var id = "custom-$slug"
         var n = 2
         while (id in taken) id = "custom-$slug-${n++}"
         return id
     }
 
-    private fun hex(rgb: Int) = "#%06X".format(rgb and 0xFFFFFF)
+    private fun hex(rgb: Int) = "#%06X".format(rgb and RGB_MASK)
 
     /** The theme as a file (the export, and also how themes are stored). */
     fun toJson(theme: CustomTheme): String {

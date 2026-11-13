@@ -110,14 +110,17 @@ object Bb7Home {
     /** Rows of icons the closed tray shows on the home screen; one more opens the whole panel. */
     const val MIN_HOME_ROWS = 1
     const val MAX_HOME_ROWS = 3
+
     /** Dedicated wallpaper-area shortcuts; never turn the desktop into a scrollable app drawer. */
     const val MAX_DESKTOP_SHORTCUTS = 8
 
-    fun desktopShortcuts(keys: List<String>): List<String> =
-        keys.distinct().take(MAX_DESKTOP_SHORTCUTS)
+    fun desktopShortcuts(keys: List<String>): List<String> = keys.distinct().take(MAX_DESKTOP_SHORTCUTS)
 
     /** Existing shortcuts are retained; reaching capacity does not overwrite the last icon. */
-    fun addDesktopShortcut(current: List<String>, key: String): List<String> {
+    fun addDesktopShortcut(
+        current: List<String>,
+        key: String,
+    ): List<String> {
         val limited = desktopShortcuts(current)
         return if (key in limited || limited.size >= MAX_DESKTOP_SHORTCUTS) limited else limited + key
     }
@@ -144,13 +147,21 @@ object Bb7Home {
     ): List<AppEntry> {
         val byName = apps.sortedBy { it.label.lowercase() }
         return when (panel) {
-            Bb7Panel.All -> byName
-            Bb7Panel.Frequent ->
+            Bb7Panel.All -> {
+                byName
+            }
+
+            Bb7Panel.Frequent -> {
                 byName
                     .filter { usage.score(it.stableKey()) > 0 }
                     .sortedByDescending { usage.score(it.stableKey()) }
                     .take(FREQUENT_APPS)
-            Bb7Panel.Downloads -> byName.filter { it.canUninstall }
+            }
+
+            Bb7Panel.Downloads -> {
+                byName.filter { it.canUninstall }
+            }
+
             Bb7Panel.Favorites -> {
                 val byKey = apps.associateBy { it.stableKey() }
                 val chosen = favoriteKeys.orEmpty().mapNotNull { byKey[it] }
@@ -186,7 +197,14 @@ object Bb7Home {
         if (q.isEmpty()) return emptyList()
         val byName = apps.sortedBy { it.label.lowercase() }
         val starts = byName.filter { it.label.lowercase().startsWith(q) }
-        val word = byName.filter { it !in starts && it.label.lowercase().split(' ').any { w -> w.startsWith(q) } }
+        val word =
+            byName.filter {
+                it !in starts &&
+                    it.label
+                        .lowercase()
+                        .split(' ')
+                        .any { w -> w.startsWith(q) }
+            }
         val any = byName.filter { it !in starts && it !in word && q in it.label.lowercase() }
         return starts + word + any
     }

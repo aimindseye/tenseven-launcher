@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tenseven_phone_name" translatable="false">TenSeven Phone</string>
+    <string name="tenseven_calendar_name" translatable="false">TenSeven Calendar</string>
+</resources>

@@ -17,7 +17,9 @@ import io.github.aimindseye.tenseven.extras.profiles.core.SoundProfile
 import io.github.aimindseye.tenseven.extras.profiles.core.SoundProfiles
 
 /** Stores the chosen sound profile and each profile's own settings. */
-class SoundProfileStore(context: Context) {
+class SoundProfileStore(
+    context: Context,
+) {
     private val prefs = context.getSharedPreferences("sound_profiles", Context.MODE_PRIVATE)
 
     var current: SoundProfile?
@@ -26,10 +28,12 @@ class SoundProfileStore(context: Context) {
             prefs.edit().putString(CURRENT, v?.name).apply()
         }
 
-    fun settings(profile: SoundProfile): ProfileSettings =
-        SoundProfiles.parse(prefs.getString(profile.name, null))
+    fun settings(profile: SoundProfile): ProfileSettings = SoundProfiles.parse(prefs.getString(profile.name, null))
 
-    fun save(profile: SoundProfile, settings: ProfileSettings) {
+    fun save(
+        profile: SoundProfile,
+        settings: ProfileSettings,
+    ) {
         prefs.edit().putString(profile.name, SoundProfiles.format(settings)).apply()
     }
 
@@ -39,7 +43,9 @@ class SoundProfileStore(context: Context) {
 }
 
 /** Sets a sound profile on the phone. */
-class SoundProfileApplier(private val context: Context) {
+class SoundProfileApplier(
+    private val context: Context,
+) {
     enum class Result {
         APPLIED,
 
@@ -47,7 +53,7 @@ class SoundProfileApplier(private val context: Context) {
         NEEDS_DND_ACCESS,
 
         /** Sound was set, but tones, vibration or the light could not be (no settings access). */
-        PARTIAL
+        PARTIAL,
     }
 
     fun apply(profile: SoundProfile): Result {
@@ -74,11 +80,12 @@ class SoundProfileApplier(private val context: Context) {
 
     private fun setSound(plan: ProfilePlan) {
         val audio = context.getSystemService(AudioManager::class.java)
-        audio.ringerMode = when (plan.ringer) {
-            Ringer.NORMAL -> AudioManager.RINGER_MODE_NORMAL
-            Ringer.VIBRATE -> AudioManager.RINGER_MODE_VIBRATE
-            Ringer.SILENT -> AudioManager.RINGER_MODE_SILENT
-        }
+        audio.ringerMode =
+            when (plan.ringer) {
+                Ringer.NORMAL -> AudioManager.RINGER_MODE_NORMAL
+                Ringer.VIBRATE -> AudioManager.RINGER_MODE_VIBRATE
+                Ringer.SILENT -> AudioManager.RINGER_MODE_SILENT
+            }
         val pct = plan.volumePercent ?: return
         for (stream in intArrayOf(AudioManager.STREAM_RING, AudioManager.STREAM_NOTIFICATION)) {
             val max = audio.getStreamMaxVolume(stream)
@@ -86,42 +93,54 @@ class SoundProfileApplier(private val context: Context) {
         }
     }
 
-    private fun setDnd(nm: NotificationManager, dnd: Dnd) {
+    private fun setDnd(
+        nm: NotificationManager,
+        dnd: Dnd,
+    ) {
         when (dnd) {
             Dnd.CALLS_ONLY -> {
-                nm.notificationPolicy = NotificationManager.Policy(
-                    NotificationManager.Policy.PRIORITY_CATEGORY_CALLS or
-                        NotificationManager.Policy.PRIORITY_CATEGORY_REPEAT_CALLERS or
-                        NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS,
-                    NotificationManager.Policy.PRIORITY_SENDERS_ANY,
-                    NotificationManager.Policy.PRIORITY_SENDERS_ANY
-                )
+                nm.notificationPolicy =
+                    NotificationManager.Policy(
+                        NotificationManager.Policy.PRIORITY_CATEGORY_CALLS or
+                            NotificationManager.Policy.PRIORITY_CATEGORY_REPEAT_CALLERS or
+                            NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS,
+                        NotificationManager.Policy.PRIORITY_SENDERS_ANY,
+                        NotificationManager.Policy.PRIORITY_SENDERS_ANY,
+                    )
                 nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
             }
 
-            Dnd.ALARMS_ONLY -> nm.setInterruptionFilter(
-                NotificationManager.INTERRUPTION_FILTER_ALARMS
-            )
+            Dnd.ALARMS_ONLY -> {
+                nm.setInterruptionFilter(
+                    NotificationManager.INTERRUPTION_FILTER_ALARMS,
+                )
+            }
 
-            Dnd.OFF -> Unit
+            Dnd.OFF -> {
+                Unit
+            }
         }
     }
 
     /** Vibration, the light and the tones; false when the system settings could not be written. */
     private fun setExtras(plan: ProfilePlan): Boolean =
-        Settings.System.canWrite(context) && runCatching {
-            val cr = context.contentResolver
-            Settings.System.putInt(
-                cr,
-                Settings.System.VIBRATE_WHEN_RINGING,
-                if (plan.vibrateWhenRinging) 1 else 0
-            )
-            Settings.System.putInt(cr, NOTIFICATION_LIGHT_PULSE, if (plan.light) 1 else 0)
-            plan.ringtone?.let { setTone(RingtoneManager.TYPE_RINGTONE, it) }
-            plan.notificationTone?.let { setTone(RingtoneManager.TYPE_NOTIFICATION, it) }
-        }.isSuccess
+        Settings.System.canWrite(context) &&
+            runCatching {
+                val cr = context.contentResolver
+                Settings.System.putInt(
+                    cr,
+                    Settings.System.VIBRATE_WHEN_RINGING,
+                    if (plan.vibrateWhenRinging) 1 else 0,
+                )
+                Settings.System.putInt(cr, NOTIFICATION_LIGHT_PULSE, if (plan.light) 1 else 0)
+                plan.ringtone?.let { setTone(RingtoneManager.TYPE_RINGTONE, it) }
+                plan.notificationTone?.let { setTone(RingtoneManager.TYPE_NOTIFICATION, it) }
+            }.isSuccess
 
-    private fun setTone(type: Int, uri: String) {
+    private fun setTone(
+        type: Int,
+        uri: String,
+    ) {
         RingtoneManager.setActualDefaultRingtoneUri(context, type, Uri.parse(uri))
     }
 

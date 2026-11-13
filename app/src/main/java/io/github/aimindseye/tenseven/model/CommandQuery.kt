@@ -52,11 +52,12 @@ data class CommandQuery(
                     "/dual" to CommandScope.Dual,
                     "/work" to CommandScope.Work,
                 )
-            words.firstOrNull { (word, _) ->
-                text.equals(word, ignoreCase = true) || text.startsWith("$word ", ignoreCase = true)
-            }?.let { (word, scope) ->
-                return CommandQuery(scope, text.drop(word.length).trim())
-            }
+            words
+                .firstOrNull { (word, _) ->
+                    text.equals(word, ignoreCase = true) || text.startsWith("$word ", ignoreCase = true)
+                }?.let { (word, scope) ->
+                    return CommandQuery(scope, text.drop(word.length).trim())
+                }
             val scope =
                 when (text.firstOrNull()) {
                     '?' -> CommandScope.Apps
@@ -119,6 +120,7 @@ object CommandRanking {
     ): List<SettingsDestination> {
         if (term.isBlank()) return emptyList()
         val t = term.trim().lowercase()
+
         fun score(d: SettingsDestination): Int? {
             val title = d.title.lowercase()
             return when {
@@ -128,7 +130,8 @@ object CommandRanking {
                 else -> null
             }
         }
-        return SETTINGS.mapNotNull { d -> score(d)?.let { d to it } }
+        return SETTINGS
+            .mapNotNull { d -> score(d)?.let { d to it } }
             .sortedBy { it.second }
             .take(limit)
             .map { it.first }
@@ -152,18 +155,23 @@ object CommandRanking {
                 compareBy({ recentRank(it) ?: Int.MAX_VALUE }, { -frequency(it) }, { label(it).lowercase() }),
             )
         }
-        return items.mapNotNull { item ->
-            val l = label(item)
-            val tier =
-                when {
-                    l.startsWith(t, ignoreCase = true) -> 0
-                    l.split(' ', '-', '.').any { it.startsWith(t, ignoreCase = true) } -> 1
-                    l.contains(t, ignoreCase = true) -> 2
-                    else -> null
-                }
-            tier?.let { Triple(item, it, recentRank(item) ?: Int.MAX_VALUE) }
-        }.sortedWith(compareBy({ it.second }, { -frequency(it.first) }, { it.third }, { label(it.first).lowercase() }))
-            .map { it.first }
+        return items
+            .mapNotNull { item ->
+                val l = label(item)
+                val tier =
+                    when {
+                        l.startsWith(t, ignoreCase = true) -> 0
+                        l.split(' ', '-', '.').any { it.startsWith(t, ignoreCase = true) } -> 1
+                        l.contains(t, ignoreCase = true) -> 2
+                        else -> null
+                    }
+                tier?.let { Triple(item, it, recentRank(item) ?: Int.MAX_VALUE) }
+            }.sortedWith(
+                compareBy({ it.second }, { -frequency(it.first) }, { it.third }, {
+                    label(it.first)
+                        .lowercase()
+                }),
+            ).map { it.first }
     }
 }
 

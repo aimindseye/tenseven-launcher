@@ -6,9 +6,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class IconPresentationTest {
-    @Test fun defaultIsOriginalAndUnknownChoiceDoesNotForceTablerIcons() {
-        assertEquals(IconPresentation.Original, IconPresentation.decode(null))
-        assertEquals(IconPresentation.Original, IconPresentation.decode("unknown"))
+    @Test fun defaultIsTenSevenAndExplicitOriginalIsRespected() {
+        assertEquals(IconPresentation.TenSeven, IconPresentation.decode(null))
+        assertEquals(IconPresentation.TenSeven, IconPresentation.decode("unknown"))
+        assertEquals(IconPresentation.Original, IconPresentation.decode("original"))
         assertEquals(IconPresentation.TenSeven, IconPresentation.decode("tenseven"))
     }
 
@@ -20,8 +21,9 @@ class IconPresentationTest {
         assertFalse(IconPresentationPolicy.useMonochrome(IconPresentation.TenSeven, true))
     }
 
-    @Test fun bundledTenSevenAppKeepsItsOwnGlyph() {
-        assertTrue(IconPresentationPolicy.useGlyph(IconPresentation.Original, true, false))
-        assertTrue(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, true, true))
+    @Test fun bundledAppsAlsoRespectOriginalAndExternalPack() {
+        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.Original, true, false))
+        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, true, true))
+        assertTrue(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, true, false))
     }
 }
