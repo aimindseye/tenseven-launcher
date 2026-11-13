@@ -363,6 +363,7 @@ private val launcherFramesPage: @Composable (
 
 private val launcherAppsPage: @Composable (StartStateRepository) -> Unit = { state ->
     OptionalAppsSettings2()
+    CompanionAppsStatusSection()
     Section("Other features")
     var typeToSearch by remember { mutableStateOf(state.loadTypeToSearch()) }
     SwitchRow(
