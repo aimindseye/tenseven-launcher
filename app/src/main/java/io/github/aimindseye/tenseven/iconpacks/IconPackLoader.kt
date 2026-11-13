@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
+import android.util.TypedValue
 import android.util.Xml
 import androidx.core.content.ContextCompat
 import org.xmlpull.v1.XmlPullParser
@@ -76,15 +77,28 @@ object IconPackLoader {
                     resources.getIdentifier(name, "xml", packageName).takeIf { it != 0 }?.let { parseXml(resources, it) }
                 },
                 {
-                    resources
-                        .getIdentifier(name, "raw", packageName)
-                        .takeIf { it != 0 }
+                    qualifiedResourceId(resources, packageName, "raw", name)
                         ?.let { resources.openRawResource(it).use(::parseStream) }
                 },
                 { resources.assets.open("$name.xml").use(::parseStream) },
             )
         return attempts.firstNotNullOfOrNull { attempt -> runCatching(attempt).getOrNull() }
     }
+
+    @android.annotation.SuppressLint("DiscouragedApi")
+    // External icon packs provide resource names only at runtime. Qualified lookup is
+    // required for optional third-party raw resources; bundled assets remain the fallback.
+    private fun qualifiedResourceId(
+        resources: Resources,
+        packageName: String,
+        resourceType: String,
+        name: String,
+    ): Int? =
+        runCatching {
+            val resolved = TypedValue()
+            resources.getValue("$packageName:$resourceType/$name", resolved, true)
+            resolved.resourceId.takeIf { it != 0 }
+        }.getOrNull()
 
     private fun parseXml(
         resources: Resources,

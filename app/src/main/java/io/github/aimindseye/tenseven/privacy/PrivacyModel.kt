@@ -266,12 +266,17 @@ object PrivacyEvaluator {
         val coarseState = coarse?.let(::effective)
         return when {
             fineState == true -> GroupState.Allowed
+
             // Location access is certain but precision is not: plain "Location", no qualifier.
             coarseState == true && fine != null && fineState == null -> GroupState.Allowed
+
             // "approximate" only when precise is known to be off (or never requested).
             coarseState == true -> GroupState.Partial(LABEL_LOCATION_APPROXIMATE)
+
             fine != null && fineState == null -> GroupState.Unknown
+
             coarse != null && coarseState == null -> GroupState.Unknown
+
             else -> GroupState.NotAllowed
         }
     }
@@ -331,11 +336,21 @@ object PrivacyEvaluator {
     ): GroupState? {
         if (permission == null) return null
         return when (op) {
-            null, OpMode.Unknown -> GroupState.Unknown
-            OpMode.Allowed, OpMode.Foreground -> GroupState.Allowed
-            OpMode.Default, OpMode.NotApplicable ->
+            null, OpMode.Unknown -> {
+                GroupState.Unknown
+            }
+
+            OpMode.Allowed, OpMode.Foreground -> {
+                GroupState.Allowed
+            }
+
+            OpMode.Default, OpMode.NotApplicable -> {
                 if (permission.granted) GroupState.Allowed else GroupState.NotAllowed
-            OpMode.Ignored, OpMode.Errored -> GroupState.NotAllowed
+            }
+
+            OpMode.Ignored, OpMode.Errored -> {
+                GroupState.NotAllowed
+            }
         }
     }
 

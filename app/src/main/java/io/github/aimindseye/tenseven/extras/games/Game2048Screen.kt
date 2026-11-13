@@ -32,17 +32,41 @@ import io.github.aimindseye.tenseven.design.SableSpacing
 import io.github.aimindseye.tenseven.extras.games.GamesText.t
 import kotlin.math.abs
 
-private val Tile2 = Color(0xFF26384B)
-private val Tile4 = Color(0xFF315A78)
-private val Tile8 = Color(0xFFF08A4B)
-private val Tile16 = Color(0xFFEE5D8A)
-private val Tile32 = Color(0xFF9A63E8)
-private val Tile64 = Color(0xFFE34D59)
-private val Tile128 = Color(0xFFD9A441)
-private val Tile256 = Color(0xFF32B67A)
-private val Tile512 = Color(0xFF3189D8)
-private val Tile1024 = Color(0xFF8E5CE6)
-private val Tile2048 = Color(0xFFFFC857)
+// 2048 protocol data and approved tile colors; keep values identical to the source artwork.
+private const val BOARD_CELL_COUNT = 16
+private const val RESULT_FIELD_COUNT = 17
+private const val SCORE_RESULT_INDEX = 16
+private const val SWIPE_TRIGGER_PX = 32f
+private const val DARK_TILE_THRESHOLD = 128
+private const val COMPACT_TILE_LABEL_THRESHOLD = 1024
+private const val SLIDE_LEFT = 0
+private const val SLIDE_RIGHT = 1
+private const val SLIDE_UP = 2
+private const val SLIDE_DOWN = 3
+private const val DARK_TILE_TEXT_ARGB = 0xFF071016
+private const val TILE_2_ARGB = 0xFF26384B
+private const val TILE_4_ARGB = 0xFF315A78
+private const val TILE_8_ARGB = 0xFFF08A4B
+private const val TILE_16_ARGB = 0xFFEE5D8A
+private const val TILE_32_ARGB = 0xFF9A63E8
+private const val TILE_64_ARGB = 0xFFE34D59
+private const val TILE_128_ARGB = 0xFFD9A441
+private const val TILE_256_ARGB = 0xFF32B67A
+private const val TILE_512_ARGB = 0xFF3189D8
+private const val TILE_1024_ARGB = 0xFF8E5CE6
+private const val TILE_2048_ARGB = 0xFFFFC857
+
+private val Tile2 = Color(TILE_2_ARGB)
+private val Tile4 = Color(TILE_4_ARGB)
+private val Tile8 = Color(TILE_8_ARGB)
+private val Tile16 = Color(TILE_16_ARGB)
+private val Tile32 = Color(TILE_32_ARGB)
+private val Tile64 = Color(TILE_64_ARGB)
+private val Tile128 = Color(TILE_128_ARGB)
+private val Tile256 = Color(TILE_256_ARGB)
+private val Tile512 = Color(TILE_512_ARGB)
+private val Tile1024 = Color(TILE_1024_ARGB)
+private val Tile2048 = Color(TILE_2048_ARGB)
 
 @Composable
 internal fun Game2048Screen() {
@@ -56,13 +80,13 @@ internal fun Game2048Screen() {
                 direction,
             )
 
-        check(result.size == 17)
+        check(result.size == RESULT_FIELD_COUNT)
 
         board =
-            IntArray(16) { index ->
+            IntArray(BOARD_CELL_COUNT) { index ->
                 result[index].toInt()
             }
-        score += result[16]
+        score += result[SCORE_RESULT_INDEX]
     }
 
     fun reset() {
@@ -122,7 +146,7 @@ private fun Game2048Board(
                             dragY = 0f
                         },
                         onDragEnd = {
-                            val threshold = 32f
+                            val threshold = SWIPE_TRIGGER_PX
                             if (
                                 abs(dragX) < threshold &&
                                 abs(dragY) < threshold
@@ -131,9 +155,9 @@ private fun Game2048Board(
                             }
 
                             if (abs(dragX) > abs(dragY)) {
-                                onSlide(if (dragX < 0f) 0 else 1)
+                                onSlide(if (dragX < 0f) SLIDE_LEFT else SLIDE_RIGHT)
                             } else {
-                                onSlide(if (dragY < 0f) 2 else 3)
+                                onSlide(if (dragY < 0f) SLIDE_UP else SLIDE_DOWN)
                             }
                         },
                         onDrag = { _, dragAmount ->
@@ -151,21 +175,28 @@ private fun Game2048Board(
             ),
         tonalElevation = 0.dp,
     ) {
-        Column(
-            modifier = Modifier.padding(SableSpacing.Sm),
-            verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-        ) {
-            board.toList().chunked(4).forEach { row ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-                ) {
-                    row.forEach { value ->
-                        Tile2048(
-                            value = value,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+        Game2048Tiles(board)
+    }
+}
+
+// Board cells are rendered separately from the gesture surface.
+@Suppress("FunctionNaming")
+@Composable
+private fun Game2048Tiles(board: IntArray) {
+    Column(
+        modifier = Modifier.padding(SableSpacing.Sm),
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+    ) {
+        board.toList().chunked(4).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                row.forEach { value ->
+                    Tile2048(
+                        value = value,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -179,8 +210,8 @@ private fun Tile2048(
 ) {
     val container = if (value == 0) MaterialTheme.colorScheme.surfaceVariant else tileColor(value)
     val content =
-        if (value >= 128) {
-            Color(0xFF071016)
+        if (value >= DARK_TILE_THRESHOLD) {
+            Color(DARK_TILE_TEXT_ARGB)
         } else {
             Color.White
         }
@@ -209,7 +240,7 @@ private fun Tile2048(
             Text(
                 text = if (value == 0) "" else value.toString(),
                 style =
-                    if (value >= 1024) {
+                    if (value >= COMPACT_TILE_LABEL_THRESHOLD) {
                         MaterialTheme.typography.titleMedium
                     } else {
                         MaterialTheme.typography.titleLarge

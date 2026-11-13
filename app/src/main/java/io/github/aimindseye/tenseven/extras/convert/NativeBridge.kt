@@ -13,19 +13,47 @@ internal object NativeBridge {
     // 11 C, 12 F, 13 K, 14 mL, 15 L, 16 cup, 17 gal.
     private val categories =
         listOf(
-            Category.Length, Category.Length, Category.Length, Category.Length, Category.Length, Category.Length, Category.Length,
-            Category.Mass, Category.Mass, Category.Mass, Category.Mass,
-            Category.Temperature, Category.Temperature, Category.Temperature,
-            Category.Volume, Category.Volume, Category.Volume, Category.Volume,
+            Category.Length,
+            Category.Length,
+            Category.Length,
+            Category.Length,
+            Category.Length,
+            Category.Length,
+            Category.Length,
+            Category.Mass,
+            Category.Mass,
+            Category.Mass,
+            Category.Mass,
+            Category.Temperature,
+            Category.Temperature,
+            Category.Temperature,
+            Category.Volume,
+            Category.Volume,
+            Category.Volume,
+            Category.Volume,
         )
 
     // numerator, denominator relative to the category's base unit (mm, g, mL); temperatures have none.
     private val ratios: List<Pair<Long, Long>?> =
         listOf(
-            1L to 1L, 10L to 1L, 1_000L to 1L, 1_000_000L to 1L, 254L to 10L, 3_048L to 10L, 1_609_344L to 1L,
-            1L to 1L, 1_000L to 1L, 28_349_523_125L to 1_000_000_000L, 45_359_237L to 100_000L,
-            null, null, null,
-            1L to 1L, 1_000L to 1L, 2_365_882_365L to 10_000_000L, 3_785_411_784L to 1_000_000L,
+            1L to 1L,
+            10L to 1L,
+            1_000L to 1L,
+            1_000_000L to 1L,
+            254L to 10L,
+            3_048L to 10L,
+            1_609_344L to 1L,
+            1L to 1L,
+            1_000L to 1L,
+            28_349_523_125L to 1_000_000_000L,
+            45_359_237L to 100_000L,
+            null,
+            null,
+            null,
+            1L to 1L,
+            1_000L to 1L,
+            2_365_882_365L to 10_000_000L,
+            3_785_411_784L to 1_000_000L,
         )
 
     private val LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE)

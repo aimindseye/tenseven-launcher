@@ -37,8 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import io.github.aimindseye.tenseven.extras.games.GamesText.t
+import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 private val CardRed = Color(0xFFD32F45)

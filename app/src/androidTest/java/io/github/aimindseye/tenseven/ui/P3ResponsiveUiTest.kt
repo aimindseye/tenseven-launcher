@@ -170,6 +170,7 @@ class P3ResponsiveUiTest {
 
     @Test fun settingsDeviceEntryRemainsReachableOnSmallOrLargeTextWindows() {
         ActivityScenario.launch(LauncherSettingsActivity::class.java).use {
+            compose.onNodeWithText("6. Apps & Features").performScrollTo().performClick()
             compose.onNodeWithText("Device compatibility").performScrollTo().assertIsDisplayed()
         }
     }

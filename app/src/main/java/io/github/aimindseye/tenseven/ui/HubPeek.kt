@@ -140,6 +140,58 @@ internal fun HubPeekHost(
     }
 }
 
+private data class PeekPanelActions(
+    val onClose: () -> Unit,
+    val onOpenHub: () -> Unit,
+)
+
+// Keep Peek's content hierarchy independent of animation and scrim state.
+@Suppress("FunctionNaming")
+@Composable
+private fun PeekPanelContents(
+    conversations: List<HubConversation>,
+    showText: Boolean,
+    accent: Color,
+    focus: FocusRequester,
+    actions: PeekPanelActions,
+) {
+    val onClose = actions.onClose
+    val onOpenHub = actions.onOpenHub
+    Column {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
+        Column(
+            modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.peek_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                val total = conversations.sumOf { it.notifications.size }
+                if (total > 0) {
+                    Surface(shape = RoundedCornerShape(50), color = accent) {
+                        Text(
+                            stringResource(R.string.peek_count, total),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                PeekConversations(conversations, showText, onClose)
+            }
+            PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
+        }
+    }
+}
+
 /** Peek inherits the same user-selected Launcher/Phone appearance as Hub. */
 @Composable
 private fun HubPeekPanel(
@@ -191,45 +243,19 @@ private fun HubPeekPanel(
                     .graphicsLayer { translationX = (slide.value - 1f) * size.width }
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
-            shape = RoundedCornerShape(18.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            shape = RoundedCornerShape(2.dp),
+            color = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
         ) {
-            Column {
-                Box(Modifier.fillMaxWidth().height(3.dp).background(accent))
-                Column(
-                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.peek_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.weight(1f),
-                        )
-                        val total = conversations.sumOf { it.notifications.size }
-                        if (total > 0) {
-                            Surface(shape = RoundedCornerShape(50), color = accent) {
-                                Text(
-                                    stringResource(R.string.peek_count, total),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                )
-                            }
-                        }
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(0.dp),
-                    ) {
-                        PeekConversations(conversations, showText && !deviceLocked, onClose)
-                    }
-                    PeekButton(stringResource(R.string.peek_open_hub), onOpenHub, Modifier.focusRequester(focus))
-                }
-            }
+            PeekPanelContents(
+                conversations = conversations,
+                showText = showText && !deviceLocked,
+                accent = accent,
+                focus = focus,
+                actions = PeekPanelActions(onClose, onOpenHub),
+            )
         }
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -243,11 +269,6 @@ private fun PeekRow(
     packageName: String?,
     onClick: () -> Unit,
 ) {
-    val packageManager = LocalContext.current.packageManager
-    val icon =
-        remember(packageName) {
-            packageName?.let { runCatching { packageManager.getApplicationIcon(it).toBitmap(120, 120).asImageBitmap() }.getOrNull() }
-        }
     var focused by remember { mutableStateOf(false) }
     val accent = MaterialTheme.colorScheme.primary
     Surface(
@@ -262,13 +283,7 @@ private fun PeekRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (icon != null) {
-                Image(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
-                )
-            }
+            PeekRowSourceIcon(packageName)
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (detail.isNotBlank()) {
@@ -295,6 +310,37 @@ private fun PeekRow(
     }
 }
 
+// Icon pack and system icon selection are shared by every Peek row.
+@Suppress("FunctionNaming")
+@Composable
+private fun PeekRowSourceIcon(packageName: String?) {
+    val context = LocalContext.current
+    val packageManager = context.packageManager
+    io.github.aimindseye.tenseven.iconpacks.IconPresentationState
+        .init(context)
+    val glyph =
+        if (io.github.aimindseye.tenseven.iconpacks.IconPresentationState.selected ==
+            io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+        ) {
+            packageName?.let(io.github.aimindseye.tenseven.model.AppGlyphs::forPackage)
+        } else {
+            null
+        }
+    val icon =
+        remember(packageName) {
+            packageName?.let { runCatching { packageManager.getApplicationIcon(it).toBitmap(120, 120).asImageBitmap() }.getOrNull() }
+        }
+    if (glyph != null) {
+        SableGlyphIcon(glyph = glyph, modifier = Modifier.size(34.dp))
+    } else if (icon != null) {
+        Image(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
+        )
+    }
+}
+
 @Composable
 private fun PeekButton(
     label: String,
@@ -304,8 +350,9 @@ private fun PeekButton(
     Surface(
         onClick = onClick,
         modifier = modifier.heightIn(min = 48.dp).sableFocusRing(),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.primary,
+        shape = RoundedCornerShape(3.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -313,10 +360,10 @@ private fun PeekButton(
         ) {
             Text(
                 label,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.labelLarge,
             )
-            Text("  \u203A", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium)
+            Text("  \u203A", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
