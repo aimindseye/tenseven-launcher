@@ -68,6 +68,6 @@ jobs:
           --no-daemon --no-build-cache --no-configuration-cache --rerun-tasks --console=plain
           -Pkotlin.compiler.execution.strategy=in-process
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           category: /language:java-kotlin
