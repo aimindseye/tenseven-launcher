@@ -202,7 +202,14 @@ internal fun buildConversations(
 private fun isEchoed(
     reply: ConversationMessage,
     fromApps: List<ConversationMessage>,
-): Boolean = fromApps.any { it.isOutgoing && it.text == reply.text && abs(it.timestamp - reply.timestamp) < ECHO_WINDOW_MS }
+): Boolean =
+    fromApps.any {
+        it.isOutgoing && it.text == reply.text && abs(
+            it.timestamp -
+                reply
+                    .timestamp,
+        ) < ECHO_WINDOW_MS
+    }
 
 private const val ECHO_WINDOW_MS = 120_000L
 

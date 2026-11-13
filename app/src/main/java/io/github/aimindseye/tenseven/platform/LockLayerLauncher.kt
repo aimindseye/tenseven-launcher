@@ -20,7 +20,9 @@ object LockLayerLauncher {
         if (!Capabilities.hasConversationService(context) ||
             !StartStateRepository(context).loadLockLayer() ||
             !canDrawOverlays(context)
-        ) return
+        ) {
+            return
+        }
         val keyguard = context.getSystemService(KeyguardManager::class.java) ?: return
         if (!keyguard.isKeyguardLocked) return
         // Android 14 and later only let an app start a screen from the background while it has a visible window, so a

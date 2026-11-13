@@ -10,12 +10,11 @@ object HomeDisplayPolicy {
     const val CELL = "cell"
     const val STORAGE = "storage"
     val ALL_DIALS: Set<String> = linkedSetOf(WIFI, MOBILE, CPU, RAM, BATTERY, CELL, STORAGE)
-    val DEFAULT_DIALS: Set<String> = ALL_DIALS - STORAGE
+    val DEFAULT_DIALS: Set<String> = ALL_DIALS // New installs only; explicit saved selections remain authoritative
 
     fun normalizedDials(selected: Set<String>): Set<String> = selected.intersect(ALL_DIALS)
 
-    fun dialPreference(style: HomeStyle): String =
-        if (style == HomeStyle.Bb7) "home_dials_bb7" else "home_dials_bb10"
+    fun dialPreference(style: HomeStyle): String = if (style == HomeStyle.Bb7) "home_dials_bb7" else "home_dials_bb10"
 
     fun stripPreference(style: HomeStyle): String =
         if (style == HomeStyle.Bb7) "home_notification_strip_bb7" else "home_notification_strip_bb10"

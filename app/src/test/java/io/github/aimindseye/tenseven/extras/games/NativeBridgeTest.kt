@@ -58,9 +58,11 @@ class NativeBridgeTest {
         val state = NativeBridge.minesweeperStart(9, 9, 10, 1803).removePrefix("OK:")
         var current = state
         var mines = 0
-        for (y in 0 until 9) for (x in 0 until 9) {
-            val result = NativeBridge.minesweeperReveal(current, x, y)
-            if (result.endsWith("|MINE")) mines++
+        for (y in 0 until 9) {
+            for (x in 0 until 9) {
+                val result = NativeBridge.minesweeperReveal(current, x, y)
+                if (result.endsWith("|MINE")) mines++
+            }
         }
         assertEquals(10, mines)
     }

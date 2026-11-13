@@ -25,6 +25,12 @@ class RingerProfileTest {
 
     @Test
     fun eachProfileHasItsOwnIcon() {
-        assertEquals(RingerProfile.entries.size, RingerProfile.entries.map { it.icon }.toSet().size)
+        assertEquals(
+            RingerProfile.entries.size,
+            RingerProfile.entries
+                .map { it.icon }
+                .toSet()
+                .size,
+        )
     }
 }

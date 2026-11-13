@@ -15,12 +15,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import io.github.aimindseye.tenseven.extras.convert.ConvertText.t
 import io.github.aimindseye.tenseven.design.SableActionButton
 import io.github.aimindseye.tenseven.design.SableSectionHeader
 import io.github.aimindseye.tenseven.design.SableSpacing
 import io.github.aimindseye.tenseven.design.SableTile
 import io.github.aimindseye.tenseven.design.SableValuePanel
+import io.github.aimindseye.tenseven.extras.convert.ConvertText.t
 import java.math.BigDecimal
 import java.math.RoundingMode
 

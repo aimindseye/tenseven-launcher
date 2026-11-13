@@ -70,31 +70,50 @@ internal fun HubCalendarPeek(
                 style = MaterialTheme.typography.titleSmall,
             )
             if (expanded) {
-                if (deviceLocked) {
-                    Text(
-                        "Unlock to see upcoming calendar events",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                } else if (!permitted) {
-                    Text(
-                        "Allow Calendar access to see events from calendars synced to Android",
-                        modifier = Modifier.fillMaxWidth().clickable(onClick = onRequestCalendarPermission).padding(vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                } else if (events.isEmpty()) {
-                    Text(
-                        "No upcoming events in the next seven days",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                } else {
-                    events.forEach { event ->
-                        CalendarPeekEvent(event, onOpenCalendar)
-                    }
-                }
+                CalendarPeekExpandedContent(
+                    deviceLocked = deviceLocked,
+                    permitted = permitted,
+                    events = events,
+                    onRequestCalendarPermission = onRequestCalendarPermission,
+                    onOpenCalendar = onOpenCalendar,
+                )
             }
+        }
+    }
+}
+
+// Expanded calendar content is independent of Peek's remembered state.
+@Suppress("FunctionNaming")
+@Composable
+private fun CalendarPeekExpandedContent(
+    deviceLocked: Boolean,
+    permitted: Boolean,
+    events: List<HubCalendarEvent>,
+    onRequestCalendarPermission: () -> Unit,
+    onOpenCalendar: () -> Unit,
+) {
+    if (deviceLocked) {
+        Text(
+            "Unlock to see upcoming calendar events",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    } else if (!permitted) {
+        Text(
+            "Allow Calendar access to see events from calendars synced to Android",
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onRequestCalendarPermission).padding(vertical = 8.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    } else if (events.isEmpty()) {
+        Text(
+            "No upcoming events in the next seven days",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    } else {
+        events.forEach { event ->
+            CalendarPeekEvent(event, onOpenCalendar)
         }
     }
 }

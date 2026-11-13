@@ -21,7 +21,11 @@ object ExtraAppsControl {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
         }.getOrDefault(false)
 
-    fun enabledIds(context: Context): Set<String> = ExtraApps.ALL.filter { isEnabled(context, it) }.map { it.id }.toSet()
+    fun enabledIds(context: Context): Set<String> =
+        ExtraApps.ALL
+            .filter { isEnabled(context, it) }
+            .map { it.id }
+            .toSet()
 
     fun setEnabled(
         context: Context,

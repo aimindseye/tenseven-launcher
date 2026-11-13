@@ -22,8 +22,7 @@ data class AppEntry(
     val canUninstall: Boolean = false,
 )
 
-fun AppEntry.stableKey(): String =
-    "${user.hashCode()}:${component.flattenToString()}"
+fun AppEntry.stableKey(): String = "${user.hashCode()}:${component.flattenToString()}"
 
 /** True when the app lives in the launcher's own user (personal profile). */
 val AppEntry.inLauncherUser: Boolean

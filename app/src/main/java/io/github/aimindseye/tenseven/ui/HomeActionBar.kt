@@ -66,6 +66,40 @@ import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import java.util.Locale
 import androidx.compose.foundation.Canvas as ComposeCanvas
 
+// BB10 glyph path ratios are pixel-for-pixel the approved Canvas geometry.
+private const val GLYPH_STROKE_RATIO = 0.1f
+private const val SEARCH_RING_RADIUS_RATIO = 0.28f
+private const val SEARCH_RING_CENTER_RATIO = 0.42f
+private const val SEARCH_HANDLE_START_RATIO = 0.62f
+private const val SEARCH_HANDLE_END_RATIO = 0.88f
+private const val PHONE_ARC_INSET_RATIO = 0.2f
+private const val PHONE_ARC_START_DEGREES = 100f
+private const val PHONE_ARC_SWEEP_DEGREES = 160f
+private const val PHONE_ARC_STROKE_RATIO = 0.15f
+private const val PHONE_FIRST_END_DEGREES = 100.0
+private const val PHONE_SECOND_END_DEGREES = 260.0
+private const val PHONE_END_RADIUS_RATIO = 0.11f
+private const val HUB_FIRST_LINE_RATIO = 0.25f
+private const val HUB_LINE_SPACING_RATIO = 0.25f
+private const val HUB_LINE_LEFT_RATIO = 0.12f
+private const val HUB_LINE_RIGHT_RATIO = 0.88f
+private const val CAMERA_LEFT_RATIO = 0.1f
+private const val CAMERA_TOP_RATIO = 0.3f
+private const val CAMERA_WIDTH_RATIO = 0.8f
+private const val CAMERA_HEIGHT_RATIO = 0.52f
+private const val CAMERA_CORNER_RATIO = 0.08f
+private const val CAMERA_BUMP_LEFT_RATIO = 0.34f
+private const val CAMERA_BUMP_TOP_RATIO = 0.18f
+private const val CAMERA_BUMP_WIDTH_RATIO = 0.32f
+private const val CAMERA_BUMP_HEIGHT_RATIO = 0.12f
+private const val CAMERA_LENS_RADIUS_RATIO = 0.14f
+private const val CAMERA_LENS_X_RATIO = 0.5f
+private const val CAMERA_LENS_Y_RATIO = 0.56f
+private const val APPS_CELL_RATIO = 0.36f
+private const val APPS_GAP_RATIO = 0.14f
+private const val APPS_ORIGIN_RATIO = 0.07f
+private const val APPS_CORNER_RATIO = 0.06f
+
 @Composable
 internal fun SlotOptionsScreen(
     slot: QuickSlot,
@@ -176,7 +210,8 @@ internal fun Bb10ActionBar(
                                         { onOptions(slot) }
                                     }
 
-                                    native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE && !alt && slot.token == QuickBar.HUB -> {
+                                    native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE && !alt && slot
+                                        .token == QuickBar.HUB -> {
                                         onHubPeek
                                     }
 
@@ -223,84 +258,146 @@ internal fun QuickSlotMark(
     val color = if (monochrome) LocalContentColor.current else MaterialTheme.colorScheme.primary
     ComposeCanvas(Modifier.size(size.dp)) {
         val unit = this.size.minDimension
-        val stroke = unit * 0.1f
+        val stroke = unit * GLYPH_STROKE_RATIO
         when (slot.token) {
-            QuickBar.COMMAND -> {
-                // Magnifier: Search / Command.
-                drawCircle(color = color, radius = unit * 0.28f, center = Offset(unit * 0.42f, unit * 0.42f), style = Stroke(stroke))
-                drawLine(
-                    color = color,
-                    start = Offset(unit * 0.62f, unit * 0.62f),
-                    end = Offset(unit * 0.88f, unit * 0.88f),
-                    strokeWidth = stroke,
-                    cap = StrokeCap.Round,
-                )
-            }
+            QuickBar.COMMAND -> drawQuickSlotSearchGlyph(color, unit, stroke)
+            QuickBar.PHONE -> drawQuickSlotPhoneGlyph(color, unit)
+            QuickBar.HUB -> drawQuickSlotHubGlyph(color, unit)
+            QuickBar.CAMERA -> drawQuickSlotCameraGlyph(color, unit, stroke)
+            else -> drawQuickSlotAppsGlyph(color, unit)
+        }
+    }
+}
 
-            QuickBar.PHONE -> {
-                // Handset: a "C" arc with round ear and mouth pieces.
-                val inset = unit * 0.2f
-                drawArc(
-                    color = color,
-                    startAngle = 100f,
-                    sweepAngle = 160f,
-                    useCenter = false,
-                    topLeft = Offset(inset, inset),
-                    size = Size(unit - inset * 2, unit - inset * 2),
-                    style = Stroke(unit * 0.15f, cap = StrokeCap.Round),
-                )
-                val radius = (unit - inset * 2) / 2f
-                val center = Offset(unit / 2f, unit / 2f)
-                listOf(100.0, 260.0).forEach { angle ->
-                    val rad = Math.toRadians(angle)
-                    drawCircle(
-                        color = color,
-                        radius = unit * 0.11f,
-                        center =
-                            Offset(
-                                center.x + radius * kotlin.math.cos(rad).toFloat(),
-                                center.y + radius * kotlin.math.sin(rad).toFloat(),
-                            ),
-                    )
-                }
-            }
+// Preserve search glyph geometry with an isolated DrawScope operation.
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawQuickSlotSearchGlyph(
+    color: Color,
+    unit: Float,
+    stroke: Float,
+) {
+    // Magnifier: Search / Command.
+    drawCircle(
+        color = color,
+        radius = unit * SEARCH_RING_RADIUS_RATIO,
+        center =
+            Offset(
+                unit * SEARCH_RING_CENTER_RATIO,
+                unit * SEARCH_RING_CENTER_RATIO,
+            ),
+        style = Stroke(stroke),
+    )
+    drawLine(
+        color = color,
+        start = Offset(unit * SEARCH_HANDLE_START_RATIO, unit * SEARCH_HANDLE_START_RATIO),
+        end = Offset(unit * SEARCH_HANDLE_END_RATIO, unit * SEARCH_HANDLE_END_RATIO),
+        strokeWidth = stroke,
+        cap = StrokeCap.Round,
+    )
+}
 
-            QuickBar.HUB -> {
-                // Hub: three short lines, as on the page indicator.
-                for (line in 0..2) {
-                    val y = unit * (0.25f + line * 0.25f)
-                    drawLine(color, Offset(unit * 0.12f, y), Offset(unit * 0.88f, y), strokeWidth = stroke, cap = StrokeCap.Round)
-                }
-            }
+// Preserve phone glyph geometry with an isolated DrawScope operation.
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawQuickSlotPhoneGlyph(
+    color: Color,
+    unit: Float,
+) {
+    // Handset: a "C" arc with round ear and mouth pieces.
+    val inset = unit * PHONE_ARC_INSET_RATIO
+    drawArc(
+        color = color,
+        startAngle = PHONE_ARC_START_DEGREES,
+        sweepAngle = PHONE_ARC_SWEEP_DEGREES,
+        useCenter = false,
+        topLeft = Offset(inset, inset),
+        size = Size(unit - inset * 2, unit - inset * 2),
+        style = Stroke(unit * PHONE_ARC_STROKE_RATIO, cap = StrokeCap.Round),
+    )
+    val radius = (unit - inset * 2) / 2f
+    val center = Offset(unit / 2f, unit / 2f)
+    listOf(PHONE_FIRST_END_DEGREES, PHONE_SECOND_END_DEGREES).forEach { angle ->
+        val rad = Math.toRadians(angle)
+        drawCircle(
+            color = color,
+            radius = unit * PHONE_END_RADIUS_RATIO,
+            center =
+                Offset(
+                    center.x + radius * kotlin.math.cos(rad).toFloat(),
+                    center.y + radius * kotlin.math.sin(rad).toFloat(),
+                ),
+        )
+    }
+}
 
-            QuickBar.CAMERA -> {
-                // Camera body, viewfinder bump and lens.
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(unit * 0.1f, unit * 0.3f),
-                    size = Size(unit * 0.8f, unit * 0.52f),
-                    cornerRadius = CornerRadius(unit * 0.08f),
-                    style = Stroke(stroke),
-                )
-                drawRect(color = color, topLeft = Offset(unit * 0.34f, unit * 0.18f), size = Size(unit * 0.32f, unit * 0.12f))
-                drawCircle(color = color, radius = unit * 0.14f, center = Offset(unit * 0.5f, unit * 0.56f), style = Stroke(stroke))
-            }
+// Preserve hub glyph geometry with an isolated DrawScope operation.
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawQuickSlotHubGlyph(
+    color: Color,
+    unit: Float,
+) {
+    // Hub: three short lines, as on the page indicator.
+    for (line in 0..2) {
+        val y = unit * (HUB_FIRST_LINE_RATIO + line * HUB_LINE_SPACING_RATIO)
+        drawLine(
+            color,
+            Offset(unit * HUB_LINE_LEFT_RATIO, y),
+            Offset(unit * HUB_LINE_RIGHT_RATIO, y),
+            strokeWidth = unit * GLYPH_STROKE_RATIO,
+            cap = StrokeCap.Round,
+        )
+    }
+}
 
-            else -> {
-                // Four squares: All Apps.
-                val cell = unit * 0.36f
-                val gap = unit * 0.14f
-                for (row in 0..1) {
-                    for (col in 0..1) {
-                        drawRoundRect(
-                            color = color,
-                            topLeft = Offset(unit * 0.07f + col * (cell + gap), unit * 0.07f + row * (cell + gap)),
-                            size = Size(cell, cell),
-                            cornerRadius = CornerRadius(unit * 0.06f),
-                        )
-                    }
-                }
-            }
+// Preserve camera glyph geometry with an isolated DrawScope operation.
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawQuickSlotCameraGlyph(
+    color: Color,
+    unit: Float,
+    stroke: Float,
+) {
+    // Camera body, viewfinder bump and lens.
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(unit * CAMERA_LEFT_RATIO, unit * CAMERA_TOP_RATIO),
+        size = Size(unit * CAMERA_WIDTH_RATIO, unit * CAMERA_HEIGHT_RATIO),
+        cornerRadius = CornerRadius(unit * CAMERA_CORNER_RATIO),
+        style = Stroke(stroke),
+    )
+    drawRect(
+        color = color,
+        topLeft = Offset(unit * CAMERA_BUMP_LEFT_RATIO, unit * CAMERA_BUMP_TOP_RATIO),
+        size =
+            Size(unit * CAMERA_BUMP_WIDTH_RATIO, unit * CAMERA_BUMP_HEIGHT_RATIO),
+    )
+    drawCircle(
+        color = color,
+        radius = unit * CAMERA_LENS_RADIUS_RATIO,
+        center =
+            Offset(
+                unit * CAMERA_LENS_X_RATIO,
+                unit * CAMERA_LENS_Y_RATIO,
+            ),
+        style = Stroke(stroke),
+    )
+}
+
+// Preserve apps glyph geometry with an isolated DrawScope operation.
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawQuickSlotAppsGlyph(
+    color: Color,
+    unit: Float,
+) {
+    // Four squares: All Apps.
+    val cell = APPS_CELL_RATIO * unit
+    val gap = APPS_GAP_RATIO * unit
+    for (row in 0..1) {
+        for (col in 0..1) {
+            drawRoundRect(
+                color = color,
+                topLeft =
+                    Offset(
+                        unit * APPS_ORIGIN_RATIO + col * (cell + gap),
+                        unit * APPS_ORIGIN_RATIO +
+                            row * (cell + gap),
+                    ),
+                size = Size(cell, cell),
+                cornerRadius = CornerRadius(unit * APPS_CORNER_RATIO),
+            )
         }
     }
 }

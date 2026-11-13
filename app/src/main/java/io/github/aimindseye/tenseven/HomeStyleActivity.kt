@@ -24,11 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
-import io.github.aimindseye.tenseven.model.StartText
-import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.HomeStyle
+import io.github.aimindseye.tenseven.model.StartText
+import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
@@ -51,8 +51,10 @@ class HomeStyleActivity : ComponentActivity() {
                         // Show the result: Home brings Start forward in the new style.
                         runCatching {
                             startActivity(
-                                Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-                                    .setPackage(packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                Intent(Intent.ACTION_MAIN)
+                                    .addCategory(Intent.CATEGORY_HOME)
+                                    .setPackage(packageName)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         }
                         finish()

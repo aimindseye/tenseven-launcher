@@ -26,7 +26,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +40,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
@@ -182,8 +182,11 @@ internal fun EditorScreen(
         EditorField(model)
         val context = LocalContext.current
         TextButton(onClick = {
-            context.startActivity(android.content.Intent(context, io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
-                .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_NOTE_ID, note.id))
+            context.startActivity(
+                android.content
+                    .Intent(context, io.github.aimindseye.tenseven.tasks.TasksActivity::class.java)
+                    .putExtra(io.github.aimindseye.tenseven.tasks.TasksActivity.EXTRA_NOTE_ID, note.id),
+            )
         }) { Text("Create linked task / Remind") }
         Hint(NotesKeys.EDITOR_HINT)
     }
