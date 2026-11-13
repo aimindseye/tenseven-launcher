@@ -1,5 +1,7 @@
 # Architecture
 
+> **2.0 approved target, not yet implemented:** [ADR-0001](decisions/ADR-0001-MODULAR-COMPANION-APKS.md) commits to a Full-only Launcher APK plus independently installed optional companion APKs, with a Launcher-led installer and verified data migration. See [staged roadmap](2.0/MODULARIZATION_ROADMAP.md), [distribution spec](2.0/COMPANION_DISTRIBUTION.md) and [PR127 handoff](2.0/PR127_HANDOFF.md). The module layout and embedded extras described below are **the current codebase**, not the new destination. Keep the historical technical details for recovery until the corresponding extraction is complete.
+
 Current behavior: 1.0.0 preparation. Dated acceptance sections below retain historical context.
 
 ## Modules

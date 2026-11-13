@@ -10,8 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
-import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
+import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.extras.ExtraKeyAction
 import io.github.aimindseye.tenseven.extras.ExtraKeys
 
@@ -35,19 +36,21 @@ abstract class GameActivity(
 
         setContent {
             LauncherTheme(window = window) {
-                CompositionLocalProvider(LocalGameKeyHost provides keyHost) {
-                    when (game) {
-                        "sudoku" -> SudokuScreen()
-                        "minesweeper" -> MinesweeperScreen()
-                        "2048" -> Game2048Screen()
-                        "bricks" -> BricksScreen()
-                        "snake" -> SnakeScreen()
-                        "blocks" -> BlocksScreen()
-                        "reversi" -> ReversiScreen()
-                        "solitaire" -> SolitaireScreen()
-                        "mahjong" -> MahjongScreen()
-                        "words" -> WordsScreen()
-                        else -> error("Unsupported game: $game")
+                TenSeven2AppTheme {
+                    CompositionLocalProvider(LocalGameKeyHost provides keyHost) {
+                        when (game) {
+                            "sudoku" -> SudokuScreen()
+                            "minesweeper" -> MinesweeperScreen()
+                            "2048" -> Game2048Screen()
+                            "bricks" -> BricksScreen()
+                            "snake" -> SnakeScreen()
+                            "blocks" -> BlocksScreen()
+                            "reversi" -> ReversiScreen()
+                            "solitaire" -> SolitaireScreen()
+                            "mahjong" -> MahjongScreen()
+                            "words" -> WordsScreen()
+                            else -> error("Unsupported game: $game")
+                        }
                     }
                 }
             }
@@ -79,11 +82,15 @@ abstract class GameActivity(
                     finish()
                     return true
                 }
+
                 ExtraKeyAction.Help -> {
                     showKeys()
                     return true
                 }
-                null -> Unit
+
+                null -> {
+                    Unit
+                }
             }
         }
         return taken || super.dispatchKeyEvent(event)

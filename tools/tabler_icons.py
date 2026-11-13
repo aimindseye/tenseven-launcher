@@ -47,7 +47,10 @@ GLYPH_SCALE = GLYPH_BOX / 24.0
 GLYPH_OFFSET = (CANVAS - GLYPH_BOX) / 2.0
 
 SVG_NS = "{http://www.w3.org/2000/svg}"
-NAME_RE = re.compile(r'^\s+[A-Z_0-9]+\("([a-z0-9-]+)",\s*0x', re.M)
+NAME_RE = re.compile(
+    r'^\s+[A-Z_0-9]+\("([a-z0-9-]+)",\s*(?:0x[0-9A-Fa-f]+|GLYPH_ACCENT_[A-Z0-9_]+)\s*\)',
+    re.M,
+)
 
 
 def sha256(path):

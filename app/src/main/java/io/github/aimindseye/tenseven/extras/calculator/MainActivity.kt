@@ -2,8 +2,6 @@
 // Apache License 2.0. Changed: package and imports renamed for Tenseven; native Rust calls replaced by Kotlin where noted.
 package io.github.aimindseye.tenseven.extras.calculator
 
-import io.github.aimindseye.tenseven.LauncherTheme
-import androidx.core.content.edit
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.KeyEvent
@@ -34,8 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.github.aimindseye.tenseven.extras.calculator.CalculatorText.t
-import io.github.aimindseye.tenseven.extras.convert.ConverterScreen
+import androidx.core.content.edit
+import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import io.github.aimindseye.tenseven.design.SableActionButton
 import io.github.aimindseye.tenseven.design.SableHeroHeader
 import io.github.aimindseye.tenseven.design.SableScrollableScreen
@@ -45,6 +44,8 @@ import io.github.aimindseye.tenseven.design.SableValuePanel
 import io.github.aimindseye.tenseven.design.isSableShortWindow
 import io.github.aimindseye.tenseven.design.sableScreenGap
 import io.github.aimindseye.tenseven.design.sableScreenPadding
+import io.github.aimindseye.tenseven.extras.calculator.CalculatorText.t
+import io.github.aimindseye.tenseven.extras.convert.ConverterScreen
 
 private enum class CalculatorMode(
     val label: String,
@@ -81,8 +82,10 @@ private object HardwareKeypad {
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
-        io.github.aimindseye.tenseven.platform.FrameWindowRepository.local(this, javaClass.name)
+        io.github.aimindseye.tenseven.platform.FrameWindowRepository
+            .local(this, javaClass.name)
     }
+
     // Overrides the public Activity method; androidx re-declares it as restricted, which lint misreports.
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -105,13 +108,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        io.github.aimindseye.tenseven.design.DesignText.t.bindTo(this)
+        io.github.aimindseye.tenseven.design.DesignText.t
+            .bindTo(this)
         val nativeQualification = NativeBridge.selfTest()
         check(nativeQualification.startsWith("PASS:")) { nativeQualification }
 
         setContent {
             LauncherTheme(window = window) {
-                CalculatorApp()
+                TenSeven2AppTheme { CalculatorApp() }
             }
         }
     }
@@ -249,8 +253,10 @@ private fun CalculatorPad(
     var replaceInput by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf(initialStatus(scientific)) }
     val summaryContext = androidx.compose.ui.platform.LocalContext.current
+
     fun publishSummary(text: String) {
-        summaryContext.getSharedPreferences("calculator_frame", android.content.Context.MODE_PRIVATE)
+        summaryContext
+            .getSharedPreferences("calculator_frame", android.content.Context.MODE_PRIVATE)
             .edit { putString("last_result", text.take(240)) }
     }
 

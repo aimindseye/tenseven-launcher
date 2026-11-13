@@ -113,6 +113,143 @@ internal fun HomeEdit.moved(
     return with(section, next)
 }
 
+private const val EDIT_PICK_HEIGHT_DP = 52
+private const val EDIT_PICK_ICON_DP = 32
+private const val EDIT_PICK_GAP_DP = 14
+private const val EDIT_PICK_PADDING_DP = 8
+private const val EDIT_HEADER_BACK_HEIGHT_DP = 48
+private const val EDIT_HEADER_BACK_WIDTH_DP = 48
+private const val EDIT_HEADER_BACK_SIZE_SP = 32
+private const val EDIT_HEADER_SPACER_DP = 12
+private const val EDIT_BAR_SPACER_DP = 10
+private const val EDIT_BAR_GAP_DP = 6
+private const val EDIT_LIST_H_PADDING_DP = 16
+private const val EDIT_LIST_V_PADDING_DP = 12
+private const val EDIT_LIST_BOTTOM_DP = 28
+
+private class EditHomeSession(
+    initial: HomeEdit,
+) {
+    var draft by mutableStateOf(initial)
+    var moving by mutableStateOf<EditMove?>(null)
+    var optionsFor by mutableStateOf<String?>(null)
+    var picking by mutableStateOf<String?>(null)
+    var pickingWidget by mutableStateOf(false)
+
+    fun handleBack(onCancel: () -> Unit) {
+        val move = moving
+        when {
+            picking != null -> {
+                picking = null
+            }
+
+            move != null -> {
+                draft = move.before
+                moving = null
+            }
+
+            optionsFor != null -> {
+                optionsFor = null
+            }
+
+            else -> {
+                onCancel()
+            }
+        }
+    }
+
+    fun move(
+        section: EditSection,
+        key: String,
+        delta: Int,
+    ) {
+        draft = draft.moved(section, key, delta)
+    }
+
+    fun toggleOptions(id: String) {
+        optionsFor = if (optionsFor == id) null else id
+    }
+
+    private fun deltaFor(
+        section: EditSection,
+        key: String,
+        event: KeyEvent,
+    ): Int? {
+        val native = event.nativeKeyEvent
+        val direction = AppGrid.arrowDelta(native.keyCode)
+        val adjusted =
+            when (section) {
+                EditSection.Grid -> {
+                    direction
+                }
+
+                EditSection.QuickBar -> {
+                    direction?.takeIf { it == -1 || it == 1 }
+                }
+
+                EditSection.Glance -> {
+                    direction
+                        ?.takeIf { it == -AppGrid.COLUMNS || it == AppGrid.COLUMNS }
+                        ?.let { it / AppGrid.COLUMNS }
+                }
+            }
+        val picked = moving?.section == section && moving?.key == key
+        val meta = native.metaState
+        val modifier = meta and (QuickBar.META_ALT_ON or QuickBar.META_FUNCTION_ON) != 0
+        return adjusted?.takeIf { modifier || picked }
+    }
+
+    private fun isOptionsKey(event: KeyEvent): Boolean {
+        val native = event.nativeKeyEvent
+        val alt = native.metaState and (QuickBar.META_ALT_ON or QuickBar.META_FUNCTION_ON) != 0
+        return native.keyCode == AllAppsKeyPolicy.KEYCODE_MENU ||
+            native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE ||
+            (native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && alt)
+    }
+
+    fun itemKeys(
+        section: EditSection,
+        key: String,
+        event: KeyEvent,
+    ): Boolean {
+        val native = event.nativeKeyEvent
+        val down = event.type == KeyEventType.KeyDown
+        val alt = native.metaState and (QuickBar.META_ALT_ON or QuickBar.META_FUNCTION_ON) != 0
+        val picked = moving?.let { it.section == section && it.key == key } == true
+        val delta = deltaFor(section, key, event)
+        return when {
+            delta != null -> {
+                if (down) move(section, key, delta)
+                true
+            }
+
+            native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && !alt -> {
+                if (down && native.repeatCount == 0) moving = if (picked) null else EditMove(section, key, draft)
+                true
+            }
+
+            isOptionsKey(event) -> {
+                if (down && native.repeatCount == 0) toggleOptions("${section.name}:$key")
+                true
+            }
+
+            else -> {
+                false
+            }
+        }
+    }
+}
+
+/** Explicit input and callbacks prevent the rendering helpers from acquiring long parameter lists. */
+private class EditHomeBindings(
+    val showFrameOptions: Boolean,
+    val apps: List<AppEntry>,
+    val defaults: HomeEdit,
+    val onCancel: () -> Unit,
+    val onDone: (HomeEdit) -> Unit,
+    val onAppearance: () -> Unit,
+)
+
 /**
  * Edit Home: one mode that orders the app grid, the bottom bar and the Glance
  * widgets shown as frames while no app runs, and shows or hides the Active
@@ -121,7 +258,7 @@ internal fun HomeEdit.moved(
  * picked up (all four on the grid, Left/Right on the bar, Up/Down in the
  * list), Alt+arrows (Fn+arrows) move the focused item at once, Menu or Space
  * opens its options, Back cancels the move or leaves without saving, Done
- * saves.
+ * saves. The same snapshot-backed editor state also feeds keyboard, drag, and Back behavior.
  */
 @Composable
 internal fun EditHomeScreen(
@@ -134,301 +271,306 @@ internal fun EditHomeScreen(
     onDone: (HomeEdit) -> Unit,
     onAppearance: () -> Unit,
 ) {
-    val appByKey = apps.associateBy { it.stableKey() }
-    var draft by remember { mutableStateOf(initial) }
-    var moving by remember { mutableStateOf<EditMove?>(null) }
-    // "<section>:<key>" whose options are open.
-    var optionsFor by remember { mutableStateOf<String?>(null) }
-    // null: editing; "bar": adding a slot; "bar:<index>": replacing that slot.
-    var picking by remember { mutableStateOf<String?>(null) }
+    val session = remember { EditHomeSession(initial) }
     val startBack = remember { backGeneration }
     val doneFocus = remember { FocusRequester() }
     val hosted = LocalHomeWidgets.current
-    var pickingWidget by remember { mutableStateOf(false) }
-
+    val bindings =
+        EditHomeBindings(showFrameOptions, apps, defaults, onCancel, onDone, onAppearance)
     LaunchedEffect(backGeneration) {
-        if (backGeneration > startBack) {
-            val move = moving
-            when {
-                picking != null -> {
-                    picking = null
-                }
-
-                move != null -> {
-                    draft = move.before
-                    moving = null
-                }
-
-                optionsFor != null -> {
-                    optionsFor = null
-                }
-
-                else -> {
-                    onCancel()
-                }
-            }
-        }
+        if (backGeneration > startBack) session.handleBack(onCancel)
     }
     LaunchedEffect(Unit) {
         withFrameNanos { }
         runCatching { doneFocus.requestFocus() }
     }
+    EditHomeContents(session, bindings, doneFocus, hosted)
+}
 
-    fun move(
-        section: EditSection,
-        key: String,
-        delta: Int,
-    ) {
-        draft = draft.moved(section, key, delta)
-    }
-
-    fun itemKeys(
-        section: EditSection,
-        key: String,
-        event: KeyEvent,
-    ): Boolean {
-        val native = event.nativeKeyEvent
-        val down = event.type == KeyEventType.KeyDown
-        val alt = native.metaState and (QuickBar.META_ALT_ON or QuickBar.META_FUNCTION_ON) != 0
-        val picked = moving?.let { it.section == section && it.key == key } == true
-        val arrow = AppGrid.arrowDelta(native.keyCode)
-        // Grid: all four arrows; bar: Left/Right; list: Up/Down (one place).
-        val sectionDelta =
-            when (section) {
-                EditSection.Grid -> arrow
-                EditSection.QuickBar -> arrow?.takeIf { it == -1 || it == 1 }
-                EditSection.Glance -> arrow?.takeIf { it == -AppGrid.COLUMNS || it == AppGrid.COLUMNS }?.let { it / AppGrid.COLUMNS }
-            }
-        val delta = sectionDelta?.takeIf { alt || picked }
-        val optionsKey = "${section.name}:$key"
-        return when {
-            delta != null -> {
-                if (down) move(section, key, delta)
-                true
-            }
-
-            native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && !alt -> {
-                if (down && native.repeatCount == 0) {
-                    moving = if (picked) null else EditMove(section, key, draft)
-                }
-                true
-            }
-
-            native.keyCode == AllAppsKeyPolicy.KEYCODE_MENU ||
-                native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE ||
-                (native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && alt) -> {
-                if (down && native.repeatCount == 0) optionsFor = if (optionsFor == optionsKey) null else optionsKey
-                true
-            }
-
-            else -> {
-                false
-            }
-        }
-    }
-
-    val pickKind = picking
+@Suppress("FunctionNaming")
+@Composable
+private fun EditHomeContents(
+    session: EditHomeSession,
+    bindings: EditHomeBindings,
+    doneFocus: FocusRequester,
+    hosted: HomeWidgets,
+) {
+    val appByKey = bindings.apps.associateBy { it.stableKey() }
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier =
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            contentPadding = PaddingValues(bottom = 28.dp),
+                    .padding(horizontal = EDIT_LIST_H_PADDING_DP.dp, vertical = EDIT_LIST_V_PADDING_DP.dp),
+            contentPadding = PaddingValues(bottom = EDIT_LIST_BOTTOM_DP.dp),
         ) {
-            if (pickKind != null) {
-                val choices = quickBarChoices(apps, appByKey, draft.quickBar)
-                item {
-                    MetroHeader(
-                        title = if (pickKind == "bar") t("add_a_slot") else t("replace_slot"),
-                        onBack = { picking = null },
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-                if (choices.isEmpty()) {
-                    item { EmptyState(t("every_available_app_is_already")) }
-                }
-                items(choices, key = { it.token }) { choice ->
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 52.dp)
-                                .sableFocusRing()
-                                .clickable {
-                                    draft =
-                                        if (pickKind == "bar") {
-                                            draft.copy(quickBar = QuickBar.add(draft.quickBar, choice.token))
-                                        } else {
-                                            val index = pickKind.substringAfter(':').toIntOrNull() ?: -1
-                                            draft.copy(quickBar = QuickBar.replace(draft.quickBar, index, choice.token))
-                                        }
-                                    picking = null
-                                }.padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        QuickSlotMark(slot = choice, size = 32)
-                        Spacer(Modifier.width(14.dp))
-                        Text(choice.label, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-                return@LazyColumn
-            }
-
-            item(key = "header") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = 48.dp).width(48.dp)) {
-                        Text(text = "‹", fontSize = 32.sp, fontWeight = FontWeight.Light)
-                    }
-                    Text(
-                        text = t("edit_home"),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f).semantics { heading() },
-                    )
-                }
-                Text(
-                    text = t("drag_or_use_keyboard_order"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = t("enter_picks_up_and_drops"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(10.dp))
-                SectionLabel(t("app_grid"))
-                Spacer(Modifier.height(4.dp))
-            }
-            items(draft.gridOrder.chunked(AppGrid.COLUMNS), key = { row -> "grid:" + row.first() }) { row ->
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    row.forEach { key ->
-                        val app = appByKey[key]
-                        EditGridCell(
-                            app = app,
-                            picked = moving?.let { it.section == EditSection.Grid && it.key == key } == true,
-                            onKey = { event -> itemKeys(EditSection.Grid, key, event) },
-                            onClick = { optionsFor = if (optionsFor == "Grid:$key") null else "Grid:$key" },
-                            onDragStep = { delta -> move(EditSection.Grid, key, delta) },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    repeat(AppGrid.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-                val open = optionsFor?.takeIf { it.startsWith("Grid:") }?.substringAfter(':')
-                if (open != null && open in row) {
-                    val index = draft.gridOrder.indexOf(open)
-                    EditOptions(
-                        buildList {
-                            if (index > 0) add(t("move_left") to { move(EditSection.Grid, open, -1) })
-                            if (index < draft.gridOrder.lastIndex) add(t("move_right") to { move(EditSection.Grid, open, 1) })
-                            if (index >= AppGrid.COLUMNS) add(t("move_up_a_row") to { move(EditSection.Grid, open, -AppGrid.COLUMNS) })
-                            if (index + AppGrid.COLUMNS <= draft.gridOrder.lastIndex) {
-                                add(t("move_down_a_row") to { move(EditSection.Grid, open, AppGrid.COLUMNS) })
-                            }
-                            add(t("move_to_the_start") to { move(EditSection.Grid, open, -index) })
-                        },
-                    )
-                }
-            }
-            item(key = "bar") {
-                Spacer(Modifier.height(10.dp))
-                SectionLabel(t("bottom_bar"))
-                Spacer(Modifier.height(6.dp))
-                EditQuickBarRow(
-                    tokens = draft.quickBar,
-                    apps = apps,
-                    appByKey = appByKey,
-                    moving = moving?.takeIf { it.section == EditSection.QuickBar }?.key,
-                    onKey = { token, event -> itemKeys(EditSection.QuickBar, token, event) },
-                    onClick = { token ->
-                        optionsFor = if (optionsFor == "QuickBar:$token") null else "QuickBar:$token"
-                    },
-                    onDragStep = { token, delta -> move(EditSection.QuickBar, token, delta) },
-                )
-                val barOptions = optionsFor?.takeIf { it.startsWith("QuickBar:") }?.substringAfter(':')
-                if (barOptions != null && barOptions in draft.quickBar) {
-                    val index = draft.quickBar.indexOf(barOptions)
-                    val required = QuickBar.isRequired(barOptions)
-                    EditOptions(
-                        buildList {
-                            if (index > 0) add(t("move_left") to { move(EditSection.QuickBar, barOptions, -1) })
-                            if (index < draft.quickBar.lastIndex) add(t("move_right") to { move(EditSection.QuickBar, barOptions, 1) })
-                            if (!required) {
-                                add(
-                                    "replace" to {
-                                        picking = "bar:$index"
-                                        optionsFor = null
-                                    },
-                                )
-                                add(
-                                    "remove" to {
-                                        draft = draft.copy(quickBar = QuickBar.remove(draft.quickBar, index))
-                                        optionsFor = null
-                                    },
-                                )
-                            }
-                        },
-                    )
-                    if (required) {
-                        Text(
-                            text = t("search_always_stays_on_the"),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                if (draft.quickBar.size < QuickBar.MAX_SLOTS) {
-                    MetroLink(text = t("add_a_slot_2"), onClick = { picking = "bar" })
-                }
-                MetroLink(
-                    text = t("reset_bar_to_phone_search"),
-                    onClick = { draft = draft.copy(quickBar = QuickBar.DEFAULT) },
-                )
-            }
-            if (showFrameOptions) {
-                item(key = "frames-options") {
-                    Spacer(Modifier.height(10.dp))
-                    SectionLabel(t("active_frames_header"))
-                    Spacer(Modifier.height(4.dp))
-                    val accent = MaterialTheme.colorScheme.primary
-                    HomeLayout.SECTIONS.forEach { section ->
-                        HomeToggleRow(
-                            title = HomeLayout.label(section),
-                            subtitle = HomeLayout.description(section),
-                            selected = HomeLayout.isShown(draft.hiddenSections, section),
-                            accent = accent,
-                            onClick = { draft = draft.copy(hiddenSections = HomeLayout.toggle(draft.hiddenSections, section)) },
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    MetroLink(text = "appearance", onClick = onAppearance)
-                }
+            if (session.picking != null) {
+                editHomePickingRows(session, bindings, appByKey)
+            } else {
+                editHomeHeaderRows(bindings)
+                editHomeGridRows(session, appByKey)
+                editHomeQuickBarRows(session, bindings, appByKey)
+                if (bindings.showFrameOptions) editHomeFramesRows(session, bindings)
             }
         }
-        if (pickKind == null) {
+        if (session.picking == null) {
             EditBar(
-                onReset = { draft = defaults },
-                onCancel = onCancel,
-                onDone = { onDone(draft) },
+                onReset = { session.draft = bindings.defaults },
+                onCancel = bindings.onCancel,
+                onDone = { bindings.onDone(session.draft) },
                 doneFocus = doneFocus,
             )
         }
-        if (pickingWidget && hosted.controller != null) {
+        if (session.pickingWidget && hosted.controller != null) {
             WidgetPicker(
                 providers = hosted.controller.providers(),
                 onPick = {
-                    pickingWidget = false
+                    session.pickingWidget = false
                     hosted.controller.begin(it, WidgetTarget.HOME)
                 },
-                onDismiss = { pickingWidget = false },
+                onDismiss = { session.pickingWidget = false },
             )
         }
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.editHomePickingRows(
+    session: EditHomeSession,
+    bindings: EditHomeBindings,
+    appByKey: Map<String, AppEntry>,
+) {
+    val pickKind = session.picking ?: return
+    val choices = quickBarChoices(bindings.apps, appByKey, session.draft.quickBar)
+    item {
+        MetroHeader(
+            title = if (pickKind == "bar") t("add_a_slot") else t("replace_slot"),
+            onBack = { session.picking = null },
+        )
+        Spacer(Modifier.height(EDIT_HEADER_SPACER_DP.dp))
+    }
+    if (choices.isEmpty()) item { EmptyState(t("every_available_app_is_already")) }
+    items(choices, key = { it.token }) { choice ->
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = EDIT_PICK_HEIGHT_DP.dp)
+                    .sableFocusRing()
+                    .clickable {
+                        session.draft =
+                            if (pickKind == "bar") {
+                                session.draft.copy(quickBar = QuickBar.add(session.draft.quickBar, choice.token))
+                            } else {
+                                val index = pickKind.substringAfter(':').toIntOrNull() ?: -1
+                                session.draft.copy(
+                                    quickBar = QuickBar.replace(session.draft.quickBar, index, choice.token),
+                                )
+                            }
+                        session.picking = null
+                    }.padding(vertical = EDIT_PICK_PADDING_DP.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            QuickSlotMark(slot = choice, size = EDIT_PICK_ICON_DP)
+            Spacer(Modifier.width(EDIT_PICK_GAP_DP.dp))
+            Text(choice.label, style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.editHomeHeaderRows(bindings: EditHomeBindings) {
+    item(key = "header") {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(
+                onClick = bindings.onCancel,
+                modifier = Modifier.heightIn(min = EDIT_HEADER_BACK_HEIGHT_DP.dp).width(EDIT_HEADER_BACK_WIDTH_DP.dp),
+            ) {
+                Text(text = "‹", fontSize = EDIT_HEADER_BACK_SIZE_SP.sp, fontWeight = FontWeight.Light)
+            }
+            Text(
+                text = t("edit_home"),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f).semantics { heading() },
+            )
+        }
+        Text(
+            text = t("drag_or_use_keyboard_order"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = t("enter_picks_up_and_drops"),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(EDIT_BAR_SPACER_DP.dp))
+        SectionLabel(t("app_grid"))
+        Spacer(Modifier.height(4.dp))
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.editHomeGridRows(
+    session: EditHomeSession,
+    appByKey: Map<String, AppEntry>,
+) {
+    items(session.draft.gridOrder.chunked(AppGrid.COLUMNS), key = { row -> "grid:" + row.first() }) { row ->
+        EditHomeGridRow(session, appByKey, row)
+    }
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun EditHomeGridRow(
+    session: EditHomeSession,
+    appByKey: Map<String, AppEntry>,
+    row: List<String>,
+) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        row.forEach { key ->
+            EditGridCell(
+                app = appByKey[key],
+                picked = session.moving?.let { it.section == EditSection.Grid && it.key == key } == true,
+                onKey = { event -> session.itemKeys(EditSection.Grid, key, event) },
+                onClick = { session.toggleOptions("Grid:$key") },
+                onDragStep = { delta -> session.move(EditSection.Grid, key, delta) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        repeat(AppGrid.COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
+    }
+    val open = session.optionsFor?.takeIf { it.startsWith("Grid:") }?.substringAfter(':')
+    if (open != null && open in row) EditHomeGridOptions(session, open)
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun EditHomeGridOptions(
+    session: EditHomeSession,
+    open: String,
+) {
+    val index = session.draft.gridOrder.indexOf(open)
+    EditOptions(
+        buildList {
+            if (index > 0) add(t("move_left") to { session.move(EditSection.Grid, open, -1) })
+            if (index < session.draft.gridOrder.lastIndex) {
+                add(t("move_right") to { session.move(EditSection.Grid, open, 1) })
+            }
+            if (index >= AppGrid.COLUMNS) {
+                add(t("move_up_a_row") to { session.move(EditSection.Grid, open, -AppGrid.COLUMNS) })
+            }
+            if (index + AppGrid.COLUMNS <= session.draft.gridOrder.lastIndex) {
+                add(t("move_down_a_row") to { session.move(EditSection.Grid, open, AppGrid.COLUMNS) })
+            }
+            add(t("move_to_the_start") to { session.move(EditSection.Grid, open, -index) })
+        },
+    )
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.editHomeQuickBarRows(
+    session: EditHomeSession,
+    bindings: EditHomeBindings,
+    appByKey: Map<String, AppEntry>,
+) {
+    item(key = "bar") { EditHomeQuickBar(session, bindings, appByKey) }
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun EditHomeQuickBar(
+    session: EditHomeSession,
+    bindings: EditHomeBindings,
+    appByKey: Map<String, AppEntry>,
+) {
+    Spacer(Modifier.height(EDIT_BAR_SPACER_DP.dp))
+    SectionLabel(t("bottom_bar"))
+    Spacer(Modifier.height(EDIT_BAR_GAP_DP.dp))
+    EditQuickBarRow(
+        tokens = session.draft.quickBar,
+        apps = bindings.apps,
+        appByKey = appByKey,
+        moving = session.moving?.takeIf { it.section == EditSection.QuickBar }?.key,
+        onKey = { token, event -> session.itemKeys(EditSection.QuickBar, token, event) },
+        onClick = { token -> session.toggleOptions("QuickBar:$token") },
+        onDragStep = { token, delta -> session.move(EditSection.QuickBar, token, delta) },
+    )
+    EditHomeQuickBarOptions(session)
+    if (session.draft.quickBar.size < QuickBar.MAX_SLOTS) {
+        MetroLink(t("add_a_slot_2"), onClick = { session.picking = "bar" })
+    }
+    MetroLink(
+        text = t("reset_bar_to_phone_search"),
+        onClick = { session.draft = session.draft.copy(quickBar = QuickBar.DEFAULT) },
+    )
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun EditHomeQuickBarOptions(session: EditHomeSession) {
+    val barOptions = session.optionsFor?.takeIf { it.startsWith("QuickBar:") }?.substringAfter(':')
+    if (barOptions != null && barOptions in session.draft.quickBar) {
+        val index = session.draft.quickBar.indexOf(barOptions)
+        val required = QuickBar.isRequired(barOptions)
+        EditOptions(
+            buildList {
+                if (index > 0) add(t("move_left") to { session.move(EditSection.QuickBar, barOptions, -1) })
+                if (index < session.draft.quickBar.lastIndex) {
+                    add(t("move_right") to { session.move(EditSection.QuickBar, barOptions, 1) })
+                }
+                if (!required) {
+                    add(
+                        "replace" to {
+                            session.picking = "bar:$index"
+                            session.optionsFor = null
+                        },
+                    )
+                    add(
+                        "remove" to {
+                            session.draft =
+                                session.draft.copy(
+                                    quickBar = QuickBar.remove(session.draft.quickBar, index),
+                                )
+                            session.optionsFor = null
+                        },
+                    )
+                }
+            },
+        )
+        if (required) {
+            Text(
+                text = t("search_always_stays_on_the"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.editHomeFramesRows(
+    session: EditHomeSession,
+    bindings: EditHomeBindings,
+) {
+    item(key = "frames-options") {
+        Spacer(Modifier.height(EDIT_BAR_SPACER_DP.dp))
+        SectionLabel(t("active_frames_header"))
+        Spacer(Modifier.height(4.dp))
+        val accent = MaterialTheme.colorScheme.primary
+        HomeLayout.SECTIONS.forEach { section ->
+            HomeToggleRow(
+                title = HomeLayout.label(section),
+                subtitle = HomeLayout.description(section),
+                selected = HomeLayout.isShown(session.draft.hiddenSections, section),
+                accent = accent,
+                onClick = {
+                    session.draft =
+                        session.draft.copy(
+                            hiddenSections = HomeLayout.toggle(session.draft.hiddenSections, section),
+                        )
+                },
+            )
+        }
+        Spacer(Modifier.height(EDIT_BAR_SPACER_DP.dp))
+        MetroLink(text = "appearance", onClick = bindings.onAppearance)
     }
 }
 

@@ -6,10 +6,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.ContactsContract
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import io.github.aimindseye.tenseven.model.HubPeople
 import io.github.aimindseye.tenseven.model.HubPerson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * The Hub page's Contacts tab: the personal profile's contacts (names, favourites and one
@@ -33,32 +33,33 @@ class PeopleRepository(
             runCatching {
                 val numbers = numbers()
                 val people = ArrayList<HubPerson>()
-                resolver.query(
-                    ContactsContract.Contacts.CONTENT_URI,
-                    arrayOf(
-                        ContactsContract.Contacts._ID,
-                        ContactsContract.Contacts.LOOKUP_KEY,
-                        ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
-                        ContactsContract.Contacts.STARRED,
-                    ),
-                    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " IS NOT NULL",
-                    null,
-                    null,
-                )?.use { cursor ->
-                    while (cursor.moveToNext() && people.size < MAX_PEOPLE) {
-                        val id = cursor.getLong(0)
-                        val name = cursor.getString(2)?.trim().orEmpty()
-                        if (name.isEmpty()) continue
-                        people +=
-                            HubPerson(
-                                id = id,
-                                lookupKey = cursor.getString(1).orEmpty(),
-                                name = name,
-                                starred = cursor.getInt(3) != 0,
-                                number = numbers[id],
-                            )
+                resolver
+                    .query(
+                        ContactsContract.Contacts.CONTENT_URI,
+                        arrayOf(
+                            ContactsContract.Contacts._ID,
+                            ContactsContract.Contacts.LOOKUP_KEY,
+                            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
+                            ContactsContract.Contacts.STARRED,
+                        ),
+                        ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " IS NOT NULL",
+                        null,
+                        null,
+                    )?.use { cursor ->
+                        while (cursor.moveToNext() && people.size < MAX_PEOPLE) {
+                            val id = cursor.getLong(0)
+                            val name = cursor.getString(2)?.trim().orEmpty()
+                            if (name.isEmpty()) continue
+                            people +=
+                                HubPerson(
+                                    id = id,
+                                    lookupKey = cursor.getString(1).orEmpty(),
+                                    name = name,
+                                    starred = cursor.getInt(3) != 0,
+                                    number = numbers[id],
+                                )
+                        }
                     }
-                }
                 HubPeople.sort(people)
             }.getOrDefault(emptyList())
         }
@@ -66,26 +67,27 @@ class PeopleRepository(
     /** One number per contact: the default (super primary) one, else the first. */
     private fun numbers(): Map<Long, String> {
         val best = HashMap<Long, Pair<Boolean, String>>()
-        resolver.query(
-            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-            arrayOf(
-                ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
-                ContactsContract.CommonDataKinds.Phone.NUMBER,
-                ContactsContract.CommonDataKinds.Phone.IS_SUPER_PRIMARY,
-            ),
-            null,
-            null,
-            null,
-        )?.use { cursor ->
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(0)
-                val number = cursor.getString(1)?.trim().orEmpty()
-                if (number.isEmpty()) continue
-                val primary = cursor.getInt(2) != 0
-                val current = best[id]
-                if (current == null || (primary && !current.first)) best[id] = primary to number
+        resolver
+            .query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(
+                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+                    ContactsContract.CommonDataKinds.Phone.NUMBER,
+                    ContactsContract.CommonDataKinds.Phone.IS_SUPER_PRIMARY,
+                ),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(0)
+                    val number = cursor.getString(1)?.trim().orEmpty()
+                    if (number.isEmpty()) continue
+                    val primary = cursor.getInt(2) != 0
+                    val current = best[id]
+                    if (current == null || (primary && !current.first)) best[id] = primary to number
+                }
             }
-        }
         return best.mapValues { it.value.second }
     }
 

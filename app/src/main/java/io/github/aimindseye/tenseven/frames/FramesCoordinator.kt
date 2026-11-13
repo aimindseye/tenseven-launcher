@@ -5,10 +5,15 @@ import io.github.aimindseye.tenseven.platform.CapabilityStatus
 /** Android operations are injected. All state transitions run on the host's UI dispatcher. */
 interface FrameSource {
     fun read(): FrameInput
+
     fun loadDismissals(): Map<String, Long>
+
     fun saveDismissals(value: Map<String, Long>)
+
     fun resume(item: FrameItem): Boolean
+
     fun launch(app: FrameApp)
+
     fun closed(item: FrameItem) { /* In-memory sources have no additional window store to update. */ }
 }
 
@@ -21,8 +26,11 @@ class FramesCoordinator(
 ) {
     @Volatile var state = FramesState()
         private set
+
     @Volatile private var epoch = 0L
+
     @Volatile private var active = false
+
     @Volatile private var destroyed = false
     private var dismissed = source.loadDismissals()
 
@@ -58,8 +66,12 @@ class FramesCoordinator(
 
     fun close(item: FrameItem) {
         if (!active || item !in state.items) return
-        dismissed = (dismissed + (item.key to now())).entries.sortedByDescending { it.value }
-            .take(FrameDismissals.MAX).associate { it.toPair() }
+        dismissed =
+            (dismissed + (item.key to now()))
+                .entries
+                .sortedByDescending { it.value }
+                .take(FrameDismissals.MAX)
+                .associate { it.toPair() }
         source.saveDismissals(dismissed)
         source.closed(item)
         // Closing a launcher card never force-stops an app or removes someone else's task.
@@ -73,8 +85,9 @@ class FramesCoordinator(
         background {
             val input = runCatching { source.read() }.getOrNull() ?: return@background
             if (!current(ticket) || !input.settings.openApps || item.app !in input.availableApps) return@background
-            val canResume = item.task != null && input.capabilities.taskResume == CapabilityStatus.Ready &&
-                input.native.any { it == item.task }
+            val canResume =
+                item.task != null && input.capabilities.taskResume == CapabilityStatus.Ready &&
+                    input.native.any { it == item.task }
             val resumed = canResume && source.resume(item)
             foreground {
                 if (current(ticket) && !resumed) source.launch(item.app)
@@ -82,9 +95,15 @@ class FramesCoordinator(
         }
     }
 
-    fun acceptsSnapshot(item: FrameItem, generation: Long): Boolean =
-        current(generation) && state.snapshotsAllowed && item in state.items
+    fun acceptsSnapshot(
+        item: FrameItem,
+        generation: Long,
+    ): Boolean = current(generation) && state.snapshotsAllowed && item in state.items
 
     private fun current(ticket: Long): Boolean = active && !destroyed && epoch == ticket
-    private fun publish(next: FramesState) { state = next; changed(next) }
+
+    private fun publish(next: FramesState) {
+        state = next
+        changed(next)
+    }
 }

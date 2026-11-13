@@ -48,7 +48,7 @@ object ProfilesText {
             "phone_calls_only" to "Phone calls only",
             "only_calls_ring_messages_and" to "Only calls ring; messages and alerts are silent",
             "all_alerts_off" to "All alerts off",
-            "nothing_rings_or_vibrates_alarms" to "Nothing rings or vibrates; alarms still sound"
+            "nothing_rings_or_vibrates_alarms" to "Nothing rings or vibrates; alarms still sound",
         )
 
     val t = SableTexts(EN)

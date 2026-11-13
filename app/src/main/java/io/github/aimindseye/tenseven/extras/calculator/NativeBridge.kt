@@ -15,14 +15,18 @@ import kotlin.math.tan
 
 /** Exact decimal arithmetic and the unary scientific functions, answered as "OK:<value>" or "ERR:<reason>". */
 internal object NativeBridge {
-    private enum class Failure(val code: String) {
+    private enum class Failure(
+        val code: String,
+    ) {
         InvalidNumber("ERR:INVALID_NUMBER"),
         DivisionByZero("ERR:DIVIDE_BY_ZERO"),
         Overflow("ERR:OVERFLOW"),
         Domain("ERR:DOMAIN"),
     }
 
-    private class Fail(val failure: Failure) : Exception()
+    private class Fail(
+        val failure: Failure,
+    ) : Exception()
 
     private val I128_MAX = BigInteger.ONE.shiftLeft(127) - BigInteger.ONE
     private val I128_MIN = BigInteger.ONE.shiftLeft(127).negate()
@@ -65,7 +69,10 @@ internal object NativeBridge {
     }
 
     /** value = numerator / denominator, lowest terms, denominator > 0, both within the signed 128-bit range. */
-    private class Exact(val numerator: BigInteger, val denominator: BigInteger) {
+    private class Exact(
+        val numerator: BigInteger,
+        val denominator: BigInteger,
+    ) {
         override fun toString() = "$numerator/$denominator"
     }
 
@@ -113,9 +120,24 @@ internal object NativeBridge {
         b: Exact,
     ): Exact =
         when (operation) {
-            0 -> make(checked(checked(a.numerator * b.denominator) + checked(b.numerator * a.denominator)), checked(a.denominator * b.denominator))
-            1 -> make(checked(checked(a.numerator * b.denominator) - checked(b.numerator * a.denominator)), checked(a.denominator * b.denominator))
-            2 -> make(checked(a.numerator * b.numerator), checked(a.denominator * b.denominator))
+            0 -> {
+                make(
+                    checked(checked(a.numerator * b.denominator) + checked(b.numerator * a.denominator)),
+                    checked(a.denominator * b.denominator),
+                )
+            }
+
+            1 -> {
+                make(
+                    checked(checked(a.numerator * b.denominator) - checked(b.numerator * a.denominator)),
+                    checked(a.denominator * b.denominator),
+                )
+            }
+
+            2 -> {
+                make(checked(a.numerator * b.numerator), checked(a.denominator * b.denominator))
+            }
+
             else -> {
                 if (b.numerator.signum() == 0) throw Fail(Failure.DivisionByZero)
                 make(checked(a.numerator * b.denominator), checked(a.denominator * b.numerator))

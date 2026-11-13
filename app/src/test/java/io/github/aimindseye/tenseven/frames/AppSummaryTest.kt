@@ -5,7 +5,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AppSummaryTest {
-    private fun summary(source: SummarySource, key: String = "one") = AppSummary(key, "Title", "Text", source, "app", 10)
+    private fun summary(
+        source: SummarySource,
+        key: String = "one",
+    ) = AppSummary(key, "Title", "Text", source, "app", 10)
+
     @Test fun permissionsAndOptOutGateEveryExternalSourceButNotLocalData() {
         for (source in SummarySource.entries) {
             val value = summary(source)
@@ -22,9 +26,17 @@ class AppSummaryTest {
         }
         assertEquals("hello world", AppSummaryPolicy.text(" hello\n\tworld "))
         assertEquals(240, AppSummaryPolicy.text("a".repeat(300)).length)
-        val values = listOf(summary(SummarySource.Local), summary(SummarySource.Local), summary(SummarySource.Media, "two"),
-            summary(SummarySource.Local, "blank").copy(detail = " "))
+        val values =
+            listOf(
+                summary(SummarySource.Local),
+                summary(SummarySource.Local),
+                summary(SummarySource.Media, "two"),
+                summary(SummarySource.Local, "blank").copy(detail = " "),
+            )
         assertEquals(listOf("one"), AppSummaryPolicy.select(values, false).map { it.key })
-        assertEquals(24, AppSummaryPolicy.select((1..30).map { summary(SummarySource.Local, "$it").copy(updatedAt = it.toLong()) }, true).size)
+        assertEquals(
+            24,
+            AppSummaryPolicy.select((1..30).map { summary(SummarySource.Local, "$it").copy(updatedAt = it.toLong()) }, true).size,
+        )
     }
 }
