@@ -19,6 +19,7 @@ on:
       - 'tools/verify-release-apks.sh'
       - 'tools/deliverable_quality_gate.py'
       - 'tools/tests/**'
+      - 'tools/quality_gate_*.py'
       - '!**/*.md'
   push:
     branches: [main]
@@ -35,6 +36,7 @@ on:
       - 'tools/verify-release-apks.sh'
       - 'tools/deliverable_quality_gate.py'
       - 'tools/tests/**'
+      - 'tools/quality_gate_*.py'
       - '!**/*.md'
   workflow_dispatch:
 

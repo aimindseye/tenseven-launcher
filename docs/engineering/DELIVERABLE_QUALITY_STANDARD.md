@@ -67,6 +67,12 @@ zero introduced findings produce `PASS_NO_NEW_FINDINGS`. `--reports-only` is
 always diagnostic HOLD and never proves freshness or qualification. There is
 no unchecked CI report-reuse mode.
 
+R1 hardens CLI Git/evidence boundaries and verifies exact historical policy
+transitions. See [QUALITY_GATE_R1.md](QUALITY_GATE_R1.md) for allowed output
+roots, provenance hashes, equivalent-wrapper analysis, and the unapproved
+suppression audit. Unknown policy changes still fail closed; audit blockers
+and new findings remain HOLD. No historical finding is exempted.
+
 ## Qualifying the checker itself
 
 Offline tests must cover shifted manifest and naming findings, strict new-file

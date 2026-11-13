@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Compare fresh real Gradle reports against a pinned, detached parent worktree.
-
-A successful Gradle exit alone never qualifies a deliverable. Report-only mode
-is diagnostic and always returns HOLD. Remote and device gates are separate.
-"""
+"""Fail-closed parent-aware qualification; remote and device gates are separate."""
 
 import argparse
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -19,37 +16,11 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-QUALITY_CONFIG_FILES = {
-    ".editorconfig", "config/detekt.yml", "config/DETEKT_PROVENANCE.env",
-    "gradle.properties", "sonar-project.properties", "settings.gradle.kts",
-    "gradle/libs.versions.toml", "gradle/wrapper/gradle-wrapper.properties",
-    "gradle/wrapper/gradle-wrapper.jar", "app/build.gradle.kts", "design/build.gradle.kts",
-}
-COMPOSE_CONFIG = "config/detekt-tenseven.yml"
-COMPOSE_POLICY = "naming:\n  FunctionNaming:\n    ignoreAnnotated:\n      - Composable\n"
-OLD_WIRING = '        config.setFrom(rootProject.file("config/detekt.yml"))\n'
-NEW_WIRING = (
-    '        config.setFrom(\n'
-    '            rootProject.file("config/detekt.yml"),\n'
-    '            rootProject.file("config/detekt-tenseven.yml"),\n'
-    '        )\n'
+from quality_gate_policy import (
+    review_policy, source_bytes, temporary_compose_overlay,
 )
-CI_PATHS = (
-    "      - 'tools/deliverable_quality_gate.py'\n"
-    "      - 'tools/tests/**'\n"
-)
-CI_STEP = '''      - name: Enforce changed-file quality
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_BRANCH: ${{ github.base_ref }}
-        run: |
-          set -euo pipefail
-          BASE="$(git merge-base "origin/$BASE_BRANCH" HEAD)"
-          python3 -B -m unittest discover -s tools/tests -p 'test_deliverable_quality_gate.py' -v
-          python3 -B tools/deliverable_quality_gate.py \\
-            --repo "$GITHUB_WORKSPACE" --base-ref "$BASE" \\
-            --out "$RUNNER_TEMP/tenseven-deliverable-quality" --approved-compose-policy
-'''
+from quality_gate_runtime import EvidenceDirectory, GitRepository, QualityError
+
 QUALITY_TASKS = (":design:lintDebug", ":app:lintDebug", "detekt", "ktlintCheck")
 GRADLE_TASKS = (
     ":design:testDebugUnitTest", ":app:testDebugUnitTest",
@@ -63,25 +34,15 @@ METRICS = {
 }
 
 
-class QualityError(ValueError):
-    """Missing evidence or an unauthorized quality policy change."""
+def changed_paths(repo, base_ref):
+    git = GitRepository(repo)
+    base = git.resolve(base_ref)
+    if not git.ancestor(base, git.head()):
+        raise QualityError("Base must be an ancestor of HEAD")
+    return git.changed(base)
 
 
-def git(repo: Path, *args: str) -> str:
-    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=False)
-    if result.returncode:
-        raise QualityError("git check failed: " + " ".join(args) + "\n" + result.stderr)
-    return result.stdout.rstrip("\n")
-
-
-def changed_paths(repo: Path, base_ref: str) -> set[str]:
-    git(repo, "merge-base", "--is-ancestor", base_ref, "HEAD")
-    tracked = git(repo, "diff", "--name-only", "--no-renames", "--diff-filter=ACMD", "-z", base_ref, "--")
-    untracked = git(repo, "ls-files", "--others", "--exclude-standard", "-z")
-    return set(filter(None, (tracked + "\0" + untracked).split("\0")))
-
-
-def relative_path(repo: Path, source: str) -> str:
+def relative_path(repo, source):
     if not source:
         raise QualityError("Finding has no source path")
     path = Path(source)
@@ -89,59 +50,70 @@ def relative_path(repo: Path, source: str) -> str:
     try:
         return path.resolve().relative_to(repo.resolve()).as_posix()
     except ValueError as exc:
-        raise QualityError("Finding points outside analyzed repository: " + source) from exc
+        raise QualityError("Finding points outside analyzed repository") from exc
 
 
-def parse_xml_report(repo: Path, path: Path, family: str) -> list[dict]:
-    root = ET.parse(path).getroot()
-    findings = []
-
-    def append(source, line, column, rule, message, severity):
-        if not rule or message is None or not severity:
-            raise QualityError("Malformed finding in " + str(path))
-        try:
-            line_number, column_number = int(line or 0), int(column or 0)
-        except ValueError as exc:
-            raise QualityError("Malformed finding location in " + str(path)) from exc
-        if line_number < 0 or column_number < 0:
-            raise QualityError("Negative finding location in " + str(path))
-        filename = relative_path(repo, source)
-        source_path = repo / filename
-        if not source_path.is_file() or source_path.is_symlink():
-            raise QualityError("Finding source unavailable: " + filename)
-        if line_number and line_number > len(source_path.read_text(encoding="utf-8").splitlines()):
-            raise QualityError("Finding line outside source: " + filename)
-        findings.append({
-            "family": family, "file": filename, "line": line_number, "column": column_number,
+def finding_record(repo, report, family, source, line, column, rule, message, severity):
+    if not rule or message is None or not severity:
+        raise QualityError("Malformed finding in " + str(report))
+    try:
+        number, col = int(line or 0), int(column or 0)
+    except ValueError as exc:
+        raise QualityError("Malformed finding location") from exc
+    if number < 0 or col < 0:
+        raise QualityError("Negative finding location")
+    filename = relative_path(repo, source)
+    path = repo / filename
+    if not path.is_file() or path.is_symlink():
+        raise QualityError("Finding source unavailable: " + filename)
+    if number and number > len(path.read_text().splitlines()):
+        raise QualityError("Finding line outside source: " + filename)
+    return {"family": family, "file": filename, "line": number, "column": col,
             "rule": rule, "message": message.replace(str(repo), "<repo>"), "severity": severity,
-            "report": path.relative_to(repo).as_posix(),
-        })
+            "report": report.relative_to(repo).as_posix()}
 
-    if root.tag == "checkstyle" and family in {"detekt", "ktlint"}:
-        for file_element in root:
-            if file_element.tag != "file":
-                raise QualityError("Unknown checkstyle element in " + str(path))
-            for error in file_element:
-                if error.tag != "error" or not error.get("line"):
-                    raise QualityError("Malformed checkstyle error in " + str(path))
-                append(file_element.get("name"), error.get("line"), error.get("column"),
-                       error.get("source"), error.get("message"), error.get("severity"))
-    elif root.tag == "issues" and family == "lint":
-        for issue in root:
-            if issue.tag != "issue":
-                raise QualityError("Unknown lint element in " + str(path))
-            # Secondary locations explain the same issue; count the primary once.
-            location = issue.find("location")
-            if location is None:
-                raise QualityError("Lint issue without primary location in " + str(path))
-            append(location.get("file"), location.get("line"), location.get("column"),
-                   issue.get("id"), issue.get("message"), issue.get("severity"))
-    else:
-        raise QualityError(f"Unexpected {family} XML schema: {path}: {root.tag}")
+
+def checkstyle_findings(repo, report, family, root):
+    findings = []
+    for file_element in root:
+        if file_element.tag != "file":
+            raise QualityError("Unknown checkstyle element")
+        for error in file_element:
+            if error.tag != "error" or not error.get("line"):
+                raise QualityError("Malformed checkstyle error")
+            findings.append(finding_record(
+                repo, report, family, file_element.get("name"), error.get("line"), error.get("column"),
+                error.get("source"), error.get("message"), error.get("severity"),
+            ))
     return findings
 
 
-def report_paths(repo: Path) -> dict[str, list[Path]]:
+def lint_findings(repo, report, root):
+    findings = []
+    for issue in root:
+        if issue.tag != "issue":
+            raise QualityError("Unknown lint element")
+        location = issue.find("location")
+        if location is None:
+            raise QualityError("Lint issue without primary location")
+        findings.append(finding_record(
+            repo, report, "lint", location.get("file"), location.get("line"), location.get("column"),
+            issue.get("id"), issue.get("message"), issue.get("severity"),
+        ))
+    return findings
+
+
+def parse_xml_report(repo, path, family, snapshot=None):
+    stream = path if snapshot is None else io.BytesIO(snapshot)
+    root = ET.parse(stream).getroot()
+    if root.tag == "checkstyle" and family in {"detekt", "ktlint"}:
+        return checkstyle_findings(repo, path, family, root)
+    if root.tag == "issues" and family == "lint":
+        return lint_findings(repo, path, root)
+    raise QualityError(f"Unexpected {family} XML schema: {path}: {root.tag}")
+
+
+def report_paths(repo):
     result = {family: [] for family in REPORT_FAMILIES}
     modules = sorted(item.parent for item in repo.glob("*/build.gradle.kts"))
     if {module.name for module in modules} != {"app", "design"}:
@@ -150,16 +122,22 @@ def report_paths(repo: Path) -> dict[str, list[Path]]:
         reports = module / "build/reports"
         result["detekt"].append(reports / "detekt/detekt.xml")
         result["lint"].append(reports / "lint-results-debug.xml")
-        tasks = {"ktlintKotlinScriptCheck"}
-        for source_set in (module / "src").iterdir():
-            if source_set.is_dir() and any(source_set.rglob("*.kt")):
-                tasks.add("ktlint" + source_set.name[0].upper() + source_set.name[1:] + "SourceSetCheck")
-        for task in sorted(tasks):
+        for task in ktlint_tasks(module):
             result["ktlint"].append(reports / f"ktlint/{task}/{task}.xml")
     return result
 
 
-def check_quality_reports(repo: Path, started_at: float) -> tuple[list[dict], list[dict]]:
+def ktlint_tasks(module):
+    tasks = {"ktlintKotlinScriptCheck"}
+    for source_set in (module / "src").iterdir():
+        if source_set.is_dir() and any(source_set.rglob("*.kt")):
+            if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", source_set.name):
+                raise QualityError("Unknown source-set name")
+            tasks.add("ktlint" + source_set.name[0].upper() + source_set.name[1:] + "SourceSetCheck")
+    return sorted(tasks)
+
+
+def check_quality_reports(repo, started_at):
     findings, inventory = [], []
     for family, paths in report_paths(repo).items():
         for report in paths:
@@ -167,207 +145,245 @@ def check_quality_reports(repo: Path, started_at: float) -> tuple[list[dict], li
                 raise QualityError("Missing required report: " + str(report))
             if report.stat().st_mtime < started_at:
                 raise QualityError("Stale report: " + str(report))
-            findings.extend(parse_xml_report(repo, report, family))
+            snapshot = report.read_bytes()
+            findings.extend(parse_xml_report(repo, report, family, snapshot))
             inventory.append({"family": family, "path": report.relative_to(repo).as_posix(),
-                              "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+                              "sha256": hashlib.sha256(snapshot).hexdigest(),
                               "mtime_ns": report.stat().st_mtime_ns})
     return findings, inventory
 
 
-def compare_findings(baseline: list[dict], current: list[dict], base_repo: Path, repo: Path):
-    """Match multiplicity, same path/report, unchanged line, rule/message/severity.
+def line_mapping(old, new):
+    if not old.is_file() or old.is_symlink():
+        return {}
+    before, after = old.read_bytes(), new.read_bytes()
+    mapping = {0: 0} if before == after else {}
+    try:
+        old_lines, new_lines = before.decode().splitlines(), after.decode().splitlines()
+    except UnicodeDecodeError:
+        return mapping
+    for a, b, size in SequenceMatcher(None, old_lines, new_lines, autojunk=False).get_matching_blocks():
+        mapping.update((b + offset + 1, a + offset + 1) for offset in range(size))
+    return mapping
 
-    Lines may shift. New files cannot borrow old debt. Quantitative debt may
-    decrease but never increase. No rule (including Compose naming) is waived.
-    """
-    maps = {}
 
-    def old_line(item):
-        filename = item["file"]
-        if filename not in maps:
-            old, new = base_repo / filename, repo / filename
-            if not old.is_file() or old.is_symlink():
-                maps[filename] = {}
-            else:
-                mapping = {}
-                old_bytes, new_bytes = old.read_bytes(), new.read_bytes()
-                if old_bytes == new_bytes:
-                    mapping[0] = 0
-                try:
-                    old_text, new_text = old_bytes.decode("utf-8").splitlines(), new_bytes.decode("utf-8").splitlines()
-                except UnicodeDecodeError:
-                    old_text, new_text = [], []  # Binary asset issues have file-level locations.
-                for a, b, size in SequenceMatcher(None, old_text, new_text, autojunk=False).get_matching_blocks():
-                    mapping.update((b + i + 1, a + i + 1) for i in range(size))
-                maps[filename] = mapping
-        return maps[filename].get(item["line"])
+def finding_identity(item, line):
+    message = item["message"]
+    match = re.search(METRICS.get(item["rule"], r"(?!)"), message)
+    metric = None
+    if match:
+        metric = int(match.group())
+        message = message[:match.start()] + "$METRIC$" + message[match.end():]
+    return (item["family"], item["report"], item["file"], line, item["column"],
+            item["rule"], message, item["severity"]), metric
 
-    def key(item, line):
-        message = item["message"]
-        match = re.search(METRICS.get(item["rule"], r"(?!)"), message)
-        metric = int(match.group()) if match else None
-        if match:
-            message = message[:match.start()] + "$METRIC$" + message[match.end():]
-        return (item["family"], item["report"], item["file"], line, item["column"],
-                item["rule"], message, item["severity"]), metric
 
-    available = defaultdict(list)
+def matching_metric(available, metric):
+    choices = [value for value in available if value == metric or
+               (value is not None and metric is not None and value >= metric)]
+    if not choices:
+        return False, None
+    return True, min(choices, key=lambda value: -1 if value is None else value)
+
+
+def compare_findings(baseline, current, base_repo, repo):
+    available, mappings = defaultdict(list), {}
     for item in baseline:
-        identity, metric = key(item, item["line"])
+        identity, metric = finding_identity(item, item["line"])
         available[identity].append(metric)
     added, existing = [], []
     for item in current:
-        line = old_line(item)
-        identity, metric = key(item, line)
-        choices = [value for value in available[identity]
-                   if value == metric or (value is not None and metric is not None and value >= metric)]
-        if line is not None and choices:
-            value = min(choices, key=lambda value: -1 if value is None else value)
-            available[identity].remove(value)
-            existing.append({**item, "baseline_line": line, "baseline_metric": value})
-        else:
+        filename = item["file"]
+        if filename not in mappings:
+            mappings[filename] = line_mapping(base_repo / filename, repo / filename)
+        line = mappings[filename].get(item["line"])
+        identity, metric = finding_identity(item, line)
+        found, value = matching_metric(available[identity], metric)
+        if line is None or not found:
             added.append(item)
+            continue
+        available[identity].remove(value)
+        existing.append({**item, "baseline_line": line, "baseline_metric": value})
     return added, existing
 
 
-def assert_no_quality_bypass(changed: set[str], repo: Path, base_ref: str, approved_compose=False):
-    protected = changed & QUALITY_CONFIG_FILES
-    if protected:
-        raise QualityError("Quality policy modified in feature scope: " + ", ".join(sorted(protected)))
-    if "build.gradle.kts" in changed or COMPOSE_CONFIG in changed:
-        before = git(repo, "show", f"{base_ref}:build.gradle.kts") + "\n"
-        after = (repo / "build.gradle.kts").read_text()
-        if (not approved_compose or before.count(OLD_WIRING) != 1
-                or after != before.replace(OLD_WIRING, NEW_WIRING)
-                or (repo / COMPOSE_CONFIG).read_text() != COMPOSE_POLICY):
-            raise QualityError("Only the explicitly approved Compose naming correction is supported")
-    for entry in changed:
-        if entry.startswith(".github/workflows/"):
-            before = git(repo, "show", f"{base_ref}:{entry}") + "\n"
-            after = (repo / entry).read_text()
-            expected = before.replace("          persist-credentials: false\n",
-                                      "          persist-credentials: false\n          fetch-depth: 0\n", 1)
-            expected = expected.replace("      - 'tools/verify-release-apks.sh'\n",
-                                        "      - 'tools/verify-release-apks.sh'\n" + CI_PATHS)
-            expected = expected.replace("      - name: Verify compiled Full APK manifest\n",
-                                        CI_STEP + "      - name: Verify compiled Full APK manifest\n")
-            if entry != ".github/workflows/android.yml" or after != expected:
-                raise QualityError("Unexpected CI policy change: " + entry)
-        if entry.endswith((".kt", ".kts")):
-            path = repo / entry
-            if not path.exists():
-                continue  # Deletions cannot contain added suppressions.
-            if path.is_symlink():
-                raise QualityError("Symlinked Kotlin source: " + entry)
-            diff = git(repo, "diff", "--unified=0", base_ref, "--", entry)
-            lines = [line[1:] for line in diff.splitlines() if line.startswith("+") and not line.startswith("+++")]
-            if not diff:
-                lines = path.read_text().splitlines() if entry not in git(repo, "ls-tree", "-r", "--name-only", base_ref).splitlines() else []
-            if any(marker in line for line in lines for marker in
-                   ("@Suppress", "@file:Suppress", "//noinspection", "ktlint-disable", "detekt-disable")):
-                raise QualityError("Added source suppression: " + entry)
+def assert_no_quality_bypass(changed, repo, base_ref, approved_compose=False):
+    git = GitRepository(repo)
+    review = review_policy(git, changed, git.resolve(base_ref), approved_compose)
+    if review["suppression_audit"]:
+        raise QualityError("Added source suppression requires review")
 
 
-def source_digest(repo: Path) -> str:
-    paths = git(repo, "ls-files", "--cached", "--others", "--exclude-standard", "-z").split("\0")
+def source_digest(repo):
+    git = GitRepository(repo)
     digest = hashlib.sha256()
-    for name in sorted(set(filter(None, paths))):
-        path = repo / name
+    for name in git.files():
+        path = git.path / name
         digest.update(name.encode() + b"\0")
-        digest.update(path.read_bytes() if path.is_file() else b"<deleted>")
+        digest.update(source_bytes(git, name) if path.exists() else b"<deleted>")
     return digest.hexdigest()
 
 
-def run_gradle(repo: Path, out: Path, tasks: tuple) -> tuple[int, float]:
-    command = [str(repo / "gradlew"), "--no-daemon", "--console=plain", "--continue",
-               "--rerun-tasks", "--no-build-cache", "-Ptenseven.strictQuality=false", *tasks]
-    (out / "command.json").write_text(json.dumps({"cwd": str(repo), "argv": command}, indent=2) + "\n")
+def write_json(evidence, name, value):
+    evidence.write(name, (json.dumps(value, indent=2, sort_keys=True) + "\n").encode())
+
+
+def run_gradle(repo, evidence, tasks, wrapper_repo):
+    command = [str(wrapper_repo / "gradlew"), "--project-dir", str(repo), "--no-daemon",
+               "--console=plain", "--continue", "--rerun-tasks", "--no-build-cache",
+               "-Ptenseven.strictQuality=false", *tasks]
+    write_json(evidence, "command.json", {"cwd": str(repo), "argv": command})
     started_at = time.time()
-    print("Running Gradle; log:", out / "gradle.log", flush=True)
-    with (out / "gradle.log").open("w") as log:
+    print("Running Gradle; log:", evidence.path / "gradle.log", flush=True)
+    with evidence.open_file("gradle.log") as log:
         result = subprocess.run(command, cwd=repo, stdout=log, stderr=subprocess.STDOUT, check=False)
-    (out / "exit-code.txt").write_text(str(result.returncode) + "\n")
+    evidence.assert_linked()
+    evidence.write("exit-code.txt", (str(result.returncode) + "\n").encode())
     return result.returncode, started_at
 
 
-def main() -> int:
+def analyze(root, evidence, tasks, wrapper_repo, diagnostic):
+    git = GitRepository(root)
+    before, head = source_digest(root), git.head()
+    rc, started = (None, 0) if diagnostic else run_gradle(root, evidence, tasks, wrapper_repo)
+    findings, inventory = check_quality_reports(root, started)
+    if before != source_digest(root) or head != git.head():
+        raise QualityError("Sources or HEAD changed during analysis")
+    for entry in inventory:
+        snapshot = (root / entry["path"]).read_bytes()
+        if hashlib.sha256(snapshot).hexdigest() != entry["sha256"]:
+            raise QualityError("Report changed after parsing: " + entry["path"])
+        evidence.archive(entry["path"], snapshot)
+    return {"gradle_rc": rc, "source_sha256": before, "findings": findings, "reports": inventory,
+            "counts": dict(Counter(item["family"] for item in findings))}
+
+
+
+def prepare_baseline(repo, base, evidence, supplied):
+    baseline = supplied
+    if baseline is None:
+        evidence.assert_linked()
+        baseline = evidence.path / "baseline-source"
+        repo.detached_worktree(baseline, base)
+    git = GitRepository(baseline)
+    if git.path == repo.path or git.head() != base or git.status() or git.branch():
+        raise QualityError("Baseline must be clean, detached and at the exact base SHA")
+    return git.path
+
+
+def toolchain():
+    java = str(Path(os.environ["JAVA_HOME"]) / "bin/java") if os.environ.get("JAVA_HOME") else shutil.which("java")
+    if not java:
+        raise QualityError("Java is unavailable")
+    result = subprocess.run([java, "-version"], capture_output=True, text=True, check=True)
+    return {"java": result.stderr.strip(), "python": sys.version,
+            "JAVA_HOME": os.environ.get("JAVA_HOME"), "ANDROID_HOME": os.environ.get("ANDROID_HOME")}
+
+
+def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", required=True, type=Path)
+    parser.add_argument("--repo", required=True)
     parser.add_argument("--base-ref", required=True)
-    parser.add_argument("--out", required=True, type=Path, help="New evidence directory outside repository")
-    parser.add_argument("--baseline-repo", type=Path, help="Existing clean detached worktree at base-ref")
+    parser.add_argument("--out", required=True, help="Fresh directory under runtime temp, RUNNER_TEMP or Downloads")
+    parser.add_argument("--baseline-repo", type=Path)
     parser.add_argument("--reports-only", action="store_true", help="Diagnostic only; always HOLD")
-    parser.add_argument("--approved-compose-policy", action="store_true", help="Apply the reviewed narrow correction equally to parent analysis")
-    args = parser.parse_args()
-    repo, out = args.repo.resolve(strict=True), args.out.resolve()
-    if out.exists() or out == repo or repo in out.parents or out in repo.parents:
-        raise QualityError("Output must be new and disjoint from repository")
-    base_sha = git(repo, "rev-parse", args.base_ref + "^{commit}")
-    changed = changed_paths(repo, base_sha)
+    parser.add_argument("--approved-compose-policy", action="store_true")
+    return parser.parse_args()
+
+
+def apply_comparison(result, baseline, repo):
+    added, existing = compare_findings(result["baseline"]["findings"], result["candidate"]["findings"], baseline, repo)
+    result["new_findings"], result["existing_findings"] = added, existing
+    result["new_counts"] = {family: sum(item["family"] == family for item in added) for family in REPORT_FAMILIES}
+    successful_runs = all(result[label]["gradle_rc"] == 0 for label in ("baseline", "candidate"))
+    if not result["reports_only"] and not added and not result["policy"]["suppression_audit"] and successful_runs:
+        result["result"] = "PASS_NO_NEW_FINDINGS"
+
+
+def analysis_configuration(repo, baseline):
+    shared = (".editorconfig", "config/detekt.yml", "config/DETEKT_PROVENANCE.env",
+              "gradle.properties", "gradle/libs.versions.toml", "settings.gradle.kts",
+              "app/build.gradle.kts", "design/build.gradle.kts", "gradlew",
+              "gradle/wrapper/gradle-wrapper.jar")
+    parent = GitRepository(baseline)
+    identities = {}
+    for name in shared:
+        current, previous = source_bytes(repo, name), source_bytes(parent, name)
+        if current != previous:
+            raise QualityError("Incompatible analysis configuration/tooling: " + name)
+        identities[name] = hashlib.sha256(current).hexdigest()
+    wrapper = "gradle/wrapper/gradle-wrapper.properties"
+    return {"wrapper_repo": str(repo.path), "parent_wrapper_unchanged": True,
+            "shared_input_sha256": identities,
+            "candidate_wrapper_sha256": hashlib.sha256(source_bytes(repo, wrapper)).hexdigest(),
+            "original_parent_wrapper_sha256": hashlib.sha256(source_bytes(parent, wrapper)).hexdigest(),
+            "original_parent_source_sha256": source_digest(baseline)}
+
+
+def assert_candidate_unchanged(repo, result):
+    if repo.head() != result["head"] or source_digest(repo.path) != result["candidate_start_source_sha256"]:
+        raise QualityError("Candidate source or HEAD changed across qualification phases")
+    if repo.changed(result["base_ref"]) != set(result["changed_paths"]):
+        raise QualityError("Candidate changed-path inventory changed across qualification phases")
+
+
+def qualify(args, repo, base, evidence, changed):
+    result = {"kind": "TenSeven_Deliverable_Quality_Gate_v3", "base_ref": base, "head": repo.head(),
+              "changed_paths": sorted(changed), "reports_only": args.reports_only, "result": "HOLD",
+              "remote_and_device_gates": "MUST_PASS_SEPARATELY",
+              "candidate_start_source_sha256": source_digest(repo.path)}
+    try:
+        if not repo.ancestor(base, result["head"]):
+            raise QualityError("Base is no longer an ancestor of candidate HEAD")
+        result["toolchain"] = toolchain()
+        result["policy"] = review_policy(repo, changed, base, args.approved_compose_policy)
+        baseline = prepare_baseline(repo, base, evidence, args.baseline_repo)
+        result["analysis_configuration"] = analysis_configuration(repo, baseline)
+        result["analysis_configuration"]["compose_overlay"] = result["policy"]["compose_overlay"]
+        with temporary_compose_overlay(baseline, result["policy"]["compose_overlay"]):
+            for label, root, tasks in (("baseline", baseline, QUALITY_TASKS), ("candidate", repo.path, GRADLE_TASKS)):
+                child = evidence.child(label)
+                try:
+                    result[label] = analyze(root, child, tasks, repo.path, args.reports_only)
+                finally:
+                    child.close()
+                assert_candidate_unchanged(repo, result)
+            apply_comparison(result, baseline, repo.path)
+        assert_candidate_unchanged(repo, result)
+        if source_digest(baseline) != result["analysis_configuration"]["original_parent_source_sha256"]:
+            raise QualityError("Parent source changed outside the approved overlay")
+    except (QualityError, OSError, ET.ParseError, UnicodeError) as exc:
+        result["result"] = "HOLD"
+        result["blocker"] = str(exc)
+    write_json(evidence, "QUALITY_GATE.json", result)
+    return result
+
+
+def result_code(result):
+    if "blocker" in result:
+        return 2
+    if result["result"] == "PASS_NO_NEW_FINDINGS":
+        return 0
+    return 1
+
+
+def main():
+    args = parse_arguments()
+    repo = GitRepository(args.repo)
+    base = repo.resolve(args.base_ref)
+    if not repo.ancestor(base, repo.head()):
+        raise QualityError("Base must be an ancestor of HEAD")
+    changed = repo.changed(base)
     if not changed:
         raise QualityError("No changed paths; refusing misleading qualification")
-    assert_no_quality_bypass(changed, repo, base_sha, args.approved_compose_policy)
-    out.mkdir(parents=True)
-    result = {"kind": "TenSeven_Deliverable_Quality_Gate_v2", "base_ref": base_sha,
-              "head": git(repo, "rev-parse", "HEAD"), "changed_paths": sorted(changed),
-              "reports_only": args.reports_only, "result": "HOLD",
-              "remote_and_device_gates": "MUST_PASS_SEPARATELY"}
-    java = str(Path(os.environ["JAVA_HOME"]) / "bin/java") if os.environ.get("JAVA_HOME") else "java"
-    java_version = subprocess.run([java, "-version"], capture_output=True, text=True, check=True)
-    result["toolchain"] = {"java": java_version.stderr.strip(), "python": sys.version,
-                           "JAVA_HOME": os.environ.get("JAVA_HOME"),
-                           "ANDROID_HOME": os.environ.get("ANDROID_HOME")}
+    evidence = EvidenceDirectory.reserve(args.out, repo.path)
     try:
-        baseline = args.baseline_repo.resolve() if args.baseline_repo else out / "baseline-source"
-        if not args.baseline_repo:
-            git(repo, "worktree", "add", "--detach", str(baseline), base_sha)
-        if (baseline == repo or git(baseline, "rev-parse", "HEAD") != base_sha
-                or git(baseline, "status", "--porcelain") or git(baseline, "branch", "--show-current")):
-            raise QualityError("Baseline must be a clean detached worktree at the exact base SHA")
-        # Never edit source modules or upstream policy in the baseline. This one
-        # reviewed configuration correction must be identical on both sides.
-        overlay = args.approved_compose_policy and COMPOSE_CONFIG in changed
-        result["analysis_overlay"] = {"applied_to_parent": overlay,
-                                      "policy": COMPOSE_POLICY if overlay else None,
-                                      "gradle_wiring": NEW_WIRING if overlay else None}
-        if overlay:
-            (baseline / COMPOSE_CONFIG).write_text(COMPOSE_POLICY)
-            path = baseline / "build.gradle.kts"
-            path.write_text(path.read_text().replace(OLD_WIRING, NEW_WIRING))
-        try:
-            for label, root, tasks in (("baseline", baseline, QUALITY_TASKS), ("candidate", repo, GRADLE_TASKS)):
-                evidence = out / label
-                evidence.mkdir()
-                before = source_digest(root)
-                rc, started = (None, 0) if args.reports_only else run_gradle(root, evidence, tasks)
-                findings, inventory = check_quality_reports(root, started)
-                if before != source_digest(root):
-                    raise QualityError("Sources changed during analysis: " + label)
-                result[label] = {"gradle_rc": rc, "source_sha256": before,
-                                 "findings": findings, "reports": inventory,
-                                 "counts": dict(Counter(item["family"] for item in findings))}
-                for entry in inventory:
-                    source = root / entry["path"]
-                    target = evidence / entry["path"]
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(source, target)
-            added, existing = compare_findings(result["baseline"]["findings"], result["candidate"]["findings"], baseline, repo)
-            result["new_findings"], result["existing_findings"] = added, existing
-            result["new_counts"] = {family: sum(item["family"] == family for item in added) for family in REPORT_FAMILIES}
-            if not args.reports_only and not added and all(result[label]["gradle_rc"] == 0 for label in ("baseline", "candidate")):
-                result["result"] = "PASS_NO_NEW_FINDINGS"
-        finally:
-            if overlay:
-                # Reverse only the exact edits made above in our detached worktree.
-                path = baseline / "build.gradle.kts"
-                path.write_text(path.read_text().replace(NEW_WIRING, OLD_WIRING))
-                (baseline / COMPOSE_CONFIG).unlink()
-    except (QualityError, OSError, ET.ParseError, UnicodeError) as exc:
-        result["blocker"] = str(exc)
-    (out / "QUALITY_GATE.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-    print(json.dumps({key: result[key] for key in ("result", "new_counts", "blocker") if key in result}, sort_keys=True))
-    print("Evidence:", out)
-    return 0 if result["result"] == "PASS_NO_NEW_FINDINGS" else 2 if "blocker" in result else 1
+        result = qualify(args, repo, base, evidence, changed)
+        print(json.dumps({key: result[key] for key in ("result", "new_counts", "blocker") if key in result}, sort_keys=True))
+        print("Evidence:", evidence.path)
+        return result_code(result)
+    finally:
+        evidence.close()
 
 
 if __name__ == "__main__":
