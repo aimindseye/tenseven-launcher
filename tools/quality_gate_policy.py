@@ -1,14 +1,14 @@
 """Exact historical policy transitions, never finding or filename exemptions."""
 
 from dataclasses import asdict, dataclass
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import hashlib
 import os
 import stat
 from pathlib import Path
 import re
 
-from quality_gate_runtime import DIRECTORY_FLAGS, QualityError
+from quality_gate_runtime import DIRECTORY_FLAGS, QualityError, object_id, repository_path
 
 ROOT_BUILD = "build.gradle.kts"
 COMPOSE_CONFIG = "config/detekt-tenseven.yml"
@@ -73,6 +73,44 @@ TRANSITIONS = (
     ),
 )
 
+# Joint owner approval: exact R2-G parent and both reviewed test-only endpoints.
+TEST_HARNESS_BASE = "d2e5afc9e1863e760ce62f43eaf024b4cf6ecaac"
+TEST_HARNESS_ENDPOINTS = {
+    "app/build.gradle.kts": (
+        "ceec97f6cd4fd736b9058dfa3884c5bdce208916",
+        "db99f595caca92cb53f482027566a3213c77ded0",
+    ),
+    "gradle/libs.versions.toml": (
+        "c6b51b3f062af8bea539141b39d63f82268b339d",
+        "cef0f4dde1afc5d33114b5701ed13752f425a783",
+    ),
+}
+TEST_FIXTURE_ROOT = "app/src/test/java/io/github/aimindseye/tenseven/features/"
+TEST_HARNESS_FIXTURES = {
+    TEST_FIXTURE_ROOT + "AndroidViewFixtures.kt":
+        "6ce24b549dee98604198d0e829c73e0639257c15cfb66be33b86416af971fd28",
+    TEST_FIXTURE_ROOT + "calendar/CalendarNavigationBehaviorTest.kt":
+        "90216fd399319fd465667c33eecce4957d78c0f0d6835fe68d4cc30ef7ef6577",
+    TEST_FIXTURE_ROOT + "calendar/CalendarOptionsBehaviorTest.kt":
+        "61f36315c6a7f0615276f4194489157c8361230f02c7b8d760bcc9978904180f",
+    TEST_FIXTURE_ROOT + "calendar/CalendarScheduleBehaviorTest.kt":
+        "3c418ae7043dc917271e3a7d68935199d8997e6cc78b3b4df07a40d77dd9ce63",
+    TEST_FIXTURE_ROOT + "calendar/CalendarViewBehaviorTest.kt":
+        "e5545c4ef16d66d22e05cf96c18b8ee004661e6bbdb227b019f47bcf10a5522c",
+    TEST_FIXTURE_ROOT + "phone/PhoneBlocklistBehaviorTest.kt":
+        "5a92fe700f293063ab02ba87f5833103584d6b264ca11bc1f7adb2cf533d8355",
+    TEST_FIXTURE_ROOT + "phone/PhoneContactsBehaviorTest.kt":
+        "1bd8cc7e107a578aefca002501059ac18a07a9d75217fdf6e46ee819f7886726",
+    TEST_FIXTURE_ROOT + "phone/PhoneDialBehaviorTest.kt":
+        "a4a12691e6aa6debda08acb210452c3e101efc9fe2bd7284377c56bda0bea46b",
+    TEST_FIXTURE_ROOT + "phone/PhoneFixtureRecords.kt":
+        "82987db9c73491d42dc04f90264b647b1ebc25d3a664f7a06792902706db5f97",
+    TEST_FIXTURE_ROOT + "phone/PhonePermissionBehaviorTest.kt":
+        "621df2ece316aaf72c0108fafab74d8f733a10721195676e36771213a2470f4d",
+    TEST_FIXTURE_ROOT + "phone/PhoneRecentsBehaviorTest.kt":
+        "76913543cc9e77691ea0aeef3bef2f81b18c8bbeb3cfe0d8f627fb10c1c374c4",
+}
+
 
 def blob_id(data):
     return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data, usedforsecurity=False).hexdigest()
@@ -104,11 +142,223 @@ def verify_transition(repo, base, transition):
 def verify_protected_policy(repo, changed, base):
     verified = []
     known = {item.path: item for item in TRANSITIONS}
-    for filename in sorted(changed & QUALITY_CONFIG_FILES):
+    protected = changed & QUALITY_CONFIG_FILES
+    harness_active = test_harness_active(repo)
+    if harness_active:
+        verified.extend(verify_test_harness(repo, protected, base))
+    handled = TEST_HARNESS_ENDPOINTS.keys() if harness_active else set()
+    for filename in sorted(protected - handled):
         if filename not in known:
             raise QualityError("Quality policy modified in feature scope: " + filename)
         verified.append(verify_transition(repo, base, known[filename]))
     return verified
+
+
+def _source_signature(metadata):
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o111:
+        raise QualityError("Approved harness source must be a regular non-executable file")
+    return (metadata.st_dev, metadata.st_ino, metadata.st_size,
+            metadata.st_mtime_ns, metadata.st_ctime_ns)
+
+
+def _same_source_link(parent, name, descriptor):
+    named = os.stat(name, dir_fd=parent, follow_symlinks=False)
+    opened = os.fstat(descriptor)
+    if (named.st_dev, named.st_ino, stat.S_IFMT(named.st_mode)) != (
+            opened.st_dev, opened.st_ino, stat.S_IFMT(opened.st_mode)):
+        raise QualityError("Approved harness source or ancestry was replaced")
+
+
+def _open_harness_source(root, filename, stack, links):
+    parent = root
+    parts = Path(repository_path(filename)).parts
+    for part in parts[:-1]:
+        child = os.open(part, DIRECTORY_FLAGS, dir_fd=parent)
+        stack.callback(os.close, child)
+        links.append((parent, part, child))
+        parent = child
+    descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+    stack.callback(os.close, descriptor)
+    links.append((parent, parts[-1], descriptor))
+    signature = _source_signature(os.fstat(descriptor))
+    data = _descriptor_bytes(descriptor)
+    return data, descriptor, signature
+
+
+def _assert_harness_snapshot(repo, root, links, snapshots):
+    named = repo.path.stat(follow_symlinks=False)
+    opened = os.fstat(root)
+    if (named.st_dev, named.st_ino, stat.S_IFMT(named.st_mode)) != (
+            opened.st_dev, opened.st_ino, stat.S_IFMT(opened.st_mode)):
+        raise QualityError("Approved harness repository root was replaced")
+    for parent, name, descriptor in links:
+        _same_source_link(parent, name, descriptor)
+    for _, descriptor, signature in snapshots.values():
+        if _source_signature(os.fstat(descriptor)) != signature:
+            raise QualityError("Approved harness source changed during verification")
+
+
+@contextmanager
+def _source_snapshot(repo, paths):
+    # Hold selected source inodes until verification finishes; never reopen for data.
+    try:
+        with ExitStack() as stack:
+            root = os.open(repo.path, DIRECTORY_FLAGS)
+            stack.callback(os.close, root)
+            links = []
+            snapshots = {path: _open_harness_source(root, path, stack, links) for path in sorted(paths)}
+            _assert_harness_snapshot(repo, root, links, snapshots)
+            yield {path: item[0] for path, item in snapshots.items()}
+            _assert_harness_snapshot(repo, root, links, snapshots)
+    except OSError as exc:
+        raise QualityError("Cannot securely read approved test harness sources") from exc
+
+
+@contextmanager
+def _test_harness_snapshot(repo):
+    paths = TEST_HARNESS_ENDPOINTS.keys() | TEST_HARNESS_FIXTURES.keys()
+    with _source_snapshot(repo, paths) as snapshot:
+        yield snapshot
+
+
+def _committed_harness_ids(repo, commit, paths):
+    # All revision values are full validated OIDs; all path values are literal data.
+    names = sorted(repository_path(path) for path in paths)
+    raw = repo._read(["ls-tree", "-z", object_id(commit), "--", *names])
+    result = {}
+    for entry in raw.split(b"\0"):
+        if entry:
+            metadata, filename = entry.decode().split("\t", 1)
+            mode, kind, identifier = metadata.split()
+            if mode != "100644" or kind != "blob":
+                raise QualityError("Unexpected committed harness file mode or type")
+            result[filename] = object_id(identifier)
+    if set(result) != set(names):
+        raise QualityError("Committed harness files are missing")
+    return result
+
+
+def _verify_harness_fixtures(repo, commit):
+    _committed_harness_ids(repo, commit, TEST_HARNESS_FIXTURES)
+    for filename, expected in TEST_HARNESS_FIXTURES.items():
+        if hashlib.sha256(repo.blob(commit, filename)).hexdigest() != expected:
+            raise QualityError("Committed harness fixture differs from owner approval")
+
+
+def _direct_harness_origin(repo, commit):
+    raw = repo._read(["rev-list", "--parents", "-n", "1", object_id(commit), "--"])
+    return [object_id(value) for value in raw.decode().split()] == [commit, TEST_HARNESS_BASE]
+
+
+def _harness_origin(repo, head):
+    commits = _harness_commits(repo, head)
+    before = {path: pair[0] for path, pair in TEST_HARNESS_ENDPOINTS.items()}
+    after = {path: pair[1] for path, pair in TEST_HARNESS_ENDPOINTS.items()}
+    states = {commit: _committed_harness_ids(repo, commit, before) for commit in commits}
+    origins = [commit for commit in commits
+               if _direct_harness_origin(repo, commit) and states[commit] == after]
+    if len(origins) != 1:
+        raise QualityError("Approved harness needs one immutable origin directly after its approved base")
+    origin = origins[0]
+    for commit in commits:
+        descended = repo.ancestor(origin, commit)
+        if states[commit] != (after if descended else before):
+            raise QualityError("Unknown or reverted harness transition in immutable history")
+        if descended:
+            _verify_harness_fixtures(repo, commit)
+    return origin
+
+
+def _harness_commits(repo, head):
+    revision = object_id(TEST_HARNESS_BASE) + ".." + object_id(head)
+    raw = repo._read(["rev-list", "--ancestry-path", "--reverse", revision, "--"])
+    return [object_id(line) for line in raw.decode().splitlines()]
+
+
+def _harness_history_active(repo, head):
+    raw = repo._read(["rev-list", object_id(head), "--"])
+    if TEST_HARNESS_BASE not in {object_id(line) for line in raw.decode().splitlines()}:
+        return False
+    for commit in _harness_commits(repo, head):
+        identifiers = _committed_harness_ids(repo, commit, TEST_HARNESS_ENDPOINTS)
+        if any(identifiers[path] == pair[1] for path, pair in TEST_HARNESS_ENDPOINTS.items()):
+            return True
+    return False
+
+
+def test_harness_active(repo):
+    # Activation is source/history state, never a changed-file optimization.
+    head = repo.head()
+    current = _harness_worktree_active(repo)
+    active = current or _harness_history_active(repo, head)
+    if repo.head() != head:
+        raise QualityError("Candidate HEAD changed during harness activation detection")
+    return active
+
+
+def _harness_worktree_active(repo):
+    for path, pair in TEST_HARNESS_ENDPOINTS.items():
+        if (repo.path / path).exists():
+            with _source_snapshot(repo, (path,)) as snapshot:
+                matches = blob_id(snapshot[path]) == pair[1]
+            if matches:
+                return True
+    return False
+
+
+def _harness_comparison_endpoints(repo, protected, base):
+    before = {path: pair[0] for path, pair in TEST_HARNESS_ENDPOINTS.items()}
+    after = {path: pair[1] for path, pair in TEST_HARNESS_ENDPOINTS.items()}
+    if _committed_harness_ids(repo, TEST_HARNESS_BASE, before) != before:
+        raise QualityError("Approved harness parent endpoint differs")
+    previous = _committed_harness_ids(repo, base, before)
+    if previous not in (before, after):
+        raise QualityError("Unknown or partial harness comparison-base endpoints")
+    if previous == before and protected & before.keys() != before.keys():
+        raise QualityError("Approved harness transition requires both exact protected files")
+    return previous
+
+
+def verify_test_harness(repo, protected, base):
+    head = repo.head()
+    if not repo.ancestor(base, head) or not repo.ancestor(TEST_HARNESS_BASE, head):
+        raise QualityError("Approved harness base is outside comparison lineage")
+    previous = _harness_comparison_endpoints(repo, protected, base)
+    with _test_harness_snapshot(repo) as snapshot:
+        for path, pair in TEST_HARNESS_ENDPOINTS.items():
+            if blob_id(snapshot[path]) != pair[1]:
+                raise QualityError("Approved harness candidate endpoint differs")
+        for path, expected_digest in TEST_HARNESS_FIXTURES.items():
+            if hashlib.sha256(snapshot[path]).hexdigest() != expected_digest:
+                raise QualityError("Approved harness fixture differs")
+        origin = None if head == TEST_HARNESS_BASE else _harness_origin(repo, head)
+    if repo.head() != head:
+        raise QualityError("Candidate HEAD changed during harness verification")
+    return [{"path": path, "before": pair[0], "after": pair[1], "origin": origin,
+             "origin_parent": TEST_HARNESS_BASE,
+             "comparison_base": base, "comparison_base_blob": previous[path],
+             "verification_mode": "pre_commit" if origin is None else "immutable_origin",
+             "approval": "Owner-approved R2.1 exact joint test harness and eleven fixture hashes",
+             "analysis_effect": "Robolectric 4.18 JVM tests/resources only; no analyzer overlay"}
+            for path, pair in TEST_HARNESS_ENDPOINTS.items()]
+
+
+def verify_test_harness_analysis(repo, parent):
+    if not test_harness_active(repo):
+        return {}
+    previous = {path: source_bytes(parent, path) for path in TEST_HARNESS_ENDPOINTS}
+    current = {path: source_bytes(repo, path) for path in TEST_HARNESS_ENDPOINTS}
+    base = parent.head()
+    records = verify_test_harness(repo, repo.changed(base) & QUALITY_CONFIG_FILES, base)
+    return {item['path']: _harness_analysis_record(item, previous[item['path']], current[item['path']])
+            for item in records}
+
+
+def _harness_analysis_record(item, previous, current):
+    if (blob_id(previous), blob_id(current)) != (item['comparison_base_blob'], item['after']):
+        raise QualityError("Analysis bytes differ from the exact approved harness endpoints")
+    return {**item, 'parent_sha256': hashlib.sha256(previous).hexdigest(),
+            'candidate_sha256': hashlib.sha256(current).hexdigest()}
 
 
 def verify_compose(repo, changed, base, approved):

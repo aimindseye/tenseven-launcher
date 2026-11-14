@@ -750,8 +750,13 @@ class RealHistoricalPolicyTests(unittest.TestCase):
 
     def test_actual_history_is_bound_to_both_exact_endpoints_and_origins(self):
         records = POLICY.verify_protected_policy(self.repo, self.repo.changed(self.base), self.base)
-        self.assertEqual(2, len(records))
-        self.assertEqual({item.path for item in POLICY.TRANSITIONS}, {item['path'] for item in records})
+        historical = [item for item in records if 'verification_mode' not in item]
+        self.assertEqual(2, len(historical))
+        self.assertEqual({item.path for item in POLICY.TRANSITIONS}, {item['path'] for item in historical})
+        harness = [item for item in records if 'verification_mode' in item]
+        expected = self.repo.changed(self.base) & POLICY.TEST_HARNESS_ENDPOINTS.keys()
+        self.assertEqual(expected, {item['path'] for item in harness})
+        self.assertEqual(len(expected), len(harness))
 
     def test_real_suppression_inventory_never_grants_automatic_approval(self):
         audit = POLICY.audit_suppressions(self.repo, self.repo.changed(self.base), self.base)
@@ -793,6 +798,446 @@ class RealGradleReportTests(unittest.TestCase):
         borrowed = next(item for item in old if item['file'] != target)
         injected = {**borrowed, 'file': target, 'line': 61}
         self.assertEqual(1, len(GATE.compare_findings(old, new + [injected], base, repo)[0]))
+
+
+class JointTestHarnessTests(RepositoryFixture):
+    def setUp(self):
+        super().setUp()
+        self.git = RUNTIME.GitRepository(self.repo)
+        self.paths = ('app/build.gradle.kts', 'gradle/libs.versions.toml')
+        (self.repo / 'gradle').mkdir()
+        (self.repo / self.paths[1]).write_bytes(b'catalog before\n')
+        for name in ('.editorconfig', 'config/detekt.yml', 'config/DETEKT_PROVENANCE.env',
+                     'gradle.properties', 'settings.gradle.kts', 'gradlew',
+                     'gradle/wrapper/gradle-wrapper.jar', 'gradle/wrapper/gradle-wrapper.properties'):
+            target = self.repo / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b'unchanged synthetic analyzer input\n')
+        self.commit('approved base')
+        self.approved_base = self.git.head()
+        self.before = {path: (self.repo / path).read_bytes() for path in self.paths}
+        self.after = {path: b'approved test harness: ' + path.encode() + b'\n' for path in self.paths}
+        self.endpoints = {path: (POLICY.blob_id(self.before[path]), POLICY.blob_id(self.after[path]))
+                          for path in self.paths}
+        self.fixture = 'app/src/test/java/HarnessTest.kt'
+        self.fixture_bytes = b'fun behavioralAssertion() = check(2 + 2 == 4)\n'
+        (self.repo / self.fixture).parent.mkdir(parents=True)
+        (self.repo / self.fixture).write_bytes(self.fixture_bytes)
+        for path in self.paths:
+            (self.repo / path).write_bytes(self.after[path])
+        fixtures = {self.fixture: POLICY.hashlib.sha256(self.fixture_bytes).hexdigest()}
+        for name, value in [('TEST_HARNESS_BASE', self.approved_base),
+                            ('TEST_HARNESS_ENDPOINTS', self.endpoints),
+                            ('TEST_HARNESS_FIXTURES', fixtures)]:
+            replacement = patch.object(POLICY, name, value)
+            replacement.start()
+            self.addCleanup(replacement.stop)
+
+    def commit(self, message):
+        subprocess.run(['git', '-C', str(self.repo), 'add', '.'], check=True)
+        subprocess.run(['git', '-C', str(self.repo), 'commit', '-qm', message], check=True)
+
+    def verify(self):
+        return POLICY.verify_protected_policy(self.git, set(self.paths), self.approved_base)
+
+    def assert_rejected(self):
+        with self.assertRaises(GATE.QualityError):
+            self.verify()
+
+    def test_pre_commit_is_exact_joint_approval_without_an_invented_origin(self):
+        records = self.verify()
+        self.assertEqual(set(self.paths), {item['path'] for item in records})
+        self.assertEqual(2, len(records))
+        self.assertTrue(all(item['origin'] is None and item['verification_mode'] == 'pre_commit'
+                            and item['origin_parent'] == self.approved_base for item in records))
+
+    def test_actual_origin_and_later_descendant_are_verified(self):
+        self.commit('joint origin')
+        origin = self.git.head()
+        (self.repo / 'README.md').write_text('later independent change\n')
+        self.commit('descendant')
+        records = self.verify()
+        self.assertTrue(all(item['origin'] == origin and item['verification_mode'] == 'immutable_origin'
+                            for item in records))
+        self.assertEqual(self.approved_base, self.git.parent(origin))
+
+    def test_merge_commit_cannot_be_the_origin_even_with_approved_first_parent(self):
+        subprocess.run(['git', '-C', str(self.repo), 'add', '.'], check=True)
+        tree = self.git._read(['write-tree']).decode().strip()
+        merge = subprocess.check_output(
+            ['git', '-C', str(self.repo), 'commit-tree', tree,
+             '-p', self.approved_base, '-p', self.base], input=b'not a single-parent origin\n',
+        ).decode().strip()
+        with patch.object(self.git, 'head', return_value=merge):
+            self.assert_rejected()
+
+    def test_ci_merge_can_find_origin_on_second_parent_lineage(self):
+        self.commit('joint origin')
+        origin = self.git.head()
+        tree = self.git._read(['rev-parse', 'HEAD^{tree}']).decode().strip()
+        merge = subprocess.check_output(
+            ['git', '-C', str(self.repo), 'commit-tree', tree, '-p', self.base, '-p', origin],
+            input=b'synthetic CI merge\n',
+        ).decode().strip()
+        with patch.object(self.git, 'head', return_value=merge):
+            records = self.verify()
+        self.assertTrue(all(item['origin'] == origin for item in records))
+
+    def test_two_matching_origins_are_ambiguous_and_rejected(self):
+        subprocess.run(['git', '-C', str(self.repo), 'add', '.'], check=True)
+        tree = self.git._read(['write-tree']).decode().strip()
+        origins = [subprocess.check_output(
+            ['git', '-C', str(self.repo), 'commit-tree', tree, '-p', self.approved_base],
+            input=message,
+        ).decode().strip() for message in (b'first origin\n', b'second origin\n')]
+        merge = subprocess.check_output(
+            ['git', '-C', str(self.repo), 'commit-tree', tree, '-p', origins[0], '-p', origins[1]],
+            input=b'ambiguous merge\n',
+        ).decode().strip()
+        with patch.object(self.git, 'head', return_value=merge):
+            self.assert_rejected()
+
+    def test_one_byte_change_to_either_endpoint_is_rejected(self):
+        for path in self.paths:
+            with self.subTest(path=path):
+                (self.repo / path).write_bytes(self.after[path] + b'!')
+                self.assert_rejected()
+                (self.repo / path).write_bytes(self.after[path])
+
+    def test_partial_application_and_missing_endpoint_are_rejected(self):
+        for path in self.paths:
+            with self.subTest(path=path):
+                (self.repo / path).write_bytes(self.before[path])
+                self.assert_rejected()
+                (self.repo / path).unlink()
+                self.assert_rejected()
+                (self.repo / path).write_bytes(self.after[path])
+
+    def test_reporting_only_one_changed_protected_path_cannot_authorize_pair(self):
+        protected = {self.paths[0]}
+        with self.assertRaises(GATE.QualityError):
+            POLICY.verify_protected_policy(self.git, protected, self.approved_base)
+
+    def test_dependency_repository_signing_and_version_substitutions_are_rejected(self):
+        mutations = [b'testImplementation("org.robolectric:robolectric:4.19")\n',
+                     b'implementation("attacker:runtime:1")\n', b'repositories { mavenLocal() }\n',
+                     b'signingConfigs { create("replacement") }\n']
+        for extra in mutations:
+            with self.subTest(extra=extra):
+                (self.repo / self.paths[0]).write_bytes(self.after[self.paths[0]] + extra)
+                self.assert_rejected()
+
+    def test_bad_registered_parent_and_nonancestor_base_are_rejected(self):
+        invalid = {path: ('0' * 40, pair[1]) for path, pair in self.endpoints.items()}
+        with patch.object(POLICY, 'TEST_HARNESS_ENDPOINTS', invalid):
+            self.assert_rejected()
+        with patch.object(self.git, 'ancestor', return_value=False):
+            self.assert_rejected()
+
+    def test_head_change_during_verification_is_rejected(self):
+        with patch.object(self.git, 'head', side_effect=[self.approved_base, '1' * 40]):
+            self.assert_rejected()
+
+    def test_missing_or_modified_approved_fixture_is_rejected(self):
+        target = self.repo / self.fixture
+        target.write_bytes(self.fixture_bytes + b'// changed assertion\n')
+        self.assert_rejected()
+        target.unlink()
+        self.assert_rejected()
+
+    def test_fixture_symlink_is_rejected_even_with_approved_target_bytes(self):
+        target = self.repo / self.fixture
+        outside = Path(self.tmp.name) / 'outside-fixture'
+        outside.write_bytes(self.fixture_bytes)
+        target.unlink()
+        target.symlink_to(outside)
+        self.assert_rejected()
+        self.assertEqual(self.fixture_bytes, outside.read_bytes())
+
+    def test_symlinked_endpoint_or_ancestor_cannot_redirect_reads(self):
+        target = self.repo / self.paths[0]
+        outside = Path(self.tmp.name) / 'victim'
+        outside.write_bytes(self.after[self.paths[0]])
+        target.unlink()
+        target.symlink_to(outside)
+        self.assert_rejected()
+        target.unlink()
+        target.write_bytes(self.after[self.paths[0]])
+        app = self.repo / 'app'
+        app.rename(self.repo / 'original-app')
+        app.symlink_to(self.repo / 'original-app', target_is_directory=True)
+        self.assert_rejected()
+        self.assertEqual(self.after[self.paths[0]], outside.read_bytes())
+
+    def test_executable_and_nonregular_policy_files_are_rejected(self):
+        target = self.repo / self.paths[0]
+        target.chmod(0o755)
+        self.assert_rejected()
+        target.unlink()
+        os.mkfifo(target)
+        self.assert_rejected()
+
+    def test_traversal_in_a_fixture_path_cannot_read_outside_repository(self):
+        invalid = {'../outside.kt': '0' * 64}
+        with patch.object(POLICY, 'TEST_HARNESS_FIXTURES', invalid):
+            self.assert_rejected()
+
+    def test_replacement_after_read_is_detected_without_touching_victim(self):
+        target = self.repo / self.paths[0]
+        outside = Path(self.tmp.name) / 'victim'
+        outside.write_bytes(b'private victim\n')
+        original = POLICY._descriptor_bytes
+        replaced = False
+
+        def replace_after_read(descriptor):
+            nonlocal replaced
+            data = original(descriptor)
+            if not replaced:
+                replaced = True
+                target.rename(self.repo / 'saved-build')
+                target.symlink_to(outside)
+            return data
+
+        with patch.object(POLICY, '_descriptor_bytes', side_effect=replace_after_read):
+            self.assert_rejected()
+        self.assertTrue(replaced)
+        self.assertEqual(b'private victim\n', outside.read_bytes())
+
+    def test_same_inode_change_after_joint_consumption_is_detected(self):
+        self.commit('joint origin')
+        original = POLICY._harness_origin
+
+        def change_during_history(repo, head):
+            origin = original(repo, head)
+            target = self.repo / self.paths[0]
+            target.write_bytes(target.read_bytes() + b'changed during history\n')
+            return origin
+
+        with patch.object(POLICY, '_harness_origin', side_effect=change_during_history):
+            self.assert_rejected()
+
+    def test_root_path_swap_is_detected(self):
+        self.commit('joint origin')
+        original = POLICY._harness_origin
+        replacement = Path(self.tmp.name) / 'replacement'
+        replacement.mkdir()
+
+        def replace_root(repo, head):
+            origin = original(repo, head)
+            self.repo.rename(Path(self.tmp.name) / 'original-repository')
+            self.repo.symlink_to(replacement, target_is_directory=True)
+            return origin
+
+        with patch.object(POLICY, '_harness_origin', side_effect=replace_root):
+            self.assert_rejected()
+        self.assertEqual([], list(replacement.iterdir()))
+
+    def test_split_commits_do_not_create_a_joint_origin(self):
+        (self.repo / self.paths[1]).write_bytes(self.before[self.paths[1]])
+        self.commit('partial transition')
+        (self.repo / self.paths[1]).write_bytes(self.after[self.paths[1]])
+        self.commit('later completion')
+        self.assert_rejected()
+
+    def test_an_unrelated_commit_before_transition_is_not_approved_parent(self):
+        (self.repo / 'README.md').write_text('unrelated first commit\n')
+        subprocess.run(['git', '-C', str(self.repo), 'add', 'README.md'], check=True)
+        subprocess.run(['git', '-C', str(self.repo), 'commit', '-qm', 'unrelated first'], check=True)
+        self.commit('late transition')
+        self.assert_rejected()
+
+    def test_modified_then_restored_policy_history_still_fails(self):
+        self.commit('joint origin')
+        target = self.repo / self.paths[0]
+        target.write_bytes(b'unauthorized runtime dependency\n')
+        self.commit('unknown policy')
+        target.write_bytes(self.after[self.paths[0]])
+        self.commit('restore endpoints')
+        self.assert_rejected()
+
+    def test_modified_then_restored_fixture_history_still_fails(self):
+        self.commit('joint origin')
+        target = self.repo / self.fixture
+        target.write_bytes(b'fun assertionRemoved() = Unit\n')
+        self.commit('weaken fixture')
+        target.write_bytes(self.fixture_bytes)
+        self.commit('restore fixture')
+        self.assert_rejected()
+
+    def analysis_parent(self, commit=None):
+        path = Path(self.tmp.name) / 'analysis-parent'
+        self.git.detached_worktree(path, self.approved_base if commit is None else commit)
+        return RUNTIME.GitRepository(path)
+
+    def activated_parent(self):
+        self.commit('valid immutable harness origin')
+        origin = self.git.head()
+        return origin, self.analysis_parent(origin)
+
+    def assert_entry_points_reject(self, parent):
+        base = parent.head()
+        changed = self.git.changed(base)
+        self.assertFalse(changed & set(self.paths))
+        with self.assertRaises(GATE.QualityError):
+            POLICY.verify_protected_policy(self.git, changed, base)
+        with self.assertRaises(GATE.QualityError):
+            GATE.analysis_configuration(self.git, parent.path)
+
+    def assert_entry_points_accept_activation(self, parent, origin):
+        base = parent.head()
+        records = POLICY.verify_protected_policy(self.git, self.git.changed(base), base)
+        configuration = GATE.analysis_configuration(self.git, parent.path)
+        self.assertEqual(set(self.paths), {item['path'] for item in records})
+        self.assertEqual(set(self.paths), set(configuration['approved_test_harness_analysis']))
+        self.assertTrue(all(item['origin'] == origin and item['verification_mode'] == 'immutable_origin'
+                            for item in records))
+        self.assertTrue(all(item['origin'] == origin for item in
+                            configuration['approved_test_harness_analysis'].values()))
+
+    def test_rev01_modified_fixture_descendant_rejects_through_both_entry_points(self):
+        _, parent = self.activated_parent()
+        (self.repo / self.fixture).write_bytes(b'fun weakenedAssertion() = Unit\n')
+        self.commit('fixture only modified descendant')
+        self.assert_entry_points_reject(parent)
+
+    def test_rev01_deleted_fixture_descendant_rejects_through_both_entry_points(self):
+        _, parent = self.activated_parent()
+        (self.repo / self.fixture).unlink()
+        self.commit('fixture only deleted descendant')
+        self.assert_entry_points_reject(parent)
+
+    def test_rev01_restored_fixture_history_rejects_through_both_entry_points(self):
+        _, parent = self.activated_parent()
+        target = self.repo / self.fixture
+        target.write_bytes(b'fun weakenedAssertion() = Unit\n')
+        self.commit('fixture tampering')
+        target.write_bytes(self.fixture_bytes)
+        self.commit('restore fixture bytes')
+        self.assertEqual(self.fixture_bytes, target.read_bytes())
+        self.assert_entry_points_reject(parent)
+
+    def test_rev01_unrelated_descendant_accepts_through_both_entry_points(self):
+        origin, parent = self.activated_parent()
+        (self.repo / 'README.md').write_text('unrelated descendant\n')
+        self.commit('unrelated descendant')
+        self.assert_entry_points_accept_activation(parent, origin)
+
+    def test_rev01_pre_harness_descendant_needs_no_origin_through_both_entry_points(self):
+        for name in self.paths:
+            (self.repo / name).write_bytes(self.before[name])
+        (self.repo / self.fixture).unlink()
+        (self.repo / 'README.md').write_text('before harness activation\n')
+        self.commit('ordinary pre-harness descendant')
+        parent = self.analysis_parent()
+        records = POLICY.verify_protected_policy(self.git, self.git.changed(parent.head()), parent.head())
+        configuration = GATE.analysis_configuration(self.git, parent.path)
+        self.assertEqual([], records)
+        self.assertEqual({}, configuration['approved_test_harness_analysis'])
+
+    def test_rev01_ci_second_parent_origin_accepts_through_both_entry_points(self):
+        origin, parent = self.activated_parent()
+        (self.repo / 'README.md').write_text('candidate descendant\n')
+        self.commit('candidate descendant')
+        descendant = self.git.head()
+        tree = self.git._read(['rev-parse', 'HEAD^{tree}']).decode().strip()
+        merge = subprocess.check_output(
+            ['git', '-C', str(self.repo), 'commit-tree', tree, '-p', self.base, '-p', descendant],
+            input=b'synthetic CI merge after activation\n',
+        ).decode().strip()
+        with patch.object(self.git, 'head', return_value=merge):
+            self.assert_entry_points_accept_activation(parent, origin)
+
+    def test_rev01_restored_before_endpoints_cannot_erase_activation(self):
+        self.commit('valid immutable harness origin')
+        for name in self.paths:
+            (self.repo / name).write_bytes(self.before[name])
+        self.commit('unauthorized deactivation')
+        parent = self.analysis_parent(self.git.head())
+        (self.repo / 'README.md').write_text('descendant after hidden deactivation\n')
+        self.commit('unrelated descendant')
+        self.assert_entry_points_reject(parent)
+
+    def test_rev01_uncommitted_fixture_change_rejects_through_both_entry_points(self):
+        _, parent = self.activated_parent()
+        (self.repo / self.fixture).write_bytes(b'fun weakenedAssertion() = Unit\n')
+        self.assert_entry_points_reject(parent)
+
+    def test_rev01_unknown_unactivated_endpoints_do_not_gain_a_filename_waiver(self):
+        for name in self.paths:
+            (self.repo / name).write_bytes(b'unknown unapproved build policy\n')
+        parent = self.analysis_parent()
+        base = parent.head()
+        changed = self.git.changed(base)
+        with self.assertRaises(GATE.QualityError):
+            POLICY.verify_protected_policy(self.git, changed, base)
+        with self.assertRaises(GATE.QualityError):
+            GATE.analysis_configuration(self.git, parent.path)
+
+    def test_analysis_configuration_records_exact_different_inputs(self):
+        parent = self.analysis_parent()
+        records = POLICY.verify_test_harness_analysis(self.git, parent)
+        self.assertEqual(set(self.paths), set(records))
+        for path, record in records.items():
+            self.assertEqual(POLICY.hashlib.sha256(self.before[path]).hexdigest(), record['parent_sha256'])
+            self.assertEqual(POLICY.hashlib.sha256(self.after[path]).hexdigest(), record['candidate_sha256'])
+
+    def test_analysis_read_race_cannot_authorize_bytes_outside_approved_pair(self):
+        parent = self.analysis_parent()
+        original = POLICY.source_bytes
+
+        def changed_bytes(repo, filename):
+            data = original(repo, filename)
+            return data + b'unauthorized\n' if repo.path == self.repo.resolve() and filename == self.paths[0] else data
+
+        with ExitStack() as contexts:
+            contexts.enter_context(patch.object(POLICY, 'source_bytes', side_effect=changed_bytes))
+            contexts.enter_context(self.assertRaises(GATE.QualityError))
+            POLICY.verify_test_harness_analysis(self.git, parent)
+
+    def test_other_analysis_input_differences_still_fail_closed(self):
+        parent = self.analysis_parent()
+
+        def other_input(repo, filename):
+            if filename in self.paths:
+                return (repo.path / filename).read_bytes()
+            return b'changed rules\n' if repo.path == self.repo.resolve() and filename == '.editorconfig' else b'same\n'
+
+        with ExitStack() as contexts:
+            contexts.enter_context(patch.object(GATE, 'source_bytes', side_effect=other_input))
+            contexts.enter_context(self.assertRaises(GATE.QualityError))
+            GATE.analysis_configuration(self.git, parent.path)
+
+    def test_committed_executable_mode_is_not_hidden_by_worktree_permission_fix(self):
+        subprocess.run(['git', '-C', str(self.repo), 'config', 'core.filemode', 'true'], check=True)
+        target = self.repo / self.paths[0]
+        target.chmod(0o755)
+        self.commit('executable origin is not approved')
+        target.chmod(0o644)
+        self.assert_rejected()
+
+    def test_unrelated_quality_policy_and_suppression_controls_remain_active(self):
+        (self.repo / 'gradle.properties').write_text('tenseven.strictQuality=false\n')
+        protected = set(self.paths) | {'gradle.properties'}
+        with self.assertRaises(GATE.QualityError):
+            POLICY.verify_protected_policy(self.git, protected, self.approved_base)
+        (self.repo / self.source).write_text('@Suppress("FunctionNaming")\nfun NewName() = Unit\n')
+        audit = POLICY.audit_suppressions(self.git, {self.source}, self.approved_base)
+        self.assertEqual(1, len(audit))
+        self.assertEqual('NOT_APPROVED', audit[0]['approval'])
+        self.assertEqual('HOLD', audit[0]['result'])
+
+
+@unittest.skipUnless(os.environ.get('TENSEVEN_POLICY_REPO'), 'Real policy repository not supplied')
+class RealJointTestHarnessTests(unittest.TestCase):
+    def test_real_owner_endpoints_and_fixture_hashes_are_bound(self):
+        repo = RUNTIME.GitRepository(os.environ['TENSEVEN_POLICY_REPO'])
+        base = repo.resolve(POLICY.TEST_HARNESS_BASE)
+        protected = repo.changed(base) & POLICY.QUALITY_CONFIG_FILES
+        records = POLICY.verify_test_harness(repo, protected, base)
+        self.assertEqual(2, len(records))
+        expected_mode = 'pre_commit' if repo.head() == base else 'immutable_origin'
+        self.assertTrue(all(item['verification_mode'] == expected_mode for item in records))
+        self.assertEqual(11, len(POLICY.TEST_HARNESS_FIXTURES))
 
 
 if __name__ == '__main__':

@@ -17,7 +17,7 @@ import time
 import xml.etree.ElementTree as ET
 
 from quality_gate_policy import (
-    review_policy, source_bytes, temporary_compose_overlay,
+    review_policy, source_bytes, temporary_compose_overlay, verify_test_harness_analysis,
 )
 from quality_gate_runtime import EvidenceDirectory, GitRepository, QualityError
 
@@ -306,15 +306,23 @@ def analysis_configuration(repo, baseline):
               "app/build.gradle.kts", "design/build.gradle.kts", "gradlew",
               "gradle/wrapper/gradle-wrapper.jar")
     parent = GitRepository(baseline)
+    harness = verify_test_harness_analysis(repo, parent)
     identities = {}
     for name in shared:
         current, previous = source_bytes(repo, name), source_bytes(parent, name)
-        if current != previous:
+        if name in harness:
+            approved = harness[name]
+            if (hashlib.sha256(current).hexdigest() != approved['candidate_sha256']
+                    or hashlib.sha256(previous).hexdigest() != approved['parent_sha256']):
+                raise QualityError("Approved analysis input changed: " + name)
+        elif current != previous:
             raise QualityError("Incompatible analysis configuration/tooling: " + name)
-        identities[name] = hashlib.sha256(current).hexdigest()
+        else:
+            identities[name] = hashlib.sha256(current).hexdigest()
     wrapper = "gradle/wrapper/gradle-wrapper.properties"
     return {"wrapper_repo": str(repo.path), "parent_wrapper_unchanged": True,
             "shared_input_sha256": identities,
+            "approved_test_harness_analysis": harness,
             "candidate_wrapper_sha256": hashlib.sha256(source_bytes(repo, wrapper)).hexdigest(),
             "original_parent_wrapper_sha256": hashlib.sha256(source_bytes(parent, wrapper)).hexdigest(),
             "original_parent_source_sha256": source_digest(baseline)}

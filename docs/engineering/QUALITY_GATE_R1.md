@@ -98,6 +98,77 @@ no threshold changes are authorized. Independent SonarCloud conditions still
 block promotion, including the two reported R1-A security flows until CI
 confirms the remediation. Historical provenance is not a Sonar finding waiver.
 
+## R2.1 exact joint JVM test-harness approval
+
+The owner approved the following joint transition from R2-G
+`d2e5afc9e1863e760ce62f43eaf024b4cf6ecaac`. This authorizes Robolectric 4.18
+only as a JVM test dependency and Android resources only for unit tests.
+
+| File | Before blob | After blob |
+|---|---|---|
+| app/build.gradle.kts | ceec97f6cd4fd736b9058dfa3884c5bdce208916 | db99f595caca92cb53f482027566a3213c77ded0 |
+| gradle/libs.versions.toml | c6b51b3f062af8bea539141b39d63f82268b339d | cef0f4dde1afc5d33114b5701ed13752f425a783 |
+
+Both files must change together and match both endpoint pairs exactly. The
+eleven approved recovered test/fixture files are bound by SHA-256 in
+`TEST_HARNESS_FIXTURES`; their assertions cannot be substituted under this
+approval. They contain 27 behavioral tests, with synthetic providers and
+Robolectric shadows rather than real contacts, calendar writes or device calls.
+This is a reviewed code record, not an approval file, filename whitelist,
+dependency version range or command-line bypass.
+
+Pre-commit verification is available only while HEAD equals the exact approved
+R2-G base. Its receipt says `verification_mode=pre_commit`, `origin=null` and
+records the immutable approved parent. It never invents a future commit SHA.
+The actual comparison base must be an ancestor of HEAD and contain either the
+exact joint before pair or the exact joint after pair. R2-G must be in HEAD's
+ancestry. Before-pair comparisons still require both protected files to change
+together. All existing wrapper, Sonar, Compose and workflow checks remain.
+
+Post-commit verification discovers the origin from validated full Git object
+IDs in the R2-G-to-HEAD ancestry path. Exactly one origin must have R2-G as its
+only parent and both exact after blobs. The approved fixture hashes must exist
+in that origin and every subsequent descendant, including a synthetic CI merge
+whose first parent is main. Policy state before the origin must retain the
+approved before endpoints; after it, every commit must retain the after
+endpoints. Partial, split, late, ambiguous, modified or reverted transitions
+fail closed even if the final worktree bytes look approved. Committed policy
+and fixture entries must be regular mode-100644 blobs. The actual origin SHA
+is then retained in the receipt; no self-referential SHA is embedded in source.
+
+R21-REV-01 makes this authorization persistent after activation. Both the
+policy entry point and analysis-configuration entry point detect approved
+endpoint bytes in the current source or R2-G-to-HEAD history. Once activated,
+they verify all eleven fixtures and the complete immutable-origin continuity
+even when neither Gradle file changed against an immediate post-R2.1 baseline.
+Identical after/after comparisons record the actual comparison-base blob as
+well as the original approval endpoints. Fixture-only edits/deletions and
+modified-then-restored history cannot bypass these checks. Restoring both
+Gradle files to their before values cannot erase historical activation.
+Ordinary pre-harness descendants with no activation retain normal behavior
+and require no nonexistent origin; unknown protected edits still fail closed.
+
+Current joint inputs are read through held directory/file descriptors with
+`O_NOFOLLOW`. All thirteen source files remain open until verification ends.
+Regular non-executable files, inode/name linkage, directory ancestry and
+size/mtime/ctime are checked before and after consumption. Symlink redirection,
+FIFO/device inputs, executable substitutions and detected replacement/write
+races cause HOLD. No data is written through these source descriptors. Existing
+Git argument validation and evidence-directory controls are unchanged.
+
+There is no new baseline overlay: fresh parent and candidate use the same
+pinned analyzer engines, SDK and rules. The intentional input differences are
+the exact unit-test resource setup, test dependency and approved tests. The
+analysis-configuration check independently repeats joint provenance validation,
+records both hashes under `approved_test_harness_analysis`, and keeps all other
+`shared_input_sha256` inputs byte-identical. Unknown or changed inputs still
+stop analysis. Sources and HEAD remain checked throughout the real Gradle runs.
+The release dependency graph and both production APKs must remain equivalent.
+No analyzer finding, suppression, threshold, baseline or coverage exclusion is
+waived by successful harness verification. The separate 94 main-relative
+findings and 102 unapproved inherited markers from R2-G remain integration
+blockers. Local mapped coverage is not a SonarCloud server result.
+
 ## Suppressions and unresolved integration debt
 
 [R1_SUPPRESSION_AUDIT.json](R1_SUPPRESSION_AUDIT.json) enumerates every one of
