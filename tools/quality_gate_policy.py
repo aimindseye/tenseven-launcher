@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 
 from quality_gate_runtime import DIRECTORY_FLAGS, QualityError, object_id, repository_path
+from quality_gate_ci_policy import verify_ci_completeness
 
 ROOT_BUILD = "build.gradle.kts"
 COMPOSE_CONFIG = "config/detekt-tenseven.yml"
@@ -382,8 +383,33 @@ def ci_bootstrap(before):
                             CI_STEP + "      - name: Verify compiled Full APK manifest\n")
 
 
+CI_COMPLETENESS_APPROVAL = {
+    "base": "7eee5b8d848108e1cbbe21c36ba3869dfb1cbbe3",
+    "workflow_before": "a7e4863716c9d43c75070f6e7b73dea9d7cd4377",
+    "workflow_after": "087a212a14b163f0b6e276864bf1930c865e4df6",
+    "policy_before": "daa42bb5d309396182a97253179bcb46b56ff4f6",
+    "helper_after": "8cdd8d71f28d410c09b57a64fbd7f6492aa8bed1"
+}
+
+
+def _expected_ci_baseline(repo, base):
+    original = repo.blob(base, ANDROID_CI)
+    identifier = blob_id(original)
+    if identifier in {CI_COMPLETENESS_APPROVAL["workflow_before"], CI_COMPLETENESS_APPROVAL["workflow_after"]}:
+        return identifier
+    before = original.decode()
+    expected = ci_bootstrap(before)
+    if CI_STEP in before:
+        expected = before.replace(OLD_CI_PATHS, CI_PATHS)
+    return blob_id(expected.encode())
+
+
 def verify_workflows(repo, changed, base):
+    records = verify_ci_completeness(repo, base, CI_COMPLETENESS_APPROVAL,
+                                     _source_snapshot, blob_id, _expected_ci_baseline, CI_STEP)
     for filename in sorted(p for p in changed if p.startswith(".github/workflows/")):
+        if filename == ANDROID_CI and records:
+            continue
         if filename != ANDROID_CI:
             raise QualityError("Unexpected CI policy change: " + filename)
         before = repo.blob(base, filename).decode()
@@ -392,6 +418,7 @@ def verify_workflows(repo, changed, base):
             expected = before.replace(OLD_CI_PATHS, CI_PATHS)
         if source_bytes(repo, filename).decode() != expected:
             raise QualityError("Unexpected CI policy change: " + filename)
+    return records
 
 
 MARKERS = ("@Suppress", "@file:Suppress", "//noinspection", "ktlint-disable", "detekt-disable")
@@ -453,8 +480,8 @@ def audit_suppressions(repo, changed, base):
 def review_policy(repo, changed, base, approved_compose=False):
     transitions = verify_protected_policy(repo, changed, base)
     overlay = verify_compose(repo, changed, base, approved_compose)
-    verify_workflows(repo, changed, base)
-    return {"verified_transitions": transitions, "compose_overlay": overlay,
+    workflow_records = verify_workflows(repo, changed, base)
+    return {"verified_transitions": transitions + workflow_records, "compose_overlay": overlay,
             "suppression_audit": audit_suppressions(repo, changed, base)}
 
 
