@@ -39,8 +39,7 @@ object HubPeople {
     fun startsSection(
         sorted: List<HubPerson>,
         index: Int,
-    ): Boolean =
-        index in sorted.indices && (index == 0 || sectionOf(sorted[index - 1]) != sectionOf(sorted[index]))
+    ): Boolean = index in sorted.indices && (index == 0 || sectionOf(sorted[index - 1]) != sectionOf(sorted[index]))
 
     /**
      * The index a letter or digit key jumps to in [sorted] (favourites are skipped: they are

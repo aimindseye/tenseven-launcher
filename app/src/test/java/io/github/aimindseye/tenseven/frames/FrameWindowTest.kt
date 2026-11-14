@@ -4,7 +4,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FrameWindowTest {
-    private fun event(index: Int, at: Long = index.toLong()) = FrameOpening(FrameApp("app$index", 0), at)
+    private fun event(
+        index: Int,
+        at: Long = index.toLong(),
+    ) = FrameOpening(FrameApp("app$index", 0), at)
+
     @Test fun ninthOpeningEvictsOldestAndOldSnapshotsCannotRecreateIt() {
         val values = (1..9).map { event(it) }
         val window = FrameWindow().record(values, 1)
@@ -13,9 +17,17 @@ class FrameWindowTest {
         val closed = window.close(FrameApp("app9", 0), 10)
         assertEquals(7, closed.openings().size)
         assertFalse(closed.record(values, 1).openings().any { it.app.packageName in setOf("app1", "app9") })
-        assertEquals("app9", closed.record(listOf(event(9, 11)), 1).openings().first().app.packageName)
+        assertEquals(
+            "app9",
+            closed
+                .record(listOf(event(9, 11)), 1)
+                .openings()
+                .first()
+                .app.packageName,
+        )
         assertEquals(8, closed.record(listOf(event(10, 12)), 1).openings().size)
     }
+
     @Test fun reopenedAppMovesToNewestAndProfilesAndLocalAppsRemainDistinct() {
         val window = FrameWindow().record((1..8).map { event(it) }, 1).record(listOf(event(1, 9)), 1).record(listOf(event(9, 10)), 1)
         assertFalse(window.openings().any { it.app.packageName == "app2" })
@@ -24,7 +36,11 @@ class FrameWindowTest {
         val calc = notes.copy(activityClass = LocalFrameApps.activities.getValue("local:calculator"))
         val values = listOf(FrameOpening(notes, 2), FrameOpening(calc, 3), FrameOpening(FrameApp("app", 10), 4))
         val saved = FrameWindow().record(values, 1)
-        val restored = FrameWindow(FrameDismissals.decode(FrameDismissals.encode(saved.active)), FrameDismissals.decode(FrameDismissals.encode(saved.seen)))
+        val restored =
+            FrameWindow(
+                FrameDismissals.decode(FrameDismissals.encode(saved.active)),
+                FrameDismissals.decode(FrameDismissals.encode(saved.seen)),
+            )
         assertEquals(saved, restored)
         assertEquals(3, restored.openings().size)
         assertEquals("local:notes", LocalFrameApps.key(notes.activityClass))
@@ -33,6 +49,7 @@ class FrameWindowTest {
         assertEquals("Tasks / Remind", LocalFrameApps.title("io.github.aimindseye.tenseven.tasks.TasksActivity"))
         assertNull(LocalFrameApps.title("unknown"))
     }
+
     @Test fun freshSessionIgnoresOldHistoryAndBoundsTombstones() {
         assertTrue(FrameWindow().record((1..8).map { event(it) }, 100).active.isEmpty())
         val window = FrameWindow().record((1..120).map { event(it) }, 1)

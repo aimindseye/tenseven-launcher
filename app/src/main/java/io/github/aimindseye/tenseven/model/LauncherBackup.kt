@@ -6,11 +6,17 @@ package io.github.aimindseye.tenseven.model
 
 /** One saved setting. */
 sealed interface BackupValue {
-    data class Text(val value: String) : BackupValue
+    data class Text(
+        val value: String,
+    ) : BackupValue
 
-    data class Number(val value: Int) : BackupValue
+    data class Number(
+        val value: Int,
+    ) : BackupValue
 
-    data class Items(val values: Set<String>) : BackupValue
+    data class Items(
+        val values: Set<String>,
+    ) : BackupValue
 }
 
 /**
@@ -120,11 +126,19 @@ object LauncherBackup {
                     val type = ALLOWED[name] ?: error("Unknown setting: $name")
                     val value =
                         when (type) {
-                            Type.TEXT -> (raw as? String)?.let { BackupValue.Text(it) }
-                            Type.NUMBER -> (raw as? Int)?.let { BackupValue.Number(it) }
-                            Type.ITEMS ->
-                                (raw as? List<*>)?.takeIf { list -> list.all { it is String } && list.size <= MAX_ITEMS }
+                            Type.TEXT -> {
+                                (raw as? String)?.let { BackupValue.Text(it) }
+                            }
+
+                            Type.NUMBER -> {
+                                (raw as? Int)?.let { BackupValue.Number(it) }
+                            }
+
+                            Type.ITEMS -> {
+                                (raw as? List<*>)
+                                    ?.takeIf { list -> list.all { it is String } && list.size <= MAX_ITEMS }
                                     ?.let { list -> BackupValue.Items(list.filterIsInstance<String>().toSet()) }
+                            }
                         } ?: error("Wrong value for $name")
                     put(name, value)
                 }
@@ -148,7 +162,9 @@ object LauncherBackup {
     }
 
     /** Just enough JSON for this file: objects, arrays, strings, integers, booleans and null. */
-    private class Json(private val text: String) {
+    private class Json(
+        private val text: String,
+    ) {
         private var pos = 0
 
         fun readDocument(): Any? {
@@ -214,23 +230,51 @@ object LauncherBackup {
             val out = StringBuilder()
             while (true) {
                 when (val c = next()) {
-                    '"' -> return out.toString()
-                    '\\' ->
+                    '"' -> {
+                        return out.toString()
+                    }
+
+                    '\\' -> {
                         when (val e = next()) {
-                            '"', '\\', '/' -> out.append(e)
-                            'n' -> out.append('\n')
-                            'r' -> out.append('\r')
-                            't' -> out.append('\t')
-                            'b' -> out.append('\b')
-                            'f' -> out.append('\u000c')
+                            '"', '\\', '/' -> {
+                                out.append(e)
+                            }
+
+                            'n' -> {
+                                out.append('\n')
+                            }
+
+                            'r' -> {
+                                out.append('\r')
+                            }
+
+                            't' -> {
+                                out.append('\t')
+                            }
+
+                            'b' -> {
+                                out.append('\b')
+                            }
+
+                            'f' -> {
+                                out.append('\u000c')
+                            }
+
                             'u' -> {
                                 require(pos + 4 <= text.length) { "Bad escape" }
                                 out.append(text.substring(pos, pos + 4).toInt(16).toChar())
                                 pos += 4
                             }
-                            else -> error("Bad escape at $pos")
+
+                            else -> {
+                                error("Bad escape at $pos")
+                            }
                         }
-                    else -> out.append(c)
+                    }
+
+                    else -> {
+                        out.append(c)
+                    }
                 }
             }
         }

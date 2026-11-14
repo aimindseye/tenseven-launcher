@@ -26,11 +26,26 @@ class MailNotificationPolicyTest {
     }
 
     @Test fun inboxStyleLinesAreUsedWhenStandardTextExtrasAreMissingOrBlank() {
-        assertEquals("Sender one: Subject one\nSender two: Subject two",
-            fallbackNotificationText(" ", null,
-                listOf("Sender one: Subject one", "", "Sender two: Subject two"), "2 new emails", "Yahoo Mail"))
-        assertEquals("Full email preview", fallbackNotificationText("Full email preview", "Short preview",
-            listOf("Inbox line"), "Summary", "Title"))
+        assertEquals(
+            "Sender one: Subject one\nSender two: Subject two",
+            fallbackNotificationText(
+                " ",
+                null,
+                listOf("Sender one: Subject one", "", "Sender two: Subject two"),
+                "2 new emails",
+                "Yahoo Mail",
+            ),
+        )
+        assertEquals(
+            "Full email preview",
+            fallbackNotificationText(
+                "Full email preview",
+                "Short preview",
+                listOf("Inbox line"),
+                "Summary",
+                "Title",
+            ),
+        )
         assertEquals("Short preview", fallbackNotificationText(null, "Short preview", emptyList(), null, "Title"))
         assertEquals("New mail", fallbackNotificationText(null, null, emptyList(), "New mail", "Title"))
         assertEquals("Title", fallbackNotificationText(null, null, emptyList(), null, "Title"))
