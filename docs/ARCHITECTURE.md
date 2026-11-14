@@ -1,5 +1,7 @@
 # Architecture
 
+> **2.0 approved target, not yet implemented:** [ADR-0001](decisions/ADR-0001-MODULAR-COMPANION-APKS.md) commits to a Full-only Launcher APK plus independently installed optional companion APKs, with a Launcher-led installer and verified data migration. See [staged roadmap](2.0/MODULARIZATION_ROADMAP.md), [distribution spec](2.0/COMPANION_DISTRIBUTION.md) and [PR127 handoff](2.0/PR127_HANDOFF.md). The module layout and embedded extras described below are **the current codebase**, not the new destination. Keep the historical technical details for recovery until the corresponding extraction is complete.
+
 Current behavior: 1.0.0 preparation. Dated acceptance sections below retain historical context.
 
 ## Modules
@@ -28,7 +30,7 @@ Directory `app/src/main/java/io/github/aimindseye/tenseven` (packages renamed fr
 | `conversations/` | `io.github.aimindseye.tenseven.conversations` | Notification access: `ConversationListenerService` reads message and email notifications into `ConversationHub` (in memory only); feeds the Hub bar counts; ported from Mink, see `third_party/minklauncher/PORTING.md` |
 | `ui/` | `io.github.aimindseye.tenseven.ui` | Compose: `SableStartScreen` (BlackBerry 10 home, Hub, Command, All Apps), `Bb7HomeScreen` (BlackBerry 7 home, tray, menu), `SoundProfileButton`, `LineIcon` (Tabler-style line icons drawn from path data), glyphs and status rings |
 | `live/` | `io.github.aimindseye.tenseven.live` | Models for the live tiles (calendar, mail, media) |
-| `extras/` | `io.github.aimindseye.tenseven.extras` | Optional apps ported from SableOS: Calc Plus, Notes, Sound Profiles, ten games. Their manifest entries are disabled with their own task affinity; `ExtraAppsControl` switches them on. Each has its own palette and strings so it does not touch the launcher's |
+| `extras/` | `io.github.aimindseye.tenseven.extras` | Optional apps ported from SableOS: Calc Plus, Notes and Sound Profiles. Their manifest entries are disabled with their own task affinity; `ExtraAppsControl` switches them on. Each has its own palette and strings so it does not touch the launcher's |
 | (root) | `io.github.aimindseye.tenseven` | `SableStartActivity` (HOME, both layouts, the BlackBerry 10 detour), `HomeStyleActivity`, `LauncherSettingsActivity` and `SettingsSections` (the setting groups shared with Setup), `HubSettingsActivity`, `LockLayerActivity`, `BackupActivity`, `OnboardingActivity`, `LauncherTheme` |
 
 Tenseven-only files worth knowing: `model/GridColumns`, `model/HubApps`, `model/LockLayer`, `model/ThemePresets` (themes and `WallpaperSets`), `model/WidgetList`, `platform/WidgetHostController`, `platform/WallpaperArt`, `platform/LockLayerLauncher` and `LockLayerState`, `platform/RecentLaunchesRepository`, `ui/WidgetsPage`, `ui/HubPeek`, `model/Bb7Home` (panels, grid maths), `model/LauncherSettings` (icon sizes, which widgets can be switched), `model/HomeLayout` (`GlanceWidgets`), `model/RingerProfile` (sound-mode cycle), `platform/DefaultApps` (finds the phone's own dialer, messages, mail, camera, calendar, browser, gallery and music apps), `platform/SoundProfileControl`, `platform/NextAlarm`.

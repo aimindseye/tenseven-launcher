@@ -60,6 +60,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.SableStartActivity
 import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationHub
@@ -80,155 +81,327 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.Canvas as ComposeCanvas
 
+internal data class HubPageModel(
+    val snapshot: LiveSurfaceSnapshot,
+    val apps: List<AppEntry>,
+    val filter: HubFilter,
+    val active: Boolean,
+    val refreshGeneration: Int,
+)
+
+internal class HubPageEvents(
+    val onFilter: (HubFilter) -> Unit,
+    val onLaunchApp: (AppEntry) -> Unit,
+    val onOpenHubSettings: () -> Unit,
+    val onStartIntent: (Intent) -> Unit,
+    val onRequestContactsPermission: () -> Unit,
+)
+
+private class HubPagePeople(
+    val items: List<HubPerson>,
+    val loaded: Boolean,
+    val canRead: Boolean,
+    val contactsApp: AppEntry?,
+    val messagesApp: AppEntry?,
+)
+
+private class HubPageFocus(
+    val tab: FocusRequester,
+    val person: (HubPerson) -> FocusRequester,
+    val list: androidx.compose.foundation.lazy.LazyListState,
+    val scope: kotlinx.coroutines.CoroutineScope,
+)
+
+private class HubPageData(
+    val people: HubPagePeople,
+    val sources: HubSourceGroups.Summary,
+    val conversations: HubConversationsUi,
+    val actions: HubActions,
+)
+
+private class HubPageSession(
+    val context: android.content.Context,
+    val model: HubPageModel,
+    val events: HubPageEvents,
+    val data: HubPageData,
+    val focus: HubPageFocus,
+)
+
+private class HubPageChromeState {
+    var viewsVisible by mutableStateOf(false)
+    var searchRequest by androidx.compose.runtime.mutableIntStateOf(0)
+    var searchCloseRequest by androidx.compose.runtime.mutableIntStateOf(0)
+    var composePrompt by mutableStateOf(false)
+}
+
 @Composable
 internal fun HubPage(
-    snapshot: LiveSurfaceSnapshot,
-    apps: List<AppEntry>,
-    filter: HubFilter,
-    active: Boolean,
-    onFilter: (HubFilter) -> Unit,
-    onLaunchApp: (AppEntry) -> Unit,
-    onOpenHubSettings: () -> Unit,
-    onStartIntent: (Intent) -> Unit,
-    refreshGeneration: Int,
-    onRequestContactsPermission: () -> Unit,
+    model: HubPageModel,
+    events: HubPageEvents,
+    onReturnHome: () -> Unit = {},
 ) {
+    HubPageContent(rememberHubPageSession(model, events), onReturnHome)
+}
+
+@Composable
+private fun rememberHubPageSession(
+    model: HubPageModel,
+    events: HubPageEvents,
+): HubPageSession {
     val context = LocalContext.current
-    val capabilities = rememberPlatformCapabilities(refreshGeneration)
-    // The phone's own default apps, whichever they are: Tenseven looks for no Sable app here.
+    val capabilities = rememberPlatformCapabilities(model.refreshGeneration)
     val messagesPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.MESSAGING) }
     val contactsPackage = remember(context) { DefaultApps.packageFor(context, DefaultApps.CONTACTS) }
 
-    fun appOf(pkg: String?) = pkg?.let { p -> apps.firstOrNull { it.inLauncherUser && it.component.packageName == p } }
+    fun appOf(pkg: String?) =
+        pkg?.let { p ->
+            model.apps.firstOrNull { it.inLauncherUser && it.component.packageName == p }
+        }
     val messagesApp = appOf(messagesPackage)
-    val contactsApp = appOf(contactsPackage) ?: findLiveApp(apps, CONTACTS_PACKAGE)
-    val enabledHubApps = remember(refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
-    val sourceGroups = rememberHubSourceGroups(snapshot, enabledHubApps, refreshGeneration)
-    val contactsTab = filter == HubFilter.Contacts
+    val contactsApp = appOf(contactsPackage) ?: findLiveApp(model.apps, CONTACTS_PACKAGE)
+    val enabledHubApps = remember(model.refreshGeneration) { StartStateRepository(context).loadHubEnabledApps() }
+    val sources = rememberHubSourceGroups(model.snapshot, enabledHubApps, model.refreshGeneration)
+    val contactsTab = model.filter == HubFilter.Contacts
     val canReadContacts = capabilities.contacts == CapabilityStatus.Ready
-    val (people, peopleLoaded) = rememberHubPeople(contactsTab, canReadContacts, refreshGeneration)
-    val tabFocus = remember { FocusRequester() }
+    val (people, loaded) = rememberHubPeople(contactsTab, canReadContacts, model.refreshGeneration)
+    val peopleInfo = HubPagePeople(people, loaded, canReadContacts, contactsApp, messagesApp)
+    val focus = rememberHubPageFocus(model.active)
+    val conversations =
+        rememberHubConversationsUi(
+            context,
+            model.refreshGeneration,
+            hubSourceFallback(context),
+            events.onOpenHubSettings,
+        )
+    val actions = rememberHubPageActions(events, messagesApp)
+    return HubPageSession(context, model, events, HubPageData(peopleInfo, sources, conversations, actions), focus)
+}
+
+@Composable
+private fun rememberHubPageFocus(active: Boolean): HubPageFocus {
+    val tab = remember { FocusRequester() }
     val personFocus = remember { mutableMapOf<Long, FocusRequester>() }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(active) {
         if (active) {
             withFrameNanos { }
-            runCatching { tabFocus.requestFocus() }
+            runCatching { tab.requestFocus() }
         }
     }
+    return HubPageFocus(tab, { person -> personFocus.getOrPut(person.id) { FocusRequester() } }, listState, scope)
+}
 
-    fun requesterFor(person: HubPerson): FocusRequester = personFocus.getOrPut(person.id) { FocusRequester() }
-
-    fun openMessages() {
-        val app = messagesApp
-        if (app != null) {
-            onLaunchApp(app)
+private fun rememberHubPageActions(
+    events: HubPageEvents,
+    messagesApp: AppEntry?,
+): HubActions {
+    val openMessages = {
+        if (messagesApp != null) {
+            events.onLaunchApp(messagesApp)
         } else {
-            onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_MESSAGING))
+            events.onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_MESSAGING))
         }
     }
+    return HubActions(
+        onLaunchApp = events.onLaunchApp,
+        onStartIntent = events.onStartIntent,
+        onOpenMessages = openMessages,
+        onOpenHubSettings = events.onOpenHubSettings,
+        onRequestContactsPermission = events.onRequestContactsPermission,
+    )
+}
 
-    val conversationsUi =
-        rememberHubConversationsUi(context, refreshGeneration, hubSourceFallback(context), onOpenHubSettings)
-
-    val actions =
-        HubActions(
-            onLaunchApp = onLaunchApp,
-            onStartIntent = onStartIntent,
-            onOpenMessages = ::openMessages,
-            onOpenHubSettings = onOpenHubSettings,
-            onRequestContactsPermission = onRequestContactsPermission,
-        )
-
-    /** Contacts tab: a letter (or digit) key jumps to the first person of that letter. */
-    fun jumpKey(event: KeyEvent): Boolean {
-        val native = event.nativeKeyEvent
-        if (!contactsTab || people.isEmpty() || native.metaState and HUB_JUMP_BLOCKING_META != 0) return false
-        val char = native.unicodeChar.takeIf { it > 0 }?.toChar() ?: return false
-        val index = HubPeople.jump(people, char) ?: return false
-        if (event.type == KeyEventType.KeyDown) {
-            val person = people[index]
-            scope.launch {
-                // The header item comes first, so a person's list index is one more than theirs.
-                listState.scrollToItem(index + 1)
-                withFrameNanos { }
-                runCatching { requesterFor(person).requestFocus() }
-            }
+private fun hubPageJumpKey(
+    event: KeyEvent,
+    session: HubPageSession,
+): Boolean {
+    val people = session.data.people
+    val native = event.nativeKeyEvent
+    val allowed =
+        session.model.filter == HubFilter.Contacts &&
+            people.items.isNotEmpty() && native.metaState and HUB_JUMP_BLOCKING_META == 0
+    val char = native.unicodeChar.takeIf { it > 0 }?.toChar()
+    val index = if (allowed && char != null) HubPeople.jump(people.items, char) else null
+    if (index != null && event.type == KeyEventType.KeyDown) {
+        val person = people.items[index]
+        session.focus.scope.launch {
+            session.focus.list.scrollToItem(index + 1)
+            withFrameNanos { }
+            runCatching { session.focus.person(person).requestFocus() }
         }
-        return true
     }
+    return index != null
+}
 
+@Composable
+@Suppress("FunctionNaming")
+private fun HubPageContent(
+    session: HubPageSession,
+    onReturnHome: () -> Unit,
+) {
+    val chrome = remember { HubPageChromeState() }
     HubContrastTheme {
-        HubPanelsHost(conversationsUi, onOpenHubSettings) { openPanel ->
-            val calendarPeekEnabled = StartStateRepository(context).loadHubCalendarPeek()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().onPreviewKeyEvent(::jumpKey),
-                state = listState,
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(0.dp),
-            ) {
-                item(key = "header") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        HomeBarControl("Hub settings", "menu-2", onClick = openPanel)
-                        Text(
-                            text = HUB_LABEL,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Medium,
-                            // The strip's own text colour (BB10 palette), not the appearance's content colour.
-                            color = Bb10Text,
-                            modifier = Modifier.semantics { heading() },
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    HubUnifiedNavigation(
-                        ui = conversationsUi,
-                        currentTab = filter,
-                        onTabChange = onFilter,
-                        firstTab = tabFocus,
-                        messageCount = sourceGroups.messages,
-                        emailCount = sourceGroups.email,
-                        onOpenCalendar = {
-                            onStartIntent(
-                                Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR),
-                            )
-                        },
-                    )
-                }
-                // Calendar data requires a second, explicit opt-in (separate from notification sources).
-                if (filter == HubFilter.All && calendarPeekEnabled && !conversationsUi.remindersSelected) {
-                    item(key = "hub-upcoming-calendar") {
-                        HubCalendarPeek(
-                            refreshGeneration = refreshGeneration,
-                            onRequestCalendarPermission = {
-                                (context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
-                            },
-                            onOpenCalendar = {
-                                onStartIntent(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR))
-                            },
-                        )
-                    }
-                }
-                if (contactsTab) {
-                    hubContactsItems(
-                        people = people,
-                        loaded = peopleLoaded,
-                        canRead = canReadContacts,
-                        contactsApp = contactsApp,
-                        messagesPackage = messagesApp?.component?.packageName,
-                        requesterFor = ::requesterFor,
-                        actions = actions,
-                    )
-                } else {
-                    hubSummaryItems(
-                        filter = filter,
-                        actions = actions,
-                        conversations = conversationsUi,
-                    )
-                }
+        Column(Modifier.fillMaxSize()) {
+            androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
+                HubPagePanel(session, chrome, onReturnHome)
+            }
+            if (chrome.viewsVisible) {
+                HubCompactViews(
+                    ui = session.data.conversations,
+                    onTabChange = session.events.onFilter,
+                    onCalendar = { session.events.onStartIntent(hubCalendarIntent()) },
+                    onDismiss = { chrome.viewsVisible = false },
+                )
+            }
+            HubPageControls(session, chrome)
+            if (chrome.composePrompt) HubPageComposePrompt(session, chrome)
+        }
+    }
+}
+
+private fun hubCalendarIntent(): Intent =
+    Intent.makeMainSelectorActivity(
+        Intent.ACTION_MAIN,
+        Intent.CATEGORY_APP_CALENDAR,
+    )
+
+@Composable
+@Suppress("FunctionNaming")
+private fun HubPagePanel(
+    session: HubPageSession,
+    chrome: HubPageChromeState,
+    onReturnHome: () -> Unit,
+) {
+    HubPanelsHost(
+        session.data.conversations,
+        session.events.onOpenHubSettings,
+        onSwipeLeft = onReturnHome,
+    ) { openPanel ->
+        val calendarPeekEnabled = StartStateRepository(session.context).loadHubCalendarPeek()
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().onPreviewKeyEvent { hubPageJumpKey(it, session) },
+            state = session.focus.list,
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            item(key = "header") { HubPageHeader(session, chrome, calendarPeekEnabled, openPanel) }
+            if (session.model.filter == HubFilter.Contacts) {
+                hubContactsItems(
+                    people = session.data.people.items,
+                    loaded = session.data.people.loaded,
+                    canRead = session.data.people.canRead,
+                    contactsApp = session.data.people.contactsApp,
+                    messagesPackage =
+                        session.data.people.messagesApp
+                            ?.component
+                            ?.packageName,
+                    requesterFor = session.focus.person,
+                    actions = session.data.actions,
+                )
+            } else {
+                hubSummaryItems(session.model.filter, session.data.actions, session.data.conversations)
             }
         }
     }
+}
+
+@Composable
+@Suppress("FunctionNaming")
+private fun HubPageHeader(
+    session: HubPageSession,
+    chrome: HubPageChromeState,
+    calendarPeekEnabled: Boolean,
+    openPanel: () -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        HomeBarControl(HomeBarControlSpec("Hub settings", "menu-2"), onClick = openPanel)
+        Text(
+            text = HUB_LABEL,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Medium,
+            color = Bb10Text,
+            modifier = Modifier.semantics { heading() },
+        )
+    }
+    Spacer(Modifier.height(6.dp))
+    if (session.model.filter == HubFilter.All && calendarPeekEnabled && !session.data.conversations.remindersSelected) {
+        HubCalendarPeek(
+            refreshGeneration = session.model.refreshGeneration,
+            onRequestCalendarPermission = {
+                (session.context.findActivity() as? SableStartActivity)?.requestCalendarPermission()
+            },
+            onOpenCalendar = { session.events.onStartIntent(hubCalendarIntent()) },
+        )
+    }
+    HubUnifiedNavigation(
+        ui = session.data.conversations,
+        navigation =
+            HubNavigationState(
+                currentTab = session.model.filter,
+                firstTab = session.focus.tab,
+                messageCount = session.data.sources.messages,
+                emailCount = session.data.sources.email,
+                searchRequest = chrome.searchRequest,
+                closeSearchRequest = chrome.searchCloseRequest,
+            ),
+        onTabChange = session.events.onFilter,
+        onOpenCalendar = { session.events.onStartIntent(hubCalendarIntent()) },
+    )
+}
+
+@Composable
+@Suppress("FunctionNaming")
+private fun HubPageControls(
+    session: HubPageSession,
+    chrome: HubPageChromeState,
+) {
+    HubCompactBar(
+        onViews = {
+            chrome.viewsVisible = !chrome.viewsVisible
+            chrome.searchCloseRequest += 1
+        },
+        onCompose = {
+            when (StartStateRepository(session.context).loadHubComposeMode()) {
+                io.github.aimindseye.tenseven.model.HubComposeMode.Ask -> {
+                    chrome.composePrompt = true
+                }
+
+                io.github.aimindseye.tenseven.model.HubComposeMode.Email -> {
+                    session.events.onStartIntent(Intent(Intent.ACTION_SENDTO, "mailto:".toUri()))
+                }
+
+                io.github.aimindseye.tenseven.model.HubComposeMode.Messages -> {
+                    session.events.onStartIntent(Intent(Intent.ACTION_SENDTO, "smsto:".toUri()))
+                }
+            }
+        },
+        onSearch = {
+            session.events.onFilter(HubFilter.All)
+            chrome.viewsVisible = false
+            chrome.searchRequest += 1
+            session.focus.scope.launch { session.focus.list.animateScrollToItem(0) }
+        },
+    )
+}
+
+@Composable
+@Suppress("FunctionNaming")
+private fun HubPageComposePrompt(
+    session: HubPageSession,
+    chrome: HubPageChromeState,
+) {
+    HubComposeDialog(
+        onEmail = {
+            chrome.composePrompt = false
+            session.events.onStartIntent(Intent(Intent.ACTION_SENDTO, "mailto:".toUri()))
+        },
+        onMessages = {
+            chrome.composePrompt = false
+            session.events.onStartIntent(Intent(Intent.ACTION_SENDTO, "smsto:".toUri()))
+        },
+        onDismiss = { chrome.composePrompt = false },
+    )
 }
 
 /**

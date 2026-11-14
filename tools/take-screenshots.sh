@@ -296,8 +296,6 @@ if [ "$MANUAL" = 1 ]; then
   guided notes "Notes, if switched on in Extras; use sample text."
   guided tasks "Tasks/Remind, if switched on in Extras; use sample tasks."
   guided calc-plus "Calc Plus, if switched on in Extras."
-  guided game-2048 "2048, if switched on in Extras (the games share the launcher's colours)."
-  guided game-sudoku "Sudoku, if switched on in Extras."
   echo
   echo "Last one needs the screen off. In Launcher Settings, switch on the lock layer and allow both permissions first."
   printf 'Capture the lock layer on a real wake now? (y/N): '

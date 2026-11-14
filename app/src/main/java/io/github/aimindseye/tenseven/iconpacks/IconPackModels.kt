@@ -14,9 +14,13 @@ object IconPackContract {
 }
 
 sealed interface IconPackDrawable {
-    data class Static(val drawableName: String) : IconPackDrawable
+    data class Static(
+        val drawableName: String,
+    ) : IconPackDrawable
 
-    data class Calendar(val drawablePrefix: String) : IconPackDrawable
+    data class Calendar(
+        val drawablePrefix: String,
+    ) : IconPackDrawable
 
     fun drawableName(dayOfMonth: Int): String =
         when (this) {

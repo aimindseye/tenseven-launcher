@@ -21,13 +21,22 @@ object PlatformCapabilityProbe {
             overlayAllowed = Settings.canDrawOverlays(context),
             // A normal Full APK has no privileged task-snapshot bridge. Never fake live frames.
             trustedSnapshotBridge =
-                permission(context, "READ_FRAME_BUFFER") && permission(context, "REAL_GET_TASKS") && taskMethod(context, "getTaskSnapshot"),
+                permission(context, "READ_FRAME_BUFFER") && permission(context, "REAL_GET_TASKS") &&
+                    taskMethod(context, "getTaskSnapshot"),
             frameAccess =
                 FramePlatformAccess(
                     tasks = permission(context, "REAL_GET_TASKS"),
-                    resume = permission(context, "START_TASKS_FROM_RECENTS") && taskMethod(context, "startActivityFromRecents"),
+                    resume =
+                        permission(context, "START_TASKS_FROM_RECENTS") &&
+                            taskMethod(
+                                context,
+                                "startActivityFromRecents",
+                            ),
                     removal = permission(context, "REMOVE_TASKS") && taskMethod(context, "removeTask"),
-                    keyboard = context.resources.configuration.keyboard != android.content.res.Configuration.KEYBOARD_NOKEYS,
+                    keyboard =
+                        context.resources.configuration.keyboard !=
+                            android.content.res.Configuration
+                                .KEYBOARD_NOKEYS,
                     lock =
                         when {
                             !Capabilities.hasLockService(context) -> CapabilityStatus.Unavailable

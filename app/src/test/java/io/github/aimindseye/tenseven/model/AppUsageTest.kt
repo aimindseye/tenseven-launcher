@@ -29,7 +29,11 @@ class AppUsageTest {
 
     @Test
     fun storedTextRoundTripsAndDamageIsDropped() {
-        val usage = AppUsage.EMPTY.record("1:a/b").record("1:a/b").record("2:c/d")
+        val usage =
+            AppUsage.EMPTY
+                .record("1:a/b")
+                .record("1:a/b")
+                .record("2:c/d")
         assertEquals(usage.encode(), AppUsage.decode(usage.encode()).encode())
         val damaged = AppUsage.decode("1:a/b\t4\ngarbage\n\t3\n2:c/d\tx\n3:e/f\t-1")
         assertEquals(4, damaged.score("1:a/b"))
@@ -51,12 +55,25 @@ class AppUsageTest {
 
     @Test
     fun theMostUsedMatchComesFirstWithinATier() {
-        val usage = AppUsage.EMPTY.record("Camera").record("Calendar").record("Calendar")
+        val usage =
+            AppUsage.EMPTY
+                .record("Camera")
+                .record("Calendar")
+                .record("Calendar")
         val apps = listOf("Calculator", "Calendar", "Camera")
         val ranked = CommandRanking.apps(apps, { it }, { null }, "ca", frequency = usage::score)
         assertEquals(listOf("Calendar", "Camera", "Calculator"), ranked)
         // A better tier still beats usage: "Ccleaner" starts with "c", "Music cast" only contains it.
-        val tiers = CommandRanking.apps(listOf("Music cast", "Ccleaner"), { it }, { null }, "c", frequency = { if (it == "Music cast") 9 else 0 })
+        val tiers =
+            CommandRanking.apps(listOf("Music cast", "Ccleaner"), { it }, { null }, "c", frequency = {
+                if (it ==
+                    "Music cast"
+                ) {
+                    9
+                } else {
+                    0
+                }
+            })
         assertEquals(listOf("Ccleaner", "Music cast"), tiers)
     }
 }

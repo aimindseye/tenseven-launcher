@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.LauncherTheme
+import io.github.aimindseye.tenseven.TenSeven2AppTheme
 import kotlinx.coroutines.delay
 import java.security.MessageDigest
 import java.time.Instant
@@ -46,6 +47,19 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+private object TaskLimits {
+    const val BYTE_MASK = 255
+    const val SOURCE_TITLE_LENGTH = 100
+    const val REFRESH_INTERVAL_MS = 60_000L
+    const val NOTIFICATION_PERMISSION_REQUEST = 7302
+    const val MAX_TITLE_CHARS = 240
+    const val MAX_DETAILS_CHARS = 16000
+    const val MAX_TAG_INPUT_CHARS = 1500
+    const val MAX_NOTE_ID_CHARS = 240
+    const val MAX_TAG_CHARS = 60
+    const val MAX_TAGS = 24
+}
 
 /** Always-active internal screen. The optional launcher icon is managed independently. */
 class TasksActivity : ComponentActivity() {
@@ -64,7 +78,7 @@ class TasksActivity : ComponentActivity() {
             .bindTo(this)
         setContent {
             LauncherTheme(window = window) {
-                TasksWorkspace(intent, resumeRevision)
+                TenSeven2AppTheme { TasksWorkspace(intent, resumeRevision) }
             }
         }
     }
@@ -77,6 +91,37 @@ class TasksActivity : ComponentActivity() {
         const val EXTRA_NOTE_ID = "note_id"
     }
 }
+
+private class TasksWorkspaceActions(
+    val onNew: () -> Unit,
+    val onEdit: (TaskRecord) -> Unit,
+    val onComplete: (TaskRecord) -> Unit,
+    val onDelete: (TaskRecord) -> Unit,
+    val onTomorrow: (TaskRecord) -> Unit,
+)
+
+private fun tasksInitialDraft(
+    sourcePackage: String?,
+    sourceKey: String?,
+    sourceApp: String?,
+    linkedNoteId: String?,
+): TaskRecord? =
+    if (sourcePackage != null && sourceKey != null && sourceApp != null) {
+        val digest =
+            MessageDigest
+                .getInstance("SHA-256")
+                .digest((sourcePackage + "\n" + sourceKey).toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it.toInt() and TaskLimits.BYTE_MASK) }
+        TaskRecord(
+            title = "Follow up in " + sourceApp.take(TaskLimits.SOURCE_TITLE_LENGTH),
+            originPackage = sourcePackage,
+            originToken = digest,
+        )
+    } else if (linkedNoteId != null) {
+        TaskRecord(title = "New task", linkedNoteId = linkedNoteId)
+    } else {
+        null
+    }
 
 @Composable
 private fun TasksWorkspace(
@@ -99,22 +144,10 @@ private fun TasksWorkspace(
     val linkedNoteId = intent.getStringExtra(TasksActivity.EXTRA_NOTE_ID)
     val draft =
         remember(sourcePackage, sourceKey, linkedNoteId) {
-            if (sourcePackage != null && sourceKey != null && sourceApp != null) {
-                val digest =
-                    MessageDigest
-                        .getInstance("SHA-256")
-                        .digest((sourcePackage + "\n" + sourceKey).toByteArray(Charsets.UTF_8))
-                        .joinToString("") { "%02x".format(it.toInt() and 255) }
-                TaskRecord(title = "Follow up in " + sourceApp.take(100), originPackage = sourcePackage, originToken = digest)
-            } else if (linkedNoteId != null) {
-                TaskRecord(title = "New task", linkedNoteId = linkedNoteId)
-            } else {
-                null
-            }
+            tasksInitialDraft(sourcePackage, sourceKey, sourceApp, linkedNoteId)
         }
     var consumedDraft by remember { mutableStateOf(false) }
     if (!consumedDraft && draft != null && editing == null) {
-        // Draft is NOT saved to disk until the user presses Save in the editor.
         editing = draft
         newDraft = draft.originPackage == null
         consumedDraft = true
@@ -124,138 +157,164 @@ private fun TasksWorkspace(
     fun refresh() {
         revision++
     }
-    // Keep the in-app overdue list live even when the optional Android notification grant is denied.
     LaunchedEffect(Unit) {
         while (true) {
-            delay(60_000L)
+            delay(TaskLimits.REFRESH_INTERVAL_MS)
             refresh()
         }
     }
     BackHandler(enabled = editing != null) { editing = null }
-
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         if (editing != null) {
-            TaskEditor(
-                task = editing!!,
-                isNew = newDraft,
-                onCancel = { editing = null },
-                onSave = { next ->
-                    repo.save(next)
-                    editing = null
-                    refresh()
-                },
-                onDelete = { next ->
-                    repo.delete(next.id)
-                    editing = null
-                    refresh()
-                },
-            )
+            TaskEditor(task = editing!!, isNew = newDraft, onCancel = { editing = null }, onSave = { next ->
+                repo.save(next)
+                editing = null
+                refresh()
+            }, onDelete = { next ->
+                repo.delete(next.id)
+                editing = null
+                refresh()
+            })
         } else {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .safeDrawingPadding()
-                        .verticalScroll(rememberScrollState())
-                        .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text("TenSeven Tasks", style = MaterialTheme.typography.headlineSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { tab = "tasks" }) { Text("Tasks") }
-                    OutlinedButton(onClick = { tab = "remind" }) { Text("Remind") }
-                    Button(onClick = {
-                        editing = TaskRecord(title = "New task")
-                        newDraft = true
-                    }) { Text("New") }
-                }
-                if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-                    android.content.pm.PackageManager.PERMISSION_GRANTED
-                ) {
-                    OutlinedButton(onClick = {
-                        (context as? android.app.Activity)?.requestPermissions(
-                            arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
-                            7302,
-                        )
-                    }) { Text("Enable Android reminder alerts (optional)") }
-                }
-                Text(
-                    "Local on-device tasks. Reminders stay available here even without Android notification permission.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                val shown =
-                    records.filter {
-                        tab != "remind" || (it.remindAtEpochMs != null || it.originPackage != null)
-                    }
-                if (shown.isEmpty()) Text(if (tab == "remind") "No follow-ups yet" else "No tasks yet")
-                val groups =
-                    if (tab == "remind") {
-                        listOf("Overdue", "Upcoming", "Until complete", "Completed")
-                    } else {
-                        listOf("Today", "Tomorrow", "Later this week", "Upcoming", "No due date", "Completed")
-                    }
-                for (group in groups) {
-                    val items =
-                        shown.filter { task ->
-                            if (tab == "remind") {
-                                when (group) {
-                                    "Completed" -> {
-                                        task.completed
-                                    }
-
-                                    "Until complete" -> {
-                                        !task.completed && task.remindAtEpochMs == null
-                                    }
-
-                                    "Overdue" -> {
-                                        !task.completed && task.remindAtEpochMs != null &&
-                                            task.remindAtEpochMs <= System.currentTimeMillis()
-                                    }
-
-                                    else -> {
-                                        !task.completed && task.remindAtEpochMs != null &&
-                                            task.remindAtEpochMs > System.currentTimeMillis()
-                                    }
-                                }
-                            } else {
-                                TaskSchedule.group(task) == group
-                            }
-                        }
-                    if (items.isNotEmpty()) {
-                        Text(group, style = MaterialTheme.typography.titleMedium)
-                        items.forEach { task ->
-                            TaskItem(
-                                task,
-                                onOpen = {
-                                    editing = task
-                                    newDraft = false
-                                },
-                                onComplete = {
-                                    repo.complete(task)
-                                    refresh()
-                                },
-                                onDelete = {
-                                    repo.delete(task.id)
-                                    refresh()
-                                },
-                                onTomorrow = {
-                                    repo.save(
-                                        task.copy(
-                                            completed = false,
-                                            remindAtEpochMs =
-                                                TaskSchedule.preset("Tomorrow morning", Instant.now(), ZoneId.systemDefault()),
-                                            updatedAtEpochMs = System.currentTimeMillis(),
+            TasksOverview(
+                tab = tab,
+                records = records,
+                onTabChange = { tab = it },
+                actions =
+                    TasksWorkspaceActions(
+                        onNew = {
+                            editing = TaskRecord(title = "New task")
+                            newDraft = true
+                        },
+                        onEdit = { task ->
+                            editing = task
+                            newDraft = false
+                        },
+                        onComplete = { task ->
+                            repo.complete(task)
+                            refresh()
+                        },
+                        onDelete = { task ->
+                            repo.delete(task.id)
+                            refresh()
+                        },
+                        onTomorrow = { task ->
+                            repo.save(
+                                task.copy(
+                                    completed = false,
+                                    remindAtEpochMs =
+                                        TaskSchedule.preset(
+                                            "Tomorrow morning",
+                                            Instant.now(),
+                                            ZoneId.systemDefault(),
                                         ),
-                                    )
-                                    refresh()
-                                },
+                                    updatedAtEpochMs = System.currentTimeMillis(),
+                                ),
                             )
-                        }
-                    }
-                }
+                            refresh()
+                        },
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TasksOverview(
+    tab: String,
+    records: List<TaskRecord>,
+    onTabChange: (String) -> Unit,
+    actions: TasksWorkspaceActions,
+) {
+    val context = LocalContext.current
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("TenSeven Tasks", style = MaterialTheme.typography.headlineSmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { onTabChange("tasks") }) { Text("Tasks") }
+            OutlinedButton(onClick = { onTabChange("remind") }) { Text("Remind") }
+            Button(onClick = actions.onNew) { Text("New") }
+        }
+        if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            OutlinedButton(onClick = {
+                (context as? android.app.Activity)?.requestPermissions(
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    TaskLimits.NOTIFICATION_PERMISSION_REQUEST,
+                )
+            }) { Text("Enable Android reminder alerts (optional)") }
+        }
+        Text(
+            "Local on-device tasks. Reminders stay available here even without Android notification permission.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TasksGroupedList(tab, records, actions)
+    }
+}
+
+@Composable
+private fun TasksGroupedList(
+    tab: String,
+    records: List<TaskRecord>,
+    actions: TasksWorkspaceActions,
+) {
+    val shown = records.filter { tab != "remind" || (it.remindAtEpochMs != null || it.originPackage != null) }
+    if (shown.isEmpty()) Text(if (tab == "remind") "No follow-ups yet" else "No tasks yet")
+    val groups =
+        if (tab == "remind") {
+            listOf("Overdue", "Upcoming", "Until complete", "Completed")
+        } else {
+            listOf("Today", "Tomorrow", "Later this week", "Upcoming", "No due date", "Completed")
+        }
+    for (group in groups) {
+        val items = shown.filter { task -> taskBelongsToGroup(task, tab, group) }
+        if (items.isNotEmpty()) TasksGroup(group, items, actions)
+    }
+}
+
+private fun taskBelongsToGroup(
+    task: TaskRecord,
+    tab: String,
+    group: String,
+): Boolean {
+    val category =
+        if (tab != "remind") {
+            TaskSchedule.group(task)
+        } else {
+            when {
+                task.completed -> "Completed"
+                task.remindAtEpochMs == null -> "Until complete"
+                task.remindAtEpochMs <= System.currentTimeMillis() -> "Overdue"
+                else -> "Upcoming"
             }
         }
+    return category == group
+}
+
+@Composable
+private fun TasksGroup(
+    group: String,
+    tasks: List<TaskRecord>,
+    actions: TasksWorkspaceActions,
+) {
+    Text(group, style = MaterialTheme.typography.titleMedium)
+    tasks.forEach { task ->
+        TaskItem(
+            task,
+            onOpen = { actions.onEdit(task) },
+            onComplete = { actions.onComplete(task) },
+            onDelete = { actions.onDelete(task) },
+            onTomorrow = { actions.onTomorrow(task) },
+        )
     }
 }
 
@@ -309,6 +368,138 @@ internal fun TaskItem(
     }
 }
 
+private fun showTaskDatePicker(
+    context: android.content.Context,
+    zone: ZoneId,
+    current: Long?,
+    set: (Long) -> Unit,
+) {
+    val at = current?.let { Instant.ofEpochMilli(it).atZone(zone) } ?: java.time.ZonedDateTime.now(zone)
+    DatePickerDialog(context, { _, year, month, day ->
+        TimePickerDialog(context, { _, hour, minute ->
+            set(
+                LocalDateTime
+                    .of(year, month + 1, day, hour, minute)
+                    .atZone(zone)
+                    .toInstant()
+                    .toEpochMilli(),
+            )
+        }, at.hour, at.minute, true).show()
+    }, at.year, at.monthValue - 1, at.dayOfMonth).show()
+}
+
+@Composable
+private fun TaskTitleDetailsFields(
+    title: String,
+    details: String,
+    onTitle: (String) -> Unit,
+    onDetails: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = title,
+        onValueChange = { onTitle(it.take(TaskLimits.MAX_TITLE_CHARS)) },
+        label = { Text("Title") },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+    )
+    OutlinedTextField(
+        value = details,
+        onValueChange = { onDetails(it.take(TaskLimits.MAX_DETAILS_CHARS)) },
+        label = { Text("Details (optional)") },
+        modifier = Modifier.fillMaxWidth(),
+        maxLines = 4,
+    )
+}
+
+private data class TaskScheduleActions(
+    val onDue: () -> Unit,
+    val onClearDue: () -> Unit,
+    val onReminder: () -> Unit,
+    val onClearReminder: () -> Unit,
+    val onPreset: (String) -> Unit,
+)
+
+@Composable
+private fun TaskScheduleControls(
+    due: Long?,
+    reminder: Long?,
+    actions: TaskScheduleActions,
+) {
+    Text("Due: " + (due?.let(::whenFormatted) ?: "No due date"))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = actions.onDue) { Text("Set due") }
+        TextButton(onClick = actions.onClearDue) { Text("Clear") }
+    }
+    Text("Remind: " + (reminder?.let(::whenFormatted) ?: "Until complete / none"))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = actions.onReminder) { Text("Choose time") }
+        TextButton(onClick = actions.onClearReminder) { Text("Clear") }
+    }
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        for (preset in listOf("Later today", "This evening", "Tomorrow morning", "Until complete")) {
+            OutlinedButton(onClick = { actions.onPreset(preset) }) { Text(preset) }
+        }
+    }
+}
+
+private class TaskEditDraft(
+    task: TaskRecord,
+    isNew: Boolean,
+) {
+    var title by mutableStateOf(if (isNew) "" else task.title)
+    var details by mutableStateOf(task.details)
+    var priority by mutableStateOf(task.priority)
+    var repeat by mutableStateOf(task.repeat)
+    var due by mutableStateOf(task.dueAtEpochMs)
+    var reminder by mutableStateOf(task.remindAtEpochMs)
+    var tags by mutableStateOf(task.tags.joinToString(", "))
+    var noteId by mutableStateOf(task.linkedNoteId.orEmpty())
+
+    fun updatedTask(
+        task: TaskRecord,
+        zone: ZoneId,
+    ): TaskRecord {
+        val cleaned =
+            tags
+                .split(",")
+                .map { it.trim().take(TaskLimits.MAX_TAG_CHARS) }
+                .filter { it.isNotEmpty() }
+                .take(TaskLimits.MAX_TAGS)
+                .toSet()
+        return task.copy(
+            title = title.trim(),
+            details = details,
+            priority = priority,
+            repeat = repeat,
+            dueAtEpochMs = due,
+            remindAtEpochMs = reminder,
+            tags = cleaned,
+            linkedNoteId = noteId.trim().ifEmpty { null },
+            zoneId = zone.id,
+            updatedAtEpochMs = System.currentTimeMillis(),
+        )
+    }
+}
+
+@Composable
+private fun TaskTagsFields(draft: TaskEditDraft) {
+    OutlinedTextField(
+        value = draft.tags,
+        onValueChange = { draft.tags = it.take(TaskLimits.MAX_TAG_INPUT_CHARS) },
+        label = { Text("Tags (comma separated)") },
+        modifier = Modifier.fillMaxWidth(),
+    )
+    OutlinedTextField(
+        value = draft.noteId,
+        onValueChange = { draft.noteId = it.take(TaskLimits.MAX_NOTE_ID_CHARS) },
+        label = { Text("Linked note ID (optional)") },
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
 @Composable
 internal fun TaskEditor(
     task: TaskRecord,
@@ -319,115 +510,48 @@ internal fun TaskEditor(
     modifier: Modifier = Modifier.fillMaxSize(),
 ) {
     val context = LocalContext.current
-    var title by remember(task.id) { mutableStateOf(if (isNew) "" else task.title) }
-    var details by remember(task.id) { mutableStateOf(task.details) }
-    var priority by remember(task.id) { mutableStateOf(task.priority) }
-    var repeat by remember(task.id) { mutableStateOf(task.repeat) }
-    var due by remember(task.id) { mutableStateOf(task.dueAtEpochMs) }
-    var reminder by remember(task.id) { mutableStateOf(task.remindAtEpochMs) }
-    var tags by remember(task.id) { mutableStateOf(task.tags.joinToString(", ")) }
-    var noteId by remember(task.id) { mutableStateOf(task.linkedNoteId.orEmpty()) }
+    val draft = remember(task.id) { TaskEditDraft(task, isNew) }
     val zone = ZoneId.systemDefault()
-
-    fun pick(
-        current: Long?,
-        set: (Long) -> Unit,
-    ) {
-        val at = current?.let { Instant.ofEpochMilli(it).atZone(zone) } ?: java.time.ZonedDateTime.now(zone)
-        DatePickerDialog(context, { _, year, month, day ->
-            TimePickerDialog(context, { _, hour, minute ->
-                set(
-                    LocalDateTime
-                        .of(year, month + 1, day, hour, minute)
-                        .atZone(zone)
-                        .toInstant()
-                        .toEpochMilli(),
-                )
-            }, at.hour, at.minute, true).show()
-        }, at.year, at.monthValue - 1, at.dayOfMonth).show()
-    }
     Column(
         modifier = modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(if (isNew) "New task" else "Task details", style = MaterialTheme.typography.titleLarge)
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it.take(240) },
-            label = { Text("Title") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
+        TaskTitleDetailsFields(
+            title = draft.title,
+            details = draft.details,
+            onTitle = { draft.title = it },
+            onDetails = { draft.details = it },
         )
-        OutlinedTextField(
-            value = details,
-            onValueChange = { details = it.take(16000) },
-            label = { Text("Details (optional)") },
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = 4,
-        )
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(onClick = { priority = TaskPriority.entries[(priority.ordinal + 1) % TaskPriority.entries.size] }) {
-                Text("Priority: " + priority.name)
-            }
-            OutlinedButton(onClick = { repeat = TaskRepeat.entries[(repeat.ordinal + 1) % TaskRepeat.entries.size] }) {
-                Text("Repeat: " + repeat.name)
-            }
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            OutlinedButton(onClick = {
+                draft.priority = TaskPriority.entries[(draft.priority.ordinal + 1) % TaskPriority.entries.size]
+            }) { Text("Priority: " + draft.priority.name) }
+            OutlinedButton(onClick = {
+                draft.repeat = TaskRepeat.entries[(draft.repeat.ordinal + 1) % TaskRepeat.entries.size]
+            }) { Text("Repeat: " + draft.repeat.name) }
         }
-        Text("Due: " + (due?.let(::whenFormatted) ?: "No due date"))
+        TaskScheduleControls(
+            due = draft.due,
+            reminder = draft.reminder,
+            actions =
+                TaskScheduleActions(
+                    onDue = { showTaskDatePicker(context, zone, draft.due) { draft.due = it } },
+                    onClearDue = { draft.due = null },
+                    onReminder = { showTaskDatePicker(context, zone, draft.reminder) { draft.reminder = it } },
+                    onClearReminder = { draft.reminder = null },
+                    onPreset = { preset -> draft.reminder = TaskSchedule.preset(preset, Instant.now(), zone) },
+                ),
+        )
+        TaskTagsFields(draft)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { pick(due) { due = it } }) { Text("Set due") }
-            TextButton(onClick = { due = null }) { Text("Clear") }
-        }
-        Text("Remind: " + (reminder?.let(::whenFormatted) ?: "Until complete / none"))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { pick(reminder) { reminder = it } }) { Text("Choose time") }
-            TextButton(onClick = { reminder = null }) { Text("Clear") }
-        }
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            for (preset in listOf("Later today", "This evening", "Tomorrow morning", "Until complete")) {
-                OutlinedButton(onClick = { reminder = TaskSchedule.preset(preset, Instant.now(), zone) }) {
-                    Text(preset)
-                }
-            }
-        }
-        OutlinedTextField(
-            value = tags,
-            onValueChange = { tags = it.take(1500) },
-            label = { Text("Tags (comma separated)") },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedTextField(
-            value = noteId,
-            onValueChange = { noteId = it.take(240) },
-            label = { Text("Linked note ID (optional)") },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = {
-                val cleaned =
-                    tags
-                        .split(",")
-                        .map { it.trim().take(60) }
-                        .filter { it.isNotEmpty() }
-                        .take(24)
-                        .toSet()
-                if (title.isNotBlank()) {
-                    onSave(
-                        task.copy(
-                            title = title.trim(),
-                            details = details,
-                            priority = priority,
-                            repeat = repeat,
-                            dueAtEpochMs = due,
-                            remindAtEpochMs = reminder,
-                            tags = cleaned,
-                            linkedNoteId = noteId.trim().ifEmpty { null },
-                            zoneId = zone.id,
-                            updatedAtEpochMs = System.currentTimeMillis(),
-                        ),
-                    )
-                }
-            }, enabled = title.isNotBlank()) { Text("Save") }
+            Button(
+                onClick = { if (draft.title.isNotBlank()) onSave(draft.updatedTask(task, zone)) },
+                enabled = draft.title.isNotBlank(),
+            ) { Text("Save") }
             OutlinedButton(onClick = onCancel) { Text("Cancel") }
             if (!isNew) TextButton(onClick = { onDelete(task) }) { Text("Delete") }
         }

@@ -10,12 +10,16 @@ import io.github.aimindseye.tenseven.extras.profiles.core.ProfilesText.t
  * volumes, vibration, the notification light and, when the profile has them, its own ringtone and
  * notification tone. Pure: [plan] says what to set and the Android side sets it.
  */
-enum class SoundProfile(private val titleKey: String, private val summaryKey: String) {
+enum class SoundProfile(
+    private val titleKey: String,
+    private val summaryKey: String,
+) {
     NORMAL("normal", "rings_and_alerts_at_your"),
     LOUD("loud", "rings_and_alerts_at_full"),
     VIBRATE_ONLY("vibrate_only", "vibrates_for_calls_and_alerts"),
     PHONE_CALLS_ONLY("phone_calls_only", "only_calls_ring_messages_and"),
-    ALL_ALERTS_OFF("all_alerts_off", "nothing_rings_or_vibrates_alarms");
+    ALL_ALERTS_OFF("all_alerts_off", "nothing_rings_or_vibrates_alarms"),
+    ;
 
     val title: String get() = t(titleKey)
     val summary: String get() = t(summaryKey)
@@ -37,7 +41,7 @@ data class ProfileSettings(
     val vibrate: Boolean? = null,
     val light: Boolean? = null,
     val ringtone: String? = null,
-    val notificationTone: String? = null
+    val notificationTone: String? = null,
 )
 
 /** Everything one profile sets. A null volume or tone leaves it as it is. */
@@ -48,72 +52,58 @@ data class ProfilePlan(
     val vibrateWhenRinging: Boolean,
     val light: Boolean,
     val ringtone: String?,
-    val notificationTone: String?
+    val notificationTone: String?,
 )
 
 object SoundProfiles {
     const val NORMAL_VOLUME = 70
     const val FULL_VOLUME = 100
 
-    fun plan(profile: SoundProfile, settings: ProfileSettings = ProfileSettings()): ProfilePlan {
-        val base = when (profile) {
-            SoundProfile.NORMAL -> ProfilePlan(
-                Ringer.NORMAL,
-                Dnd.OFF,
-                NORMAL_VOLUME,
-                true,
-                true,
-                null,
-                null
-            )
-
-            SoundProfile.LOUD -> ProfilePlan(
-                Ringer.NORMAL,
-                Dnd.OFF,
-                FULL_VOLUME,
-                true,
-                true,
-                null,
-                null
-            )
-
-            SoundProfile.VIBRATE_ONLY -> ProfilePlan(
-                Ringer.VIBRATE,
-                Dnd.OFF,
-                null,
-                true,
-                true,
-                null,
-                null
-            )
-
-            SoundProfile.PHONE_CALLS_ONLY ->
-                ProfilePlan(Ringer.NORMAL, Dnd.CALLS_ONLY, NORMAL_VOLUME, true, false, null, null)
-
-            SoundProfile.ALL_ALERTS_OFF -> ProfilePlan(
-                Ringer.SILENT,
-                Dnd.ALARMS_ONLY,
-                null,
-                false,
-                false,
-                null,
-                null
-            )
-        }
+    fun plan(
+        profile: SoundProfile,
+        settings: ProfileSettings = ProfileSettings(),
+    ): ProfilePlan {
+        val base = basePlan(profile)
         // A silent or vibrating profile has no volume to set; the user's volume applies only where it rings.
-        val volume = settings.volumePercent?.coerceIn(0, FULL_VOLUME)?.takeIf {
-            base.volumePercent !=
-                null
-        }
+        val volume =
+            settings.volumePercent?.coerceIn(0, FULL_VOLUME)?.takeIf {
+                base.volumePercent !=
+                    null
+            }
         return base.copy(
             volumePercent = volume ?: base.volumePercent,
-            vibrateWhenRinging = settings.vibrate?.takeIf { profile != SoundProfile.ALL_ALERTS_OFF }
-                ?: base.vibrateWhenRinging,
+            vibrateWhenRinging =
+                settings.vibrate?.takeIf { profile != SoundProfile.ALL_ALERTS_OFF }
+                    ?: base.vibrateWhenRinging,
             light = settings.light ?: base.light,
             ringtone = settings.ringtone,
-            notificationTone = settings.notificationTone
+            notificationTone = settings.notificationTone,
         )
     }
+
+    /** Profile defaults, independent of user overrides. */
+    private fun basePlan(profile: SoundProfile): ProfilePlan =
+        when (profile) {
+            SoundProfile.NORMAL -> {
+                ProfilePlan(Ringer.NORMAL, Dnd.OFF, NORMAL_VOLUME, true, true, null, null)
+            }
+
+            SoundProfile.LOUD -> {
+                ProfilePlan(Ringer.NORMAL, Dnd.OFF, FULL_VOLUME, true, true, null, null)
+            }
+
+            SoundProfile.VIBRATE_ONLY -> {
+                ProfilePlan(Ringer.VIBRATE, Dnd.OFF, null, true, true, null, null)
+            }
+
+            SoundProfile.PHONE_CALLS_ONLY -> {
+                ProfilePlan(Ringer.NORMAL, Dnd.CALLS_ONLY, NORMAL_VOLUME, true, false, null, null)
+            }
+
+            SoundProfile.ALL_ALERTS_OFF -> {
+                ProfilePlan(Ringer.SILENT, Dnd.ALARMS_ONLY, null, false, false, null, null)
+            }
+        }
 
     /** The next profile, for a key or tile that steps through them. */
     fun next(current: SoundProfile?): SoundProfile {
@@ -123,28 +113,31 @@ object SoundProfiles {
 
     /** Reads one profile's stored settings: `key=value` lines (volume, vibrate, light, ringtone, notification). */
     fun parse(text: String?): ProfileSettings {
-        val map = text.orEmpty().lineSequence()
-            .mapNotNull { line ->
-                val eq = line.indexOf('=')
-                if (eq > 0) line.substring(0, eq) to line.substring(eq + 1) else null
-            }
-            .toMap()
+        val map =
+            text
+                .orEmpty()
+                .lineSequence()
+                .mapNotNull { line ->
+                    val eq = line.indexOf('=')
+                    if (eq > 0) line.substring(0, eq) to line.substring(eq + 1) else null
+                }.toMap()
         return ProfileSettings(
             volumePercent = map["volume"]?.toIntOrNull()?.coerceIn(0, FULL_VOLUME),
             vibrate = map["vibrate"]?.toBooleanStrictOrNull(),
             light = map["light"]?.toBooleanStrictOrNull(),
             ringtone = map["ringtone"]?.takeIf { it.isNotBlank() },
-            notificationTone = map["notification"]?.takeIf { it.isNotBlank() }
+            notificationTone = map["notification"]?.takeIf { it.isNotBlank() },
         )
     }
 
-    fun format(s: ProfileSettings): String = listOfNotNull(
-        s.volumePercent?.let { "volume=$it" },
-        s.vibrate?.let { "vibrate=$it" },
-        s.light?.let { "light=$it" },
-        s.ringtone?.let { "ringtone=${oneLine(it)}" },
-        s.notificationTone?.let { "notification=${oneLine(it)}" }
-    ).joinToString("\n")
+    fun format(s: ProfileSettings): String =
+        listOfNotNull(
+            s.volumePercent?.let { "volume=$it" },
+            s.vibrate?.let { "vibrate=$it" },
+            s.light?.let { "light=$it" },
+            s.ringtone?.let { "ringtone=${oneLine(it)}" },
+            s.notificationTone?.let { "notification=${oneLine(it)}" },
+        ).joinToString("\n")
 
     private fun oneLine(s: String) = s.replace('\n', ' ')
 }

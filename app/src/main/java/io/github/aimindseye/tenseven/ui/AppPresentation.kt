@@ -109,20 +109,7 @@ internal fun AppRow(
                 }
             }
 
-            // Actions are also reachable with Menu / Fn+Enter; never touch-only.
-            TextButton(
-                onClick = onContext,
-                modifier =
-                    Modifier
-                        .heightIn(min = 48.dp)
-                        .semantics { contentDescription = t("actions_for", app.label) },
-            ) {
-                Text(
-                    text = "›",
-                    fontSize = 26.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            AppRowAction(app, onContext)
         }
         if (expanded) {
             PrivacyDetail(
@@ -130,6 +117,28 @@ internal fun AppRow(
                 modifier = Modifier.padding(start = 56.dp, bottom = 8.dp),
             )
         }
+    }
+}
+
+// All app-row actions are reachable with Menu / Fn+Enter; not touch-only.
+@Suppress("FunctionNaming")
+@Composable
+private fun AppRowAction(
+    app: AppEntry,
+    onContext: () -> Unit,
+) {
+    TextButton(
+        onClick = onContext,
+        modifier =
+            Modifier
+                .heightIn(min = 48.dp)
+                .semantics { contentDescription = t("actions_for", app.label) },
+    ) {
+        Text(
+            text = "›",
+            fontSize = 26.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -289,8 +298,12 @@ internal fun AppMark(
     val context = LocalContext.current
     IconPacks.init(context)
     IconPresentationState.init(context)
-    val iconPack = IconPacks.selected
     val iconStyle = IconPresentationState.selected
+    // Explicit Original mode means original installed artwork, not a leftover external pack.
+    val iconPack =
+        IconPacks.selected.takeIf {
+            iconStyle == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+        }
     val isOwnExtra =
         app.component.packageName == context.packageName &&
             ExtraApps.byClassName(app.component.className) != null
@@ -320,7 +333,17 @@ internal fun AppMark(
             }
         }
 
-    val loadedIcon = icon
+    AppMarkLoadedIcon(icon, app, size)
+}
+
+// Icon rendering is independent of the asynchronous loading state.
+@Suppress("FunctionNaming")
+@Composable
+private fun AppMarkLoadedIcon(
+    loadedIcon: LauncherIcon?,
+    app: AppEntry,
+    size: Int,
+) {
     when {
         loadedIcon == null -> {
             // Until the icon loads: the first letter in the glyph colours, no tile.

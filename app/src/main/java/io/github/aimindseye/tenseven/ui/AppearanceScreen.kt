@@ -69,24 +69,7 @@ internal fun AppearanceScreen(
             Spacer(Modifier.height(4.dp))
         }
 
-        items(AppearanceMode.entries) { mode ->
-            val selected = appearance.mode == mode
-            AppearanceChoiceRow(
-                title =
-                    when (mode) {
-                        AppearanceMode.FollowSystem -> t("follow_system")
-                        AppearanceMode.Light -> "light"
-                        AppearanceMode.Dark -> "dark"
-                    },
-                selected = selected,
-                accent = appearance.accent.color,
-                onClick = {
-                    onAppearanceChanged(
-                        appearance.copy(mode = mode),
-                    )
-                },
-            )
-        }
+        appearanceModeRows(appearance, onAppearanceChanged)
 
         item {
             Spacer(Modifier.height(14.dp))
@@ -94,18 +77,7 @@ internal fun AppearanceScreen(
             Spacer(Modifier.height(4.dp))
         }
 
-        items(AccentPreset.entries) { accent ->
-            val selected = appearance.accent == accent
-            AccentChoiceRow(
-                accent = accent,
-                selected = selected,
-                onClick = {
-                    onAppearanceChanged(
-                        appearance.copy(accent = accent),
-                    )
-                },
-            )
-        }
+        appearanceAccentRows(appearance, onAppearanceChanged)
 
         item {
             Spacer(Modifier.height(14.dp))
@@ -113,81 +85,138 @@ internal fun AppearanceScreen(
             Spacer(Modifier.height(4.dp))
         }
 
-        item {
-            val context = LocalContext.current
-            val packs = remember { IconPackLoader.installed(context) }
-            IconPacks.init(context)
-            AppearanceChoiceRow(
-                title = stringResource(R.string.icon_pack_default),
-                selected = IconPacks.selected == null,
-                accent = appearance.accent.color,
-                onClick = { IconPacks.select(context, null) },
-            )
-            packs.forEach { pack ->
-                AppearanceChoiceRow(
-                    title = pack.label,
-                    selected = IconPacks.selected == pack.packageName,
-                    accent = appearance.accent.color,
-                    onClick = { IconPacks.select(context, pack.packageName) },
-                )
-            }
-            if (packs.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.icon_pack_none),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        item { AppearanceIconPacks(appearance.accent.color) }
 
-        item {
-            val context = LocalContext.current
-            // The lite build has no accessibility service, so the double-tap lock switch is not offered.
-            if (!rememberPlatformCapabilities().lockServiceAvailable) return@item
-            Spacer(Modifier.height(14.dp))
-            SectionLabel(stringResource(R.string.lock_label))
-            Spacer(Modifier.height(4.dp))
-            var enabled by remember { mutableStateOf(StartStateRepository(context).loadDoubleTapLock()) }
-            AppearanceChoiceRow(
-                title = stringResource(if (enabled) R.string.lock_on else R.string.lock_off),
-                selected = enabled,
-                accent = appearance.accent.color,
-                onClick = {
-                    enabled = !enabled
-                    StartStateRepository(context).saveDoubleTapLock(enabled)
-                    if (enabled && !LockScreenAccessibilityService.isEnabled(context)) {
-                        // The service is off until the user turns it on in Accessibility settings.
-                        runCatching {
-                            context.startActivity(
-                                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                            )
-                        }
-                    }
-                },
-            )
-            Text(
-                text = stringResource(R.string.lock_explain),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        item { AppearanceLockChoice(appearance.accent.color) }
 
-        item {
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = t("reset_follow_system_sable_blue"),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .sableFocusRing()
-                        .clickable(onClick = onReset)
-                        .padding(vertical = 12.dp),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
+        item { AppearanceResetChoice(onReset) }
     }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.appearanceModeRows(
+    appearance: SableAppearance,
+    onAppearanceChanged: (SableAppearance) -> Unit,
+) {
+    items(AppearanceMode.entries) { mode ->
+        val selected = appearance.mode == mode
+        AppearanceChoiceRow(
+            title =
+                when (mode) {
+                    AppearanceMode.FollowSystem -> t("follow_system")
+                    AppearanceMode.Light -> "light"
+                    AppearanceMode.Dark -> "dark"
+                },
+            selected = selected,
+            accent = appearance.accent.color,
+            onClick = {
+                onAppearanceChanged(
+                    appearance.copy(mode = mode),
+                )
+            },
+        )
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.appearanceAccentRows(
+    appearance: SableAppearance,
+    onAppearanceChanged: (SableAppearance) -> Unit,
+) {
+    items(AccentPreset.entries) { accent ->
+        val selected = appearance.accent == accent
+        AccentChoiceRow(
+            accent = accent,
+            selected = selected,
+            onClick = {
+                onAppearanceChanged(
+                    appearance.copy(accent = accent),
+                )
+            },
+        )
+    }
+}
+
+// Icon pack choices use the same selection state as the original Appearance page.
+@Suppress("FunctionNaming")
+@Composable
+private fun AppearanceIconPacks(accent: Color) {
+    val context = LocalContext.current
+    val packs = remember { IconPackLoader.installed(context) }
+    IconPacks.init(context)
+    AppearanceChoiceRow(
+        title = stringResource(R.string.icon_pack_default),
+        selected = IconPacks.selected == null,
+        accent = accent,
+        onClick = { IconPacks.select(context, null) },
+    )
+    packs.forEach { pack ->
+        AppearanceChoiceRow(
+            title = pack.label,
+            selected = IconPacks.selected == pack.packageName,
+            accent = accent,
+            onClick = { IconPacks.select(context, pack.packageName) },
+        )
+    }
+    if (packs.isEmpty()) {
+        Text(
+            text = stringResource(R.string.icon_pack_none),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+// Lock choice remains optional when Android does not expose the service.
+@Suppress("FunctionNaming")
+@Composable
+private fun AppearanceLockChoice(accent: Color) {
+    val context = LocalContext.current
+    // The lite build has no accessibility service, so the double-tap lock switch is not offered.
+    if (!rememberPlatformCapabilities().lockServiceAvailable) return
+    Spacer(Modifier.height(14.dp))
+    SectionLabel(stringResource(R.string.lock_label))
+    Spacer(Modifier.height(4.dp))
+    var enabled by remember { mutableStateOf(StartStateRepository(context).loadDoubleTapLock()) }
+    AppearanceChoiceRow(
+        title = stringResource(if (enabled) R.string.lock_on else R.string.lock_off),
+        selected = enabled,
+        accent = accent,
+        onClick = {
+            enabled = !enabled
+            StartStateRepository(context).saveDoubleTapLock(enabled)
+            if (enabled && !LockScreenAccessibilityService.isEnabled(context)) {
+                // The service is off until the user turns it on in Accessibility settings.
+                runCatching {
+                    context.startActivity(
+                        Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                }
+            }
+        },
+    )
+    Text(
+        text = stringResource(R.string.lock_explain),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+// Reset is independent of the other Appearance selections.
+@Suppress("FunctionNaming")
+@Composable
+private fun AppearanceResetChoice(onReset: () -> Unit) {
+    Spacer(Modifier.height(14.dp))
+    Text(
+        text = t("reset_follow_system_sable_blue"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .sableFocusRing()
+                .clickable(onClick = onReset)
+                .padding(vertical = 12.dp),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
 }
 
 @Composable
