@@ -12,11 +12,19 @@ class NotificationRecoveryControllerTest {
         var rebinds = 0
         var refreshes = 0
         val delayed = mutableListOf<Pair<Long, () -> Unit>>()
-        val controller = NotificationRecoveryController(
-            now = { time }, declared = { declared }, granted = { granted }, connected = { connected },
-            rebind = { rebinds++ }, refresh = { refreshes++; connected },
-            postDelayed = { delay, action -> delayed += delay to action },
-        )
+        val controller =
+            NotificationRecoveryController(
+                now = { time },
+                declared = { declared },
+                granted = { granted },
+                connected = { connected },
+                rebind = { rebinds++ },
+                refresh = {
+                    refreshes++
+                    connected
+                },
+                postDelayed = { delay, action -> delayed += delay to action },
+            )
     }
 
     @Test fun aGrantThatSettlesAfterReturningFromSettingsRecoversWithoutAToggle() {
@@ -52,7 +60,11 @@ class NotificationRecoveryControllerTest {
         f.delayed.forEach { it.second() }
         f.controller.retryFromSettings()
         assertEquals(1, f.rebinds)
-        val missing = Fixture().apply { declared = false; granted = true }
+        val missing =
+            Fixture().apply {
+                declared = false
+                granted = true
+            }
         missing.controller.onResume()
         missing.controller.retryFromSettings()
         assertTrue(missing.delayed.isEmpty())
@@ -60,7 +72,11 @@ class NotificationRecoveryControllerTest {
     }
 
     @Test fun retryRefreshesAConnectedListenerInsteadOfRebindingIt() {
-        val f = Fixture().apply { granted = true; connected = true }
+        val f =
+            Fixture().apply {
+                granted = true
+                connected = true
+            }
         f.controller.onResume()
         assertTrue(f.delayed.isEmpty())
         f.controller.retryFromSettings()

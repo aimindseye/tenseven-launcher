@@ -1,7 +1,7 @@
 package io.github.aimindseye.tenseven.model
 
-import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.live.LiveAvailability
+import io.github.aimindseye.tenseven.model.StartText.t
 
 /**
  * The header over Active Frames (the BB10 Home) and what Edit Home can hide.

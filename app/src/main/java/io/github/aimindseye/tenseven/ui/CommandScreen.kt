@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -31,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -85,6 +87,10 @@ import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import io.github.aimindseye.tenseven.privacy.PrivacySummaryPolicy
 import kotlinx.coroutines.launch
 import java.util.Locale
+
+private const val SEARCH_RECENT_APP_LIMIT = 6
+private const val SEARCH_MATCHED_APP_LIMIT = 12
+private const val SEARCH_PRIVACY_MATCH_LIMIT = 8
 
 @Composable
 internal fun SearchLaunchButton(
@@ -149,322 +155,558 @@ internal fun SearchScreen(
     onOpenSettings: () -> Unit,
     onStartIntent: (Intent) -> Unit,
 ) {
-    // Seeded by type-to-launch; the cursor sits after the seed so typing continues.
-    var query by remember(initialQuery) {
-        mutableStateOf(TextFieldValue(initialQuery, TextRange(initialQuery.length)))
-    }
-    var chip by remember { mutableStateOf<CommandScope?>(null) }
-    // The result whose actions are open ("app:<key>" or "cmd:<title>").
-    var actionsFor by remember { mutableStateOf<String?>(null) }
-    val typed = CommandQuery.parse(query.text)
-    val parsed = CommandGroups.apply(typed, chip)
-    val term = parsed.term
-    val locale = Locale.getDefault()
+    // Preserve the original independent remember lifetimes: only query resets with its seed.
+    val queryState =
+        remember(initialQuery) {
+            mutableStateOf(TextFieldValue(initialQuery, TextRange(initialQuery.length)))
+        }
+    val chipState = remember { mutableStateOf<CommandScope?>(null) }
+    val actionsState = remember { mutableStateOf<String?>(null) }
+    val ui = SearchUiState(queryState, chipState, actionsState)
+    val context = LocalContext.current
+    val appUsage = remember(apps, recentKeys) { AppUsageRepository(context).load() }
+    val input = SearchInput(apps, recentKeys, letterShortcuts, appUsage, privateSpaceLocked)
+    val routes =
+        SearchRoutes(
+            page = SearchPageRoutes(onAllApps, onAppearance, onFrames, onGrid, onHub, onEditHome),
+            system = SearchSystemRoutes(onOpenSettings, onStartIntent, onToggleWorkProfile),
+            workPaused = workProfilePaused,
+        )
+    val actions = SearchResultActions(onLaunchApp, secondInstanceOf, onOpenAppInfo, onOpenPeek)
+    val model = rememberSearchModel(ui, input, routes, context)
+    SearchScreenLayout(ui, model, actions, onBack, onTogglePrivateSpace)
+}
 
-    fun moveChip(delta: Int) {
-        chip = CommandGroups.next(chip ?: parsed.scope, delta)
+/** Search-only state survives recomposition, without changing the seed's remember key. */
+private class SearchUiState(
+    queryState: MutableState<TextFieldValue>,
+    chipState: MutableState<CommandScope?>,
+    actionsState: MutableState<String?>,
+) {
+    var query by queryState
+    var chip by chipState
+    var actionsFor by actionsState
+
+    fun moveChip(
+        scope: CommandScope,
+        delta: Int,
+    ) {
+        chip = CommandGroups.next(chip ?: scope, delta)
         actionsFor = null
     }
 
-    val profileApps =
-        when (parsed.scope) {
-            CommandScope.Private -> apps.filter { it.profileLabel == AppProfiles.PRIVATE }
-            CommandScope.Dual -> apps.filter { it.profileLabel == AppProfiles.DUAL }
-            CommandScope.Work -> apps.filter { it.profileLabel == AppProfiles.WORK }
-            else -> null
-        }
-    val usageContext = LocalContext.current
-    val appUsage = remember(apps, recentKeys) { AppUsageRepository(usageContext).load() }
-    val (filteredApps, privacyMatches) =
-        remember(apps, recentKeys, parsed, appUsage) {
-            if (profileApps != null) {
-                CommandRanking.apps(profileApps, { it.label }, { null }, term) to emptyList()
-            } else if (!parsed.includes(CommandScope.Apps)) {
-                emptyList<AppEntry>() to emptyList()
-            } else {
-                // Recents first, label prefix before contains; apps whose effective
-                // access matches privacy words ("camera", "mic") are their own group.
-                val byName =
-                    CommandRanking
-                        .apps(
-                            items = apps,
-                            label = { it.label },
-                            recentRank = { app -> recentKeys.indexOf(app.stableKey()).takeIf { it >= 0 } },
-                            term = term,
-                            frequency = { app -> appUsage.score(app.stableKey()) },
-                        ).take(if (term.isEmpty()) 6 else 12)
-                val byPrivacy =
-                    if (term.isEmpty()) {
-                        emptyList()
-                    } else {
-                        apps
-                            .filter { app ->
-                                app !in byName && PrivacySummaryPolicy.matchesPrivacyQuery(app.privacy, term)
-                            }.take(8)
-                    }
-                byName to byPrivacy
-            }
+    fun toggleActions(key: String) {
+        actionsFor = if (actionsFor == key) null else key
+    }
+}
+
+private data class SearchInput(
+    val apps: List<AppEntry>,
+    val recentKeys: List<String>,
+    val shortcuts: LetterShortcutRepository?,
+    val appUsage: AppUsage,
+    val privateSpaceLocked: Boolean?,
+)
+
+private data class SearchPageRoutes(
+    val allApps: () -> Unit,
+    val appearance: () -> Unit,
+    val frames: (() -> Unit)?,
+    val grid: () -> Unit,
+    val hub: (HubFilter) -> Unit,
+    val editHome: () -> Unit,
+)
+
+private data class SearchSystemRoutes(
+    val settings: () -> Unit,
+    val startIntent: (Intent) -> Unit,
+    val toggleWork: () -> Unit,
+)
+
+private data class SearchRoutes(
+    val page: SearchPageRoutes,
+    val system: SearchSystemRoutes,
+    val workPaused: Boolean?,
+)
+
+private data class SearchResultActions(
+    val launch: (AppEntry) -> Unit,
+    val secondInstance: (AppEntry) -> AppEntry?,
+    val appInfo: (AppEntry) -> Unit,
+    val peek: (AppEntry) -> Unit,
+)
+
+private data class SearchAppMatches(
+    val apps: List<AppEntry>,
+    val privacy: List<AppEntry>,
+)
+
+private data class SearchCommandGroups(
+    val quickLabel: String,
+    val filtered: List<SearchCommand>,
+    val settings: List<SearchCommand>,
+    val people: List<SearchCommand>,
+    val hub: List<SearchCommand>,
+    val quick: List<SearchCommand>,
+)
+
+private data class SearchBest(
+    val app: AppEntry?,
+    val command: SearchCommand?,
+    val firstOther: SearchCommand?,
+)
+
+private data class SearchModel(
+    val parsed: CommandQuery,
+    val profileApps: List<AppEntry>?,
+    val matches: SearchAppMatches,
+    val commands: SearchCommandGroups,
+    val best: SearchBest,
+    val lockedPrivate: Boolean,
+)
+
+private fun searchAppMatches(
+    apps: List<AppEntry>,
+    recentKeys: List<String>,
+    parsed: CommandQuery,
+    appUsage: AppUsage,
+    profileApps: List<AppEntry>?,
+): SearchAppMatches {
+    val term = parsed.term
+    return when {
+        profileApps != null -> {
+            SearchAppMatches(
+                CommandRanking.apps(profileApps, { it.label }, { null }, term),
+                emptyList(),
+            )
         }
 
-    val searchContext = LocalContext.current
-    val commands =
-        listOf(
-            SearchCommand(t("all_apps"), t("a_to_z_with_privacy"), "A", t("start"), onAllApps),
-            onFrames?.let { SearchCommand(t("active_frames"), t("open_apps_home"), "▦", t("start"), it) },
-            SearchCommand(t("app_grid"), t("every_app_in_your_order"), "▤", t("start"), onGrid),
-            SearchCommand(t("hub_page"), t("messages_mail_calls_contacts_and"), "◇", t("start"), { onHub(HubFilter.All) }),
-            SearchCommand(t("edit_home"), t("order_the_app_grid_the"), "▭", t("start"), onEditHome),
-            SearchCommand(t("appearance"), t("theme_and_sable_accent"), "◐", t("start"), onAppearance),
-            if (workProfilePaused != null) {
-                SearchCommand(
-                    searchContext.getString(if (workProfilePaused) R.string.work_resume else R.string.work_pause),
-                    searchContext.getString(R.string.work_hint),
-                    "▣",
-                    searchContext.getString(R.string.work_source),
-                    onToggleWorkProfile,
-                )
-            } else {
-                null
-            },
-            SearchCommand(
-                searchContext.getString(R.string.launcher_settings),
-                searchContext.getString(R.string.launcher_settings_hint),
-                "⚙",
-                t("start"),
-                { onStartIntent(Intent(searchContext, LauncherSettingsActivity::class.java)) },
-            ),
-            SearchCommand(
-                t("home_screen_style_2"),
-                searchContext.getString(R.string.style_command_hint),
-                "▭",
-                t("start"),
-                { onStartIntent(Intent(searchContext, HomeStyleActivity::class.java)) },
-            ),
-            SearchCommand(
-                searchContext.getString(R.string.setup_menu),
-                searchContext.getString(R.string.setup_command_hint),
-                "✓",
-                t("start"),
-                { onStartIntent(Intent(searchContext, OnboardingActivity::class.java)) },
-            ),
-            SearchCommand(
-                searchContext.getString(R.string.setup_extras_title),
-                searchContext.getString(R.string.extras_command_hint),
-                "✚",
-                t("start"),
-                {
-                    onStartIntent(
-                        Intent(searchContext, OnboardingActivity::class.java)
-                            .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.EXTRAS.name),
+        !parsed.includes(CommandScope.Apps) -> {
+            SearchAppMatches(emptyList(), emptyList())
+        }
+
+        else -> {
+            val byName =
+                CommandRanking
+                    .apps(
+                        items = apps,
+                        label = { it.label },
+                        recentRank = { app -> recentKeys.indexOf(app.stableKey()).takeIf { it >= 0 } },
+                        term = term,
+                        frequency = { app -> appUsage.score(app.stableKey()) },
+                    ).take(
+                        if (term.isEmpty()) SEARCH_RECENT_APP_LIMIT else SEARCH_MATCHED_APP_LIMIT,
                     )
-                },
-            ),
+            val byPrivacy =
+                if (term.isEmpty()) {
+                    emptyList()
+                } else {
+                    apps
+                        .filter { it !in byName && PrivacySummaryPolicy.matchesPrivacyQuery(it.privacy, term) }
+                        .take(SEARCH_PRIVACY_MATCH_LIMIT)
+                }
+            SearchAppMatches(byName, byPrivacy)
+        }
+    }
+}
+
+private fun searchPrimaryCommands(routes: SearchPageRoutes): List<SearchCommand> =
+    listOfNotNull(
+        SearchCommand(t("all_apps"), t("a_to_z_with_privacy"), "A", t("start"), routes.allApps),
+        routes.frames?.let { SearchCommand(t("active_frames"), t("open_apps_home"), "▦", t("start"), it) },
+        SearchCommand(t("app_grid"), t("every_app_in_your_order"), "▤", t("start"), routes.grid),
+        SearchCommand(
+            t("hub_page"),
+            t("messages_mail_calls_contacts_and"),
+            "◇",
+            t("start"),
+            { routes.hub(HubFilter.All) },
+        ),
+        SearchCommand(t("edit_home"), t("order_the_app_grid_the"), "▭", t("start"), routes.editHome),
+        SearchCommand(t("appearance"), t("theme_and_sable_accent"), "◐", t("start"), routes.appearance),
+    )
+
+private fun searchSystemCommands(
+    context: Context,
+    workPaused: Boolean?,
+    routes: SearchSystemRoutes,
+): List<SearchCommand> =
+    listOfNotNull(
+        if (workPaused != null) {
             SearchCommand(
-                searchContext.getString(R.string.backup_menu),
-                searchContext.getString(R.string.backup_command_hint),
-                "⇅",
-                t("start"),
-                { onStartIntent(Intent(searchContext, BackupActivity::class.java)) },
-            ),
-            SearchCommand(t("system_settings"), t("open_android_settings"), "⚙", t("settings"), onOpenSettings),
-        ).filterNotNull()
-    val filteredCommands =
-        if (!parsed.includes(CommandScope.Actions) || parsed.profileScope) {
-            emptyList()
+                context.getString(if (workPaused) R.string.work_resume else R.string.work_pause),
+                context.getString(R.string.work_hint),
+                "▣",
+                context.getString(R.string.work_source),
+                routes.toggleWork,
+            )
         } else {
-            commands.filter { command ->
-                term.isEmpty() ||
-                    command.title.lowercase(locale).contains(term.lowercase(locale)) ||
-                    command.subtitle.lowercase(locale).contains(term.lowercase(locale))
-            }
-        }
-    val settingsResults = if (parsed.profileScope) emptyList() else settingsResults(parsed, onStartIntent, onOpenSettings)
-    val peopleResults = if (parsed.profileScope) emptyList() else peopleResults(parsed, onStartIntent, onHub)
-    val hubResults = if (parsed.profileScope) emptyList() else hubResults(parsed, onHub)
-    val quickRows =
-        quickActionRows(searchContext, query.text, onStartIntent) +
-            assignRows(searchContext, query.text, apps, appUsage, letterShortcuts)
-    val firstOther =
-        (quickRows + filteredCommands.takeIf { term.isNotEmpty() }.orEmpty() + settingsResults + peopleResults + hubResults)
-            .firstOrNull()
-    val bestIsApp = CommandBestMatch.appWins(filteredApps.firstOrNull()?.label, firstOther?.title, term)
-    val bestApp = filteredApps.firstOrNull()?.takeIf { bestIsApp == true }
-    val bestOther = firstOther?.takeIf { bestIsApp == false }
-    val lockedPrivate = privateSpaceLocked == true && (parsed.scope == CommandScope.Private || term.isNotEmpty())
+            null
+        },
+        SearchCommand(
+            context.getString(R.string.launcher_settings),
+            context.getString(R.string.launcher_settings_hint),
+            "⚙",
+            t("start"),
+            { routes.startIntent(Intent(context, LauncherSettingsActivity::class.java)) },
+        ),
+        SearchCommand(
+            t("home_screen_style_2"),
+            context.getString(R.string.style_command_hint),
+            "▭",
+            t("start"),
+            { routes.startIntent(Intent(context, HomeStyleActivity::class.java)) },
+        ),
+        SearchCommand(
+            context.getString(R.string.setup_menu),
+            context.getString(R.string.setup_command_hint),
+            "✓",
+            t("start"),
+            { routes.startIntent(Intent(context, OnboardingActivity::class.java)) },
+        ),
+        SearchCommand(
+            context.getString(R.string.setup_extras_title),
+            context.getString(R.string.extras_command_hint),
+            "✚",
+            t("start"),
+            {
+                routes.startIntent(
+                    Intent(context, OnboardingActivity::class.java)
+                        .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.EXTRAS.name),
+                )
+            },
+        ),
+        SearchCommand(
+            context.getString(R.string.backup_menu),
+            context.getString(R.string.backup_command_hint),
+            "⇅",
+            t("start"),
+            { routes.startIntent(Intent(context, BackupActivity::class.java)) },
+        ),
+        SearchCommand(t("system_settings"), t("open_android_settings"), "⚙", t("settings"), routes.settings),
+    )
 
-    fun appActions(app: AppEntry): List<Pair<String, () -> Unit>> =
-        buildList {
-            add("open" to { onLaunchApp(app) })
-            secondInstanceOf(app)?.let { other ->
-                add((if (other.profileLabel == AppProfiles.DUAL) t("open_dual_copy") else t("open_personal_app")) to { onLaunchApp(other) })
-            }
-            add(t("app_info_2") to { onOpenAppInfo(app) })
-            add(t("more_actions") to { onOpenPeek(app) })
-        }
-
-    @Composable
-    fun AppResult(app: AppEntry) {
-        val key = "app:" + app.stableKey()
-        AppRow(
-            app = app,
-            onClick = { onLaunchApp(app) },
-            onContext = { actionsFor = if (actionsFor == key) null else key },
-            modifier =
-                Modifier.onPreviewKeyEvent { event ->
-                    val native = event.nativeKeyEvent
-                    val decision = AllAppsKeyPolicy.decide(native.keyCode, 0, native.metaState, native.repeatCount > 0)
-                    val action: (() -> Unit)? =
-                        when (decision.action) {
-                            AllAppsKeyAction.OpenSecond -> {
-                                { onLaunchApp(secondInstanceOf(app) ?: app) }
-                            }
-
-                            AllAppsKeyAction.Actions -> {
-                                { actionsFor = if (actionsFor == key) null else key }
-                            }
-
-                            else -> {
-                                null
-                            }
-                        }
-                    if (action != null && event.type == KeyEventType.KeyDown) action()
-                    action != null
-                },
-        )
-        if (actionsFor == key) EditOptions(appActions(app))
+private fun searchProfileApps(
+    apps: List<AppEntry>,
+    scope: CommandScope,
+): List<AppEntry>? =
+    when (scope) {
+        CommandScope.Private -> apps.filter { it.profileLabel == AppProfiles.PRIVATE }
+        CommandScope.Dual -> apps.filter { it.profileLabel == AppProfiles.DUAL }
+        CommandScope.Work -> apps.filter { it.profileLabel == AppProfiles.WORK }
+        else -> null
     }
 
-    @Composable
-    fun CommandResult(command: SearchCommand) {
-        val key = "cmd:" + command.source + ":" + command.title
-        SearchCommandRow(
-            command = command,
-            onActions = { actionsFor = if (actionsFor == key) null else key },
-        )
-        if (actionsFor == key) EditOptions(command.actions.ifEmpty { listOf("open" to command.onClick) })
+private fun searchFilteredCommands(
+    parsed: CommandQuery,
+    commands: List<SearchCommand>,
+): List<SearchCommand> {
+    if (!parsed.includes(CommandScope.Actions) || parsed.profileScope) return emptyList()
+    val locale = Locale.getDefault()
+    val term = parsed.term.lowercase(locale)
+    return commands.filter { item ->
+        term.isEmpty() || item.title.lowercase(locale).contains(term) || item.subtitle.lowercase(locale).contains(term)
     }
+}
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-    ) {
-        MetroHeader(
-            title = "search",
-            onBack = onBack,
-        )
+private fun searchCommandGroups(
+    context: Context,
+    parsed: CommandQuery,
+    routes: SearchRoutes,
+    input: SearchInput,
+    raw: String,
+): SearchCommandGroups {
+    val commands = searchPrimaryCommands(routes.page) + searchSystemCommands(context, routes.workPaused, routes.system)
+    return SearchCommandGroups(
+        quickLabel = context.getString(R.string.quick_group),
+        filtered = searchFilteredCommands(parsed, commands),
+        settings =
+            if (parsed.profileScope) {
+                emptyList()
+            } else {
+                settingsResults(
+                    parsed,
+                    routes.system.startIntent,
+                    routes.system.settings,
+                )
+            },
+        people =
+            if (parsed.profileScope) {
+                emptyList()
+            } else {
+                peopleResults(
+                    parsed,
+                    routes.system.startIntent,
+                    routes.page.hub,
+                )
+            },
+        hub = if (parsed.profileScope) emptyList() else hubResults(parsed, routes.page.hub),
+        quick =
+            quickActionRows(context, raw, routes.system.startIntent) +
+                assignRows(context, raw, input.apps, input.appUsage, input.shortcuts),
+    )
+}
+
+private fun searchFirstOther(
+    groups: SearchCommandGroups,
+    term: String,
+): SearchCommand? =
+    (
+        groups.quick + groups.filtered.takeIf { term.isNotEmpty() }.orEmpty() +
+            groups.settings + groups.people + groups.hub
+    ).firstOrNull()
+
+private fun searchBestMatch(
+    matches: SearchAppMatches,
+    groups: SearchCommandGroups,
+    term: String,
+): SearchBest {
+    val firstOther = searchFirstOther(groups, term)
+    val bestIsApp = CommandBestMatch.appWins(matches.apps.firstOrNull()?.label, firstOther?.title, term)
+    return SearchBest(
+        matches.apps.firstOrNull()?.takeIf { bestIsApp == true },
+        firstOther?.takeIf { bestIsApp == false },
+        firstOther,
+    )
+}
+
+@Composable
+private fun rememberSearchModel(
+    ui: SearchUiState,
+    input: SearchInput,
+    routes: SearchRoutes,
+    context: Context,
+): SearchModel {
+    val parsed = CommandGroups.apply(CommandQuery.parse(ui.query.text), ui.chip)
+    val profileApps = searchProfileApps(input.apps, parsed.scope)
+    val matches =
+        remember(input.apps, input.recentKeys, parsed, input.appUsage) {
+            searchAppMatches(input.apps, input.recentKeys, parsed, input.appUsage, profileApps)
+        }
+    val results = searchCommandGroups(context, parsed, routes, input, ui.query.text)
+    return SearchModel(
+        parsed = parsed,
+        profileApps = profileApps,
+        matches = matches,
+        commands = results,
+        best = searchBestMatch(matches, results, parsed.term),
+        lockedPrivate =
+            input.privateSpaceLocked == true &&
+                (parsed.scope == CommandScope.Private || parsed.term.isNotEmpty()),
+    )
+}
+
+@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
+@Composable
+private fun SearchScreenLayout(
+    ui: SearchUiState,
+    model: SearchModel,
+    actions: SearchResultActions,
+    onBack: () -> Unit,
+    onTogglePrivateSpace: () -> Unit,
+) {
+    val moveChip: (Int) -> Unit = { delta -> ui.moveChip(model.parsed.scope, delta) }
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp)) {
+        MetroHeader(title = "search", onBack = onBack)
         Spacer(Modifier.height(10.dp))
-
         SableSearchField(
-            value = query,
+            value = ui.query,
             onValueChange = {
-                query = it
-                actionsFor = null
+                ui.query = it
+                ui.actionsFor = null
             },
-            // Enter opens the best match: else the first app, else the first other result.
             onSubmit = {
-                bestApp?.let(onLaunchApp)
-                    ?: bestOther?.onClick?.invoke()
-                    ?: filteredApps.firstOrNull()?.let(onLaunchApp)
-                    ?: firstOther?.onClick?.invoke()
+                model.best.app?.let(actions.launch)
+                    ?: model.best.command
+                        ?.onClick
+                        ?.invoke()
+                    ?: model.matches.apps
+                        .firstOrNull()
+                        ?.let(actions.launch)
+                    ?: model.best.firstOther
+                        ?.onClick
+                        ?.invoke()
             },
-            onGroupDelta = ::moveChip,
+            onGroupDelta = moveChip,
         )
         Spacer(Modifier.height(8.dp))
-        CommandChips(selected = if (parsed.profileScope) null else parsed.scope, onSelect = { chip = it })
+        CommandChips(
+            selected = if (model.parsed.profileScope) null else model.parsed.scope,
+            onSelect = { ui.chip = it },
+        )
         Spacer(Modifier.height(8.dp))
-
         LazyColumn(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .onPreviewKeyEvent { event ->
-                        // ←→ on a result moves between the groups; ↑↓ stay one list.
-                        val native = event.nativeKeyEvent
-                        val delta = AppGrid.arrowDelta(native.keyCode)?.takeIf { it == -1 || it == 1 }
-                        if (delta == null || native.metaState != 0) return@onPreviewKeyEvent false
-                        if (event.type == KeyEventType.KeyDown) moveChip(delta)
-                        true
-                    },
+                Modifier.fillMaxSize().onPreviewKeyEvent { event ->
+                    val native = event.nativeKeyEvent
+                    val delta = AppGrid.arrowDelta(native.keyCode)?.takeIf { it == -1 || it == 1 }
+                    if (delta == null || native.metaState != 0) return@onPreviewKeyEvent false
+                    if (event.type == KeyEventType.KeyDown) moveChip(delta)
+                    true
+                },
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            if (lockedPrivate) {
-                item(key = "locked") {
-                    PrivateLockedCard(onUnlock = onTogglePrivateSpace, full = parsed.scope == CommandScope.Private)
-                    Spacer(Modifier.height(12.dp))
+            addSearchResults(model, ui, actions, onTogglePrivateSpace)
+        }
+    }
+}
+
+private fun LazyListScope.addSearchResults(
+    model: SearchModel,
+    ui: SearchUiState,
+    actions: SearchResultActions,
+    onTogglePrivateSpace: () -> Unit,
+) {
+    if (model.lockedPrivate) {
+        item(key = "locked") {
+            PrivateLockedCard(onUnlock = onTogglePrivateSpace, full = model.parsed.scope == CommandScope.Private)
+            Spacer(Modifier.height(12.dp))
+        }
+    }
+    if (model.best.app != null || model.best.command != null) {
+        item(key = "best") {
+            SearchBestMatch {
+                val bestApp = model.best.app
+                if (bestApp != null) {
+                    SearchAppResult(bestApp, ui, actions)
+                } else {
+                    model.best.command?.let { SearchCommandResult(it, ui) }
                 }
-            }
-            if (bestApp != null || bestOther != null) {
-                item(key = "best") {
-                    SearchBestMatch {
-                        if (bestApp != null) AppResult(bestApp) else bestOther?.let { CommandResult(it) }
-                    }
-                }
-            }
-            val apps1 = filteredApps.filterNot { it == bestApp }
-            if (apps1.isNotEmpty()) {
-                item {
-                    SectionLabel(
-                        if (profileApps !=
-                            null
-                        ) {
-                            CommandGroups.label(parsed.scope).lowercase(locale) + " apps"
-                        } else if (term.isEmpty()) {
-                            t("recent_apps")
-                        } else {
-                            "apps"
-                        },
-                    )
-                }
-                items(apps1, key = { "a:" + it.stableKey() }) { app -> AppResult(app) }
-                item { Spacer(Modifier.height(12.dp)) }
-            }
-            if (privacyMatches.isNotEmpty()) {
-                item { SectionLabel(t("permission_matches")) }
-                items(privacyMatches, key = { "p:" + it.stableKey() }) { app -> AppResult(app) }
-                item { Spacer(Modifier.height(12.dp)) }
-            }
-            listOf(
-                searchContext.getString(R.string.quick_group) to quickRows,
-                "people" to peopleResults,
-                "settings" to settingsResults,
-                "hub" to hubResults,
-                (if (term.isEmpty()) t("quick_actions") else "actions") to filteredCommands,
-            ).forEach { (label, rows) ->
-                val shown = rows.filterNot { it == bestOther }
-                if (shown.isNotEmpty()) {
-                    item { SectionLabel(label) }
-                    items(shown, key = { "$label:" + it.source + it.title }) { command -> CommandResult(command) }
-                    item { Spacer(Modifier.height(12.dp)) }
-                }
-            }
-            val noMatches =
-                listOf(
-                    filteredApps,
-                    privacyMatches,
-                    filteredCommands,
-                    settingsResults,
-                    quickRows,
-                    peopleResults,
-                    hubResults,
-                ).all { it.isEmpty() }
-            if (noMatches && !lockedPrivate) {
-                item {
-                    EmptyState(
-                        t("no_local_results_match_prefixes", term),
-                    )
-                }
-            }
-            item {
-                Text(
-                    text = t("results_groups_enter_opens_shift"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
     }
+    addSearchAppItems(model, ui, actions)
+    addSearchCommandItems(model, ui)
+    item {
+        Text(
+            text = t("results_groups_enter_opens_shift"),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun LazyListScope.addSearchAppItems(
+    model: SearchModel,
+    ui: SearchUiState,
+    actions: SearchResultActions,
+) {
+    val apps = model.matches.apps.filterNot { it == model.best.app }
+    if (apps.isNotEmpty()) {
+        item {
+            SectionLabel(
+                when {
+                    model.profileApps != null -> {
+                        CommandGroups.label(model.parsed.scope).lowercase(Locale.getDefault()) + " apps"
+                    }
+
+                    model.parsed.term.isEmpty() -> {
+                        t("recent_apps")
+                    }
+
+                    else -> {
+                        "apps"
+                    }
+                },
+            )
+        }
+        items(apps, key = { "a:" + it.stableKey() }) { app -> SearchAppResult(app, ui, actions) }
+        item { Spacer(Modifier.height(12.dp)) }
+    }
+    if (model.matches.privacy.isNotEmpty()) {
+        item { SectionLabel(t("permission_matches")) }
+        items(model.matches.privacy, key = { "p:" + it.stableKey() }) { app -> SearchAppResult(app, ui, actions) }
+        item { Spacer(Modifier.height(12.dp)) }
+    }
+}
+
+private fun LazyListScope.addSearchCommandItems(
+    model: SearchModel,
+    ui: SearchUiState,
+) {
+    val groups = model.commands
+    listOf(
+        groups.quickLabel to groups.quick,
+        "people" to groups.people,
+        "settings" to groups.settings,
+        "hub" to groups.hub,
+        (if (model.parsed.term.isEmpty()) t("quick_actions") else "actions") to groups.filtered,
+    ).forEach { (label, rows) ->
+        val shown = rows.filterNot { it == model.best.command }
+        if (shown.isNotEmpty()) {
+            item { SectionLabel(label) }
+            items(shown, key = { "$label:" + it.source + it.title }) { command -> SearchCommandResult(command, ui) }
+            item { Spacer(Modifier.height(12.dp)) }
+        }
+    }
+    val noMatches =
+        listOf(
+            model.matches.apps,
+            model.matches.privacy,
+            groups.filtered,
+            groups.settings,
+            groups.quick,
+            groups.people,
+            groups.hub,
+        ).all { it.isEmpty() }
+    if (noMatches && !model.lockedPrivate) {
+        item { EmptyState(t("no_local_results_match_prefixes", model.parsed.term)) }
+    }
+}
+
+private fun searchAppActions(
+    app: AppEntry,
+    actions: SearchResultActions,
+): List<Pair<String, () -> Unit>> =
+    buildList {
+        add("open" to { actions.launch(app) })
+        actions.secondInstance(app)?.let { other ->
+            val label = if (other.profileLabel == AppProfiles.DUAL) t("open_dual_copy") else t("open_personal_app")
+            add(label to { actions.launch(other) })
+        }
+        add(t("app_info_2") to { actions.appInfo(app) })
+        add(t("more_actions") to { actions.peek(app) })
+    }
+
+@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
+@Composable
+private fun SearchAppResult(app: AppEntry, ui: SearchUiState, actions: SearchResultActions) {
+    val key = "app:" + app.stableKey()
+    AppRow(
+        app = app,
+        onClick = { actions.launch(app) },
+        onContext = { ui.toggleActions(key) },
+        modifier =
+            Modifier.onPreviewKeyEvent { event ->
+                val native = event.nativeKeyEvent
+                val decision = AllAppsKeyPolicy.decide(native.keyCode, 0, native.metaState, native.repeatCount > 0)
+                val action: (() -> Unit)? =
+                    when (decision.action) {
+                        AllAppsKeyAction.OpenSecond -> {
+                            { actions.launch(actions.secondInstance(app) ?: app) }
+                        }
+
+                        AllAppsKeyAction.Actions -> {
+                            { ui.toggleActions(key) }
+                        }
+
+                        else -> {
+                            null
+                        }
+                    }
+                if (action != null && event.type == KeyEventType.KeyDown) action()
+                action != null
+            },
+    )
+    if (ui.actionsFor == key) EditOptions(searchAppActions(app, actions))
+}
+
+@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
+@Composable
+private fun SearchCommandResult(command: SearchCommand, ui: SearchUiState) {
+    val key = "cmd:" + command.source + ":" + command.title
+    SearchCommandRow(command = command, onActions = { ui.toggleActions(key) })
+    if (ui.actionsFor == key) EditOptions(command.actions.ifEmpty { listOf("open" to command.onClick) })
 }
 
 /** The group chips over the results; the current scope is filled. */
@@ -648,12 +890,7 @@ internal fun SableSearchField(
     onSubmit: () -> Unit,
     onGroupDelta: (Int) -> Unit,
 ) {
-    // The field takes focus on arrival so the keyboard types straight into it.
-    val fieldFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
-        withFrameNanos { }
-        runCatching { fieldFocus.requestFocus() }
-    }
+    val fieldFocus = rememberSearchFieldFocus()
     Row(
         modifier =
             Modifier
@@ -661,13 +898,7 @@ internal fun SableSearchField(
                 .heightIn(min = 62.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .width(4.dp)
-                    .height(46.dp)
-                    .background(MaterialTheme.colorScheme.primary),
-        )
+        Box(modifier = Modifier.searchAccentModifier())
         Spacer(Modifier.width(12.dp))
         Column(
             modifier = Modifier.weight(1f),
@@ -679,43 +910,8 @@ internal fun SableSearchField(
                     Modifier
                         .fillMaxWidth()
                         .focusRequester(fieldFocus)
-                        .onPreviewKeyEvent { event ->
-                            val native = event.nativeKeyEvent
-                            val selection = value.selection
-                            when {
-                                event.type != KeyEventType.KeyDown -> {
-                                    false
-                                }
-
-                                // Holding Backspace clears the whole query.
-                                native.keyCode == KEYCODE_DEL && native.repeatCount > 0 -> {
-                                    if (value.text.isNotEmpty()) onValueChange(TextFieldValue(""))
-                                    true
-                                }
-
-                                native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && native.repeatCount == 0 -> {
-                                    onSubmit()
-                                    true
-                                }
-
-                                // Left at the start or Right at the end of the query: previous / next group.
-                                native.metaState == 0 && selection.collapsed &&
-                                    native.keyCode == KEYCODE_DPAD_LEFT && selection.start == 0 -> {
-                                    onGroupDelta(-1)
-                                    true
-                                }
-
-                                native.metaState == 0 && selection.collapsed &&
-                                    native.keyCode == KEYCODE_DPAD_RIGHT && selection.end == value.text.length -> {
-                                    onGroupDelta(1)
-                                    true
-                                }
-
-                                else -> {
-                                    false
-                                }
-                            }
-                        }.padding(vertical = 8.dp),
+                        .sableSearchKeyHandling(value, onValueChange, onSubmit, onGroupDelta)
+                        .padding(vertical = 8.dp),
                 singleLine = true,
                 textStyle =
                     MaterialTheme.typography.titleLarge.copy(
@@ -740,6 +936,73 @@ internal fun SableSearchField(
                         .background(MaterialTheme.colorScheme.onSurfaceVariant),
             )
         }
+    }
+}
+
+@Composable
+private fun Modifier.searchAccentModifier(): Modifier =
+    width(4.dp)
+        .height(46.dp)
+        .background(MaterialTheme.colorScheme.primary)
+
+@Composable
+private fun rememberSearchFieldFocus(): FocusRequester {
+    // The field takes focus on arrival so the keyboard types straight into it.
+    val fieldFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        runCatching { fieldFocus.requestFocus() }
+    }
+    return fieldFocus
+}
+
+private fun Modifier.sableSearchKeyHandling(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    onSubmit: () -> Unit,
+    onGroupDelta: (Int) -> Unit,
+): Modifier =
+    onPreviewKeyEvent { event ->
+        val native = event.nativeKeyEvent
+        val groupDirection = searchGroupDirection(value, native.keyCode, native.metaState)
+        when {
+            event.type != KeyEventType.KeyDown -> {
+                false
+            }
+
+            // Holding Backspace clears the whole query.
+            native.keyCode == KEYCODE_DEL && native.repeatCount > 0 -> {
+                if (value.text.isNotEmpty()) onValueChange(TextFieldValue(""))
+                true
+            }
+
+            native.keyCode == AllAppsKeyPolicy.KEYCODE_ENTER && native.repeatCount == 0 -> {
+                onSubmit()
+                true
+            }
+
+            // Left/right at the query boundaries navigates between groups.
+            groupDirection != 0 -> {
+                onGroupDelta(groupDirection)
+                true
+            }
+
+            else -> {
+                false
+            }
+        }
+    }
+
+private fun searchGroupDirection(
+    value: TextFieldValue,
+    keyCode: Int,
+    metaState: Int,
+): Int {
+    if (metaState != 0 || !value.selection.collapsed) return 0
+    return when {
+        keyCode == KEYCODE_DPAD_LEFT && value.selection.start == 0 -> -1
+        keyCode == KEYCODE_DPAD_RIGHT && value.selection.end == value.text.length -> 1
+        else -> 0
     }
 }
 
@@ -848,6 +1111,46 @@ internal fun quickActionRows(
 }
 
 /** `assign k camera` lists the apps that K could open; choosing one holds it on K. `unassign k` frees the letter. */
+private fun clearAssignRows(
+    context: Context,
+    apps: List<AppEntry>,
+    shortcuts: LetterShortcutRepository,
+    request: AssignRequest.Clear,
+): List<SearchCommand> {
+    val current = shortcuts.load()
+    val source = context.getString(R.string.assign_source)
+    val letter = request.letter.uppercaseChar()
+
+    val held = current.componentFor(request.letter)?.let(android.content.ComponentName::unflattenFromString)
+    val label = held?.let { c -> apps.firstOrNull { it.component == c }?.label ?: c.packageName }
+    return if (held == null || label == null) {
+        listOf(SearchCommand(context.getString(R.string.assign_nothing, letter), "", "$letter", source, {}))
+    } else {
+        listOf(
+            SearchCommand(
+                context.getString(R.string.assign_clear, letter, label),
+                context.getString(R.string.assign_hint, letter),
+                "$letter",
+                source,
+                {
+                    shortcuts.remove(held)
+                    Toast.makeText(context, context.getString(R.string.assign_cleared, letter), Toast.LENGTH_SHORT).show()
+                },
+            ),
+        )
+    }
+}
+
+private fun assignmentReplacementName(
+    holder: String?,
+    app: AppEntry,
+    apps: List<AppEntry>,
+): String? =
+    holder
+        ?.takeIf { it != app.component.flattenToString() }
+        ?.let(android.content.ComponentName::unflattenFromString)
+        ?.let { component -> apps.firstOrNull { it.component == component }?.label ?: component.packageName }
+
 internal fun assignRows(
     context: Context,
     raw: String,
@@ -855,31 +1158,15 @@ internal fun assignRows(
     usage: AppUsage,
     letterShortcuts: LetterShortcutRepository?,
 ): List<SearchCommand> {
-    val request = AssignCommand.parse(raw) ?: return emptyList()
-    val shortcuts = letterShortcuts ?: return emptyList()
+    val request = AssignCommand.parse(raw)
+    val shortcuts = letterShortcuts
+    if (request == null || shortcuts == null) return emptyList()
     val source = context.getString(R.string.assign_source)
     val letter = request.letter.uppercaseChar()
     val current = shortcuts.load()
     return when (request) {
         is AssignRequest.Clear -> {
-            val held = current.componentFor(request.letter)?.let(android.content.ComponentName::unflattenFromString)
-            val label = held?.let { c -> apps.firstOrNull { it.component == c }?.label ?: c.packageName }
-            if (held == null || label == null) {
-                listOf(SearchCommand(context.getString(R.string.assign_nothing, letter), "", "$letter", source, {}))
-            } else {
-                listOf(
-                    SearchCommand(
-                        context.getString(R.string.assign_clear, letter, label),
-                        context.getString(R.string.assign_hint, letter),
-                        "$letter",
-                        source,
-                        {
-                            shortcuts.remove(held)
-                            Toast.makeText(context, context.getString(R.string.assign_cleared, letter), Toast.LENGTH_SHORT).show()
-                        },
-                    ),
-                )
-            }
+            clearAssignRows(context, apps, shortcuts, request)
         }
 
         is AssignRequest.Assign -> {
@@ -893,11 +1180,7 @@ internal fun assignRows(
                 ).take(ASSIGN_ROWS)
                 .map { app ->
                     val holder = current.componentFor(request.letter)
-                    val replaces =
-                        holder
-                            ?.takeIf { it != app.component.flattenToString() }
-                            ?.let(android.content.ComponentName::unflattenFromString)
-                            ?.let { c -> apps.firstOrNull { it.component == c }?.label ?: c.packageName }
+                    val replaces = assignmentReplacementName(holder, app, apps)
                     SearchCommand(
                         context.getString(R.string.assign_row, letter, app.label),
                         if (replaces !=

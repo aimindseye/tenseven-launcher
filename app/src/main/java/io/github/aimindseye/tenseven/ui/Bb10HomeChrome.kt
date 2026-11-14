@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -48,6 +49,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
@@ -62,6 +64,8 @@ import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.Bb10Gestures
 import io.github.aimindseye.tenseven.model.HomeHeader
+import io.github.aimindseye.tenseven.model.HomeStatusMode
+import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.LauncherKeys
 import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.SpeedDialKeys
@@ -69,6 +73,7 @@ import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.StartTypeToSearch
 import io.github.aimindseye.tenseven.platform.DeviceCompatibility
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.privacy.AllAppsKeyPolicy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -150,79 +155,13 @@ internal fun StartStrip(
             Modifier
                 .fillMaxSize()
                 .background(Bb10Background.copy(alpha = LocalHomeBackdrop.current))
-                .onPreviewKeyEvent { event ->
-                    val native = event.nativeKeyEvent
-                    val delta = StartPages.keyDelta(native.keyCode, native.metaState)
-                    val alt = native.metaState and (QuickBar.META_ALT_ON or QuickBar.META_FUNCTION_ON) != 0
-                    val dial = if (phoneSlotFocused) QuickBar.dialChar(native.unicodeChar) else null
-                    val slot =
-                        QuickBar.shortcutSlot(
-                            keyCode = native.keyCode,
-                            metaState = native.metaState,
-                            slotCount = quickSlots.size,
-                            unicode = native.unicodeChar,
-                        )
-                    val action: (() -> Unit)? =
-                        when {
-                            delta != null -> {
-                                { onMovePage(delta) }
-                            }
-
-                            alt && native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE -> {
-                                onCommand
-                            }
-
-                            dial != null -> {
-                                { onDial(dial) }
-                            }
-
-                            slot != null -> {
-                                { onQuickSlot(quickSlots[slot]) }
-                            }
-
-                            else -> {
-                                null
-                            }
-                        }
-                    if (action != null && event.type == KeyEventType.KeyDown && native.repeatCount == 0) action()
-                    action != null
-                }.onKeyEvent { event ->
-                    // What no frame, icon or slot took: Menu edits Home, printable keys search.
-                    val native = event.nativeKeyEvent
-                    if (DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu) {
-                        if (event.type == KeyEventType.KeyDown) onEditHome()
-                        return@onKeyEvent true
-                    }
-                    val down = event.type == KeyEventType.KeyDown
-                    val seed =
-                        if (down) {
-                            StartTypeToSearch.seed(
-                                unicode = native.unicodeChar,
-                                metaState = native.metaState,
-                                repeat = native.repeatCount > 0,
-                            )
-                        } else {
-                            null
-                        }
-                    // Holding a speed dial letter calls it; a short press of it still searches.
-                    val step =
-                        speedDialKeys.onKey(
-                            native.keyCode,
-                            down,
-                            native.repeatCount,
-                            native.metaState,
-                            seed,
-                            speedDialLetters,
-                        )
-                    when {
-                        step is SpeedDialKeys.Step.Call -> onSpeedDial(step.letter)
-                        step is SpeedDialKeys.Step.Search -> onTypeToSearch(step.seed)
-                        step == SpeedDialKeys.Step.Consume -> Unit
-                        seed != null -> onTypeToSearch(seed.toString())
-                        else -> return@onKeyEvent false
-                    }
-                    true
-                }
+                .startStripPreviewEvents(
+                    StripInputState(quickSlots, phoneSlotFocused, speedDialLetters, speedDialKeys),
+                    StripNavigationActions(onMovePage, onQuickSlot, onDial, onCommand),
+                ).startStripSearchEvents(
+                    StripInputState(quickSlots, phoneSlotFocused, speedDialLetters, speedDialKeys),
+                    StripSearchActions(onEditHome, onTypeToSearch, onSpeedDial),
+                )
                 // After the key handlers, so they sit above this focus target: with nothing else focused (a
                 // touch launch) Home still receives type-to-search, Alt+Space and Menu.
                 .focusRequester(homeFocus)
@@ -240,20 +179,143 @@ internal fun StartStrip(
         HorizontalPager(
             state = state,
             beyondViewportPageCount = 0,
+            // Hub handles right swipe -> its Settings panel; left swipe -> Home.
+            userScrollEnabled = state.currentPage - pageLead != StartPages.HUB,
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { index -> page(index) }
-        ReferenceHomeBar(
-            slots = quickSlots,
-            pages = HomeBarPages(state.currentPage, pageCount, pageLead),
-            actions =
-                HomeBarActions(
-                    onShowPage,
-                    onQuickSlot,
-                    onSlotOptions,
-                    peek = onHubPeek,
-                ) { phoneSlotFocused = it },
-        )
+        if (state.currentPage != StartPages.HUB + pageLead) {
+            ReferenceHomeBar(
+                slots = quickSlots,
+                pages = HomeBarPages(state.currentPage, pageCount, pageLead),
+                actions =
+                    HomeBarActions(
+                        onShowPage,
+                        onQuickSlot,
+                        onSlotOptions,
+                        peek = onHubPeek,
+                    ) { phoneSlotFocused = it },
+            )
+        }
     }
+}
+
+private data class StripInputState(
+    val quickSlots: List<QuickSlot>,
+    val phoneSlotFocused: Boolean,
+    val speedDialLetters: Set<Char>,
+    val speedDialKeys: SpeedDialKeys,
+)
+
+private data class StripNavigationActions(
+    val onMovePage: (Int) -> Unit,
+    val onQuickSlot: (QuickSlot) -> Unit,
+    val onDial: (Char) -> Unit,
+    val onCommand: () -> Unit,
+)
+
+private data class StripSearchActions(
+    val onEditHome: () -> Unit,
+    val onTypeToSearch: (String) -> Unit,
+    val onSpeedDial: (Char) -> Unit,
+)
+
+private fun Modifier.startStripPreviewEvents(
+    state: StripInputState,
+    actions: StripNavigationActions,
+): Modifier {
+    val quickSlots = state.quickSlots
+    val phoneSlotFocused = state.phoneSlotFocused
+    val onMovePage = actions.onMovePage
+    val onQuickSlot = actions.onQuickSlot
+    val onDial = actions.onDial
+    val onCommand = actions.onCommand
+    return this
+        .onPreviewKeyEvent { event ->
+            val native = event.nativeKeyEvent
+            val delta = StartPages.keyDelta(native.keyCode, native.metaState)
+            val alt = native.metaState and (QuickBar.META_ALT_ON or QuickBar.META_FUNCTION_ON) != 0
+            val dial = if (phoneSlotFocused) QuickBar.dialChar(native.unicodeChar) else null
+            val slot =
+                QuickBar.shortcutSlot(
+                    keyCode = native.keyCode,
+                    metaState = native.metaState,
+                    slotCount = quickSlots.size,
+                    unicode = native.unicodeChar,
+                )
+            val action: (() -> Unit)? =
+                when {
+                    delta != null -> {
+                        { onMovePage(delta) }
+                    }
+
+                    alt && native.keyCode == AllAppsKeyPolicy.KEYCODE_SPACE -> {
+                        onCommand
+                    }
+
+                    dial != null -> {
+                        { onDial(dial) }
+                    }
+
+                    slot != null -> {
+                        { onQuickSlot(quickSlots[slot]) }
+                    }
+
+                    else -> {
+                        null
+                    }
+                }
+            if (action != null && event.type == KeyEventType.KeyDown && native.repeatCount == 0) action()
+            action != null
+        }
+}
+
+private fun Modifier.startStripSearchEvents(
+    state: StripInputState,
+    actions: StripSearchActions,
+): Modifier {
+    val speedDialKeys = state.speedDialKeys
+    val speedDialLetters = state.speedDialLetters
+    val onEditHome = actions.onEditHome
+    val onTypeToSearch = actions.onTypeToSearch
+    val onSpeedDial = actions.onSpeedDial
+    return this
+        .onKeyEvent { event ->
+            // What no frame, icon or slot took: Menu edits Home, printable keys search.
+            val native = event.nativeKeyEvent
+            if (DeviceCompatibility.keyAction(native) == LauncherKeys.Action.Menu) {
+                if (event.type == KeyEventType.KeyDown) onEditHome()
+                return@onKeyEvent true
+            }
+            val down = event.type == KeyEventType.KeyDown
+            val seed =
+                if (down) {
+                    StartTypeToSearch.seed(
+                        unicode = native.unicodeChar,
+                        metaState = native.metaState,
+                        repeat = native.repeatCount > 0,
+                    )
+                } else {
+                    null
+                }
+            // Holding a speed dial letter calls it; a short press of it still searches.
+            val step =
+                speedDialKeys.onKey(
+                    native.keyCode,
+                    down,
+                    native.repeatCount,
+                    native.metaState,
+                    seed,
+                    speedDialLetters,
+                )
+            when {
+                step is SpeedDialKeys.Step.Call -> onSpeedDial(step.letter)
+                step is SpeedDialKeys.Step.Search -> onTypeToSearch(step.seed)
+                step == SpeedDialKeys.Step.Consume -> Unit
+                seed != null -> onTypeToSearch(seed.toString())
+                else -> return@onKeyEvent false
+            }
+            true
+        }
 }
 
 /**
@@ -289,47 +351,57 @@ internal fun Bb10PageIndicator(
                         .clickable { onShowPage(index) },
                 contentAlignment = Alignment.Center,
             ) {
-                ComposeCanvas(Modifier.size(if (page < StartPages.FIRST_GRID) 10.dp else 6.dp)) {
-                    val unit = size.minDimension
-                    when (page) {
-                        StartPages.WIDGETS -> {
-                            // Widgets: one wide outlined panel.
-                            drawRoundRect(
-                                color = color,
-                                topLeft = Offset(unit * 0.05f, unit * 0.2f),
-                                size = Size(unit * 0.9f, unit * 0.6f),
-                                cornerRadius = CornerRadius(unit * 0.12f),
-                                style = Stroke(width = unit * 0.14f),
-                            )
-                        }
+                Bb10IndicatorMark(page, color)
+            }
+        }
+    }
+}
 
-                        StartPages.HUB -> {
-                            // Hub: three short lines.
-                            for (line in 0..2) {
-                                val y = unit * (0.2f + line * 0.3f)
-                                drawLine(color, Offset(0f, y), Offset(unit, y), strokeWidth = unit * 0.14f, cap = StrokeCap.Round)
-                            }
-                        }
+// The three BB10 system-page marks share the same geometry and colors.
+@Suppress("FunctionNaming")
+@Composable
+private fun Bb10IndicatorMark(
+    page: Int,
+    color: Color,
+) {
+    ComposeCanvas(Modifier.size(if (page < StartPages.FIRST_GRID) 10.dp else 6.dp)) {
+        val unit = size.minDimension
+        when (page) {
+            StartPages.WIDGETS -> {
+                // Widgets: one wide outlined panel.
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(unit * 0.05f, unit * 0.2f),
+                    size = Size(unit * 0.9f, unit * 0.6f),
+                    cornerRadius = CornerRadius(unit * 0.12f),
+                    style = Stroke(width = unit * 0.14f),
+                )
+            }
 
-                        StartPages.HOME -> {
-                            // Active Frames: four small squares.
-                            val cell = unit * 0.42f
-                            for (row in 0..1) {
-                                for (col in 0..1) {
-                                    drawRect(
-                                        color = color,
-                                        topLeft = Offset(col * (unit - cell), row * (unit - cell)),
-                                        size = Size(cell, cell),
-                                    )
-                                }
-                            }
-                        }
+            StartPages.HUB -> {
+                // Hub: three short lines.
+                for (line in 0..2) {
+                    val y = unit * (0.2f + line * 0.3f)
+                    drawLine(color, Offset(0f, y), Offset(unit, y), strokeWidth = unit * 0.14f, cap = StrokeCap.Round)
+                }
+            }
 
-                        else -> {
-                            drawCircle(color = color, radius = unit / 2f)
-                        }
+            StartPages.HOME -> {
+                // Active Frames: four small squares.
+                val cell = unit * 0.42f
+                for (row in 0..1) {
+                    for (col in 0..1) {
+                        drawRect(
+                            color = color,
+                            topLeft = Offset(col * (unit - cell), row * (unit - cell)),
+                            size = Size(cell, cell),
+                        )
                     }
                 }
+            }
+
+            else -> {
+                drawCircle(color = color, radius = unit / 2f)
             }
         }
     }
@@ -347,29 +419,55 @@ internal fun pageDescription(
     }
 
 /** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) and the Settings gear. */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun StatusDialsRow(
     onOpenSettings: () -> Unit,
     visible: Set<String>,
 ) {
+    val context = LocalContext.current
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var mode by remember(context) {
+        mutableStateOf(StartStateRepository(context).loadHomeStatusMode())
+    }
+    var selectedMetrics by remember(context, visible) {
+        mutableStateOf(StartStateRepository(context).loadHomeDials())
+    }
+    DisposableEffect(lifecycle, context) {
+        val observer =
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                    val saved = StartStateRepository(context)
+                    mode = saved.loadHomeStatusMode()
+                    selectedMetrics = saved.loadHomeDials()
+                }
+            }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = FRAME_PADDING, end = 2.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SableStatusRings(modifier = Modifier.weight(1f), ringSize = STATUS_RING_SIZE, visible = visible)
+        if (mode == HomeStatusMode.Hidden) {
+            androidx.compose.foundation.layout
+                .Spacer(Modifier.weight(1f))
+        } else {
+            BbHomeStatus(mode = mode, visible = selectedMetrics, modifier = Modifier.weight(1f))
+        }
         Text(
             text = "⚙",
-            fontSize = 22.sp,
             color = Bb10Text,
+            fontSize = 22.sp,
+            textAlign = TextAlign.Center,
             modifier =
                 Modifier
                     .heightIn(min = 44.dp)
                     .width(44.dp)
                     .sableFocusRing()
                     .clickable(onClick = onOpenSettings)
-                    .semantics { contentDescription = t("settings") }
+                    .semantics { contentDescription = "Launcher Settings" }
                     .padding(top = 8.dp),
-            textAlign = TextAlign.Center,
         )
     }
 }
@@ -378,6 +476,7 @@ internal fun StatusDialsRow(
  * Today's date under the status dials. The date follows the
  * locale and turns over at midnight; there is no clock here.
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun DateHeader(
     refreshGeneration: Int,
@@ -407,48 +506,33 @@ internal fun DateHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
-            text = dateText,
-            style = MaterialTheme.typography.titleMedium,
-            color = Bb10Text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).semantics { contentDescription = dateText },
-        )
+        val header = rememberHeaderOptions()
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = dateText,
+                fontSize = (23.sp * header.size.multiplier),
+                color = Bb10Text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = dateText },
+            )
+            HomeWeatherLine(header, modifier = Modifier.fillMaxWidth())
+        }
         if (onOpenSettings != null) {
             Text(
-                "⚙",
+                text = "⚙",
                 color = Bb10Text,
                 fontSize = 22.sp,
                 modifier =
                     Modifier
+                        .heightIn(min = 44.dp)
+                        .width(44.dp)
                         .sableFocusRing()
                         .clickable(onClick = onOpenSettings)
-                        .padding(horizontal = 10.dp)
-                        .semantics { contentDescription = "Launcher settings" },
+                        .semantics { contentDescription = "Launcher Settings" },
+                textAlign = TextAlign.Center,
             )
         }
-        // Notifications: a bell with the unread count; it opens the Hub. Beside it, the sound profile.
-        if (showLegacyBadge) {
-            Row(
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (unread > 0) Bb10Blue else Color.Black.copy(alpha = 0.35f))
-                        .sableFocusRing()
-                        .clickable(onClick = onShowHub)
-                        .semantics { contentDescription = "Notifications $unread" }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                LineIcon(paths = LineIconPaths.BELL, modifier = Modifier.size(22.dp), tint = Color.White)
-                if (unread > 0) {
-                    Text(text = unread.toString(), style = MaterialTheme.typography.titleMedium, color = Color.White)
-                }
-            }
-        }
-        SoundProfileButton()
     }
 }
 

@@ -43,7 +43,10 @@ class Bb10HomeTest {
         val native = (1..ActiveFrames.MAX).map { frame(it, "native$it") }
         val display =
             ActiveFrames.mergeForDisplay(
-                native, listOf("openedFromTenseven"), setOf("openedFromTenseven"), personalUserId = 0,
+                native,
+                listOf("openedFromTenseven"),
+                setOf("openedFromTenseven"),
+                personalUserId = 0,
             )
         assertEquals(ActiveFrames.MAX, display.frames.size)
         assertEquals("openedFromTenseven", display.frames.first().packageName)
@@ -55,7 +58,10 @@ class Bb10HomeTest {
         val native = listOf(frame(10, "mail"), frame(11, "browser"))
         val display =
             ActiveFrames.mergeForDisplay(
-                native, listOf("browser", "browser", "mail"), setOf("browser", "mail"), personalUserId = 0,
+                native,
+                listOf("browser", "browser", "mail"),
+                setOf("browser", "mail"),
+                personalUserId = 0,
             )
         assertEquals(listOf(11, 10), display.frames.map { it.taskId })
         assertTrue(display.syntheticTaskIds.isEmpty())
@@ -66,7 +72,8 @@ class Bb10HomeTest {
         val native = listOf(frame(10, "workchat").copy(userId = 11))
         val display =
             ActiveFrames.mergeForDisplay(
-                native, listOf("privatechat", "workchat", "personal", "hidden", "personal"),
+                native,
+                listOf("privatechat", "workchat", "personal", "hidden", "personal"),
                 setOf("workchat", "personal"),
                 personalUserId = 0,
                 dismissed = setOf("personal"),

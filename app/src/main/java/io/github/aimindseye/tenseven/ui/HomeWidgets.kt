@@ -97,19 +97,7 @@ internal fun BuiltInWidgets(
                             .height(BUILT_IN_WIDGET_HEIGHT)
                     when (widget) {
                         GlanceWidgets.ALARM -> {
-                            val alarm = remember { NextAlarm.text(context) }
-                            GlanceFrameCard(
-                                title = GlanceWidgets.label(GlanceWidgets.ALARM),
-                                headline = alarm ?: "No alarm",
-                                detail = "",
-                                accent = SableSun,
-                                onClick = {
-                                    runCatching {
-                                        context.startActivity(Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    }
-                                },
-                                modifier = modifier,
-                            )
+                            AlarmGlanceFrame(modifier)
                         }
 
                         GlanceWidgets.BATTERY -> {
@@ -145,6 +133,26 @@ internal fun BuiltInWidgets(
             }
         }
     }
+}
+
+// Alarm frame is independent of live messages and widget grid composition.
+@Suppress("FunctionNaming")
+@Composable
+private fun AlarmGlanceFrame(modifier: Modifier) {
+    val context = LocalContext.current
+    val alarm = remember { NextAlarm.text(context) }
+    GlanceFrameCard(
+        title = GlanceWidgets.label(GlanceWidgets.ALARM),
+        headline = alarm ?: "No alarm",
+        detail = "",
+        accent = SableSun,
+        onClick = {
+            runCatching {
+                context.startActivity(Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+        },
+        modifier = modifier,
+    )
 }
 
 /** The Battery Glance frame: level and charging state; Enter opens battery usage. */

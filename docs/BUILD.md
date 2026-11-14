@@ -1,5 +1,7 @@
 # Build
 
+> **2.0 modular release is a future target, not yet buildable here.** Today only `:app` (Full Launcher with embedded extras) and `:design` are configured. See [ADR-0001](decisions/ADR-0001-MODULAR-COMPANION-APKS.md) and [companion release spec](2.0/COMPANION_DISTRIBUTION.md). New companion Gradle modules, separate APK IDs/signing verification, Complete ZIP and wizard will be introduced and qualified in stages. Do not infer production companion APKs or registered package names from these docs. Keep the existing Launcher signing identity and verifier intact during the transition.
+
 ## 1. Host setup
 
 JDK 17 (Temurin recommended) and the Android SDK with `platforms;android-36` and `build-tools;36.0.0`:

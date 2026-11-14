@@ -139,7 +139,7 @@ class SableStartActivity : ComponentActivity() {
             }
 
             val bb7 = screen.homeStyle.value == HomeStyle.Bb7 && !screen.bb10Detour.value
-            SideEffect { showWallpaper(bb7 || screen.homeWallpaper.value) }
+            SideEffect { showWallpaper(screen.homeWallpaper.value) }
             if (bb7) {
                 Bb7HomeScreen(
                     apps = screen.appsState.value,
@@ -149,7 +149,17 @@ class SableStartActivity : ComponentActivity() {
                     appearance = appearance,
                     refreshGeneration = screen.liveRefreshGeneration.intValue,
                     homeGeneration = screen.homeGeneration.intValue,
-                    onLaunchApp = { entry -> launcherAppsRepository.launch(entry) },
+                    onLaunchApp = { entry ->
+                        if (
+                            entry.component.className == SableStartActivity::class.java.name ||
+                            entry.component.className == "io.github.aimindseye.tenseven.LauncherEntry"
+                        ) {
+                            screen.homeGeneration.intValue += 1
+                            true
+                        } else {
+                            launcherAppsRepository.launch(entry)
+                        }
+                    },
                     onOpenAppInfo = { entry -> launcherAppsRepository.openAppDetails(entry) },
                     onOpenHub = {
                         screen.hubRequestFilter.value = null
@@ -434,31 +444,9 @@ class SableStartActivity : ComponentActivity() {
      * items ([contextual]) first, then the home's own, then Close.
      */
     private fun showBb7Menu(contextual: List<Pair<String, () -> Unit>>) {
-        val global =
-            listOf<Pair<String, () -> Unit>>(
-                t("hub") to {
-                    screen.hubRequestFilter.value = null
-                    screen.hubGeneration.intValue += 1
-                    startBb10Detour(returnOnHome = true)
-                },
-                getString(R.string.bb7_command) to ::openCommandFromBb7,
-                getString(R.string.bb7_widgets) to ::openWidgetsFromBb7,
-                getString(R.string.launcher_settings) to {
-                    runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
-                },
-                t("home_screen_style_2") to {
-                    runCatching { startActivity(Intent(this, HomeStyleActivity::class.java)) }
-                },
-                getString(R.string.setup_menu) to {
-                    runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
-                },
-                getString(R.string.backup_menu) to {
-                    runCatching { startActivity(Intent(this, BackupActivity::class.java)) }
-                },
-                t("settings") to ::openSystemSettings,
-                t("close") to {},
-            )
-        val items = contextual + global
+        // D4r4: the BB7 screen already supplies exactly four Home actions.
+        // Do not append legacy global actions; icon-specific actions remain contextual.
+        val items = contextual
         // BB7 menu is a translucent on-wallpaper surface, never a system-white dialog.
         // Views retain native D-pad/trackpad focus and accessibility click actions.
         val density = resources.displayMetrics.density
@@ -549,19 +537,6 @@ class SableStartActivity : ComponentActivity() {
         screen.startRequest.value =
             io.github.aimindseye.tenseven.runtime
                 .LauncherRequest(SCREEN_SEARCH, screen.startRequest.value.serial + 1)
-        startBb10Detour(returnOnHome = true)
-    }
-
-    /** The Widgets page from the BlackBerry 7 home: shown on the BlackBerry 10 screen like Hub, Back returns. */
-    private fun openWidgetsFromBb7() {
-        if (!screen.widgetsPageEnabled.value) {
-            runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
-            return
-        }
-        screen.homeGeneration.intValue = 0
-        screen.backGeneration.intValue = 0
-        screen.hubGeneration.intValue = 0
-        screen.widgetsGeneration.intValue += 1
         startBb10Detour(returnOnHome = true)
     }
 

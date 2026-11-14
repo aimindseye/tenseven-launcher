@@ -83,26 +83,56 @@ internal object MiniJson {
                 require(i < s.length) { "unterminated string" }
                 val c = s[i++]
                 when {
-                    c == '"' -> return out.toString()
+                    c == '"' -> {
+                        return out.toString()
+                    }
+
                     c == '\\' -> {
                         require(i < s.length) { "bad escape" }
                         when (val e = s[i++]) {
-                            '"', '\\', '/' -> out.append(e)
-                            'n' -> out.append('\n')
-                            'r' -> out.append('\r')
-                            't' -> out.append('\t')
-                            'b' -> out.append('\b')
-                            'f' -> out.append('\u000C')
+                            '"', '\\', '/' -> {
+                                out.append(e)
+                            }
+
+                            'n' -> {
+                                out.append('\n')
+                            }
+
+                            'r' -> {
+                                out.append('\r')
+                            }
+
+                            't' -> {
+                                out.append('\t')
+                            }
+
+                            'b' -> {
+                                out.append('\b')
+                            }
+
+                            'f' -> {
+                                out.append('\u000C')
+                            }
+
                             'u' -> {
                                 require(i + 4 <= s.length) { "bad unicode" }
                                 out.append(s.substring(i, i + 4).toInt(16).toChar())
                                 i += 4
                             }
-                            else -> error("bad escape")
+
+                            else -> {
+                                error("bad escape")
+                            }
                         }
                     }
-                    c < ' ' -> error("control character")
-                    else -> out.append(c)
+
+                    c < ' ' -> {
+                        error("control character")
+                    }
+
+                    else -> {
+                        out.append(c)
+                    }
                 }
             }
         }
