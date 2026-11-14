@@ -760,10 +760,11 @@ class RealHistoricalPolicyTests(unittest.TestCase):
 
     def test_real_suppression_inventory_never_grants_automatic_approval(self):
         audit = POLICY.audit_suppressions(self.repo, self.repo.changed(self.base), self.base)
-        # R2-G removes Game2048's marker; R2.2-A removes six redundant Tasks Compose markers.
-        self.assertEqual(96, len(audit))
+        # Games, six Tasks and seven Peek naming markers were removed; retained markers stay unapproved.
+        self.assertEqual(89, len(audit))
         self.assertFalse(any('/extras/games/' in item['file'] for item in audit))
         self.assertFalse(any(item['file'].endswith('/tasks/TasksActivity.kt') for item in audit))
+        self.assertFalse(any(item['file'].endswith('/ui/AppPrivacyScreen.kt') for item in audit))
         self.assertTrue(all(item['approval'] == 'NOT_APPROVED' and item['result'] == 'HOLD' for item in audit))
         self.assertTrue(all(item['inherited_before_r1'] and item['origin_commit'] for item in audit))
 

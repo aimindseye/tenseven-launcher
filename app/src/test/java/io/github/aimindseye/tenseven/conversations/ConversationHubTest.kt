@@ -148,7 +148,20 @@ class ConversationPreviewAndReplyTest {
         id = "c",
         name = name,
         notifications =
-            listOf(HubNotification("k", "c", name, "p", "p", 1, false, messages.toList(), contentIntent = null, replyAction = null)),
+            listOf(
+                HubNotification(
+                    "k",
+                    "c",
+                    name,
+                    "p",
+                    "p",
+                    1,
+                    false,
+                    messages.toList(),
+                    contentIntent = null,
+                    replyAction = null,
+                ),
+            ),
         messages = messages.toList(),
     )
 

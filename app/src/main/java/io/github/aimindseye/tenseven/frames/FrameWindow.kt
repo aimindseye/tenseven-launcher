@@ -1,5 +1,8 @@
 package io.github.aimindseye.tenseven.frames
 
+private const val MAX_ACTIVE_WINDOW_ENTRIES = 8
+private const val MAX_SEEN_WINDOW_ENTRIES = 96
+
 /** The opened-app window, not an inventory of notifications, documents or old Android recents. */
 data class FrameOpening(
     val app: FrameApp,
@@ -22,12 +25,12 @@ data class FrameWindow(
                         (next.active + (event.app.key to event.at))
                             .entries
                             .sortedByDescending { it.value }
-                            .take(8)
+                            .take(MAX_ACTIVE_WINDOW_ENTRIES)
                             .associate { it.toPair() },
                         (next.seen + (event.app.key to event.at))
                             .entries
                             .sortedByDescending { it.value }
-                            .take(96)
+                            .take(MAX_SEEN_WINDOW_ENTRIES)
                             .associate { it.toPair() },
                     )
             }
@@ -49,7 +52,10 @@ data class FrameWindow(
             .mapNotNull { (key, at) ->
                 val user = key.substringBefore(':').toIntOrNull() ?: return@mapNotNull null
                 val target = key.substringAfter(':')
-                FrameOpening(FrameApp(target.substringBefore('/'), user, target.substringAfter('/', "").ifBlank { null }), at)
+                FrameOpening(
+                    FrameApp(target.substringBefore('/'), user, target.substringAfter('/', "").ifBlank { null }),
+                    at,
+                )
             }.sortedByDescending { it.at }
 }
 

@@ -111,7 +111,6 @@ internal data class PeekEdits(
     val onSetLetterShortcut: (Char?) -> Unit,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 internal fun SablePeekScreen(
     model: PeekAppState,
@@ -226,7 +225,6 @@ private fun dispatchPeekAction(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.PeekCloseButton(onClose: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
@@ -250,7 +248,6 @@ private fun androidx.compose.foundation.layout.BoxScope.PeekCloseButton(onClose:
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.PeekSheet(
     model: PeekSheetModel,
@@ -283,7 +280,6 @@ private fun androidx.compose.foundation.layout.BoxScope.PeekSheet(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekAppHeader(app: AppEntry) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -313,7 +309,6 @@ private fun PeekAppHeader(app: AppEntry) {
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekOpenAction(
     focus: FocusRequester,
@@ -343,7 +338,6 @@ private fun PeekOpenAction(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekContextActions(
     model: PeekSheetModel,
@@ -369,7 +363,6 @@ private fun PeekContextActions(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekShortcutActions(
     model: PeekSheetModel,

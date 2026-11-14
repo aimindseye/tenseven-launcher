@@ -36,7 +36,9 @@ class AppSummaryTest {
         assertEquals(listOf("one"), AppSummaryPolicy.select(values, false).map { it.key })
         assertEquals(
             24,
-            AppSummaryPolicy.select((1..30).map { summary(SummarySource.Local, "$it").copy(updatedAt = it.toLong()) }, true).size,
+            AppSummaryPolicy
+                .select((1..30).map { summary(SummarySource.Local, "$it").copy(updatedAt = it.toLong()) }, true)
+                .size,
         )
     }
 }

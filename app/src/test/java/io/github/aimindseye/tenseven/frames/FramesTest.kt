@@ -80,7 +80,10 @@ class FramesTest {
         assertFalse(state.snapshotsAllowed)
         assertEquals(1, state.items.size) // Genuine native task may remain; synthetic history is off.
         assertTrue(
-            FramePolicy.state(input(emptyList(), settings = FrameSettings(rememberReturnedApps = false)), emptyMap(), 2).items.isEmpty(),
+            FramePolicy
+                .state(input(emptyList(), settings = FrameSettings(rememberReturnedApps = false)), emptyMap(), 2)
+                .items
+                .isEmpty(),
         )
         val ordinary = input(trusted = false).copy(capabilities = caps(false, false))
         assertFalse(FramePolicy.state(ordinary, emptyMap(), 1).usageAllowed)
