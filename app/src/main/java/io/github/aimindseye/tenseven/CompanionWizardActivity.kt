@@ -123,7 +123,7 @@ private fun CompanionPresetPage(
     }
     Card(
         "Full apps",
-        "All seven optional companions, including ten games in one Games Pack",
+        "All six optional tool companions",
         CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.FULL,
     ) {
         onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.FULL, selected))

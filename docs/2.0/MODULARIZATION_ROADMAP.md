@@ -52,11 +52,11 @@
 - Launcher retains Hub calendar strip and permission-gated CalendarProvider access, while navigation launches user-selected/default calendar where possible.
 - Gate: Today correctness from each view, multi-calendar event isolation, permission denial, offline behavior, third-party calendar fallback, upgrades.
 
-## M5 — Tasks/Remind, Notes, Calculator, Sound Profiles, Games Pack
+## M5 — Tasks/Remind, Notes, Calculator, Sound Profiles
 
-- Extract in dependency order, not in one big uncontrolled move: Tasks/Remind and Notes first (data-bearing), then Calculator, Sound Profiles, and Games Pack.
-- Preserve reminders/alarm scheduling, snooze, note records, share targets, user settings and game state via verified migration; data ownership must shift transactionally.
-- Choose a single optional Games Pack initially; each game has its own launcher entry/activity inside the Games APK if desired, but no games code remains in the Launcher artifact when complete.
+- Extract in dependency order, not in one big uncontrolled move: Tasks/Remind and Notes first (data-bearing), then Calculator and Sound Profiles.
+- Preserve reminders/alarm scheduling, snooze, note records, share targets, user settings via verified migration; data ownership must shift transactionally.
+- Games are outside this roadmap: [ADR-0002](../decisions/ADR-0002-GAMES-OUTSIDE-LAUNCHER.md) removes them from Launcher and its companion catalog; a separate repository and installer own future Games work.
 - Gate: install/upgrade/uninstall, data equivalence and rollback per app, zero missing/remapped launch icons, isolated permissions.
 
 ## M6 — Launcher cleanup and structural refactor

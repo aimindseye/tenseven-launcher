@@ -988,7 +988,7 @@ private fun OptionalAppsSettings2() {
         }
     Section("Bundled app selection")
     Text(
-        "Minimum enables Calculator, Tasks and Notes. Full enables all bundled tools and games. Custom " +
+        "Minimum enables Calculator, Tasks and Notes. Full enables all six bundled tools. Custom " +
             "uses the switches below.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -997,7 +997,7 @@ private fun OptionalAppsSettings2() {
         control.apply(context, minimum)
         enabled = control.enabledIds(context)
     }
-    Card("Full apps", "All currently bundled utilities and games", selection == "Full") {
+    Card("Full apps", "All six currently bundled tools", selection == "Full") {
         control.apply(context, full)
         enabled = control.enabledIds(context)
     }
@@ -1008,7 +1008,7 @@ private fun OptionalAppsSettings2() {
     )
     Section("Custom app selection")
     for (group in io.github.aimindseye.tenseven.model.ExtraGroup.entries) {
-        Section(if (group == io.github.aimindseye.tenseven.model.ExtraGroup.Tools) "Tools" else "Games")
+        Section("Tools")
         for (app in apps.ofGroup(group)) {
             SwitchRow(app.label, app.summary, app.id in enabled) { checked ->
                 control.setEnabled(context, app, checked)

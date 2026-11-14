@@ -29,8 +29,10 @@ class CompanionSetupPlanTest {
     @Test
     fun selectionRoundTripsWithoutUnknownValues() {
         val encoded = CompanionSetupPlan.encode(listOf("games", "phone", "phone", "unknown"))
-        assertEquals("games,phone", encoded)
-        assertEquals(setOf("games", "phone"), CompanionSetupPlan.decode(encoded))
+        assertEquals("phone", encoded)
+        assertEquals(setOf("phone"), CompanionSetupPlan.decode(encoded))
+        assertEquals(setOf("phone"), CompanionSetupPlan.decode("games,phone"))
+        assertEquals(emptySet<String>(), CompanionSetupPlan.toggle(emptySet(), "games", true))
         assertEquals(emptySet<String>(), CompanionSetupPlan.decode(null))
     }
 

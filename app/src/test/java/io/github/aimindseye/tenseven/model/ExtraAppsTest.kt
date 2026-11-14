@@ -9,17 +9,11 @@ import org.junit.Test
 
 class ExtraAppsTest {
     @Test
-    fun catalogueHasToolsAndTenGames() {
-        assertTrue(
-            ExtraApps
-                .ofGroup(ExtraGroup.Tools)
-                .map { it.id }
-                .toSet()
-                .containsAll(
-                    setOf("calculator", "tasks", "notes", "profiles"),
-                ),
+    fun catalogueHasExactlySixTools() {
+        assertEquals(
+            setOf("tenseven_phone", "tenseven_calendar", "calculator", "tasks", "notes", "profiles"),
+            ExtraApps.ofGroup(ExtraGroup.Tools).map { it.id }.toSet(),
         )
-        assertEquals(10, ExtraApps.ofGroup(ExtraGroup.Games).size)
         assertEquals(
             ExtraApps.ALL.size,
             ExtraApps.ALL
@@ -58,9 +52,18 @@ class ExtraAppsTest {
 
     @Test
     fun changesListWhatToSwitch() {
-        val (on, off) = ExtraApps.changes(setOf("notes", "snake"), setOf("snake", "sudoku", "bogus"))
-        assertEquals(setOf("sudoku"), on)
+        val (on, off) = ExtraApps.changes(setOf("notes", "snake"), setOf("tasks", "snake", "sudoku", "bogus"))
+        assertEquals(setOf("tasks"), on)
         assertEquals(setOf("notes"), off)
+    }
+
+    @Test
+    fun obsoleteGameSelectionsDropWithoutMutatingTheSavedInput() {
+        val saved = setOf("snake", "sudoku", "notes", "tenseven_calendar")
+        assertEquals(setOf("notes", "tenseven_calendar"), ExtraApps.normalize(saved))
+        assertEquals(setOf("snake", "sudoku", "notes", "tenseven_calendar"), saved)
+        assertFalse(ExtraApps.isExtra("io.github.aimindseye.tenseven.extras.games.SnakeActivity"))
+        assertFalse(ExtraApps.isExtra("org.example.games.SnakeActivity"))
     }
 
     @Test

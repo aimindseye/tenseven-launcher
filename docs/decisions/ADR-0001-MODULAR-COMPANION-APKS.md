@@ -1,5 +1,7 @@
 # ADR-0001: TenSeven 2.0 modular companion APKs
 
+> Games scope is superseded by [ADR-0002](ADR-0002-GAMES-OUTSIDE-LAUNCHER.md): separate repository and installer; no Games Pack in the Launcher catalog. The original decision below is retained as history.
+
 - **Status:** Accepted for the TenSeven 2.0 architecture workstream (2026-11-12).
 - **Decision owner:** TenSeven project owner.
 - **Replaces:** Bundling independent Phone, Calendar, Tasks/Remind, Notes, Calc Plus, Sound Profiles and games as switchable Activities inside the Launcher APK.

@@ -24,7 +24,7 @@ internal fun CompanionAppsStatusSection() {
 
     Section("Independent companion APKs · preview")
     Text(
-        "Future optional Phone, Calendar, Tasks, Notes, Calculator, Sound Profiles and Games " +
+        "Future optional Phone, Calendar, Tasks, Notes, Calculator and Sound Profiles " +
             "will install separately. Existing switches above still control bundled apps.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

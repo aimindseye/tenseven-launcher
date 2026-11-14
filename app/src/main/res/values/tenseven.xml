@@ -62,11 +62,10 @@
     <string name="assign_cleared">%1$s is free</string>
     <string name="assign_nothing">Nothing is held on %1$s</string>
     <string name="setup_extras_title">Extra apps (optional)</string>
-    <string name="setup_extras_reason">Tenseven can include a calculator with unit conversion, notes, and some classic games. Nothing is installed or downloaded and none is on by default: tick what you want and it appears in All Apps. You can change this any time from Extra apps in Command.</string>
+    <string name="setup_extras_reason">TenSeven includes six optional tools: Phone, Calendar, Calculator with unit conversion, Tasks, Notes and Sound Profiles. Nothing is installed or downloaded and none is on by default: tick what you want and it appears in All Apps. You can change this any time from Extra apps in Command.</string>
     <string name="setup_extras_action">Save choices</string>
     <string name="setup_extras_tools">Tools</string>
-    <string name="setup_extras_games">Games</string>
-    <string name="extras_command_hint">Choose the bundled Calc Plus, Notes and games</string>
+    <string name="extras_command_hint">Choose the six bundled tools</string>
     <string name="setup_restricted_title">If Android blocked Notification or Usage access</string>
     <string name="setup_restricted_reason">If the first Notification or Usage access request was blocked, Android may now offer Allow restricted settings. Open App info, tap the three-dot menu, and select Allow restricted settings if it appears. Return to TenSeven and retry the access request. Only do this for an APK you trust; TenSeven cannot grant access itself.</string>
     <string name="setup_restricted_first_request">First try opening Notification or Usage access. If Android blocks it, return here. On some devices, Allow restricted settings appears in TenSeven App info only after that first blocked attempt.</string>

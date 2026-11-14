@@ -21,9 +21,9 @@ Gradle project so it can run on any Android 14+ phone, with new icons
 
 ## TenSeven 2.0 — accepted modular companion architecture (not yet released)
 
-TenSeven 2.0 will keep **one Full Launcher APK** for BBOS7/BBOS10 Home, Hub, Peek, Lock and Active Frames, while moving independent Phone, Calendar, Tasks/Remind, Notes, Calc Plus, Sound Profiles and the ten games into **optional, separately installed APKs** (initially one Games Pack). The Launcher will offer a companion-app installation wizard and optional Complete release ZIP; it will continue working with the user's existing third-party apps.
+TenSeven 2.0 will keep **one Full Launcher APK** for BBOS7/BBOS10 Home, Hub, Peek, Lock and Active Frames, while moving independent Phone, Calendar, Tasks/Remind, Notes, Calc Plus and Sound Profiles into **optional, separately installed tool APKs**. Games are maintained in a separate repository with a separate installer, outside the Launcher companion catalog. The Launcher will offer a companion-app installation wizard and optional Complete release ZIP; it will continue working with the user's existing third-party apps.
 
-**This is the approved target, not current functionality.** The 2.0 development branch still bundles these apps in `:app` until migration and Titan 2/CI acceptance are complete. Current 1.0.0 release instructions below remain unchanged.
+**This is the approved target, not current functionality.** R2-G removes the ten bundled games; the six tools remain in `:app` until migration and Titan 2/CI acceptance are complete. See [ADR-0002](docs/decisions/ADR-0002-GAMES-OUTSIDE-LAUNCHER.md) for the game removal, history and data-retention audit. Current 1.0.0 release instructions below remain unchanged.
 
 - [Architecture decision (ADR-0001)](docs/decisions/ADR-0001-MODULAR-COMPANION-APKS.md)
 - [Implementation roadmap and immutable gates](docs/2.0/MODULARIZATION_ROADMAP.md)

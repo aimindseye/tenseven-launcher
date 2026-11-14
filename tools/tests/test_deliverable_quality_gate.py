@@ -755,7 +755,9 @@ class RealHistoricalPolicyTests(unittest.TestCase):
 
     def test_real_suppression_inventory_never_grants_automatic_approval(self):
         audit = POLICY.audit_suppressions(self.repo, self.repo.changed(self.base), self.base)
-        self.assertEqual(103, len(audit))
+        # R2-G removes Game2048Screen's inherited naming marker; retained markers remain unapproved.
+        self.assertEqual(102, len(audit))
+        self.assertFalse(any('/extras/games/' in item['file'] for item in audit))
         self.assertTrue(all(item['approval'] == 'NOT_APPROVED' and item['result'] == 'HOLD' for item in audit))
         self.assertTrue(all(item['inherited_before_r1'] and item['origin_commit'] for item in audit))
 
@@ -785,9 +787,11 @@ class RealGradleReportTests(unittest.TestCase):
         self.assertEqual(1, len(GATE.compare_findings(old, new + [manifest], base, repo)[0]))
         changed_message = {**manifest, 'message': manifest['message'] + ' regression'}
         self.assertEqual(1, len(GATE.compare_findings(old, new + [changed_message], base, repo)[0]))
-        # A real baseline naming finding cannot grant a waiver to a new composable file.
-        naming = next(item for item in old if item['rule'] == 'detekt.FunctionNaming')
-        injected = {**naming, 'file': 'app/src/main/java/io/github/aimindseye/tenseven/CompanionWizardActivity.kt', 'line': 61}
+        # A real baseline finding cannot grant a waiver to a different source file.
+        # R2 closed the final parent FunctionNaming findings, so do not require that legacy debt.
+        target = 'app/src/main/java/io/github/aimindseye/tenseven/CompanionWizardActivity.kt'
+        borrowed = next(item for item in old if item['file'] != target)
+        injected = {**borrowed, 'file': target, 'line': 61}
         self.assertEqual(1, len(GATE.compare_findings(old, new + [injected], base, repo)[0]))
 
 

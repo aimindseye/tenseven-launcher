@@ -2,6 +2,8 @@
 
 **Specification only — no wizard or separate APKs are implemented by this PR.** Governing decision: [ADR-0001](../decisions/ADR-0001-MODULAR-COMPANION-APKS.md). Release entry point: a single Full TenSeven Launcher APK; companions remain optional.
 
+Games use a separate repository and installer under [ADR-0002](../decisions/ADR-0002-GAMES-OUTSIDE-LAUNCHER.md). They are not Launcher companions or part of the Launcher Complete ZIP.
+
 ## Artifact layout (target, not an existing release)
 
 ```text
@@ -13,7 +15,6 @@ TenSeven-2.0-Complete.zip
   companions/TenSeven-Notes-2.0.apk
   companions/TenSeven-Calculator-2.0.apk
   companions/TenSeven-SoundProfiles-2.0.apk
-  companions/TenSeven-Games-2.0.apk
   release-manifest.json
   SHA256SUMS.txt
   README.md

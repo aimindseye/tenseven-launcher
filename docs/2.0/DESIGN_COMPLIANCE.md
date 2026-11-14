@@ -13,7 +13,7 @@
 - [ ] Phone keeps actual contact caller ID/photo or neutral anonymous presentation, floating keypad, call controls and Android role consent.
 - [ ] Calendar keeps multi-calendar selection, correct Today navigation from Month/Week/Day and event operations.
 - [ ] Tasks and Remind snooze/alerts/data migration preserve scheduling; Notes data survives upgrade.
-- [ ] All ten games can be opened from the optional Games Pack, with focus, touch and saved-state parity as applicable.
+- [ ] Bundled games and Games Pack choices are absent; externally installed games launch normally. Games repository/installer acceptance is separate under ADR-0002.
 - [ ] Launcher works normally with zero companion APKs installed; third-party Phone/Calendar defaults work.
 - [ ] Minimum/Full presets select optional companions without requiring multiple Launcher SKUs.
 - [ ] Wizard is accessible during first Setup and later in Settings, with app-by-app status, system install consent and error recovery.

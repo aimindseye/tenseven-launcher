@@ -899,7 +899,7 @@ private fun ExtrasPicker(
     onChange: (Set<String>) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf(ExtraGroup.Tools to R.string.setup_extras_tools, ExtraGroup.Games to R.string.setup_extras_games).forEach { (group, heading) ->
+        listOf(ExtraGroup.Tools to R.string.setup_extras_tools).forEach { (group, heading) ->
             Text(stringResource(heading), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp))
             ExtraApps.ofGroup(group).forEach { app ->
                 val on = app.id in picked
@@ -966,7 +966,7 @@ private fun SetupStageApps(
     picked: Set<String>,
     selectApps: (Set<String>) -> Unit,
 ) {
-    Text("Choose a preset or enable individual bundled tools and games. Changes save immediately.")
+    Text("Choose a preset or enable individual bundled tools. Changes save immediately.")
     OutlinedButton(
         onClick = { selectApps(Setup2Plan.essentials) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
