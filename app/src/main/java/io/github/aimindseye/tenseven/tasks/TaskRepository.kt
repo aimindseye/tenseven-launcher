@@ -6,6 +6,7 @@ import java.security.MessageDigest
 
 /** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
 private const val TASK_REPOSITORY_FOLLOW_UP_MAX_100 = 100
+private const val ORIGIN_DIGEST_BYTE_MASK = 0xff
 
 /** One repository for Hub follow-ups, stand-alone Tasks and Notes links. Never dependent on UI activity state. */
 interface TaskScheduler {
@@ -66,7 +67,7 @@ class TaskRepository(
             MessageDigest
                 .getInstance("SHA-256")
                 .digest((packageName + "\n" + notificationKey).toByteArray(Charsets.UTF_8))
-                .joinToString("") { "%02x".format(it.toInt() and 255) }
+                .joinToString("") { "%02x".format(it.toInt() and ORIGIN_DIGEST_BYTE_MASK) }
         val existing = list().firstOrNull { !it.completed && it.originToken == token }
         val task =
             existing?.copy(remindAtEpochMs = remindAt, updatedAtEpochMs = now())

@@ -1,6 +1,10 @@
 package io.github.aimindseye.tenseven.tasks
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
@@ -93,6 +97,31 @@ class TaskRepositoryTest {
                 repo.complete(task)
                 assertEquals(!task.completed, repo.list().single { it.id == task.id }.completed)
             }
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test fun followUpOriginDigestPreservesUtf8AndUnsignedByteEncoding() {
+        val directory = Files.createTempDirectory("follow-up-digest").toFile()
+        try {
+            val store = TaskStore(directory)
+            val repo = TaskRepository(store, Scheduler(store)) { 0L }
+            val vectors =
+                mapOf(
+                    "private-original-key" to "cf08cd72e3c8d23f57908074435b850cdef8a76a4da9908c728b94a73c9d6ff6",
+                    "Synthetic clé ☃" to "0ad338ec99c03cc97a3464e63de2be6c5ead53bbfddde0eba4b1da7c1d6d7057",
+                )
+            vectors.forEach { (notificationKey, expectedDigest) ->
+                val task = repo.followUp("example.mail", notificationKey, "Mail", null)
+                assertEquals(expectedDigest, task.originToken)
+            }
+            assertTrue(
+                directory.listFiles()!!.none { file ->
+                    val stored = file.readText()
+                    vectors.keys.any { stored.contains(it) }
+                },
+            )
         } finally {
             directory.deleteRecursively()
         }

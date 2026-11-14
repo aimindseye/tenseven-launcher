@@ -219,7 +219,6 @@ private fun TasksWorkspace(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun TasksOverview(
     tab: String,
@@ -262,7 +261,6 @@ private fun TasksOverview(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun TasksGroupedList(
     tab: String,
@@ -302,7 +300,6 @@ private fun taskBelongsToGroup(
     return category == group
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun TasksGroup(
     group: String,
@@ -391,7 +388,6 @@ private fun showTaskDatePicker(
     }, at.year, at.monthValue - 1, at.dayOfMonth).show()
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun TaskTitleDetailsFields(
     title: String,
@@ -423,7 +419,6 @@ private data class TaskScheduleActions(
     val onPreset: (String) -> Unit,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 private fun TaskScheduleControls(
     due: Long?,
@@ -489,7 +484,6 @@ private class TaskEditDraft(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun TaskTagsFields(draft: TaskEditDraft) {
     OutlinedTextField(
