@@ -102,6 +102,12 @@
         <package android:name="org.sableos.messages" />
     </queries>
 
+    <!-- Lets a paired watch app read the Hub's unread counts (package and count, no message text) from
+         HubCountsProvider. Signature level: only apps signed with Tenseven's own key, such as Sable Watch, get it. -->
+    <permission
+        android:name="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS"
+        android:protectionLevel="signature" />
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -423,7 +429,8 @@
             android:label="@string/backup_menu" />
 
         <!-- Notification access, optional and off until the user grants it: groups message and email
-             notifications into conversations for the Hub bar. In memory only, nothing is stored or sent. -->
+             notifications into conversations for the Hub bar. In memory only, nothing is stored or sent; only the
+             per-app counts can be read, by a same-key watch app through HubCountsProvider. -->
         <service
             android:name=".conversations.ConversationListenerService"
             android:exported="true"
@@ -438,5 +445,12 @@
         <service android:name=".platform.ScreenCaptureService" android:exported="false"
             android:foregroundServiceType="mediaProjection" />
         <activity android:name=".FrameIntegrationsActivity" android:exported="false" />
+        <!-- The Hub's unread counts for Sable Watch; see the READ_HUB_COUNTS permission above. -->
+        <provider
+            android:name=".platform.HubCountsProvider"
+            android:authorities="io.github.aimindseye.tenseven.hubcounts"
+            android:exported="true"
+            android:readPermission="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS"
+            android:writePermission="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS" />
     </application>
 </manifest>
