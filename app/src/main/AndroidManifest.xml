@@ -445,12 +445,12 @@
         <service android:name=".platform.ScreenCaptureService" android:exported="false"
             android:foregroundServiceType="mediaProjection" />
         <activity android:name=".FrameIntegrationsActivity" android:exported="false" />
-        <!-- The Hub's unread counts for Sable Watch; see the READ_HUB_COUNTS permission above. -->
+        <!-- The Hub's unread counts for Sable Watch; see the READ_HUB_COUNTS permission above. Read-only:
+             insert, update and delete always throw, so it has no write permission. -->
         <provider
             android:name=".platform.HubCountsProvider"
             android:authorities="io.github.aimindseye.tenseven.hubcounts"
             android:exported="true"
-            android:readPermission="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS"
-            android:writePermission="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS" />
+            android:readPermission="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS" />
     </application>
 </manifest>
