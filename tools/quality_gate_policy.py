@@ -397,7 +397,7 @@ CI_COMPLETENESS_APPROVAL = {
     "workflow_before": "a7e4863716c9d43c75070f6e7b73dea9d7cd4377",
     "workflow_after": "087a212a14b163f0b6e276864bf1930c865e4df6",
     "policy_before": "daa42bb5d309396182a97253179bcb46b56ff4f6",
-    "helper_after": "f560fec57d8ea431f14aaa3bd2cec2822a2660dd"
+    "helper_after": "f4b6ab57f05423e671aeb1a4e9ad7934d923edee"
 }
 
 

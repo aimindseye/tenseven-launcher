@@ -1529,5 +1529,392 @@ class RealJointTestHarnessTests(unittest.TestCase):
         self.assertEqual(11, len(POLICY.TEST_HARNESS_FIXTURES))
 
 
+# Synthetic identifiers below exist only in test models, never in runtime approval/origin records.
+import quality_gate_ci_policy as POSTCOMMIT_CI
+import quality_gate_module_policy as POSTCOMMIT_MODULE
+from contextlib import contextmanager
+
+
+class PostCommitHistoryModel:
+    """Read-only ancestry/state model layered on real immutable Git objects; no checkout or writes."""
+    FIX = 'a' * 40
+    DESCENDANT = 'b' * 40
+    BAD = 'c' * 40
+    MERGE = 'd' * 40
+    SECOND = 'e' * 40
+    _reads = {}
+
+    def __init__(self, real):
+        self.real, self.path = real, real.path
+        self.parents, self.states, self.overrides = {}, {}, {}
+        self.current = POSTCOMMIT_CI._L0_CORRECTION_BASE
+        self.data = {name: real.blob(self.current, name) for name in POSTCOMMIT_CI._L0_PATHS}
+        helper = Path(POSTCOMMIT_CI.__file__).read_bytes()
+        controller = self.data[POSTCOMMIT_CI.POLICY]
+        old = POSTCOMMIT_CI._L0_CORRECTION_OLD_HELPER.encode()
+        self.original = POSTCOMMIT_CI._l0_state(real, self.current)
+        self.corrected_data = dict(self.data)
+        self.corrected_data[POSTCOMMIT_CI.HELPER] = helper
+        self.corrected_data[POSTCOMMIT_CI.POLICY] = controller.replace(old, POLICY.blob_id(helper).encode(), 1)
+        self.corrected = {name: POLICY.blob_id(value) for name, value in self.corrected_data.items()}
+        self.ancestor_cache = {}
+
+    def head(self):
+        return self.current
+
+    def ancestors(self, commit):
+        if commit in self.parents:
+            result = {commit}
+            for parent in self.parents[commit]:
+                result.update(self.ancestors(parent))
+            return result
+        if commit not in self.ancestor_cache:
+            self.ancestor_cache[commit] = set(self.real._read(['rev-list', commit, '--']).decode().splitlines())
+        return self.ancestor_cache[commit]
+
+    def ancestor(self, older, newer):
+        return older in self.ancestors(newer)
+
+    def add(self, commit, parents, state):
+        self.parents[commit], self.states[commit] = parents, dict(state)
+        self.current = commit
+
+    def blob(self, commit, name):
+        if (commit, name) in self.overrides:
+            return self.overrides[commit, name]
+        if commit in self.states:
+            if name == POSTCOMMIT_CI.WORKFLOW and self.states[commit][name] == POSTCOMMIT_CI._L0_JAVA_WORKFLOW_BLOB:
+                return self.java_workflow()
+            if name in self.corrected_data and self.states[commit][name] == self.corrected[name]:
+                return self.corrected_data[name]
+            if name in self.data and self.states[commit][name] == self.original[name]:
+                return self.data[name]
+            raise GATE.QualityError('Unknown synthetic source identity')
+        return self.real.blob(commit, name)
+
+    def blob_id(self, commit, name):
+        return POLICY.blob_id(self.blob(commit, name))
+
+    def java_workflow(self):
+        raw = self.data[POSTCOMMIT_CI.WORKFLOW]
+        value = raw.replace(b'b843ebf9b913146b38da2eaa7aeddf76074ae1ad',
+                            b'77dd5b2ce225ea11469928ac317850245a74ae78').replace(b'v6.1.0', b'v6.2.0')
+        if POLICY.blob_id(value) != POSTCOMMIT_CI._L0_JAVA_WORKFLOW_BLOB:
+            raise GATE.QualityError('Synthetic Java variant differs from reviewed bytes')
+        return value
+
+    def _read(self, args):
+        if args[0] == 'rev-list' and '--parents' in args:
+            commit = args[-2]
+            if commit in self.parents:
+                return (' '.join([commit, *self.parents[commit]]) + '\n').encode()
+        if args[0] == 'rev-list' and '--ancestry-path' in args:
+            revision = next(value for value in args if '..' in value)
+            root, head = revision.split('..')
+            if head in self.parents:
+                values = self.ancestors(head) - self.ancestors(root)
+                return ('\n'.join(sorted(c for c in values if self.ancestor(root, c))) + '\n').encode()
+        if args[0] == 'rev-list' and len(args) == 3 and args[1] in self.parents:
+            return ('\n'.join(sorted(self.ancestors(args[1]))) + '\n').encode()
+        if args[0] == 'ls-tree':
+            commit = next(value for value in args[1:] if RUNTIME.OID.fullmatch(value))
+            if commit in self.states:
+                return b''.join(('100644 blob ' + oid + '\t' + name + '\0').encode()
+                                for name, oid in self.states[commit].items() if oid is not None)
+        key = tuple(args)
+        if key not in self._reads:
+            self._reads[key] = self.real._read(args)
+        return self._reads[key]
+
+    @contextmanager
+    def snapshot(self, repo, names):
+        yield {name: self.data[name] for name in names}
+
+
+@unittest.skipUnless(os.environ.get('TENSEVEN_POLICY_REPO'), 'Real policy repository not supplied')
+class PostCommitControllerTests(unittest.TestCase):
+    def setUp(self):
+        self.real = RUNTIME.GitRepository(os.environ['TENSEVEN_POLICY_REPO'])
+        self.model = PostCommitHistoryModel(self.real)
+
+    def verify(self, base=None):
+        repo = self.model
+        return POSTCOMMIT_CI.verify_l0_controller(
+            repo, base or repo.head(), repo.snapshot, POLICY.blob_id)
+
+    def corrected(self):
+        self.model.data = dict(self.model.corrected_data)
+
+    def committed(self):
+        self.corrected()
+        self.model.add(self.model.FIX, [POSTCOMMIT_CI._L0_CORRECTION_BASE], self.model.corrected)
+
+    def reject(self, base=None):
+        self.assertRaises(GATE.QualityError, self.verify, base)
+
+    def test_real_committed_head_report_reader_loads_all_four_modules(self):
+        root = self.real.path
+        findings, reports = GATE.check_quality_reports(root, 0)
+        self.assertEqual({'app', 'design', 'phone', 'calendar'},
+                         {item['path'].split('/')[0] for item in reports})
+        self.assertTrue(findings)
+        self.assertEqual(sorted(POSTCOMMIT_MODULE.MODULES), POSTCOMMIT_MODULE.modules(root))
+
+    def test_real_current_self_comparison_is_an_exact_approved_endpoint(self):
+        blob = self.real.blob_id(self.real.head(), POSTCOMMIT_CI.WORKFLOW)
+        self.assertIn(blob, {POSTCOMMIT_CI._L0_WORKFLOW_BLOB, POSTCOMMIT_CI._L0_JAVA_WORKFLOW_BLOB})
+        result = POSTCOMMIT_CI.verify_l0_controller(
+            self.real, self.real.head(), POLICY._source_snapshot, POLICY.blob_id)
+        self.assertEqual(POSTCOMMIT_CI._L0_CORRECTION_BASE, result['origin'])
+
+    def test_real_historical_pre_transition_and_legacy_ci_baselines_remain_verified(self):
+        for base, expected in [(POSTCOMMIT_CI.APPROVAL_BASE, POSTCOMMIT_CI._WORKFLOW_BEFORE),
+                               (POSTCOMMIT_CI._L0_BASE, POSTCOMMIT_CI._WORKFLOW_AFTER)]:
+            with self.subTest(base=base):
+                self.assertEqual(expected, POLICY._expected_ci_baseline(self.real, base))
+                result = POSTCOMMIT_CI.verify_l0_controller(
+                    self.real, base, POLICY._source_snapshot, POLICY.blob_id)
+                self.assertEqual(POSTCOMMIT_CI._L0_CORRECTION_BASE, result['origin'])
+
+    def test_real_frozen_main_legacy_bootstrap_still_uses_exact_proof(self):
+        base = 'b27162819a1611fc0abae8c389deb54cb9352b44'
+        result = POSTCOMMIT_CI.verify_l0_controller(
+            self.real, base, POLICY._source_snapshot, POLICY.blob_id)
+        self.assertEqual(POSTCOMMIT_CI._L0_CORRECTION_BASE, result['origin'])
+        self.assertEqual(POSTCOMMIT_CI._WORKFLOW_BEFORE, POLICY._expected_ci_baseline(self.real, base))
+
+    def test_original_precommit_l0_mode_does_not_require_a_correction_origin(self):
+        self.model.current = POSTCOMMIT_CI._L0_BASE
+        result = self.verify()
+        self.assertIsNone(result['origin'])
+        self.assertIsNone(result['correction_origin'])
+
+    def test_corrected_precommit_preserves_the_real_original_l0_origin(self):
+        self.corrected()
+        result = self.verify()
+        self.assertEqual(POSTCOMMIT_CI._L0_CORRECTION_BASE, result['origin'])
+        self.assertIsNone(result['correction_origin'])
+        self.assertEqual(POSTCOMMIT_CI._L0_CORRECTION_BASE, result['correction_parent'])
+        self.assertEqual('pre_commit', result['correction_verification_mode'])
+
+    def test_exact_single_parent_followup_and_unrelated_descendant_are_valid(self):
+        self.committed()
+        self.model.add(self.model.DESCENDANT, [self.model.FIX], self.model.corrected)
+        result = self.verify()
+        self.assertEqual(self.model.FIX, result['correction_origin'])
+        self.assertEqual(POSTCOMMIT_CI._L0_CORRECTION_BASE, result['origin'])
+        self.assertEqual('immutable_origin', result['correction_verification_mode'])
+
+    def test_pr133_variant_uses_real_origin_and_blob_proofs_on_second_parent_merge(self):
+        self.committed()
+        variant = dict(self.model.corrected, **{POSTCOMMIT_CI.WORKFLOW: POSTCOMMIT_CI._L0_JAVA_WORKFLOW_BLOB})
+        self.model.add(self.model.MERGE, ['2fa46c0ed9b5cfea43fd7b52322e592caab170a7', self.model.FIX], variant)
+        self.model.data[POSTCOMMIT_CI.WORKFLOW] = self.model.java_workflow()
+        result = self.verify('2fa46c0ed9b5cfea43fd7b52322e592caab170a7')
+        self.assertEqual(self.model.FIX, result['correction_origin'])
+
+    def test_unrelated_synthetic_merge_preserves_an_original_workflow(self):
+        self.committed()
+        self.model.add(self.model.SECOND, [POSTCOMMIT_CI._L0_CORRECTION_BASE], self.model.original)
+        self.model.add(self.model.MERGE, [self.model.SECOND, self.model.FIX], self.model.corrected)
+        self.assertEqual(self.model.FIX, self.verify()['correction_origin'])
+
+    def test_unknown_workflow_hash_is_rejected(self):
+        self.model.data[POSTCOMMIT_CI.WORKFLOW] += b'\n# unknown workflow\n'
+        self.reject()
+
+    def test_duplicate_helper_glob_is_rejected(self):
+        name = POSTCOMMIT_CI.WORKFLOW
+        self.model.data[name] = self.model.data[name].replace(b"      - 'tools/quality_gate_*.py'\n",
+                                                           b"      - 'tools/quality_gate_*.py'\n" * 2)
+        self.reject()
+
+    def test_missing_helper_glob_is_rejected(self):
+        name = POSTCOMMIT_CI.WORKFLOW
+        self.model.data[name] = self.model.data[name].replace(b"      - 'tools/quality_gate_*.py'\n", b'')
+        self.reject()
+
+    def test_modified_helper_glob_is_rejected(self):
+        name = POSTCOMMIT_CI.WORKFLOW
+        self.model.data[name] = self.model.data[name].replace(b'tools/quality_gate_*.py', b'tools/*.py')
+        self.reject()
+
+    def test_reordered_unauthorized_paths_are_rejected(self):
+        name = POSTCOMMIT_CI.WORKFLOW
+        self.model.data[name] = self.model.data[name].replace(POLICY.CI_PATHS.encode(),
+            ("      - 'tools/quality_gate_*.py'\n" + POLICY.OLD_CI_PATHS).encode())
+        self.reject()
+
+    def test_mutated_mandatory_step_is_rejected(self):
+        name = POSTCOMMIT_CI.WORKFLOW
+        self.model.data[name] = self.model.data[name].replace(b'Enforce changed-file quality', b'Skip changed-file quality')
+        self.reject()
+
+    def test_controller_only_change_is_rejected(self):
+        self.model.data[POSTCOMMIT_CI.POLICY] += b'\n# unknown controller\n'
+        self.reject()
+
+    def test_helper_only_change_is_rejected(self):
+        self.corrected()
+        self.model.data[POSTCOMMIT_CI.HELPER] += b'\n# unknown helper\n'
+        self.reject()
+
+    def test_modified_helper_and_matching_unreviewed_pin_are_rejected(self):
+        self.corrected()
+        self.model.data[POSTCOMMIT_CI.HELPER] += b'\n# unknown helper\n'
+        old = POLICY.CI_COMPLETENESS_APPROVAL['helper_after'].encode()
+        new = POLICY.blob_id(self.model.data[POSTCOMMIT_CI.HELPER]).encode()
+        self.model.data[POSTCOMMIT_CI.POLICY] = self.model.data[POSTCOMMIT_CI.POLICY].replace(old, new)
+        self.reject()
+
+    def test_partial_controller_pin_transition_is_rejected(self):
+        self.model.data[POSTCOMMIT_CI.POLICY] = self.model.corrected_data[POSTCOMMIT_CI.POLICY]
+        self.reject()
+
+    def test_partial_helper_transition_is_rejected(self):
+        self.model.data[POSTCOMMIT_CI.HELPER] = self.model.corrected_data[POSTCOMMIT_CI.HELPER]
+        self.reject()
+
+    def test_module_validator_change_is_rejected(self):
+        self.corrected()
+        self.model.data['tools/quality_gate_module_policy.py'] += b'\n# unapproved module validator\n'
+        self.reject()
+
+    def test_report_gate_change_is_rejected(self):
+        self.corrected()
+        self.model.data['tools/deliverable_quality_gate.py'] += b'\n# unapproved report reader\n'
+        self.reject()
+
+    def test_corrected_source_before_the_frozen_l0_origin_is_rejected(self):
+        self.corrected()
+        self.model.current = POSTCOMMIT_CI._L0_BASE
+        self.reject()
+
+    def test_followup_with_wrong_parent_is_rejected(self):
+        self.corrected()
+        self.model.add(self.model.BAD, [POSTCOMMIT_CI._L0_CORRECTION_BASE], self.model.original)
+        self.model.add(self.model.FIX, [self.model.BAD], self.model.corrected)
+        self.reject()
+
+    def test_duplicate_followup_origins_are_rejected(self):
+        self.committed()
+        self.model.add(self.model.SECOND, [POSTCOMMIT_CI._L0_CORRECTION_BASE], self.model.corrected)
+        self.model.add(self.model.MERGE, [self.model.FIX, self.model.SECOND], self.model.corrected)
+        self.reject()
+
+    def test_merge_cannot_be_the_followup_origin(self):
+        self.corrected()
+        self.model.add(self.model.FIX, [POSTCOMMIT_CI._L0_CORRECTION_BASE, POSTCOMMIT_CI._L0_BASE], self.model.corrected)
+        self.reject()
+
+    def test_modified_then_restored_followup_history_is_rejected(self):
+        self.committed()
+        bad = dict(self.model.corrected, **{POSTCOMMIT_CI.POLICY: '0' * 40})
+        self.model.add(self.model.BAD, [self.model.FIX], bad)
+        self.model.add(self.model.DESCENDANT, [self.model.BAD], self.model.corrected)
+        self.reject()
+
+    def test_missing_helper_in_history_is_rejected(self):
+        self.committed()
+        bad = dict(self.model.corrected, **{POSTCOMMIT_CI.HELPER: None})
+        self.model.add(self.model.BAD, [self.model.FIX], bad)
+        self.model.add(self.model.DESCENDANT, [self.model.BAD], self.model.corrected)
+        self.reject()
+
+    def test_restoring_old_current_files_cannot_erase_activation(self):
+        self.committed()
+        self.model.add(self.model.DESCENDANT, [self.model.FIX], self.model.original)
+        self.model.data = {name: self.real.blob(POSTCOMMIT_CI._L0_CORRECTION_BASE, name)
+                           for name in POSTCOMMIT_CI._L0_PATHS}
+        self.reject()
+
+    def test_pr133_variant_without_its_real_ancestry_is_rejected(self):
+        self.corrected()
+        self.model.data[POSTCOMMIT_CI.WORKFLOW] = self.model.java_workflow()
+        self.reject()
+
+    def test_unapproved_main_workflow_change_is_rejected(self):
+        self.committed()
+        variant = dict(self.model.corrected, **{POSTCOMMIT_CI.WORKFLOW: POSTCOMMIT_CI._L0_JAVA_WORKFLOW_BLOB})
+        self.model.add(self.model.MERGE, ['2fa46c0ed9b5cfea43fd7b52322e592caab170a7', self.model.FIX], variant)
+        self.model.data[POSTCOMMIT_CI.WORKFLOW] = self.model.java_workflow() + b'\n# unknown main change\n'
+        self.reject()
+
+    def test_mainline_origin_parent_proof_cannot_be_forged(self):
+        self.committed()
+        self.model.parents[POSTCOMMIT_MODULE.MAINLINE_ORIGIN] = [POSTCOMMIT_CI._L0_BASE]
+        self.model.add(self.model.MERGE, [POSTCOMMIT_MODULE.MAINLINE_ORIGIN, self.model.FIX], self.model.corrected)
+        self.reject()
+
+    def test_invalid_comparison_identity_is_rejected(self):
+        self.reject('0' * 40)
+
+    def test_unrelated_valid_comparison_identity_is_rejected(self):
+        self.reject('2fa46c0ed9b5cfea43fd7b52322e592caab170a7')
+
+    def test_invalid_source_identity_is_rejected(self):
+        self.model.current = '0' * 40
+        self.reject()
+
+    def test_unknown_baseline_bytes_cannot_borrow_a_normalization_allowance(self):
+        base = 'b27162819a1611fc0abae8c389deb54cb9352b44'
+        self.model.overrides[base, POSTCOMMIT_CI.WORKFLOW] = self.real.blob(base, POSTCOMMIT_CI.WORKFLOW) + b'\n# changed\n'
+        self.reject(base)
+
+    def test_known_current_endpoint_never_enters_legacy_normalization(self):
+        with patch.object(POLICY, '_expected_ci_baseline', side_effect=AssertionError('Already approved endpoint')):
+            self.assertEqual(POSTCOMMIT_CI._L0_CORRECTION_BASE, self.verify()['origin'])
+
+    def test_partial_baseline_cannot_normalize_into_the_approved_l0_endpoint(self):
+        base = POSTCOMMIT_CI._L0_CORRECTION_BASE
+        self.model.overrides[base, POSTCOMMIT_CI.WORKFLOW] = self.model.data[POSTCOMMIT_CI.WORKFLOW].replace(
+            b"      - 'tools/quality_gate_*.py'\n", b'')
+        self.assertEqual(POSTCOMMIT_CI._L0_WORKFLOW_BLOB, POLICY._expected_ci_baseline(self.model, base))
+        self.reject(base)
+
+    def test_partial_legacy_baseline_cannot_borrow_the_approved_ci_endpoint(self):
+        base = POSTCOMMIT_CI._L0_BASE
+        self.model.overrides[base, POSTCOMMIT_CI.WORKFLOW] = self.real.blob(base, POSTCOMMIT_CI.WORKFLOW).replace(
+            b"      - 'tools/quality_gate_*.py'\n", b'')
+        self.assertEqual(POSTCOMMIT_CI._WORKFLOW_AFTER, POLICY._expected_ci_baseline(self.model, base))
+        self.reject(base)
+
+    def test_baseline_only_path_and_step_mutations_are_rejected(self):
+        base = POSTCOMMIT_CI._L0_CORRECTION_BASE
+        original = self.model.data[POSTCOMMIT_CI.WORKFLOW]
+        mutations = [original.replace(b'tools/quality_gate_*.py', b'tools/*.py'),
+                     original.replace(POLICY.CI_PATHS.encode(),
+                         ("      - 'tools/quality_gate_*.py'\n" + POLICY.OLD_CI_PATHS).encode()),
+                     original.replace(b'Enforce changed-file quality', b'Skip changed-file quality'),
+                     original.replace(b"      - 'tools/quality_gate_*.py'\n",
+                                      b"      - 'tools/quality_gate_*.py'\n" * 2)]
+        for value in mutations:
+            with self.subTest(blob=POLICY.blob_id(value)):
+                self.model.overrides[base, POSTCOMMIT_CI.WORKFLOW] = value
+                self.reject(base)
+
+    def test_unknown_raw_baseline_is_rejected_even_if_a_normalizer_claims_approval(self):
+        base = POSTCOMMIT_CI._L0_CORRECTION_BASE
+        self.model.overrides[base, POSTCOMMIT_CI.WORKFLOW] = b'unknown workflow fixture\n'
+        with patch.object(POLICY, '_expected_ci_baseline', return_value=POSTCOMMIT_CI._L0_WORKFLOW_BLOB):
+            self.reject(base)
+
+    def test_a_derived_main_bootstrap_is_not_an_authorized_raw_workflow(self):
+        self.committed()
+        base = '2fa46c0ed9b5cfea43fd7b52322e592caab170a7'
+        variant = dict(self.model.corrected, **{POSTCOMMIT_CI.WORKFLOW: POSTCOMMIT_CI._L0_JAVA_WORKFLOW_BLOB})
+        self.model.add(self.model.MERGE, [base, self.model.FIX], variant)
+        self.model.data[POSTCOMMIT_CI.WORKFLOW] = self.model.java_workflow()
+        bootstrap = POLICY.ci_bootstrap(self.real.blob(base, POSTCOMMIT_CI.WORKFLOW).decode()).encode()
+        self.assertEqual(POSTCOMMIT_CI._L0_MAIN_BOOTSTRAP, POLICY.blob_id(bootstrap))
+        self.model.overrides[base, POSTCOMMIT_CI.WORKFLOW] = bootstrap
+        self.reject(base)
+
+    def test_current_head_race_is_rejected(self):
+        calls = iter([POSTCOMMIT_CI._L0_CORRECTION_BASE, self.model.BAD])
+        with patch.object(self.model, 'head', side_effect=lambda: next(calls, self.model.BAD)):
+            self.reject(POSTCOMMIT_CI._L0_CORRECTION_BASE)
+
+
 if __name__ == '__main__':
     unittest.main()

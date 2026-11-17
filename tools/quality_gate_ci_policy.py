@@ -287,14 +287,7 @@ def verify_l0_controller(repo, base, snapshot, blob_id):
     head = repo.head()
     if not repo.ancestor(base, head):
         raise QualityError("L0 comparison ancestry differs")
-    from quality_gate_policy import _expected_ci_baseline
-    from quality_gate_module_policy import verify_mainline_java
-    valid_mainline = verify_mainline_java(repo, head)
-    baselines = {_WORKFLOW_BEFORE, _WORKFLOW_AFTER, _L0_WORKFLOW_BLOB}
-    if valid_mainline:
-        baselines.update({_L0_JAVA_WORKFLOW_BLOB, _L0_MAIN_BOOTSTRAP})
-    if _expected_ci_baseline(repo, base) not in baselines:
-        raise QualityError("Unknown main/comparison workflow bootstrap")
+    _verify_l0_comparison_workflow(repo, base)
     _verify_original_ci(repo, blob_id)
     before = _l0_state(repo, _L0_BASE)
     commits = _ancestry(repo, head, _L0_BASE)
@@ -302,17 +295,117 @@ def verify_l0_controller(repo, base, snapshot, blob_id):
         raise QualityError("L0 controller base is outside ancestry")
     states = {commit: _l0_state(repo, commit) for commit in commits}
     with snapshot(repo, set(_L0_PATHS)) as data:
-        after = _l0_approved(repo, data, blob_id)
+        after, origin, correction = _l0_reviewed_current(repo, head, states, before, data, blob_id)
         current_after = _l0_java_variant(repo, head, after)
         if {name: blob_id(data[name]) for name in _L0_PATHS} != current_after:
             raise QualityError("L0 controller/helper/gate endpoint differs")
         if states[_L0_BASE] != before:
             raise QualityError("L0 immutable base differs")
-        origin = _l0_origin(repo, head, states, before, after)
         if repo.head() != head:
             raise QualityError("L0 controller HEAD changed")
     return dict(origin=origin, parent=_L0_BASE, endpoints=after,
-                verification_mode="pre_commit" if origin is None else "immutable_origin")
+                verification_mode="pre_commit" if origin is None else "immutable_origin",
+                correction_origin=correction,
+                correction_parent=_L0_CORRECTION_BASE if after[HELPER] != _L0_CORRECTION_OLD_HELPER else None,
+                correction_verification_mode=("pre_commit" if correction is None else "immutable_origin")
+                if after[HELPER] != _L0_CORRECTION_OLD_HELPER else None)
+
+
+def _verify_l0_comparison_workflow(repo, base):
+    from quality_gate_policy import _expected_ci_baseline
+    from quality_gate_module_policy import MAINLINE_PROOF, verify_mainline_java
+    valid_mainline = verify_mainline_java(repo, repo.head())
+    endpoints = {_WORKFLOW_BEFORE, _WORKFLOW_AFTER, _L0_WORKFLOW_BLOB}
+    previous, mainline = MAINLINE_PROOF[WORKFLOW]
+    legacy = {previous: _WORKFLOW_BEFORE}
+    if valid_mainline:
+        endpoints.add(_L0_JAVA_WORKFLOW_BLOB)
+        legacy[mainline] = _L0_MAIN_BOOTSTRAP
+    identifier = repo.blob_id(base, WORKFLOW)
+    if identifier in endpoints:
+        return
+    # Only these exact existing historical inputs may use the older bootstrap.
+    # A partial/unknown workflow cannot recover authorization by normalization.
+    expected = legacy.get(identifier)
+    if expected is None or _expected_ci_baseline(repo, base) != expected:
+        raise QualityError("Unknown main/comparison workflow bootstrap")
+
+
+# This correction is a separate joint endpoint directly after the real, frozen L0 origin.
+# Its future origin is discovered from immutable history; no future SHA is authorized here.
+_L0_CORRECTION_BASE = '925b08da25802d8acb5b9e770d42297b20f64a8f'
+_L0_CORRECTION_OLD_HELPER = 'f560fec57d8ea431f14aaa3bd2cec2822a2660dd'
+_L0_CORRECTION_OLD_POLICY = '3d38ad7435b5f3393bef901bddef68b8c475db91'
+
+
+def _l0_correction_before(repo, blob_id):
+    if not _single_parent(repo, _L0_CORRECTION_BASE, _L0_BASE):
+        raise QualityError("Frozen L0 correction parent differs")
+    data = {name: repo.blob(_L0_CORRECTION_BASE, name) for name in _L0_PATHS}
+    if (blob_id(data[HELPER]) != _L0_CORRECTION_OLD_HELPER
+            or blob_id(data[POLICY]) != _L0_CORRECTION_OLD_POLICY):
+        raise QualityError("Frozen L0 correction template differs")
+    approved = _l0_approved(repo, data, blob_id)
+    if _l0_state(repo, _L0_CORRECTION_BASE) != approved:
+        raise QualityError("Frozen L0 correction joint endpoint differs")
+    return approved
+
+
+def _l0_correction_pin(data, blob_id):
+    # The helper pin is reviewed executable controller code, not an approval-file/CLI input.
+    # Derive the complete controller below; never trust a controller-declared after-ID.
+    from quality_gate_policy import CI_COMPLETENESS_APPROVAL
+    pin = object_id(CI_COMPLETENESS_APPROVAL["helper_after"])
+    expected = dict(base=APPROVAL_BASE, workflow_before=_WORKFLOW_BEFORE,
+                    workflow_after=_WORKFLOW_AFTER, policy_before=_POLICY_BEFORE,
+                    helper_after=pin)
+    if (CI_COMPLETENESS_APPROVAL != expected or pin == _L0_CORRECTION_OLD_HELPER
+            or blob_id(data[HELPER]) != pin):
+        raise QualityError("Correction controller/helper pin differs")
+    return pin
+
+
+def _l0_correction_origin(repo, head, states, before, original, corrected):
+    root = _L0_CORRECTION_BASE
+    if root not in states or not repo.ancestor(root, head) or states[root] != original:
+        raise QualityError("Correction requires the exact immutable L0 origin")
+    if head == root:
+        return None
+    origins = [commit for commit, state in states.items()
+               if commit != root and _single_parent(repo, commit, root) and state == corrected]
+    if len(origins) != 1:
+        raise QualityError("Need one single-parent correction directly after frozen L0 origin")
+    origin = origins[0]
+    if not repo.ancestor(origin, head):
+        raise QualityError("Correction origin is outside candidate ancestry")
+    for commit, state in states.items():
+        if repo.ancestor(origin, commit):
+            expected = _l0_java_variant(repo, commit, corrected)
+        elif repo.ancestor(root, commit):
+            expected = _l0_java_variant(repo, commit, original)
+        else:
+            expected = before
+        if state != expected:
+            raise QualityError("Correction history modified, partial or restored")
+    return origin
+
+
+def _l0_reviewed_current(repo, head, states, before, data, blob_id):
+    after = _l0_approved(repo, data, blob_id)
+    if blob_id(data[HELPER]) == _L0_CORRECTION_OLD_HELPER:
+        # Unchanged original pre-commit/committed source remains valid. A later restoration
+        # cannot erase activation: the original full-history check rejects corrected states.
+        return after, _l0_origin(repo, head, states, before, after), None
+    _l0_correction_pin(data, blob_id)
+    if _L0_CORRECTION_BASE not in states or not repo.ancestor(_L0_CORRECTION_BASE, head):
+        raise QualityError("Correction activation requires the exact frozen L0 origin")
+    original = _l0_correction_before(repo, blob_id)
+    history = {commit: states[commit] for commit in _ancestry(repo, _L0_CORRECTION_BASE, _L0_BASE)}
+    origin = _l0_origin(repo, _L0_CORRECTION_BASE, history, before, original)
+    if origin != _L0_CORRECTION_BASE:
+        raise QualityError("Original L0 origin differs from correction approval")
+    correction = _l0_correction_origin(repo, head, states, before, original, after)
+    return after, origin, correction
 
 
 def _l0_origin(repo, head, states, before, after):
