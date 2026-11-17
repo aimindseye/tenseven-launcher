@@ -28,7 +28,10 @@ object FrameMediaNotifications {
                         val body =
                             extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
                                 ?: extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
-                        val text = AppSummaryPolicy.text(listOf(title, body).filter(String::isNotBlank).distinct().joinToString(" · "))
+                        val text =
+                            AppSummaryPolicy.text(
+                                listOf(title, body).filter(String::isNotBlank).distinct().joinToString(" · "),
+                            )
                         if (text.isBlank()) {
                             null
                         } else {

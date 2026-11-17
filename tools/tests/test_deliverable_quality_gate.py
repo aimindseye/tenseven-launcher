@@ -1,6 +1,7 @@
 """Offline regressions plus opt-in qualification against actual Gradle reports."""
 
 import importlib.util
+from collections import Counter
 from contextlib import ExitStack, redirect_stdout
 from dataclasses import replace
 import io
@@ -742,6 +743,169 @@ class HistoricalTransitionTests(RepositoryFixture):
 
 
 
+# Exact historical test data, not a runtime policy exception. No Git objects are written.
+_HISTORICAL_FIXTURE = 'tools/tests/fixtures/l0_87_marker_history.json'
+_HISTORICAL_14bd8ea975dfde4c5ac336b09a2b387b173736b96aed76badd1c6f2b7ec17527 = '14bd8ea975dfde4c5ac336b09a2b387b173736b96aed76badd1c6f2b7ec17527'
+_HISTORICAL_BASE = '09d331d9f9b278ba1bed1323056cf1504e456629'
+_HISTORICAL_MAIN = 'b27162819a1611fc0abae8c389deb54cb9352b44'
+_HISTORICAL_TREE = '918c2f9cf7bb2184321ebf0c16e2882ee584b650'
+_HISTORICAL_INVENTORY_SHA = 'aa84e2ec1e4bc6e44380f51835d26627c159aec94458eefae94b74ec8baad721'
+_PHONE_PATH = 'phone/src/main/java/io/github/aimindseye/tenseven/features/phone/TenSevenTelecom.kt'
+_PHONE_BLOB = '8ad78380f3444840f4a2a347fb4bd19225f9c1ec'
+_PHONE_METHOD_SHA = '7a84890369ed0850da01c102bbe0f72a641d9c18c1d271c07e0aeafae7cd05b8'
+
+
+def _require_snapshot(condition, message):
+    if not condition:
+        raise GATE.QualityError(message)
+
+
+def _read_historical_object(repo, embedded, reachable, used, oid, kind):
+    import base64
+    RUNTIME.object_id(oid)
+    if oid in embedded:
+        item = embedded[oid]
+        _require_snapshot(item['kind'] == kind and oid not in reachable, 'Historical object kind/origin differs')
+        _require_snapshot(item['encoding'] in {'utf8', 'base64'}, 'Historical encoding differs')
+        raw = item['data'].encode() if item['encoding'] == 'utf8' else base64.b64decode(item['data'], validate=True)
+        used.add(oid)
+    else:
+        _require_snapshot(oid in reachable, 'Historical object missing from portable fixture/base')
+        raw = repo._read(['cat-file', kind, oid])
+    actual = subprocess.check_output(
+        [RUNTIME.GIT, 'hash-object', '-t', kind, '--stdin'], input=raw).decode().strip()
+    _require_snapshot(actual == oid, 'Historical Git object differs')
+    return raw
+
+
+def _historical_tree_entries(name, raw):
+    offset = 0
+    while offset < len(raw):
+        space, end = raw.index(b' ', offset), raw.index(b'\0', offset)
+        mode, part = raw[offset:space].decode(), raw[space + 1:end].decode()
+        _require_snapshot(mode in {'40000', '100644', '100755'}, 'Unsupported historical file type')
+        _require_snapshot('/' not in part and part not in {'.', '..'}, 'Unsafe historical entry')
+        path = RUNTIME.repository_path(name + '/' + part if name else part)
+        child = raw[end + 1:end + 21]
+        _require_snapshot(len(child) == 20, 'Truncated historical tree')
+        yield path, child.hex(), 'tree' if mode == '40000' else 'blob'
+        offset = end + 21
+
+
+def _historical_objects(repo, data):
+    reachable = {line.split()[0] for line in repo._read(
+        ['rev-list', '--objects', _HISTORICAL_BASE, '--']).decode().splitlines()}
+    embedded, used, files = data['objects'], set(), {}
+    pending = [('', _HISTORICAL_TREE, 'tree')]
+    while pending:
+        name, oid, kind = pending.pop()
+        raw = _read_historical_object(repo, embedded, reachable, used, oid, kind)
+        if kind == 'blob':
+            _require_snapshot(name not in files, 'Duplicate historical source path')
+            files[name] = (oid, raw)
+        else:
+            pending.extend(_historical_tree_entries(name, raw))
+    _require_snapshot(used == set(embedded), 'Unused opaque historical fixture objects')
+    return files
+
+
+def _historical_added_lines(before, after, diff):
+    import re
+    old, new, added, cursor, target = before.decode().splitlines(), after.decode().splitlines(), [], 0, []
+    for line in diff.splitlines():
+        header = re.match(r'@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', line)
+        if header:
+            start = int(header[1]) - (int(header[2] or 1) != 0)
+            _require_snapshot(start >= cursor, 'Overlapping historical diff')
+            target.extend(old[cursor:start])
+            cursor = start
+            expected = int(header[3]) - (int(header[4] or 1) != 0)
+            _require_snapshot(len(target) == expected, 'Historical diff position differs')
+        elif line.startswith('--- ') or line.startswith('+++ '):
+            continue
+        elif line.startswith('-'):
+            _require_snapshot(cursor < len(old) and old[cursor] == line[1:], 'Historical removal differs')
+            cursor += 1
+        elif line.startswith('+'):
+            target.append(line[1:])
+            added.append((len(target), line[1:]))
+        elif line.startswith(' '):
+            _require_snapshot(cursor < len(old) and old[cursor] == line[1:], 'Historical context differs')
+            target.append(line[1:])
+            cursor += 1
+    target.extend(old[cursor:])
+    _require_snapshot(target == new, 'Historical diff does not reconstruct authenticated source')
+    return added
+
+
+def _verify_historical_inventory(repo):
+    import hashlib
+    with POLICY._source_snapshot(repo, {_HISTORICAL_FIXTURE}) as snapshot:
+        raw = snapshot[_HISTORICAL_FIXTURE]
+        _require_snapshot(hashlib.sha256(raw).hexdigest() == _HISTORICAL_14bd8ea975dfde4c5ac336b09a2b387b173736b96aed76badd1c6f2b7ec17527, 'Historical fixture differs')
+        data = json.loads(raw)
+    _require_snapshot((data['format'], data['base'], data['main'], data['tree'], data['inventory_sha256']) ==
+                      (1, _HISTORICAL_BASE, _HISTORICAL_MAIN, _HISTORICAL_TREE, _HISTORICAL_INVENTORY_SHA),
+                      'Historical identities differ')
+    files = _historical_objects(repo, data)
+    canonical, checkout = hashlib.sha256(), hashlib.sha256()
+    for name in sorted(set(files) | repo.tree_files(_HISTORICAL_BASE)):
+        value = files[name][1] if name in files else b'<deleted>'
+        canonical.update(name.encode() + b'\0' + value)
+        checkout.update(name.encode() + b'\0' + (value.replace(b'\n', b'\r\n') if name == 'gradlew.bat' else value))
+    _require_snapshot(canonical.hexdigest() == 'b08df0883a5d55d7339235a8e4dab8aaabb2a06b341e16c50b5551310905278e',
+                      'Canonical historical source differs')
+    _require_snapshot(checkout.hexdigest() == '53aad6be2ab1a4767c8c06b64797726cd2a2c537be420b7ccd2d3ddee7303887',
+                      'Historical checkout source differs')
+    main = repo.tree_files(_HISTORICAL_MAIN)
+    changed = {name for name in set(files) | main if name.endswith(('.kt', '.kts')) and
+               (name not in files or name not in main or files[name][0] != repo.blob_id(_HISTORICAL_MAIN, name))}
+    _require_snapshot(changed == set(data['patches']), 'Historical diff scope differs')
+    inventory = []
+    for name in sorted(changed):
+        after = files[name][1] if name in files else b''
+        before = repo.blob(_HISTORICAL_MAIN, name) if name in main else b''
+        for number, text in _historical_added_lines(before, after, data['patches'][name]):
+            if any(marker in text for marker in POLICY.MARKERS):
+                inventory.append(dict(file=name, line=number, text=text,
+                                      classification=POLICY.suppression_risk(text)[1],
+                                      source_blob=POLICY.blob_id(after), source_sha256=hashlib.sha256(after).hexdigest()))
+    encoded = json.dumps(inventory, sort_keys=True, separators=(',', ':')).encode()
+    _require_snapshot(hashlib.sha256(encoded).hexdigest() == _HISTORICAL_INVENTORY_SHA,
+                      'Historical marker identities differ')
+    _require_snapshot(len(inventory) == 87 and Counter(item['classification'] for item in inventory) ==
+                      {'compose-naming-redundancy-review-required': 80,
+                       'unused-parameter-contract-review-required': 6, 'permission-contract-review-required': 1},
+                      'Historical 80/6/1 classification differs')
+    return inventory
+
+
+def _verify_current_phone_inventory(repo, base, audit):
+    import hashlib
+    from quality_gate_module_policy import PHONE_CONTRACT, review_permission_contract, verify
+    verified = verify(repo, base)
+    expected = [(_PHONE_PATH, 498, '    @SuppressLint("MissingPermission")', 'permission-contract-review-required', 'high')]
+    _require_snapshot([(i['file'], i['line'], i['text'], i['classification'], i['risk']) for i in audit] == expected,
+                      'Candidate raw inventory differs from sole reviewed Phone marker')
+    _require_snapshot(all(i['approval'] == 'NOT_APPROVED' and i['result'] == 'HOLD' for i in audit),
+                      'Raw audit granted approval')
+    with POLICY._source_snapshot(repo, {_PHONE_PATH}) as snapshot:
+        source = snapshot[_PHONE_PATH]
+        _require_snapshot(POLICY.blob_id(source) == _PHONE_BLOB and hashlib.sha256(source).hexdigest() ==
+                          '260f477d149d3fe3caa4eea8311a9d58b2551dffc9170a4f9821365b326ee24e', 'Phone endpoint differs')
+        method = PHONE_CONTRACT['method'].encode()
+        _require_snapshot(hashlib.sha256(method).hexdigest() == _PHONE_METHOD_SHA and source.count(method) == 1,
+                          'Phone method guard differs')
+    pending, approved = review_permission_contract(repo, base, audit)
+    _require_snapshot(not pending and len(approved) == 1, 'Phone contract review differs')
+    item = approved[0]
+    _require_snapshot((item['original_blob'], item['candidate_blob'], item['method_sha256'],
+                       item['original_annotation_commit'], item['module_origin']) ==
+                      ('60a113f13c46c9088c2ff7fdf7c077b526b15be3', _PHONE_BLOB, _PHONE_METHOD_SHA,
+                       'c42fb4b221e2ede2dce35315eca24de413b75077', verified['origin']), 'Phone provenance differs')
+    return item
+
+
 @unittest.skipUnless(os.environ.get('TENSEVEN_POLICY_REPO'), 'Real policy repository not supplied')
 class RealHistoricalPolicyTests(unittest.TestCase):
     def setUp(self):
@@ -760,13 +924,18 @@ class RealHistoricalPolicyTests(unittest.TestCase):
 
     def test_real_suppression_inventory_never_grants_automatic_approval(self):
         audit = POLICY.audit_suppressions(self.repo, self.repo.changed(self.base), self.base)
-        # Games, six Tasks and seven Peek naming markers were removed; retained markers stay unapproved.
-        self.assertEqual(89, len(audit))
-        self.assertFalse(any('/extras/games/' in item['file'] for item in audit))
-        self.assertFalse(any(item['file'].endswith('/tasks/TasksActivity.kt') for item in audit))
-        self.assertFalse(any(item['file'].endswith('/ui/AppPrivacyScreen.kt') for item in audit))
-        self.assertTrue(all(item['approval'] == 'NOT_APPROVED' and item['result'] == 'HOLD' for item in audit))
-        self.assertTrue(all(item['inherited_before_r1'] and item['origin_commit'] for item in audit))
+        from quality_gate_module_policy import active
+        if active(self.repo):
+            _verify_historical_inventory(self.repo)
+            _verify_current_phone_inventory(self.repo, self.base, audit)
+        else:
+            # Preserve the original pre-L0 historical branch and its independent origin assertions.
+            self.assertEqual(89, len(audit))
+            self.assertFalse(any('/extras/games/' in item['file'] for item in audit))
+            self.assertFalse(any(item['file'].endswith('/tasks/TasksActivity.kt') for item in audit))
+            self.assertFalse(any(item['file'].endswith('/ui/AppPrivacyScreen.kt') for item in audit))
+            self.assertTrue(all(item['approval'] == 'NOT_APPROVED' and item['result'] == 'HOLD' for item in audit))
+            self.assertTrue(all(item['inherited_before_r1'] and item['origin_commit'] for item in audit))
 
     def test_one_byte_change_in_either_actual_transition_is_rejected(self):
         original = POLICY.source_bytes
@@ -777,6 +946,124 @@ class RealHistoricalPolicyTests(unittest.TestCase):
             with self.subTest(path=transition.path), patch.object(POLICY, 'source_bytes', side_effect=altered), \
                     self.assertRaises(GATE.QualityError):
                 POLICY.verify_transition(self.repo, self.base, transition)
+
+
+@unittest.skipUnless(os.environ.get('TENSEVEN_POLICY_REPO'), 'Real policy repository not supplied')
+class RemediatedSuppressionSnapshotTests(unittest.TestCase):
+    def setUp(self):
+        self.repo = RUNTIME.GitRepository(os.environ['TENSEVEN_POLICY_REPO'])
+        self.base = self.repo.resolve(_HISTORICAL_MAIN)
+        self.changed = self.repo.changed(self.base)
+        self.audit = POLICY.audit_suppressions(self.repo, self.changed, self.base)
+
+    def assert_added_marker_blocks(self, marker):
+        path = 'app/src/main/java/io/github/aimindseye/tenseven/ui/SableStartScreen.kt'
+        original = POLICY.added_lines
+
+        def extra(repo, base, filename):
+            lines = original(repo, base, filename)
+            return lines + [(1, marker)] if filename == path else lines
+
+        with patch.object(POLICY, 'added_lines', side_effect=extra):
+            policy = POLICY.review_policy(self.repo, self.changed, self.base, approved_compose=True)
+        self.assertEqual([marker], [item['text'] for item in policy['suppression_audit']])
+        result = dict(baseline=dict(findings=[], gradle_rc=0), candidate=dict(findings=[], gradle_rc=0),
+                      reports_only=False, policy=policy, result='HOLD')
+        GATE.apply_comparison(result, self.repo.path, self.repo.path)
+        self.assertEqual('HOLD', result['result'])
+
+    def test_reintroduced_naming_marker_still_blocks_genuine_policy_and_comparator(self):
+        self.assert_added_marker_blocks('@Suppress("FunctionNaming")')
+
+    def test_reintroduced_unused_parameter_marker_still_blocks_genuine_policy_and_comparator(self):
+        self.assert_added_marker_blocks('@Suppress("UNUSED_PARAMETER")')
+
+    def test_unknown_marker_still_blocks_genuine_policy_and_comparator(self):
+        self.assert_added_marker_blocks('@Suppress("UnknownRule")')
+
+    def test_removed_phone_marker_cannot_pass_the_current_inventory_proof(self):
+        self.assertRaises(GATE.QualityError, _verify_current_phone_inventory, self.repo, self.base, [])
+
+    def test_duplicate_phone_marker_is_rejected_by_the_actual_contract_reviewer(self):
+        from quality_gate_module_policy import review_permission_contract
+        self.assertRaises(GATE.QualityError, review_permission_contract, self.repo, self.base, self.audit * 2)
+
+    def assert_phone_mutation_rejected(self, before, after):
+        from contextlib import contextmanager
+        original = POLICY._source_snapshot
+
+        @contextmanager
+        def altered(repo, paths):
+            with original(repo, paths) as values:
+                copy = dict(values)
+                if _PHONE_PATH in copy:
+                    self.assertIn(before, copy[_PHONE_PATH])
+                    copy[_PHONE_PATH] = copy[_PHONE_PATH].replace(before, after, 1)
+                yield copy
+
+        with patch.object(POLICY, '_source_snapshot', side_effect=altered):
+            self.assertRaises(GATE.QualityError, POLICY.review_policy,
+                              self.repo, self.changed, self.base, approved_compose=True)
+
+    def test_broadened_phone_annotation_is_rejected(self):
+        self.assert_phone_mutation_rejected(b'@SuppressLint("MissingPermission")',
+                                            b'@SuppressLint("MissingPermission", "NewRule")')
+
+    def test_changed_phone_role_guard_is_rejected(self):
+        self.assert_phone_mutation_rejected(b'isRoleHeld(RoleManager.ROLE_DIALER) != true',
+                                            b'isRoleHeld(RoleManager.ROLE_DIALER) == true')
+
+    def test_changed_phone_source_with_unchanged_method_is_rejected(self):
+        self.assert_phone_mutation_rejected(b'package io.github.', b'// unrelated endpoint mutation\npackage io.github.')
+
+    def test_pre_l0_ancestry_cannot_authorize_the_candidate(self):
+        with patch.object(self.repo, 'head', return_value=self.base):
+            self.assertRaises(GATE.QualityError, POLICY.verify_protected_policy,
+                              self.repo, self.changed, self.base)
+
+    def test_unknown_ancestry_cannot_authorize_the_candidate(self):
+        with patch.object(self.repo, 'head', return_value='0' * 40):
+            self.assertRaises(GATE.QualityError, POLICY.verify_protected_policy,
+                              self.repo, self.changed, self.base)
+
+    def test_forged_historical_fixture_fails_before_parsing(self):
+        from contextlib import contextmanager
+        original = POLICY._source_snapshot
+
+        @contextmanager
+        def altered(repo, paths):
+            with original(repo, paths) as values:
+                copy = dict(values)
+                if _HISTORICAL_FIXTURE in copy:
+                    copy[_HISTORICAL_FIXTURE] += b' '
+                yield copy
+
+        with patch.object(POLICY, '_source_snapshot', side_effect=altered):
+            self.assertRaises(GATE.QualityError, _verify_historical_inventory, self.repo)
+
+    def test_historical_git_object_mutation_fails_immutable_tree_verification(self):
+        with POLICY._source_snapshot(self.repo, {_HISTORICAL_FIXTURE}) as values:
+            data = json.loads(values[_HISTORICAL_FIXTURE])
+        import base64
+        item = data['objects'][_HISTORICAL_TREE]
+        raw = item['data'].encode() if item['encoding'] == 'utf8' else base64.b64decode(item['data'])
+        # Change an object-ID byte, preserving the tree's names, modes, shape and encoding.
+        item['encoding'] = 'base64'
+        item['data'] = base64.b64encode(raw[:-1] + bytes([raw[-1] ^ 1])).decode()
+        self.assertRaises(GATE.QualityError, _historical_objects, self.repo, data)
+
+    def test_historical_diff_cannot_drop_or_reclassify_a_marker(self):
+        self.assertRaises(GATE.QualityError, _historical_added_lines,
+                          b'fun Test() = Unit\n', b'@Suppress("FunctionNaming")\nfun Test() = Unit\n',
+                          '@@ -0,0 +1 @@\n+@Suppress("UnusedParameter")\n')
+
+    def test_historical_fixture_has_no_dependency_on_unreachable_local_git_objects(self):
+        # The reader deliberately permits Git fallback only for objects reachable from the frozen BASE.
+        # Every historical-only object must come from the pinned portable fixture, including its root.
+        with POLICY._source_snapshot(self.repo, {_HISTORICAL_FIXTURE}) as values:
+            data = json.loads(values[_HISTORICAL_FIXTURE])
+        del data['objects'][_HISTORICAL_TREE]
+        self.assertRaises(GATE.QualityError, _historical_objects, self.repo, data)
 
 
 @unittest.skipUnless(os.environ.get('TENSEVEN_REAL_BASE'), 'Real report roots not supplied')

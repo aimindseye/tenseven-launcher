@@ -63,7 +63,6 @@ internal fun rememberHeaderOptions(): HeaderOptions {
 internal fun TextUnit.safeLauncherScale(value: LauncherTextSize): TextUnit = this * value.multiplier
 
 /** Current conditions are optional; no placeholder or made-up temperature is displayed. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun HomeWeatherLine(
     options: HeaderOptions,
@@ -125,7 +124,6 @@ internal fun HomeWeatherLine(
 }
 
 /** Scale only reading typography. Compact nav labels, indicators and system text keep original sizes. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun ScaledLauncherTextTheme(content: @Composable () -> Unit) {
     val multiplier = rememberHeaderOptions().size.multiplier

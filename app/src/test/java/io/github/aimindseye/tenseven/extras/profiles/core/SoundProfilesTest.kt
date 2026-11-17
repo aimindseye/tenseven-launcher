@@ -1,4 +1,5 @@
-// Derived from SableOS (github.com/aimindseye/zinwaq25-sableos, patches/sable-src 0076, 0077 and 0085: sable-src/apps/titan2/platform/profiles),
+// Derived from SableOS (github.com/aimindseye/zinwaq25-sableos, patches/sable-src 0076, 0077 and 0085:
+// sable-src/apps/titan2/platform/profiles),
 // Apache License 2.0. Changed: package and imports renamed for Tenseven; the Sable palette replaced by a fixed one;
 // English only (no string resources); no Quick Settings tile.
 package io.github.aimindseye.tenseven.extras.profiles.core

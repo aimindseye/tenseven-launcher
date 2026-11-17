@@ -83,7 +83,6 @@ internal fun HubCalendarPeek(
 }
 
 // Expanded calendar content is independent of Peek's remembered state.
-@Suppress("FunctionNaming")
 @Composable
 private fun CalendarPeekExpandedContent(
     deviceLocked: Boolean,
@@ -101,7 +100,11 @@ private fun CalendarPeekExpandedContent(
     } else if (!permitted) {
         Text(
             "Allow Calendar access to see events from calendars synced to Android",
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onRequestCalendarPermission).padding(vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onRequestCalendarPermission)
+                    .padding(vertical = 8.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )

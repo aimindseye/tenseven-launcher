@@ -1,5 +1,7 @@
-// Derived from SableOS (github.com/aimindseye/zinwaq25-sableos @ 31420f599c2f, sable-src/apps/r8/android/notes/src/test),
-// Apache License 2.0. Changed: package and imports renamed for Tenseven; native Rust calls replaced by Kotlin where noted.
+// Derived from SableOS (github.com/aimindseye/zinwaq25-sableos @ 31420f599c2f,
+// sable-src/apps/r8/android/notes/src/test),
+// Apache License 2.0. Changed: package and imports renamed for Tenseven; native Rust calls replaced by Kotlin where
+// noted.
 package io.github.aimindseye.tenseven.extras.notes.core
 
 import android.view.KeyEvent

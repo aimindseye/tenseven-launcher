@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.key.KeyEventType
@@ -73,6 +74,7 @@ import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
+import io.github.aimindseye.tenseven.model.Bb7RecentApps
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.GridColumns
@@ -87,6 +89,7 @@ import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.DeviceCompatibility
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
+import io.github.aimindseye.tenseven.platform.RecentLaunchesRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
 import java.text.DateFormat
@@ -97,7 +100,7 @@ import java.util.Date
  * (status dials, date, weather and unread count; the time is the status bar's, so it is not shown
  * twice) on the wallpaper, and a tray along the bottom with one row of Favorites that opens into
  * the whole panel. Keys as on BlackBerry 7: arrows move, Enter opens, Up opens the tray and
- * Escape closes it, Space switches panels (Favorites, All, Downloads), typing searches apps, Menu
+ * Escape closes it, Space switches panels (Favorites, All, Recent, Downloads), typing searches apps, Menu
  * opens the home options. As on the BlackBerry 10 home, Hub is to the left and the apps to the
  * right: a swipe to the right or Alt+Left opens Hub, a swipe to the left or Alt+Right opens All;
  * with the tray open, Alt+Left/Right switch panels. The home screen shows [homeRows] rows of the
@@ -221,6 +224,7 @@ private data class Bb7HomeInputs(
 /** All mutable BB7 navigation state has the same remember lifetime as before extraction. */
 private class Bb7HomeSession {
     var panel by mutableStateOf(Bb7Panel.Favorites)
+    var soundFocused = false
     var open by mutableStateOf(false)
     var query by mutableStateOf("")
     var selected by mutableIntStateOf(-1)
@@ -308,6 +312,10 @@ private val bb7HomePresenter: @Composable (Bb7HomeInputs) -> Unit = { input ->
         remember(input.source.apps, generation, input.source.homeGeneration) {
             AppUsageRepository(context).load()
         }
+    val recentEvents =
+        remember(input.source.apps, generation, input.source.homeGeneration) {
+            RecentLaunchesRepository(context).loadForHome()
+        }
     val state = remember { Bb7HomeSession() }
     LaunchedEffect(input.panel.panels) {
         if (state.panel !in input.panel.panels) state.panel = input.panel.panels.first()
@@ -326,6 +334,7 @@ private val bb7HomePresenter: @Composable (Bb7HomeInputs) -> Unit = { input ->
         rememberBb7Apps(
             input.source.apps,
             usage,
+            recentEvents,
             Bb7AppSelection(state.panel, state.query, input.source.favoriteKeys, input.panel.desktopKeys),
         )
     val model = Bb7HomeComputed(state, lists)
@@ -452,6 +461,12 @@ private class Bb7HomeActions(
                 },
             )
             add("Wallpaper" to { input.extra.onOpenWallpaper() })
+            val recent = Bb7Panel.Recent
+            add(
+                (if (recent in input.panel.panels) "Hide Recent panel" else "Show Recent panel") to {
+                    input.edits.onPanelsChanged(Bb7Panels.toggle(input.panel.panels, recent))
+                },
+            )
             val frequent = Bb7Panel.Frequent
             add(
                 (if (frequent in input.panel.panels) "Hide Frequent panel" else "Show Frequent panel") to {
@@ -771,7 +786,13 @@ private class Bb7HomeCanvas(
                         .windowInsetsPadding(WindowInsets.safeDrawing)
                         .focusRequester(focus)
                         .focusable()
-                        .onPreviewKeyEvent { keyboard.onKey(it) },
+                        .onPreviewKeyEvent { event ->
+                            val key = event.nativeKeyEvent.keyCode
+                            val activate =
+                                key == KeyEvent.KEYCODE_ENTER ||
+                                    key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_NUMPAD_ENTER
+                            if (soundFocused && activate) false else keyboard.onKey(event)
+                        },
             ) {
                 val columns = bb7Columns(input.visual.gridColumns, maxWidth.value.toInt(), input.visual.iconSize.cellDp)
                 SideEffect { keyColumns = columns }
@@ -825,6 +846,7 @@ private class Bb7HomeCanvas(
                 statusMode = feeds.display.statusMode,
                 compact = state.open || model.searching,
                 scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(input.visual.scrimLevel)),
+                onSoundFocus = { state.soundFocused = it },
             ),
             Bb7BannerNotifications(
                 counts = feeds.live.live.hubApps,
@@ -874,6 +896,13 @@ private class Bb7HomeCanvas(
             bb7Tray(
                 Bb7TrayView(
                     title = model.trayTitle,
+                    emptyText =
+                        if (panel == Bb7Panel.Recent && !model.searching) {
+                            "No recent apps. Open an app from TenSeven; " +
+                                "history follows Remember returned apps in Settings."
+                        } else {
+                            null
+                        },
                     apps = if (open || model.searching) shown else shown.take(columns * input.source.homeRows),
                     grid = Bb7GridAppearance(columns, input.visual.iconSize.iconDp, input.visual.showLabels),
                     selection = Bb7GridSelection(if (model.inDesktop) -1 else selected, moving),
@@ -951,6 +980,7 @@ private data class Bb7BannerDisplay(
     val statusMode: HomeStatusMode,
     val compact: Boolean,
     val scrim: Color,
+    val onSoundFocus: (Boolean) -> Unit,
 )
 
 private data class Bb7BannerNotifications(
@@ -997,6 +1027,7 @@ private val bb7Banner: @Composable (
                 )
                 if (!compact) HomeWeatherLine(header, modifier = Modifier.fillMaxWidth())
             }
+            SoundProfileButton(Modifier.onFocusChanged { display.onSoundFocus(it.hasFocus) })
             Spacer(Modifier.width(6.dp))
         }
         if (showStrip && !compact) {
@@ -1042,6 +1073,7 @@ private data class Bb7TrayView(
     val grid: Bb7GridAppearance,
     val selection: Bb7GridSelection,
     val style: Bb7TrayStyle,
+    val emptyText: String? = null,
 )
 
 private data class Bb7TrayEvents(
@@ -1090,7 +1122,7 @@ private val bb7Tray: @Composable (Bb7TrayView, Bb7TrayEvents) -> Unit = { view, 
         bb7TrayHeader(view.title, events)
         if (view.apps.isEmpty()) {
             Text(
-                text = t("no_apps_here"),
+                text = view.emptyText ?: t("no_apps_here"),
                 color = BANNER_MUTED,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -1338,15 +1370,16 @@ private data class Bb7AppLists(
 private fun rememberBb7Apps(
     apps: List<AppEntry>,
     usage: io.github.aimindseye.tenseven.model.AppUsage,
+    recentEvents: List<io.github.aimindseye.tenseven.model.ForegroundEvent>,
     selection: Bb7AppSelection,
 ): Bb7AppLists {
     val context = LocalContext.current
     val defaults = remember(context, apps.size) { DefaultApps.homePackages(context) }
     val shown =
-        if (selection.query.isNotEmpty()) {
-            Bb7Home.search(apps, selection.query)
-        } else {
-            Bb7Home.panelApps(selection.panel, apps, selection.favorites, usage, defaults)
+        when {
+            selection.query.isNotEmpty() -> Bb7Home.search(apps, selection.query)
+            selection.panel == Bb7Panel.Recent -> Bb7RecentApps.select(apps, recentEvents)
+            else -> Bb7Home.panelApps(selection.panel, apps, selection.favorites, usage, defaults)
         }
     val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, selection.favorites, defaultPackages = defaults)
     val byKey = remember(apps) { apps.associateBy { it.stableKey() } }

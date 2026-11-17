@@ -8,8 +8,6 @@ import android.media.MediaMetadata
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import io.github.aimindseye.tenseven.conversations.*
-import io.github.aimindseye.tenseven.extras.notes.core.NoteStore
-import io.github.aimindseye.tenseven.extras.notes.core.NoteText
 import io.github.aimindseye.tenseven.frames.*
 import java.io.File
 
@@ -57,7 +55,9 @@ class AppFrameSummaryRepository(
                     AppSummary(
                         "media:" + controller.packageName,
                         appName(controller.packageName),
-                        AppSummaryPolicy.text(prefix + listOf(title, artist).filter(String::isNotBlank).joinToString(" · ")),
+                        AppSummaryPolicy.text(
+                            prefix + listOf(title, artist).filter(String::isNotBlank).joinToString(" · "),
+                        ),
                         SummarySource.Media,
                         controller.packageName,
                         now,
@@ -72,7 +72,8 @@ class AppFrameSummaryRepository(
         return ConversationHub
             .notifications()
             .filter {
-                it.packageName in enabled && !it.isOngoing && !state.isSnoozed(it.conversationId, now) && state.unreadCount(it) > 0
+                it.packageName in enabled && !it.isOngoing &&
+                    !state.isSnoozed(it.conversationId, now) && state.unreadCount(it) > 0
             }.groupBy { it.packageName }
             .map { (pkg, items) ->
                 val latest = items.maxBy { it.postedAt }
@@ -94,13 +95,12 @@ class AppFrameSummaryRepository(
 
     private fun local(now: Long): List<AppSummary> =
         buildList {
-            val notes = runCatching { NoteStore(File(context.filesDir, "notes")).list() }.getOrDefault(emptyList())
-            notes.firstOrNull()?.let { note ->
+            LegacyNoteSummaries.latest(File(context.filesDir, "notes"))?.let { note ->
                 add(
                     AppSummary(
                         "local:notes",
                         "TenSeven Notes",
-                        AppSummaryPolicy.text(note.title + " · " + NoteText.preview(note.body)),
+                        AppSummaryPolicy.text(note.title + " · " + note.preview),
                         SummarySource.Local,
                         updatedAt = note.updatedAt,
                     ),
@@ -162,21 +162,14 @@ class AppFrameSummaryRepository(
         }.getOrDefault(pkg)
 
     fun open(key: String) {
-        val activity =
-            when (key) {
-                "local:notes" -> io.github.aimindseye.tenseven.extras.notes.MainActivity::class.java
-                "local:tasks" -> io.github.aimindseye.tenseven.tasks.TasksActivity::class.java
-                "local:calculator" -> io.github.aimindseye.tenseven.extras.calculator.MainActivity::class.java
-                else -> null
+        val intent =
+            if (key.startsWith("local:")) {
+                CompanionLaunches.intent(context, key)
+            } else {
+                context.packageManager.getLaunchIntentForPackage(key.substringAfter(':', ""))
             }
-        if (activity !=
-            null
-        ) {
-            runCatching { context.startActivity(Intent(context, activity).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            return
+        intent?.let { target ->
+            runCatching { context.startActivity(target.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
         }
-        val pkg = key.substringAfter(':', "")
-        val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return
-        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
 }

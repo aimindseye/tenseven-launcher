@@ -89,14 +89,13 @@ internal class StartStateBacking(
         values: List<String>?,
     ) {
         preferences
-            .edit()
-            .apply {
+            .edit {
                 if (values == null) {
                     remove(key)
                 } else {
                     putString(key, values.joinToString(QUICK_BAR_SEPARATOR))
                 }
-            }.apply()
+            }
     }
 }
 
@@ -124,7 +123,13 @@ internal class StartFramesStateImpl(
                 snapshots = preferences.getBoolean("frames_snapshots", true),
                 openApps = preferences.getBoolean("frames_open", true),
                 rememberReturnedApps = preferences.getBoolean("frames_recents", true),
-                maximum = preferences.getInt("frames_maximum", 8),
+                maximum =
+                    preferences.getInt(
+                        "frames_maximum",
+                        io.github.aimindseye.tenseven.frames
+                            .FrameSettings()
+                            .maximum,
+                    ),
             ).normalized()
 
     override fun saveFrameSettings(value: io.github.aimindseye.tenseven.frames.FrameSettings) {
@@ -293,24 +298,26 @@ internal class StartBb7StateImpl(
 
     /** Rows of icons on the BlackBerry 7 home screen (see Bb7Home.MAX_HOME_ROWS). */
     override fun loadBb7HomeRows(): Int =
-        preferences.getInt(KEY_BB7_HOME_ROWS, Bb7Home.MIN_HOME_ROWS).coerceIn(Bb7Home.MIN_HOME_ROWS, Bb7Home.MAX_HOME_ROWS)
+        preferences
+            .getInt(KEY_BB7_HOME_ROWS, Bb7Home.MIN_HOME_ROWS)
+            .coerceIn(Bb7Home.MIN_HOME_ROWS, Bb7Home.MAX_HOME_ROWS)
 
     override fun saveBb7HomeRows(rows: Int) {
-        preferences.edit().putInt(KEY_BB7_HOME_ROWS, rows).apply()
+        preferences.edit { putInt(KEY_BB7_HOME_ROWS, rows) }
     }
 
     /** The BlackBerry 7 tray's panels, in order (see Bb7Panels). */
     override fun loadBb7Panels(): List<Bb7Panel> = Bb7Panels.decode(preferences.getString(KEY_BB7_PANELS, null))
 
     override fun saveBb7Panels(panels: List<Bb7Panel>) {
-        preferences.edit().putString(KEY_BB7_PANELS, Bb7Panels.encode(panels)).apply()
+        preferences.edit { putString(KEY_BB7_PANELS, Bb7Panels.encode(panels)) }
     }
 
     /** How dark the BlackBerry 7 banner and tray are over the wallpaper (see Bb7Scrim). */
     override fun loadBb7Scrim(): Int = Bb7Scrim.clamp(preferences.getInt(KEY_BB7_SCRIM, Bb7Scrim.DEFAULT))
 
     override fun saveBb7Scrim(level: Int) {
-        preferences.edit().putInt(KEY_BB7_SCRIM, Bb7Scrim.clamp(level)).apply()
+        preferences.edit { putInt(KEY_BB7_SCRIM, Bb7Scrim.clamp(level)) }
     }
 
     override fun loadBb7IconSize(): Bb7IconSize =
@@ -323,7 +330,7 @@ internal class StartBb7StateImpl(
         )
 
     override fun saveBb7IconSize(size: Bb7IconSize) {
-        preferences.edit().putInt(KEY_BB7_ICON_SIZE, size.stable).apply()
+        preferences.edit { putInt(KEY_BB7_ICON_SIZE, size.stable) }
     }
 
     /** Apps placed in the empty space of the BlackBerry 7 home screen, in order (stable keys). */
@@ -377,7 +384,10 @@ internal class StartHomeLayoutStateImpl(
 
     override fun saveGridOrder(keys: List<String>?) = saveOrdered(KEY_GRID_ORDER, keys)
 
-    /** Ordered Glance widgets, shown as Active Frames while no app is running (see GlanceWidgets); null means never customised. */
+    /**
+     * Ordered Glance widgets, shown as Active Frames while no app is running (see GlanceWidgets).
+     * Null means never customised.
+     */
     override fun loadGlanceWidgets(): List<String>? = loadOrdered(KEY_GLANCE_WIDGETS)
 
     override fun saveGlanceWidgets(widgets: List<String>?) = saveOrdered(KEY_GLANCE_WIDGETS, widgets)
@@ -405,7 +415,7 @@ internal class StartHomeLayoutStateImpl(
     override fun loadHomeMode(): String? = preferences.getString(KEY_HOME_MODE, null)
 
     override fun saveHomeMode(mode: String) {
-        preferences.edit().putString(KEY_HOME_MODE, mode).apply()
+        preferences.edit { putString(KEY_HOME_MODE, mode) }
     }
 }
 
@@ -441,7 +451,7 @@ internal class StartGeneralStateImpl(
     override fun loadHomeStyle(): HomeStyle = HomeStyle.fromStableValue(preferences.getString(KEY_HOME_STYLE, null))
 
     override fun saveHomeStyle(style: HomeStyle) {
-        preferences.edit().putString(KEY_HOME_STYLE, style.stableValue).apply()
+        preferences.edit { putString(KEY_HOME_STYLE, style.stableValue) }
     }
 
     /** Safe launcher-owned font preset: do not alter Android system font scale. */
@@ -458,21 +468,21 @@ internal class StartGeneralStateImpl(
     override fun loadOnboardingDone(): Boolean = preferences.getBoolean(KEY_ONBOARDING_DONE, false)
 
     override fun saveOnboardingDone() {
-        preferences.edit().putBoolean(KEY_ONBOARDING_DONE, true).apply()
+        preferences.edit { putBoolean(KEY_ONBOARDING_DONE, true) }
     }
 
     /** Double-tap on empty Home space locks the screen (needs the accessibility service); off until chosen. */
     override fun loadDoubleTapLock(): Boolean = preferences.getBoolean(KEY_DOUBLE_TAP_LOCK, false)
 
     override fun saveDoubleTapLock(enabled: Boolean) {
-        preferences.edit().putBoolean(KEY_DOUBLE_TAP_LOCK, enabled).apply()
+        preferences.edit { putBoolean(KEY_DOUBLE_TAP_LOCK, enabled) }
     }
 
     /** The Tenseven lock layer shown over the system lock screen when the screen wakes; off until chosen. */
     override fun loadLockLayer(): Boolean = preferences.getInt(KEY_LOCK_LAYER, 0) != 0
 
     override fun saveLockLayer(enabled: Boolean) {
-        preferences.edit().putInt(KEY_LOCK_LAYER, if (enabled) 1 else 0).apply()
+        preferences.edit { putInt(KEY_LOCK_LAYER, if (enabled) 1 else 0) }
     }
 }
 
@@ -594,27 +604,27 @@ internal class StartIconsStateImpl(
         )
 
     override fun saveIconPresentation(style: io.github.aimindseye.tenseven.model.IconPresentation) {
-        preferences.edit().putString(KEY_ICON_PRESENTATION, style.key).apply()
+        preferences.edit { putString(KEY_ICON_PRESENTATION, style.key) }
     }
 
     /** Whether typing on a home screen starts a search (default on). */
     override fun loadTypeToSearch(): Boolean = preferences.getInt(KEY_TYPE_TO_SEARCH, 1) != 0
 
     override fun saveTypeToSearch(enabled: Boolean) {
-        preferences.edit().putInt(KEY_TYPE_TO_SEARCH, if (enabled) 1 else 0).apply()
+        preferences.edit { putInt(KEY_TYPE_TO_SEARCH, if (enabled) 1 else 0) }
     }
 
     /** Icon grid: columns (0 = as many as fit) and whether icons carry their names. */
     override fun loadGridColumns(): Int = GridColumns.normalize(preferences.getInt(KEY_GRID_COLUMNS, GridColumns.AUTO))
 
     override fun saveGridColumns(columns: Int) {
-        preferences.edit().putInt(KEY_GRID_COLUMNS, GridColumns.normalize(columns)).apply()
+        preferences.edit { putInt(KEY_GRID_COLUMNS, GridColumns.normalize(columns)) }
     }
 
     override fun loadGridLabels(): Boolean = preferences.getInt(KEY_GRID_LABELS, 1) != 0
 
     override fun saveGridLabels(shown: Boolean) {
-        preferences.edit().putInt(KEY_GRID_LABELS, if (shown) 1 else 0).apply()
+        preferences.edit { putInt(KEY_GRID_LABELS, if (shown) 1 else 0) }
     }
 }
 
@@ -661,7 +671,6 @@ internal class StartStatusStateImpl(
         )
 
     /** Candidate-only legacy read for protected Active Frames. Shared dials ignore style. */
-    @Suppress("UnusedParameter", "UNUSED_PARAMETER")
     override fun loadHomeDials(style: HomeStyle): Set<String> = loadHomeDials()
 
     override fun saveHomeDials(selected: Set<String>) {
@@ -690,14 +699,13 @@ internal class StartStatusStateImpl(
         preferences.edit { putString("home_status_mode_shared", mode.key) }
     }
 
-    @Suppress("UnusedParameter", "UNUSED_PARAMETER")
     override fun loadHomeNotificationStrip(style: HomeStyle): Boolean = HOME_NOTIFICATION_STRIP_ENABLED
 
     override fun saveHomeNotificationStrip(
         style: HomeStyle,
         enabled: Boolean,
     ) {
-        preferences.edit().putInt(HomeDisplayPolicy.stripPreference(style), if (enabled) 1 else 0).apply()
+        preferences.edit { putInt(HomeDisplayPolicy.stripPreference(style), if (enabled) 1 else 0) }
     }
 
     override fun loadHomeNotificationExpanded(style: HomeStyle): Boolean =
@@ -707,7 +715,7 @@ internal class StartStatusStateImpl(
         style: HomeStyle,
         expanded: Boolean,
     ) {
-        preferences.edit().putInt(HomeDisplayPolicy.stripExpandedPreference(style), if (expanded) 1 else 0).apply()
+        preferences.edit { putInt(HomeDisplayPolicy.stripExpandedPreference(style), if (expanded) 1 else 0) }
     }
 }
 
@@ -740,14 +748,14 @@ internal class StartWallpaperStateImpl(
 
     override fun saveWallpaperSetId(id: String) {
         require(WallpaperSets.ALL.any { it.id == id }) { "Unknown wallpaper: $id" }
-        preferences.edit().putString(KEY_WALLPAPER_SET, id).apply()
+        preferences.edit { putString(KEY_WALLPAPER_SET, id) }
     }
 
     /** Whether the BlackBerry 10 home lets the wallpaper show through, dimmed. On by default. */
     override fun loadHomeWallpaper(): Boolean = preferences.getInt(KEY_HOME_WALLPAPER, 0) != 0
 
     override fun saveHomeWallpaper(shown: Boolean) {
-        preferences.edit().putInt(KEY_HOME_WALLPAPER, if (shown) 1 else 0).apply()
+        preferences.edit { putInt(KEY_HOME_WALLPAPER, if (shown) 1 else 0) }
     }
 }
 
@@ -797,28 +805,27 @@ internal class StartHubStateImpl(
 
     override fun saveHubSelectedCalendarIds(ids: Set<Long>?) {
         preferences
-            .edit()
-            .apply {
+            .edit {
                 if (ids == null) {
                     remove(KEY_HUB_SELECTED_CALENDARS)
                 } else {
                     putStringSet(KEY_HUB_SELECTED_CALENDARS, ids.map { it.toString() }.toSet())
                 }
-            }.apply()
+            }
     }
 
     /** Calendar Peek is optional: never read CalendarProvider until the user enables this. */
     override fun loadHubCalendarPeek(): Boolean = preferences.getInt(KEY_HUB_CALENDAR_PEEK, 0) != 0
 
     override fun saveHubCalendarPeek(enabled: Boolean) {
-        preferences.edit().putInt(KEY_HUB_CALENDAR_PEEK, if (enabled) 1 else 0).apply()
+        preferences.edit { putInt(KEY_HUB_CALENDAR_PEEK, if (enabled) 1 else 0) }
     }
 
     /** Whether the Hub peek on the home screen shows message text (off: names and counts only). */
     override fun loadHubPeekText(): Boolean = preferences.getInt(KEY_HUB_PEEK_TEXT, 0) != 0
 
     override fun saveHubPeekText(shown: Boolean) {
-        preferences.edit().putInt(KEY_HUB_PEEK_TEXT, if (shown) 1 else 0).apply()
+        preferences.edit { putInt(KEY_HUB_PEEK_TEXT, if (shown) 1 else 0) }
     }
 }
 
@@ -849,7 +856,7 @@ internal class StartAppearanceStateImpl(
 ) : StartAppearanceState {
     private val preferences: SharedPreferences get() = shared.preferences
 
-    /** The theme chosen in Tenseven (mode and accent, stable values); null means follow the system's Sable appearance. */
+    /** The theme chosen in Tenseven (mode and accent, stable values); null follows system appearance. */
     override fun loadAppearanceMode(): String? = preferences.getString(KEY_APPEARANCE_MODE, null)
 
     override fun loadAppearanceAccent(): String? = preferences.getString(KEY_APPEARANCE_ACCENT, null)
@@ -860,12 +867,11 @@ internal class StartAppearanceStateImpl(
         accent: String?,
     ) {
         preferences
-            .edit()
-            .apply {
+            .edit {
                 if (mode == null) remove(KEY_APPEARANCE_MODE) else putString(KEY_APPEARANCE_MODE, mode)
                 if (accent == null) remove(KEY_APPEARANCE_ACCENT) else putString(KEY_APPEARANCE_ACCENT, accent)
                 remove(KEY_APPEARANCE_CUSTOM)
-            }.apply()
+            }
     }
 
     /** The imported themes (a JSON array, see [CustomThemes.formatStored]); included in a backup. */
@@ -875,7 +881,7 @@ internal class StartAppearanceStateImpl(
     }
 
     override fun saveCustomThemes(themes: List<CustomTheme>) {
-        preferences.edit().putString(KEY_CUSTOM_THEMES, CustomThemes.formatStored(themes)).apply()
+        preferences.edit { putString(KEY_CUSTOM_THEMES, CustomThemes.formatStored(themes)) }
     }
 
     /** The id of the imported theme in use, or null when a built-in theme is. */
@@ -884,11 +890,11 @@ internal class StartAppearanceStateImpl(
     /** Uses the imported [theme]: its mode, the "custom" accent, and its id. */
     override fun saveActiveCustomTheme(theme: CustomTheme) {
         preferences
-            .edit()
-            .putString(KEY_APPEARANCE_MODE, theme.mode)
-            .putString(KEY_APPEARANCE_ACCENT, CustomThemes.ACCENT_VALUE)
-            .putString(KEY_APPEARANCE_CUSTOM, theme.id)
-            .apply()
+            .edit {
+                putString(KEY_APPEARANCE_MODE, theme.mode)
+                putString(KEY_APPEARANCE_ACCENT, CustomThemes.ACCENT_VALUE)
+                putString(KEY_APPEARANCE_CUSTOM, theme.id)
+            }
     }
 
     /** Calls [listener] when the theme choice changes; the returned function stops listening. */
@@ -930,21 +936,21 @@ internal class StartWidgetsStateImpl(
     override fun loadHomeWidgetIds(): List<Int> = WidgetList.parse(preferences.getString(KEY_HOME_WIDGET_IDS, null))
 
     override fun saveHomeWidgetIds(ids: List<Int>) {
-        preferences.edit().putString(KEY_HOME_WIDGET_IDS, WidgetList.format(ids)).apply()
+        preferences.edit { putString(KEY_HOME_WIDGET_IDS, WidgetList.format(ids)) }
     }
 
     /** Whether the Widgets page is the page left of Hub (default on). */
     override fun loadWidgetsPage(): Boolean = preferences.getInt(KEY_WIDGETS_PAGE, 1) != 0
 
     override fun saveWidgetsPage(enabled: Boolean) {
-        preferences.edit().putInt(KEY_WIDGETS_PAGE, if (enabled) 1 else 0).apply()
+        preferences.edit { putInt(KEY_WIDGETS_PAGE, if (enabled) 1 else 0) }
     }
 
     /** Android widget ids this launcher allocated, in display order. Device-specific, so never part of a backup. */
     override fun loadWidgetIds(): List<Int> = WidgetList.parse(preferences.getString(KEY_WIDGET_IDS, null))
 
     override fun saveWidgetIds(ids: List<Int>) {
-        preferences.edit().putString(KEY_WIDGET_IDS, WidgetList.format(ids)).apply()
+        preferences.edit { putString(KEY_WIDGET_IDS, WidgetList.format(ids)) }
     }
 }
 
@@ -966,18 +972,22 @@ internal class StartBackupStateImpl(
     /** Replaces every backed-up setting with [settings]: keys the file lacks go back to their defaults. */
     override fun restoreSettings(settings: Map<String, BackupValue>) {
         preferences
-            .edit()
-            .apply {
+            .edit {
                 LauncherBackup.keys.forEach { remove(it) }
-                settings.forEach { (key, value) ->
-                    if (key in LauncherBackup.keys) {
-                        when (value) {
-                            is BackupValue.Text -> putString(key, value.value)
-                            is BackupValue.Number -> putInt(key, value.value)
-                            is BackupValue.Items -> putStringSet(key, value.values)
-                        }
-                    }
-                }
-            }.apply()
+                settings.forEach { (key, value) -> restoreValue(key, value) }
+            }
+    }
+
+    private fun SharedPreferences.Editor.restoreValue(
+        key: String,
+        value: BackupValue,
+    ) {
+        if (key in LauncherBackup.keys) {
+            when (value) {
+                is BackupValue.Text -> putString(key, value.value)
+                is BackupValue.Number -> putInt(key, value.value)
+                is BackupValue.Items -> putStringSet(key, value.values)
+            }
+        }
     }
 }

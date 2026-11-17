@@ -28,8 +28,10 @@
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
          Tenseven under Settings, Usage access, and "appops set" is ignored. The user still grants it there. -->
-    <!-- Sound Profiles (an extra) sets tones, vibration and the light; the user allows it once under "Modify system settings". -->
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
+
+
+    <!-- Home's native Sound/Vibrate quick control; normal permission, not Do Not Disturb access. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Lets the user give Tenseven Do Not Disturb access, which Android requires before an app may pick Silent. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -55,13 +57,15 @@
     -->
 
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
-    <uses-permission android:name="android.permission.CALL_PHONE" />
-
-    <uses-permission android:name="android.permission.READ_CALL_LOG" />
-
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <queries>
+        <package android:name="io.github.aimindseye.tenseven.phone.debug" />
+        <package android:name="io.github.aimindseye.tenseven.calendar.debug" />
+        <package android:name="io.github.aimindseye.tenseven.tasks.debug" />
+        <package android:name="io.github.aimindseye.tenseven.notes.debug" />
+        <package android:name="io.github.aimindseye.tenseven.calculator.debug" />
+        <package android:name="io.github.aimindseye.tenseven.profiles.debug" />
+
         <intent><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -121,6 +125,12 @@
         <package android:name="io.github.aimindseye.tenseven.profiles" />
     </queries>
 
+    <!-- Counts only, same-signature readers. applicationId isolates debug installations. -->
+    <permission android:name="${applicationId}.permission.READ_HUB_COUNTS"
+        android:protectionLevel="signature" />
+    <permission android:name="${applicationId}.permission.WRITE_HUB_COUNTS"
+        android:protectionLevel="signature" />
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -133,59 +143,18 @@
 
         <!-- Optional D5 companions: disabled until the user enables them under Apps & Features.
              Neither requests Android's default Phone role or changes in-call UI. -->
-        <activity android:name=".features.phone.TenSevenPhoneActivity"
-            android:enabled="false" android:exported="true" android:label="@string/tenseven_phone_name"
-            android:taskAffinity="io.github.aimindseye.tenseven.phone">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
-            <!-- Android's ROLE_DIALER qualification: system default-Phone selection. -->
-            <intent-filter>
-                <action android:name="android.intent.action.DIAL" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.DIAL" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="tel" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".features.phone.TenSevenFloatingDialpadActivity"
-            android:exported="false" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-        <activity android:name=".features.calendar.TenSevenCalendarActivity"
-            android:enabled="false" android:exported="true" android:label="@string/tenseven_calendar_name"
-            android:taskAffinity="io.github.aimindseye.tenseven.calendar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <!-- M2-B: user-initiated companion selection only; no installer capability. -->
-        <activity android:name=".CompanionWizardActivity" android:exported="false" />
-        <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
-
-        <!-- Remind scheduler is independent of the optional Notes and Tasks launcher icons. -->
-        <receiver android:name=".tasks.TaskAlarmReceiver" android:enabled="true" android:exported="false">
+        <receiver android:name=".platform.HubReminderAlarmReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
-        <activity android:name=".tasks.TasksActivity" android:exported="false"
-            android:taskAffinity="io.github.aimindseye.tenseven.tasks"
-            android:label="TenSeven Tasks" android:theme="@android:style/Theme.Material.NoActionBar" />
-        <activity-alias android:name=".tasks.TasksLauncherActivity"
-            android:targetActivity=".tasks.TasksActivity"
-            android:exported="true" android:enabled="false"
-            android:icon="@mipmap/ic_tenseven_tasks" android:label="TenSeven Tasks">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
+        <!-- M2-B: user-initiated companion selection only; no installer capability. -->
+        <activity android:name=".CompanionWizardActivity" android:exported="false" />
+        <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
+
         <activity
             android:name="io.github.aimindseye.tenseven.SableStartActivity"
             android:clearTaskOnLaunch="true"
@@ -300,54 +269,6 @@
                 android:resource="@xml/lock_accessibility_service" />
         </service>
 
-        <!-- Extra apps ported from SableOS: Calculator (with a unit converter), Sound Profiles and Notes. Every one
-             ships switched off; Setup turns on the ones the user picks (platform/ExtraAppsControl). No permissions. -->
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.calculator.MainActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.calculator_MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Calc Plus"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.profiles.MainActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.profiles_MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Sound Profiles"
-            android:theme="@android:style/Theme.Material.NoActionBar"
-            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.notes.MainActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.notes_MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Notes"
-            android:theme="@android:style/Theme.Material.NoActionBar"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <!-- Text shared from another app becomes a new note. -->
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-        </activity>
-
         <!-- Backup and restore of launcher settings through the system file picker. -->
         <activity
             android:name=".BackupActivity"
@@ -371,27 +292,12 @@
             android:foregroundServiceType="mediaProjection" />
         <activity android:name=".FrameIntegrationsActivity" android:exported="false" />
 
-        <!-- Default Phone role: system-owned Telecom calls, UI supplied by TenSeven. -->
-        <service android:name=".features.phone.TenSevenInCallService"
-            android:permission="android.permission.BIND_INCALL_SERVICE"
-            android:exported="true">
-            <meta-data android:name="android.telecom.IN_CALL_SERVICE_UI" android:value="true" />
-            <intent-filter><action android:name="android.telecom.InCallService" /></intent-filter>
-        </service>
-        <!-- Separate optional Android Call Screening role. -->
-        <service android:name=".features.phone.TenSevenCallScreeningService"
-            android:permission="android.permission.BIND_SCREENING_SERVICE"
-            android:exported="true">
-            <intent-filter><action android:name="android.telecom.CallScreeningService" /></intent-filter>
-        </service>
-        <activity android:name=".features.phone.TenSevenInCallActivity"
-            android:exported="false" android:showWhenLocked="true"
-            android:turnScreenOn="true" android:taskAffinity="io.github.aimindseye.tenseven.incall" />
-
-
-        <!-- D5-R6: explicit user-controlled dialer-role request with fallback guidance. -->
-        <activity android:name=".D5PhoneRoleRequestActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Material.NoActionBar" />
+        <provider
+            android:name=".platform.HubCountsProvider"
+            android:authorities="${applicationId}.hubcounts"
+            android:exported="true"
+            android:grantUriPermissions="false"
+            android:readPermission="${applicationId}.permission.READ_HUB_COUNTS"
+            android:writePermission="${applicationId}.permission.WRITE_HUB_COUNTS" />
     </application>
 </manifest>

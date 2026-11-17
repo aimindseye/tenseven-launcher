@@ -496,7 +496,6 @@ private fun rememberSearchModel(
     )
 }
 
-@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
 @Composable
 private fun SearchScreenLayout(
     ui: SearchUiState,
@@ -668,9 +667,12 @@ private fun searchAppActions(
         add(t("more_actions") to { actions.peek(app) })
     }
 
-@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
 @Composable
-private fun SearchAppResult(app: AppEntry, ui: SearchUiState, actions: SearchResultActions) {
+private fun SearchAppResult(
+    app: AppEntry,
+    ui: SearchUiState,
+    actions: SearchResultActions,
+) {
     val key = "app:" + app.stableKey()
     AppRow(
         app = app,
@@ -701,9 +703,11 @@ private fun SearchAppResult(app: AppEntry, ui: SearchUiState, actions: SearchRes
     if (ui.actionsFor == key) EditOptions(searchAppActions(app, actions))
 }
 
-@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
 @Composable
-private fun SearchCommandResult(command: SearchCommand, ui: SearchUiState) {
+private fun SearchCommandResult(
+    command: SearchCommand,
+    ui: SearchUiState,
+) {
     val key = "cmd:" + command.source + ":" + command.title
     SearchCommandRow(command = command, onActions = { ui.toggleActions(key) })
     if (ui.actionsFor == key) EditOptions(command.actions.ifEmpty { listOf("open" to command.onClick) })
@@ -1134,7 +1138,9 @@ private fun clearAssignRows(
                 source,
                 {
                     shortcuts.remove(held)
-                    Toast.makeText(context, context.getString(R.string.assign_cleared, letter), Toast.LENGTH_SHORT).show()
+                    Toast
+                        .makeText(context, context.getString(R.string.assign_cleared, letter), Toast.LENGTH_SHORT)
+                        .show()
                 },
             ),
         )

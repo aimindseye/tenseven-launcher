@@ -139,7 +139,6 @@ class OnboardingActivity : ComponentActivity() {
         }
     }
 
-    @Suppress("FunctionNaming")
     @Composable
     private fun FullSetupContent(
         state: SetupState,
@@ -168,7 +167,6 @@ class OnboardingActivity : ComponentActivity() {
         )
     }
 
-    @Suppress("FunctionNaming")
     @Composable
     private fun SingleStepSetupContent(
         state: SetupState,
@@ -261,50 +259,8 @@ class OnboardingActivity : ComponentActivity() {
     }
 
     private fun applyExtras(ids: Set<String>) {
-        val old = ExtraAppsControl.enabledIds(this)
-        val roles = getSystemService(RoleManager::class.java)
-        // Never disable an activity while Android still holds its default-Phone role.
-        if ("tenseven_phone" in old && "tenseven_phone" !in ids &&
-            roles?.isRoleHeld(RoleManager.ROLE_DIALER) == true
-        ) {
-            android.widget.Toast
-                .makeText(
-                    this,
-                    "Choose another default Phone app in Android Settings before disabling TenSeven Phone",
-                    android.widget.Toast.LENGTH_LONG,
-                ).show()
-            runCatching { startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) }
-            refresh()
-            return
-        }
         ExtraAppsControl.apply(this, ids)
         refresh()
-        // This only follows a user-triggered Apps & Features Save, never an install or resume.
-        val roleNotYetOffered =
-            "tenseven_phone" in ids &&
-                !getSharedPreferences("d5_phone_role_offer", MODE_PRIVATE).getBoolean("offered", false)
-        if (roleNotYetOffered && roles?.let {
-                it.isRoleAvailable(RoleManager.ROLE_DIALER) && !it.isRoleHeld(RoleManager.ROLE_DIALER)
-            } == true
-        ) {
-            // A user-triggered Save can offer once, even on upgrades that already enabled Phone.
-            // After decline, use the explicit Launcher Settings button instead of nagging.
-            getSharedPreferences("d5_phone_role_offer", MODE_PRIVATE)
-                .edit {
-                    putBoolean("offered", true)
-                }
-            window.decorView.post {
-                runCatching { startActivity(Intent(this, D5PhoneRoleRequestActivity::class.java)) }
-                    .onFailure {
-                        android.widget.Toast
-                            .makeText(
-                                this,
-                                "TenSeven Phone was enabled. Choose it in Android Default Apps when ready.",
-                                android.widget.Toast.LENGTH_LONG,
-                            ).show()
-                    }
-            }
-        }
     }
 
     private fun requestHomeRole() {
@@ -417,7 +373,6 @@ private class SetupWizardRouteNavigation(
     val onNext: () -> Unit,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardRouter(
     model: SetupWizardRouteModel,
@@ -551,7 +506,6 @@ private class SetupWizardEvents(
     val onOpenAppInfo: () -> Unit,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardStep(
     display: SetupWizardDisplay,
@@ -598,7 +552,6 @@ private fun SetupWizardStep(
     SetupWizardNext(display, events.onNext)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardPrimaryAction(
     display: SetupWizardDisplay,
@@ -611,7 +564,6 @@ private fun SetupWizardPrimaryAction(
     ) { Text(if (display.done) stringResource(R.string.setup_change) else stepAction(display.step)) }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardNext(
     display: SetupWizardDisplay,
@@ -652,7 +604,6 @@ private class SetupOverviewRowEvents(
     val firstButton: FocusRequester,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupOverviewRowItem(
     row: SetupOverviewRow,
@@ -680,7 +631,6 @@ private fun SetupOverviewRowItem(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupOverviewRowStatus(row: SetupOverviewRow) {
     Text(
@@ -707,7 +657,6 @@ private fun SetupOverviewRowStatus(row: SetupOverviewRow) {
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupOverviewRowAction(
     row: SetupOverviewRow,
@@ -927,7 +876,6 @@ private fun ExtrasPicker(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageWelcome(
     state: SetupState,
@@ -941,7 +889,6 @@ private fun SetupStageWelcome(
     ) { Text(if (state.homeRoleHeld) "Change default Home app" else "Set TenSeven as Home") }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageHome(settings: StartStateRepository) {
     Text("Select the BB10 or BB7 home. Their saved layout settings remain separate.")
@@ -950,7 +897,6 @@ private fun SetupStageHome(settings: StartStateRepository) {
     ChoiceSection(SetupStep.WIDGETS, settings)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageAppearance(settings: StartStateRepository) {
     Text(
@@ -960,13 +906,12 @@ private fun SetupStageAppearance(settings: StartStateRepository) {
     Settings2AppearanceChoices(settings)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageApps(
     picked: Set<String>,
     selectApps: (Set<String>) -> Unit,
 ) {
-    Text("Choose a preset or enable individual bundled tools. Changes save immediately.")
+    Text("Choose optional apps for your setup plan. No apps are installed by this selection.")
     OutlinedButton(
         onClick = { selectApps(Setup2Plan.essentials) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
@@ -977,7 +922,7 @@ private fun SetupStageApps(
         onClick = { selectApps(Setup2Plan.full()) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
     ) {
-        Text("Full · All currently bundled extras")
+        Text("Full · Plan all six optional apps")
     }
     Text("Custom · Select individual apps below.", style = MaterialTheme.typography.titleSmall)
     ExtrasPicker(picked = picked, onChange = selectApps)
@@ -989,7 +934,6 @@ private fun SetupStageApps(
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageHubLock(settings: StartStateRepository) {
     Text(
@@ -1006,7 +950,6 @@ private fun SetupStageHubLock(settings: StartStateRepository) {
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStagePermissions(
     state: SetupState,
@@ -1038,7 +981,6 @@ private fun SetupStagePermissions(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageReview(
     state: SetupState,
@@ -1052,7 +994,7 @@ private fun SetupStageReview(
     )
     Text("Usage access: ${if (state.usageAccess) "granted" else "optional · not granted"}")
     Text("Contacts access: ${if (state.contactsGranted) "granted" else "optional · not granted"}")
-    Text("Selected bundled apps: $pickedCount")
+    Text("Selected optional apps: $pickedCount")
     Text(
         "Active Frames: choose BB10 Home and grant Notification access to configure " +
             "radio/player notification sources and optional message excerpts. " +
@@ -1085,7 +1027,6 @@ private class SetupWizardExtras(
 )
 
 /** The setup stage retains callbacks without widening its Compose signature. */
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizard2(
     state: SetupState,
@@ -1143,7 +1084,6 @@ private fun SetupWizard2(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardHeader(
     index: Int,
@@ -1158,7 +1098,6 @@ private fun SetupWizardHeader(
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardNavigation(
     index: Int,

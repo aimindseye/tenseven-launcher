@@ -51,7 +51,6 @@ import io.github.aimindseye.tenseven.iconpacks.IconPresentationState
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.AppGlyphs
 import io.github.aimindseye.tenseven.model.AppProfiles
-import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.IconPresentationPolicy
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.stableKey
@@ -121,7 +120,6 @@ internal fun AppRow(
 }
 
 // All app-row actions are reachable with Menu / Fn+Enter; not touch-only.
-@Suppress("FunctionNaming")
 @Composable
 private fun AppRowAction(
     app: AppEntry,
@@ -304,11 +302,8 @@ internal fun AppMark(
         IconPacks.selected.takeIf {
             iconStyle == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
         }
-    val isOwnExtra =
-        app.component.packageName == context.packageName &&
-            ExtraApps.byClassName(app.component.className) != null
     val glyph =
-        if (IconPresentationPolicy.useGlyph(iconStyle, isOwnExtra, iconPack != null)) {
+        if (IconPresentationPolicy.useGlyph(iconStyle, iconPack != null)) {
             AppGlyphs.forComponent(app.component.packageName, app.component.className)
         } else {
             null
@@ -337,7 +332,6 @@ internal fun AppMark(
 }
 
 // Icon rendering is independent of the asynchronous loading state.
-@Suppress("FunctionNaming")
 @Composable
 private fun AppMarkLoadedIcon(
     loadedIcon: LauncherIcon?,

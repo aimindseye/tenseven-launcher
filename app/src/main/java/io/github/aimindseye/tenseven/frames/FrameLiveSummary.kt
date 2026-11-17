@@ -12,14 +12,21 @@ object FrameLiveSummary {
         personalUser: Int,
     ): String? {
         if (!state.settings.liveSummaries || item.app.userId != personalUser) return null
-        summary(state, item, snapshot, personalUser)?.let { return it.detail }
+        return summary(state, item, snapshot, personalUser)?.detail ?: deviceDetail(state, item, snapshot)
+    }
+
+    private fun deviceDetail(
+        state: FramesState,
+        item: FrameItem,
+        snapshot: LiveSurfaceSnapshot,
+    ): String? {
         val datum =
             when {
                 item.app.packageName == snapshot.music.sourcePackage && state.notificationsAllowed -> snapshot.music
                 item.app.packageName in snapshot.calendarPackages && state.calendarAllowed -> snapshot.calendar
-                else -> return null
+                else -> null
             }
-        return if (datum.availability in setOf(LiveAvailability.LIVE, LiveAvailability.EMPTY)) datum.detail else null
+        return datum?.takeIf { it.availability in setOf(LiveAvailability.LIVE, LiveAvailability.EMPTY) }?.detail
     }
 
     fun summary(

@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.provider.CalendarContract
 
 private object CalendarQueryLimits {
@@ -106,40 +107,49 @@ class HubCalendarRepository(
                     null,
                     CalendarContract.Instances.BEGIN + " ASC",
                 )?.use { cursor ->
-                    // On-device calendar data only; no persistent cache and no network access.
-                    while (cursor.moveToNext() && found.size < CalendarQueryLimits.MAX_UPCOMING_ROWS) {
-                        val ends = cursor.getLong(2)
-                        if (ends <= now ||
-                            (
-                                selectedIds != null && cursor.getLong(
-                                    CalendarQueryLimits
-                                        .INSTANCE_CALENDAR_ID_INDEX,
-                                ) !in selectedIds
-                            )
-                        ) {
-                            continue
-                        }
-                        found +=
-                            HubCalendarEvent(
-                                title = cursor.getString(0).orEmpty().ifBlank { "Calendar event" },
-                                beginsAt = cursor.getLong(1),
-                                endsAt = ends,
-                                allDay = cursor.getInt(CalendarQueryLimits.INSTANCE_ALL_DAY_INDEX) != 0,
-                                calendarName =
-                                    cursor
-                                        .getString(
-                                            CalendarQueryLimits.INSTANCE_CALENDAR_NAME_INDEX,
-                                        ).orEmpty()
-                                        .ifBlank { "Calendar" },
-                                calendarId = cursor.getLong(CalendarQueryLimits.INSTANCE_CALENDAR_ID_INDEX),
-                            )
-                    }
+                    readUpcoming(cursor, found, now, selectedIds)
                 }
             HubCalendarPolicy.next(found)
         } catch (_: SecurityException) {
             emptyList()
         } catch (_: RuntimeException) {
             emptyList()
+        }
+    }
+
+    private fun readUpcoming(
+        cursor: Cursor,
+        found: MutableList<HubCalendarEvent>,
+        now: Long,
+        selectedIds: Set<Long>?,
+    ) {
+        // On-device calendar data only; no persistent cache and no network access.
+        while (cursor.moveToNext() && found.size < CalendarQueryLimits.MAX_UPCOMING_ROWS) {
+            val ends = cursor.getLong(2)
+            if (ends <= now ||
+                (
+                    selectedIds != null && cursor.getLong(
+                        CalendarQueryLimits
+                            .INSTANCE_CALENDAR_ID_INDEX,
+                    ) !in selectedIds
+                )
+            ) {
+                continue
+            }
+            found +=
+                HubCalendarEvent(
+                    title = cursor.getString(0).orEmpty().ifBlank { "Calendar event" },
+                    beginsAt = cursor.getLong(1),
+                    endsAt = ends,
+                    allDay = cursor.getInt(CalendarQueryLimits.INSTANCE_ALL_DAY_INDEX) != 0,
+                    calendarName =
+                        cursor
+                            .getString(
+                                CalendarQueryLimits.INSTANCE_CALENDAR_NAME_INDEX,
+                            ).orEmpty()
+                            .ifBlank { "Calendar" },
+                    calendarId = cursor.getLong(CalendarQueryLimits.INSTANCE_CALENDAR_ID_INDEX),
+                )
         }
     }
 }

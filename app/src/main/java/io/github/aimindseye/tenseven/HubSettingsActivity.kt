@@ -85,7 +85,6 @@ class HubSettingsActivity : ComponentActivity() {
         }
     }
 
-    @Suppress("FunctionNaming")
     @Composable
     private fun HubSettingsContent(
         state: StartStateRepository,

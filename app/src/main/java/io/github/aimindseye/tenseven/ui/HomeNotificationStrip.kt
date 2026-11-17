@@ -89,7 +89,6 @@ internal fun HomeNotificationStrip(
 }
 
 // Isolate app icon loading and click handling from the Home strip layout.
-@Suppress("FunctionNaming")
 @Composable
 private fun HomeNotificationAppChip(
     item: HubBar.Item,
@@ -99,7 +98,12 @@ private fun HomeNotificationAppChip(
     val pm = context.packageManager
     val icon =
         remember(item.packageName) {
-            runCatching { pm.getApplicationIcon(item.packageName).toBitmap(72, 72).asImageBitmap() }.getOrNull()
+            runCatching {
+                pm
+                    .getApplicationIcon(item.packageName)
+                    .toBitmap(NOTIFICATION_APP_ICON_PX, NOTIFICATION_APP_ICON_PX)
+                    .asImageBitmap()
+            }.getOrNull()
         }
     val label =
         remember(item.packageName) {
@@ -144,3 +148,5 @@ private fun HomeNotificationAppChip(
         )
     }
 }
+
+private const val NOTIFICATION_APP_ICON_PX = 72

@@ -142,7 +142,6 @@ internal fun HubPanelsHost(
 }
 
 // Panel content is kept inside the parent's BoxScope for alignment semantics.
-@Suppress("FunctionNaming")
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.HubSidePanel(
     settings: Boolean,
@@ -295,7 +294,6 @@ private data class RemindOptionsActions(
 )
 
 // Remind action choices are separated from their remembered expanded state.
-@Suppress("FunctionNaming")
 @Composable
 private fun HubMessageRemindOptions(
     remind: Boolean,
@@ -334,7 +332,6 @@ private fun HubMessageRemindOptions(
 }
 
 // The message-context highlight is privacy-gated and has no mutable action state.
-@Suppress("FunctionNaming")
 @Composable
 private fun HubSelectedMessageContext(
     conversation: HubConversation,

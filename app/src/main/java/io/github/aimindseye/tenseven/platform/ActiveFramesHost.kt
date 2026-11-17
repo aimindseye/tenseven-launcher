@@ -47,14 +47,22 @@ class ActiveFramesHost(
                         if (loaded.any { LocalFrameApps.canonical(it.component.className) == taskClass }) {
                             emptyList()
                         } else {
-                            listOf(AppEntry("Tasks / Remind", android.content.ComponentName(app, taskClass), Process.myUserHandle()))
+                            listOf(
+                                AppEntry(
+                                    "Tasks / Remind",
+                                    android.content.ComponentName(app, taskClass),
+                                    Process.myUserHandle(),
+                                ),
+                            )
                         }
                     entries = (loaded + supplement).filter(::available)
                     val settings = store.loadFrameSettings()
                     val recents = if (settings.rememberReturnedApps) usage.recentEvents() else emptyList()
                     val openings =
                         window.update(
-                            recents.map { FrameOpening(FrameApp(it.packageName, Process.myUserHandle().hashCode()), it.timeMs) },
+                            recents.map {
+                                FrameOpening(FrameApp(it.packageName, Process.myUserHandle().hashCode()), it.timeMs)
+                            },
                         )
                     return FrameInput(
                         native.loadFrames(),
@@ -85,12 +93,15 @@ class ActiveFramesHost(
 
                 override fun resume(item: FrameItem): Boolean {
                     if (entries.none {
-                            it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId && available(it)
+                            it.component.packageName == item.app.packageName &&
+                                it.user.hashCode() == item.app.userId && available(it)
                         }
                     ) {
                         return false
                     }
-                    return item.task?.let { task -> native.loadFrames().any { it == task } && native.resume(task.taskId) } ?: false
+                    return item.task?.let { task ->
+                        native.loadFrames().any { it == task } && native.resume(task.taskId)
+                    } ?: false
                 }
 
                 override fun launch(app: FrameApp) {
@@ -112,7 +123,10 @@ class ActiveFramesHost(
                     entries
                         .firstOrNull {
                             it.component.packageName == app.packageName && it.user.hashCode() == app.userId &&
-                                (app.activityClass == null || LocalFrameApps.canonical(it.component.className) == app.activityClass) &&
+                                (
+                                    app.activityClass == null ||
+                                        LocalFrameApps.canonical(it.component.className) == app.activityClass
+                                ) &&
                                 available(it)
                         }?.let(inventory::launch)
                 }
@@ -136,13 +150,17 @@ class ActiveFramesHost(
     ): Bitmap? {
         if (!coordinator.acceptsSnapshot(item, generation)) return null
         val entry = entries.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId }
-        if (entry == null || !available(entry)) return null
-        val bitmap = item.task?.let { native.snapshot(it.taskId) }
-        if (!coordinator.acceptsSnapshot(item, generation)) {
-            bitmap?.recycle()
-            return null
+        return if (entry == null || !available(entry)) {
+            null
+        } else {
+            val bitmap = item.task?.let { native.snapshot(it.taskId) }
+            if (coordinator.acceptsSnapshot(item, generation)) {
+                bitmap
+            } else {
+                bitmap?.recycle()
+                null
+            }
         }
-        return bitmap
     }
 
     fun destroy() {

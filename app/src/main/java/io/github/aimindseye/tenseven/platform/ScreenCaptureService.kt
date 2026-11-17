@@ -72,14 +72,14 @@ class ScreenCaptureService : Service() {
     ): Int {
         if (intent?.action == STOP) {
             stopSelf()
-            return START_NOT_STICKY
+        } else if (projection == null) {
+            val consent = intent?.getParcelableExtra<Intent>(CONSENT)
+            if (consent == null) stopSelf() else startConsentedSharing(consent)
         }
-        if (projection != null) return START_NOT_STICKY
-        val consent = intent?.getParcelableExtra<Intent>(CONSENT)
-        if (consent == null) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
+        return START_NOT_STICKY
+    }
+
+    private fun startConsentedSharing(consent: Intent) {
         try {
             startSharingNotification()
             projection = getSystemService(MediaProjectionManager::class.java).getMediaProjection(Activity.RESULT_OK, consent)
@@ -104,7 +104,6 @@ class ScreenCaptureService : Service() {
         } catch (_: RuntimeException) {
             fail()
         }
-        return START_NOT_STICKY
     }
 
     private fun startSharingNotification() {

@@ -235,7 +235,6 @@ private fun hubPageJumpKey(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageContent(
     session: HubPageSession,
     onReturnHome: () -> Unit,
@@ -267,7 +266,6 @@ private fun hubCalendarIntent(): Intent =
     )
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPagePanel(
     session: HubPageSession,
     chrome: HubPageChromeState,
@@ -307,7 +305,6 @@ private fun HubPagePanel(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageHeader(
     session: HubPageSession,
     chrome: HubPageChromeState,
@@ -346,12 +343,10 @@ private fun HubPageHeader(
                 closeSearchRequest = chrome.searchCloseRequest,
             ),
         onTabChange = session.events.onFilter,
-        onOpenCalendar = { session.events.onStartIntent(hubCalendarIntent()) },
     )
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageControls(
     session: HubPageSession,
     chrome: HubPageChromeState,
@@ -386,7 +381,6 @@ private fun HubPageControls(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageComposePrompt(
     session: HubPageSession,
     chrome: HubPageChromeState,

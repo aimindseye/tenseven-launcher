@@ -50,7 +50,6 @@ private val StatusTrack = Color(0xFF505D68)
 private const val STATUS_SAMPLE_MS = 12_000L
 
 /** One quiet, lifecycle-bound device readout, shared by BB7 and BB10. Never samples in Hidden mode. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun BbHomeStatus(
     mode: HomeStatusMode,
@@ -106,7 +105,6 @@ internal fun BbHomeStatus(
 }
 
 // One metric cell, preserving the parent RowScope's weight and single-line sizing.
-@Suppress("FunctionNaming")
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.BbHomeStatusMetric(
     mode: HomeStatusMode,
@@ -203,7 +201,6 @@ private fun statusMetricIcon(key: String): List<String> =
 private fun statusPercent(value: Float?): String =
     value?.takeIf { it.isFinite() }?.let { "${(it.coerceIn(0f, 1f) * HOME_STATUS_PERCENT_SCALE).roundToInt()}%" } ?: "–"
 
-@Suppress("FunctionNaming")
 @Composable
 private fun ThinStatusDial(
     key: String,

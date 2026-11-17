@@ -26,7 +26,6 @@ private val TENSEVEN_THEME_PRIMARY_COLOR = Color(0xFF4D9CFF)
  * Active Frames, Android permission screens, or another app's window.
  * All saved wallpaper, accent, light/dark and external theme preferences remain effective.
  */
-@Suppress("FunctionNaming")
 @Composable
 internal fun TenSeven2AppTheme(content: @Composable () -> Unit) {
     val appearance = rememberLauncherAppearance()

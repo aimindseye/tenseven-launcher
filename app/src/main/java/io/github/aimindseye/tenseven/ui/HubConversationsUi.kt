@@ -225,13 +225,11 @@ internal data class HubNavigationState(
     val closeSearchRequest: Int,
 )
 
-@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun HubUnifiedNavigation(
     ui: HubConversationsUi,
     navigation: HubNavigationState,
     onTabChange: (HubFilter) -> Unit,
-    onOpenCalendar: () -> Unit,
 ) {
     val currentTab = navigation.currentTab
     val firstTab = navigation.firstTab
@@ -375,7 +373,6 @@ private fun hubNavActivate(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun HubNavigationTabStrip(
     tabs: List<String>,
@@ -426,6 +423,74 @@ private fun ConversationRow(
     val preview = conversationPreview(conversation, locked, you = stringResource(R.string.hub_you))
     val latestAt = conversation.latestMessage?.timestamp ?: conversation.latestNotification.postedAt
     val whenText = DateUtils.getRelativeTimeSpanString(latestAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+
+    HubContrastTheme {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .onKeyEvent { event -> conversationRowKey(event, ui, conversation, unread) }
+                        .focusRequester(rowFocus)
+                        .sableFocusRing()
+                        .clickable { selectRow(conversation.id, rowFocus) }
+                        .padding(horizontal = 4.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                ConversationSourceIcon(conversation)
+                ConversationRowText(conversation, whenText, unread, preview, Modifier.weight(1f))
+            }
+            Spacer(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            )
+        }
+    }
+}
+
+private fun conversationRowKey(
+    event: androidx.compose.ui.input.key.KeyEvent,
+    ui: HubConversationsUi,
+    conversation: HubConversation,
+    unread: Int,
+): Boolean {
+    if (event.type != KeyEventType.KeyDown) return false
+    val plain = !event.nativeKeyEvent.isAltPressed && !event.nativeKeyEvent.isCtrlPressed
+    return when {
+        !plain -> {
+            false
+        }
+
+        event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_M && unread > 0 -> {
+            ui.onMarkRead(conversation)
+            true
+        }
+
+        event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_S -> {
+            if (ui.filter.snoozed) {
+                ui.onWake(conversation)
+            } else {
+                ui.onSnooze(conversation, System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
+            }
+            true
+        }
+
+        else -> {
+            false
+        }
+    }
+}
+
+@Composable
+private fun ConversationSourceIcon(conversation: HubConversation) {
     val source = conversation.latestNotification.appName
     // Display installed source icons, not a letter avatar: several providers share initials.
     val sourcePackage = conversation.sourcePackages.firstOrNull()
@@ -452,106 +517,68 @@ private fun ConversationRow(
             }
         }
 
-    HubContrastTheme {
-        Column(
+    if (sourceGlyph != null) {
+        SableGlyphIcon(glyph = sourceGlyph, modifier = Modifier.size(30.dp))
+    } else if (sourceIcon != null) {
+        Image(
+            bitmap = sourceIcon,
+            contentDescription = source,
+            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(7.dp)),
+        )
+    } else {
+        Text(
+            text = source.take(1).uppercase(),
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background),
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .onKeyEvent { event ->
-                            if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
-                            val plain = !event.nativeKeyEvent.isAltPressed && !event.nativeKeyEvent.isCtrlPressed
-                            when {
-                                !plain -> {
-                                    false
-                                }
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
+}
 
-                                event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_M && unread > 0 -> {
-                                    ui.onMarkRead(conversation)
-                                    true
-                                }
-
-                                event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_S -> {
-                                    if (ui.filter.snoozed) {
-                                        ui.onWake(conversation)
-                                    } else {
-                                        ui.onSnooze(conversation, System.currentTimeMillis() + Snooze.ONE_HOUR_MS)
-                                    }
-                                    true
-                                }
-
-                                else -> {
-                                    false
-                                }
-                            }
-                        }.focusRequester(rowFocus)
-                        .sableFocusRing()
-                        .clickable { selectRow(conversation.id, rowFocus) }
-                        .padding(horizontal = 4.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                if (sourceGlyph != null) {
-                    SableGlyphIcon(glyph = sourceGlyph, modifier = Modifier.size(30.dp))
-                } else if (sourceIcon != null) {
-                    Image(
-                        bitmap = sourceIcon,
-                        contentDescription = source,
-                        modifier = Modifier.size(36.dp).clip(RoundedCornerShape(7.dp)),
-                    )
-                } else {
-                    Text(
-                        text = source.take(1).uppercase(),
-                        modifier =
-                            Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = conversation.name,
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            whenText,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                        if (unread > 0) {
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                unread.toString(),
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        }
-                    }
-                    Text(
-                        preview ?: stringResource(R.string.hub_locked_preview),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+@Composable
+private fun ConversationRowText(
+    conversation: HubConversation,
+    whenText: String,
+    unread: Int,
+    preview: String?,
+    modifier: Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = conversation.name,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                whenText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+            if (unread > 0) {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    unread.toString(),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
-            Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
         }
+        Text(
+            preview ?: stringResource(R.string.hub_locked_preview),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

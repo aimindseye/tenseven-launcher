@@ -77,9 +77,9 @@ jobs:
             test -f "$apk"
             adb install -r -t "$apk"
           done
-          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase seed io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-seed.log
-          adb shell am force-stop io.github.aimindseye.tenseven.debug
-          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase verify io.github.aimindseye.tenseven.debug.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-verify.log
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase seed io.github.aimindseye.tenseven.debug.l0.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-seed.log
+          adb shell am force-stop io.github.aimindseye.tenseven.debug.l0
+          adb shell am instrument -w -e class io.github.aimindseye.tenseven.ProcessReentryTest -e p2Phase verify io.github.aimindseye.tenseven.debug.l0.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/p2-process-verify.log
           python3 - <<'PYTEST'
           from pathlib import Path
           for phase in ('seed', 'verify'):

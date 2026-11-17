@@ -287,7 +287,6 @@ internal fun EditHomeScreen(
     EditHomeContents(session, bindings, doneFocus, hosted)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun EditHomeContents(
     session: EditHomeSession,
@@ -419,7 +418,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.editHomeGridRows(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun EditHomeGridRow(
     session: EditHomeSession,
@@ -443,7 +441,6 @@ private fun EditHomeGridRow(
     if (open != null && open in row) EditHomeGridOptions(session, open)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun EditHomeGridOptions(
     session: EditHomeSession,
@@ -475,7 +472,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.editHomeQuickBarRows(
     item(key = "bar") { EditHomeQuickBar(session, bindings, appByKey) }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun EditHomeQuickBar(
     session: EditHomeSession,
@@ -504,7 +500,6 @@ private fun EditHomeQuickBar(
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun EditHomeQuickBarOptions(session: EditHomeSession) {
     val barOptions = session.optionsFor?.takeIf { it.startsWith("QuickBar:") }?.substringAfter(':')

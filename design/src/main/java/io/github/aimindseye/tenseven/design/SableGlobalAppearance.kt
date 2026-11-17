@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 
 object SableGlobalAppearanceContract {
     const val AUTHORITY = "org.sableos.appearance"
@@ -29,7 +30,7 @@ object SableGlobalAppearanceContract {
     const val COLUMN_CORNER_STYLE = "corner_style"
 
     val CONTENT_URI: Uri =
-        Uri.parse("content://$AUTHORITY/$PATH_APPEARANCE")
+        "content://$AUTHORITY/$PATH_APPEARANCE".toUri()
 }
 
 fun readGlobalSableAppearance(context: Context): SableAppearance =

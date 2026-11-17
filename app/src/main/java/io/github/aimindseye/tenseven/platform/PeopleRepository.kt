@@ -55,7 +55,7 @@ class PeopleRepository(
                                     id = id,
                                     lookupKey = cursor.getString(1).orEmpty(),
                                     name = name,
-                                    starred = cursor.getInt(3) != 0,
+                                    starred = cursor.getInt(CONTACT_STARRED_COLUMN) != 0,
                                     number = numbers[id],
                                 )
                         }
@@ -115,3 +115,5 @@ class PeopleRepository(
             }
     }
 }
+
+private const val CONTACT_STARRED_COLUMN = 3

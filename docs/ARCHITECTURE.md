@@ -99,6 +99,7 @@ replaces the missing data.
 | Privacy row for work and private profile apps | `createContextAsUser` for that profile | `UserContexts.forUser` returns null; the row says "permissions · unavailable" | Accept; document |
 | Lock and unlock Private Space | `MODIFY_QUIET_MODE` | Android decides whether a non-system launcher may do it; the call is already wrapped, so a refusal leaves the space as it was | Mink Private Space port; test on Android 15+ |
 | Hub (messages, calls, contacts, notifications) | Sable Hub, Messages and Phone publish snapshot providers | Notification-based Hub (Mink conversations), in memory only | Done |
+| Watch (Sable Watch) | Sable Hub, Calendar and Weather providers, read by Sable Watch directly | `HubCountsProvider` (`io.github.aimindseye.tenseven.hubcounts/apps`): the Hub bar's per-app counts, no text, behind the signature permission `READ_HUB_COUNTS`, so only a same-key app reads it; nothing while notification access is off | Implemented; production-signed Watch/Titan 2 acceptance pending |
 | Appearance (theme, accent) | Settings hosts `org.sableos.appearance` | Launcher's own preferences (Launcher Settings): `LauncherTheme` uses the saved choice when there is one and the Sable provider otherwise; `ThemePresets` and `WallpaperSets` are pure models | Done |
 | Lock layer | Not applicable (the phone's keyguard is Android's) | `LockLayerActivity` (show-when-locked cover, started on screen-on by the notification listener when the overlay permission is granted); it never replaces the keyguard and asks Android to dismiss it before opening anything | Written, not yet run on a phone |
 | Speed dial | Sable Phone provider and `org.sableos.permission.SPEED_DIAL` | Not available; letter shortcuts for apps still work | Launcher-owned letter-to-contact map |
@@ -269,3 +270,9 @@ and reconciliation policies; WidgetHostStore journals local pending setup/sizes 
 Android UI. WidgetHostController validates stage/id/provider/profile before committing,
 and WidgetAvailability clears hosted content outside resumed, unlocked Home.
 Physical target qualification is tracked separately in P3_DEVICE_QUALIFICATION.md.
+
+### L0 provider identity and qualification
+
+The production URI remains content://io.github.aimindseye.tenseven.hubcounts/apps, with separate signature READ_HUB_COUNTS and WRITE_HUB_COUNTS permissions. Manifest applicationId placeholders and runtime package-derived URIs keep the L0 debug URI at content://io.github.aimindseye.tenseven.debug.l0.hubcounts/apps. Debug permission names use the same isolated application ID. Debug never claims production's provider or signing identity; production-signed Sable Watch does not authenticate to a debug-signed core merely by package-name matching.
+
+Only package/count rows are returned. Notification access denial returns no cursor; insert/update/delete always reject writes. Count snapshots deduplicate observer notifications from Hub and lock-layer listeners; shutdown unregisters them. No Watch installation is required. Runtime signature enforcement and device behavior require Android instrumentation/owner acceptance; source integration is not device acceptance.

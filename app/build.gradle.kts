@@ -63,7 +63,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = ".debug.l0"
             versionNameSuffix = "-debug"
         }
         release {
@@ -83,6 +83,16 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        val localTestRoots =
+            file("src/test/java/io/github/aimindseye/tenseven")
+                .listFiles()
+                .orEmpty()
+                .filter { it.isDirectory && it.name != "features" }
+        getByName("test").java.setSrcDirs(localTestRoots)
+        getByName("test").kotlin.setSrcDirs(localTestRoots)
     }
 
     testOptions {

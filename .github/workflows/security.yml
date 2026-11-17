@@ -53,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           pip install --quiet --require-hashes --only-binary :all: -r .github/requirements/mobsfscan.txt
-          mobsfscan app design --sarif --output mobsfscan-results.sarif --type android --no-fail
+          mobsfscan app design phone calendar --sarif --output mobsfscan-results.sarif --type android --no-fail
           python3 - <<'PY'
           import json, os
           doc = json.load(open("mobsfscan-results.sarif"))

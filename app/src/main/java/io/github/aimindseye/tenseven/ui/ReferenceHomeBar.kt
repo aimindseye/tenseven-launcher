@@ -79,7 +79,6 @@ private fun rememberReferenceShownSlots(slots: List<QuickSlot>): List<String> {
 }
 
 /** One reference-style row; central page targets scroll at large font sizes without shrinking touch targets. */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun ReferenceHomeBar(
     slots: List<QuickSlot>,
@@ -123,7 +122,6 @@ internal fun ReferenceHomeBar(
 }
 
 // Menu actions are separate from the layout and its remembered open state.
-@Suppress("FunctionNaming")
 @Composable
 private fun ReferenceHomeBarMenu(
     pages: HomeBarPages,
@@ -226,6 +224,7 @@ internal data class HomeBarControlSpec(
 internal fun HomeBarControl(
     spec: HomeBarControlSpec,
     onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
     onClick: () -> Unit,
 ) {
     val label = spec.label
@@ -237,7 +236,7 @@ internal fun HomeBarControl(
             .widthIn(min = 44.dp)
             .heightIn(min = 48.dp)
             .sableFocusRing()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onLongClickLabel = onLongClickLabel)
             .semantics {
                 contentDescription = if (unread > 0) "$label, $unread unread" else label
                 selected = isSelected
@@ -380,7 +379,11 @@ private fun HubBarTarget(pages: HomeBarPages, unread: Int, actions: HomeBarActio
             space && peek != null
         },
     ) {
-        HomeBarControl(HomeBarControlSpec("Hub", "mail", pages.current == StartPages.HUB + pages.lead, unread)) {
+        HomeBarControl(
+            HomeBarControlSpec("Hub", "mail", pages.current == StartPages.HUB + pages.lead, unread),
+            onLongClick = actions.peek,
+            onLongClickLabel = if (actions.peek != null) "Peek" else null,
+        ) {
             actions.showPage(StartPages.HUB + pages.lead)
         }
     }

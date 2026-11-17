@@ -358,7 +358,6 @@ internal fun Bb10PageIndicator(
 }
 
 // The three BB10 system-page marks share the same geometry and colors.
-@Suppress("FunctionNaming")
 @Composable
 private fun Bb10IndicatorMark(
     page: Int,
@@ -371,9 +370,9 @@ private fun Bb10IndicatorMark(
                 // Widgets: one wide outlined panel.
                 drawRoundRect(
                     color = color,
-                    topLeft = Offset(unit * 0.05f, unit * 0.2f),
-                    size = Size(unit * 0.9f, unit * 0.6f),
-                    cornerRadius = CornerRadius(unit * 0.12f),
+                    topLeft = Offset(unit * INDICATOR_WINDOW_LEFT, unit * INDICATOR_TOP),
+                    size = Size(unit * INDICATOR_WINDOW_WIDTH, unit * INDICATOR_WINDOW_HEIGHT),
+                    cornerRadius = CornerRadius(unit * INDICATOR_CORNER),
                     style = Stroke(width = unit * 0.14f),
                 )
             }
@@ -381,14 +380,14 @@ private fun Bb10IndicatorMark(
             StartPages.HUB -> {
                 // Hub: three short lines.
                 for (line in 0..2) {
-                    val y = unit * (0.2f + line * 0.3f)
+                    val y = unit * (INDICATOR_TOP + line * INDICATOR_LINE_GAP)
                     drawLine(color, Offset(0f, y), Offset(unit, y), strokeWidth = unit * 0.14f, cap = StrokeCap.Round)
                 }
             }
 
             StartPages.HOME -> {
                 // Active Frames: four small squares.
-                val cell = unit * 0.42f
+                val cell = unit * INDICATOR_CELL
                 for (row in 0..1) {
                     for (col in 0..1) {
                         drawRect(
@@ -419,7 +418,6 @@ internal fun pageDescription(
     }
 
 /** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) and the Settings gear. */
-@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun StatusDialsRow(
     onOpenSettings: () -> Unit,
@@ -476,13 +474,9 @@ internal fun StatusDialsRow(
  * Today's date under the status dials. The date follows the
  * locale and turns over at midnight; there is no clock here.
  */
-@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun DateHeader(
     refreshGeneration: Int,
-    unread: Int,
-    onShowHub: () -> Unit,
-    showLegacyBadge: Boolean = true,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val locale = Locale.getDefault()
@@ -518,6 +512,7 @@ internal fun DateHeader(
             )
             HomeWeatherLine(header, modifier = Modifier.fillMaxWidth())
         }
+        SoundProfileButton()
         if (onOpenSettings != null) {
             Text(
                 text = "⚙",
@@ -555,3 +550,11 @@ internal fun Bb10ThemeWithPeek(
  * The built-in widgets Launcher Settings turned on (Calendar, Alarm, Battery, Now playing) as cards at the top of the
  * Widgets page, in the user's order. No ambient polling: values refresh with Start's live snapshot.
  */
+
+private const val INDICATOR_WINDOW_LEFT = 0.05f
+private const val INDICATOR_TOP = 0.2f
+private const val INDICATOR_WINDOW_WIDTH = 0.9f
+private const val INDICATOR_WINDOW_HEIGHT = 0.6f
+private const val INDICATOR_CORNER = 0.12f
+private const val INDICATOR_LINE_GAP = 0.3f
+private const val INDICATOR_CELL = 0.42f

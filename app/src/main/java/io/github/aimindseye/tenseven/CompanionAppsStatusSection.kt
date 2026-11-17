@@ -12,20 +12,17 @@ import androidx.compose.ui.platform.LocalContext
 import io.github.aimindseye.tenseven.companions.CompanionDiscovery
 import io.github.aimindseye.tenseven.companions.CompanionPresence
 
-/**
- * Visible M2-A read-only slice. It does not replace the bundled Extras toggles,
- * alter default apps, request permissions, or offer unverified APK installation.
- */
+/** Read-only companion presence and independent planning; never enables bundled activities or installs APKs. */
 @Composable
 internal fun CompanionAppsStatusSection() {
     val context = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
     val observations = remember(context, refresh) { CompanionDiscovery.snapshot(context) }
 
-    Section("Independent companion APKs · preview")
+    Section("Optional companion apps · status")
     Text(
-        "Future optional Phone, Calendar, Tasks, Notes, Calculator and Sound Profiles " +
-            "will install separately. Existing switches above still control bundled apps.",
+        "Phone and Calendar are independent development APKs. Tasks, Notes, Calculator and " +
+            "Sound Profiles await separate extraction. Launcher works without any companion.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -53,8 +50,8 @@ internal fun CompanionAppsStatusSection() {
         )
     }
     Card(
-        "Configure companion selections",
-        "Choose Minimum, Full or individual companions; no APK will be installed",
+        "Open companion setup planner",
+        "Informational selections only; this Launcher does not install APKs",
         false,
     ) {
         context.startActivity(Intent(context, CompanionWizardActivity::class.java))

@@ -2,7 +2,7 @@ package io.github.aimindseye.tenseven.model
 
 enum class ExtraGroup { Tools }
 
-/** One optional app that ships inside Tenseven; [className] is its launcher activity. */
+/** Optional-app metadata; [className] preserves legacy shortcut/icon identity, never installation trust. */
 data class ExtraApp(
     val id: String,
     val label: String,
@@ -13,8 +13,8 @@ data class ExtraApp(
 )
 
 /**
- * The six optional tools bundled with TenSeven. None is on by default. Setup lets the user turn each on;
- * an app that is off has no launcher entry. Pure policy, unit tested.
+ * The six optional companion choices. L0 builds Phone and Calendar separately; the other four await extraction.
+ * Choices are informational and never hide ordinary installed Android apps. Pure policy, unit tested.
  */
 object ExtraApps {
     private const val ROOT = "io.github.aimindseye.tenseven.extras."

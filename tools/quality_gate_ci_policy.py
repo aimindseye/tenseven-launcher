@@ -110,7 +110,7 @@ def _approved_state(repo, record, data, blob_id):
 
 def _state(repo, commit):
     raw = repo._read(["ls-tree", "-z", object_id(commit), "--", *PATHS])
-    state = {path: None for path in PATHS}
+    state = dict.fromkeys(PATHS)
     for entry in raw.split(b"\0"):
         if entry:
             metadata, path = entry.decode().split("\t", 1)
@@ -204,3 +204,136 @@ def verify_ci_completeness(repo, base, record, snapshot, blob_id, expected_workf
                   "verification_mode": "pre_commit" if origin is None else "immutable_origin",
                   "approval": "Exact CI-completeness workflow/policy/helper transition"}
     return [result]
+
+
+_L0_BASE = '09d331d9f9b278ba1bed1323056cf1504e456629'
+_L0_MODULE_BLOB = 'f1cfb5f485feb6ecf49bb550dde7eaf6d3a2678e'
+_L0_GATE_BLOB = '93bd71b86410b21f146952a0ec7bb3e750c2f6b6'
+_L0_WORKFLOW_BLOB = '33339730ac60aabe9930e8e2188066e787a1de9a'
+_L0_JAVA_WORKFLOW_BLOB = '53d88c20accba33a9874145b394b795688fd2e22'
+_L0_MAIN_BOOTSTRAP = '63f0c4efa0db5a027db9af8ffca196f21e75fa87'
+_L0_CONTROLLER_EDITS = ((b'    protected = changed & QUALITY_CONFIG_FILES\n',
+  b'    from quality_gate_module_policy import active, historical_records\n    if active(repo):\n '
+  b'       return historical_records(repo, base, changed)\n    protected = changed & QUALITY_CONF'
+  b'IG_FILES\n'),
+ (b'def verify_test_harness(repo, protected, base):\n',
+  b'def verify_test_harness(repo, protected, base):\n    from quality_gate_module_policy import a'
+  b'ctive, harness_records\n    if active(repo):\n        return harness_records(repo, base)\n'),
+ (b'def verify_test_harness_analysis(repo, parent):\n',
+  b'def verify_test_harness_analysis(repo, parent):\n    from quality_gate_module_policy import a'
+  b'ctive, analysis\n    if active(repo):\n        return analysis(repo, parent)\n'),
+ (b'def verify_workflows(repo, changed, base):\n',
+  b'def verify_workflows(repo, changed, base):\n    from quality_gate_module_policy import active'
+  b', verify\n    if active(repo):\n        return [verify(repo, base)]\n'),
+ (b'    return {"verified_transitions": transitions + workflow_records, "compose_overlay": overl'
+  b'ay,\n            "suppression_audit": audit_suppressions(repo, changed, base)}',
+  b'    audit = audit_suppressions(repo, changed, base)\n    contracts = []\n    from quality_gate'
+  b'_module_policy import active, review_permission_contract\n    if active(repo):\n        audit,'
+  b' contracts = review_permission_contract(repo, base, audit)\n    return {"verified_transitions'
+  b'": transitions + workflow_records, "compose_overlay": overlay,\n            "suppression_audi'
+  b't": audit, "reviewed_suppression_contracts": contracts}'),
+ (b'"helper_after": "8cdd8d71f28d410c09b57a64fbd7f6492aa8bed1"',
+  b'"helper_after": "@L0_CI_HELPER_BLOB@"'))
+
+_L0_PATHS = PATHS + ("tools/quality_gate_module_policy.py", "tools/deliverable_quality_gate.py")
+
+
+def _l0_state(repo, commit):
+    raw = repo._read(["ls-tree", "-r", "-z", object_id(commit), "--", *_L0_PATHS])
+    result = dict.fromkeys(_L0_PATHS)
+    for entry in raw.split(b"\0"):
+        if entry:
+            metadata, name = entry.decode().split("\t", 1)
+            mode, kind, identifier = metadata.split()
+            if mode != "100644" or kind != "blob" or name not in result:
+                raise QualityError("Invalid L0 controller source type")
+            result[name] = object_id(identifier)
+    return result
+
+
+def _l0_approved(repo, data, blob_id):
+    helper = blob_id(data[HELPER])
+    controller = repo.blob(_L0_BASE, POLICY)
+    if blob_id(controller) != "e105c759791888f212cf980c7336376fb2310dcc":
+        raise QualityError("Frozen reviewed controller differs")
+    for old, new in _L0_CONTROLLER_EDITS:
+        if controller.count(old) != 1:
+            raise QualityError("Ambiguous L0 controller template")
+        controller = controller.replace(old, new, 1)
+    token = b"@L0_CI_HELPER_BLOB@"
+    if controller.count(token) != 1:
+        raise QualityError("L0 controller helper pin differs")
+    controller = controller.replace(token, helper.encode(), 1)
+    return {WORKFLOW: _L0_WORKFLOW_BLOB, POLICY: blob_id(controller), HELPER: helper,
+            "tools/quality_gate_module_policy.py": _L0_MODULE_BLOB,
+            "tools/deliverable_quality_gate.py": _L0_GATE_BLOB}
+
+
+def _verify_original_ci(repo, blob_id):
+    data = {name: repo.blob(_L0_BASE, name) for name in PATHS}
+    record = dict(base=APPROVAL_BASE, workflow_before=_WORKFLOW_BEFORE,
+                  workflow_after=_WORKFLOW_AFTER, policy_before=_POLICY_BEFORE,
+                  helper_after="8cdd8d71f28d410c09b57a64fbd7f6492aa8bed1")
+    approved = _approved_state(repo, record, data, blob_id)
+    commits = _ancestry(repo, _L0_BASE, APPROVAL_BASE)
+    states = {commit: _state(repo, commit) for commit in commits}
+    origin = _verify_history(repo, _L0_BASE, record, states, approved)
+    if origin != _L0_BASE:
+        raise QualityError("Original CI origin differs from reviewed implementation")
+
+
+def verify_l0_controller(repo, base, snapshot, blob_id):
+    """Independently derive controller bytes; never trust its proposed after-ID."""
+    head = repo.head()
+    if not repo.ancestor(base, head):
+        raise QualityError("L0 comparison ancestry differs")
+    from quality_gate_policy import _expected_ci_baseline
+    from quality_gate_module_policy import verify_mainline_java
+    valid_mainline = verify_mainline_java(repo, head)
+    baselines = {_WORKFLOW_BEFORE, _WORKFLOW_AFTER, _L0_WORKFLOW_BLOB}
+    if valid_mainline:
+        baselines.update({_L0_JAVA_WORKFLOW_BLOB, _L0_MAIN_BOOTSTRAP})
+    if _expected_ci_baseline(repo, base) not in baselines:
+        raise QualityError("Unknown main/comparison workflow bootstrap")
+    _verify_original_ci(repo, blob_id)
+    before = _l0_state(repo, _L0_BASE)
+    commits = _ancestry(repo, head, _L0_BASE)
+    if not commits:
+        raise QualityError("L0 controller base is outside ancestry")
+    states = {commit: _l0_state(repo, commit) for commit in commits}
+    with snapshot(repo, set(_L0_PATHS)) as data:
+        after = _l0_approved(repo, data, blob_id)
+        current_after = _l0_java_variant(repo, head, after)
+        if {name: blob_id(data[name]) for name in _L0_PATHS} != current_after:
+            raise QualityError("L0 controller/helper/gate endpoint differs")
+        if states[_L0_BASE] != before:
+            raise QualityError("L0 immutable base differs")
+        origin = _l0_origin(repo, head, states, before, after)
+        if repo.head() != head:
+            raise QualityError("L0 controller HEAD changed")
+    return dict(origin=origin, parent=_L0_BASE, endpoints=after,
+                verification_mode="pre_commit" if origin is None else "immutable_origin")
+
+
+def _l0_origin(repo, head, states, before, after):
+    if head == _L0_BASE:
+        return None
+    origins = [commit for commit, state in states.items()
+               if _single_parent(repo, commit, _L0_BASE) and state == after]
+    if len(origins) != 1:
+        raise QualityError("Need one L0 controller origin directly after frozen09")
+    origin = origins[0]
+    for commit, state in states.items():
+        expected = _l0_java_variant(repo, commit, after) if repo.ancestor(origin, commit) else before
+        if state != expected:
+            raise QualityError("L0 controller history modified, partial or restored")
+    return origin
+
+
+def _l0_java_variant(repo, head, after):
+    from quality_gate_module_policy import verify_mainline_java
+    if not verify_mainline_java(repo, head):
+        return after
+    result = dict(after)
+    result[WORKFLOW] = _L0_JAVA_WORKFLOW_BLOB
+    return result

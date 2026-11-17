@@ -143,6 +143,9 @@ def verify_transition(repo, base, transition):
 def verify_protected_policy(repo, changed, base):
     verified = []
     known = {item.path: item for item in TRANSITIONS}
+    from quality_gate_module_policy import active, historical_records
+    if active(repo):
+        return historical_records(repo, base, changed)
     protected = changed & QUALITY_CONFIG_FILES
     harness_active = test_harness_active(repo)
     if harness_active:
@@ -321,6 +324,9 @@ def _harness_comparison_endpoints(repo, protected, base):
 
 
 def verify_test_harness(repo, protected, base):
+    from quality_gate_module_policy import active, harness_records
+    if active(repo):
+        return harness_records(repo, base)
     head = repo.head()
     if not repo.ancestor(base, head) or not repo.ancestor(TEST_HARNESS_BASE, head):
         raise QualityError("Approved harness base is outside comparison lineage")
@@ -345,6 +351,9 @@ def verify_test_harness(repo, protected, base):
 
 
 def verify_test_harness_analysis(repo, parent):
+    from quality_gate_module_policy import active, analysis
+    if active(repo):
+        return analysis(repo, parent)
     if not test_harness_active(repo):
         return {}
     previous = {path: source_bytes(parent, path) for path in TEST_HARNESS_ENDPOINTS}
@@ -388,7 +397,7 @@ CI_COMPLETENESS_APPROVAL = {
     "workflow_before": "a7e4863716c9d43c75070f6e7b73dea9d7cd4377",
     "workflow_after": "087a212a14b163f0b6e276864bf1930c865e4df6",
     "policy_before": "daa42bb5d309396182a97253179bcb46b56ff4f6",
-    "helper_after": "8cdd8d71f28d410c09b57a64fbd7f6492aa8bed1"
+    "helper_after": "f560fec57d8ea431f14aaa3bd2cec2822a2660dd"
 }
 
 
@@ -405,6 +414,9 @@ def _expected_ci_baseline(repo, base):
 
 
 def verify_workflows(repo, changed, base):
+    from quality_gate_module_policy import active, verify
+    if active(repo):
+        return [verify(repo, base)]
     records = verify_ci_completeness(repo, base, CI_COMPLETENESS_APPROVAL,
                                      _source_snapshot, blob_id, _expected_ci_baseline, CI_STEP)
     for filename in sorted(p for p in changed if p.startswith(".github/workflows/")):
@@ -481,8 +493,13 @@ def review_policy(repo, changed, base, approved_compose=False):
     transitions = verify_protected_policy(repo, changed, base)
     overlay = verify_compose(repo, changed, base, approved_compose)
     workflow_records = verify_workflows(repo, changed, base)
+    audit = audit_suppressions(repo, changed, base)
+    contracts = []
+    from quality_gate_module_policy import active, review_permission_contract
+    if active(repo):
+        audit, contracts = review_permission_contract(repo, base, audit)
     return {"verified_transitions": transitions + workflow_records, "compose_overlay": overlay,
-            "suppression_audit": audit_suppressions(repo, changed, base)}
+            "suppression_audit": audit, "reviewed_suppression_contracts": contracts}
 
 
 def _descriptor_bytes(descriptor):

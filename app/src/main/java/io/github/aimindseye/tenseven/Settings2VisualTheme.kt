@@ -18,7 +18,6 @@ private val TENSEVEN_CLASSIC_OUTLINE_COLOR = Color(0xFF444A52)
  * is altered. The BB10 default uses black/white with distinct blue borders rather than legacy
  * cyan-filled emphasis; selected nondefault palettes keep their user-specified accent.
  */
-@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2VisualTheme(
     appearance: SableAppearance,

@@ -15,7 +15,7 @@ class FrameWindowRepository(
     fun since(): Long =
         synchronized(LOCK) {
             val boot = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
-            if (!prefs.contains("since") || prefs.getInt("boot", -2) != boot) clear()
+            if (!prefs.contains("since") || prefs.getInt("boot", UNRECORDED_BOOT) != boot) clear()
             prefs.getLong("since", System.currentTimeMillis())
         }
 
@@ -48,7 +48,10 @@ class FrameWindowRepository(
         }
 
     private fun load() =
-        FrameWindow(FrameDismissals.decode(prefs.getString("active", null)), FrameDismissals.decode(prefs.getString("seen", null)))
+        FrameWindow(
+            FrameDismissals.decode(prefs.getString("active", null)),
+            FrameDismissals.decode(prefs.getString("seen", null)),
+        )
 
     private fun save(window: FrameWindow) {
         prefs.edit {
@@ -70,3 +73,5 @@ class FrameWindowRepository(
         }
     }
 }
+
+private const val UNRECORDED_BOOT = -2

@@ -1,34 +1,97 @@
 # Build
 
-> **2.0 modular release is a future target, not yet buildable here.** Today only `:app` (Full Launcher with embedded extras) and `:design` are configured. See [ADR-0001](decisions/ADR-0001-MODULAR-COMPANION-APKS.md) and [companion release spec](2.0/COMPANION_DISTRIBUTION.md). New companion Gradle modules, separate APK IDs/signing verification, Complete ZIP and wizard will be introduced and qualified in stages. Do not infer production companion APKs or registered package names from these docs. Keep the existing Launcher signing identity and verifier intact during the transition.
+> **L0 is a development candidate, HOLD FOR MERGE.** This branch builds Launcher Core (:app), independent Phone (:phone), independent Calendar (:calendar), and shared :design. Debug core uses io.github.aimindseye.tenseven.debug.l0; companions use .phone.debug and .calendar.debug. Existing Full installations/data must remain untouched. Four other tools await extraction. No production companion signing or migration is qualified. See the L0 receipt and ADR-0001; build success does not waive quality, policy or device gates.
+
+## L0 permanent development and release status
+
+The authoritative development checkout is `~/Documents/projects/tenseven-launcher`,
+on `feature/tenseven-l0-lean-launcher-core` until integration is qualified.
+Use the existing wrapper and module output directories. No packaging step is required
+to compile, test or assemble. Root/module `build/` directories keep their normal meaning.
+
+Retained local files (Git ignored, unaffected by ordinary Gradle clean):
+
+- `builds/development/<source-sha>/<retention-time>-<worktree-digest>/`: isolated debug APKs.
+- `builds/release-candidates/<version>-<source-sha>/`: qualified internal artifacts only.
+- `validation/<source-sha>/`: commands, reports, hashes and qualification receipts.
+- `archives/`: immutable imported evidence, source patches and recovery packages.
+
+After a normal successful debug build, optionally copy its existing outputs:
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+python3 tools/retain-development-builds.py
+```
+
+This helper never recompiles, signs, installs or publishes. It verifies package identity,
+debuggability and signatures, copies all three outputs into exclusive staging, verifies
+hashes, then renames to a unique directory. It never overwrites an accepted candidate.
+The manifest records commit/tree, complete worktree fingerprint/status, application IDs,
+versions, build type, output times and signer/APK SHA-256. A dirty worktree is explicitly
+identified; its base commit alone does not reproduce it. Retention does not confer PASS.
+Store exact test commands/exits and source patches with the validation receipt.
+
+### Channel boundaries
+
+Development uses `.debug.l0` (Launcher), `.phone.debug` and `.calendar.debug`, with
+debug signing. All remain independently installable; no companion is required for Home.
+The provider authority and signature permission follow the installed application ID.
+Production Sable Watch uses the canonical production authority/signature; a debug APK
+does not authenticate as the production signer.
+
+An optimized internal candidate needs isolated IDs, non-debuggable applications,
+R8/resource shrinking and a test signer. The current approved configuration does **not**
+provide that complete channel. Its exact additional protected-endpoint proposal requires
+independent approval before implementation. Unsigned release APKs are analysis artifacts,
+not installable candidates. Do not re-sign canonical production packages for internal testing.
+
+The historical release instructions below describe **1.0.0 / versionCode 18**, not a
+qualified 2.0 release. Do not run `tools/build-release.sh` for a different distributed
+2.0 build, reuse distributed version codes or access production credentials during L0
+qualification. Existing signing configuration and registered certificate remain unchanged.
+Before production: approve companion identities/signing, assign unused version metadata,
+prove data migration/rollback, complete security and device gates, then qualify the exact
+signed artifacts. No automatic GitHub/Play publication is performed by retention.
+
+Clean-install development qualification must not replace the installed Full Launcher.
+Titan 2 installation requires owner approval for the exact isolated artifact hashes.
+Keep the accepted installation/data in place; do not clear data or uninstall it as rollback.
+Recovery source and evidence remain in `archives/`; original temporary worktrees remain
+preserved. Real production upgrades and rollback are separate release gates.
+
+The eight core Titan 2 areas were owner-accepted. Settings cleanup and BBOS7 Recent
+still need owner acceptance. API35 focus/widget failures and landscape timeout remain
+separate open gates. Local tests do not stand in for SonarCloud, CodeQL or device acceptance.
+The inherited main-relative analyzer/suppression inventories remain blocking.
 
 ## 1. Host setup
 
-JDK 17 (Temurin recommended) and the Android SDK with `platforms;android-36` and `build-tools;36.0.0`:
+JDK 17 (Temurin recommended) and the Android SDK with `platforms;android-36`, `platforms;android-37.0` and `build-tools;36.0.0`:
 
 ```bash
-sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+sdkmanager 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0'
 export ANDROID_HOME=/path/to/android-sdk     # or write sdk.dir=... into local.properties (not committed)
 ```
 
-The first Gradle run downloads Gradle 9.8.2 (checksum pinned in `gradle/wrapper/gradle-wrapper.properties`),
-Android Gradle Plugin 9.5.0, Kotlin 2.4.21, Lifecycle 2.10.0 and the Compose BOM 2026.02.01.
-Compile and target SDK are 36; minSdk is 34. Lifecycle 2.10 is pinned for compatibility
+The first Gradle run downloads Gradle 9.9.1 (checksum pinned in `gradle/wrapper/gradle-wrapper.properties`),
+Android Gradle Plugin 9.5.1, Kotlin 2.4.21, Lifecycle 2.10.0 and the Compose BOM 2026.02.01.
+Launcher/design retain SDK 36; new Phone/Calendar modules compile and target SDK 37. All three application minSDKs remain 34. Lifecycle 2.10 is pinned for compatibility
 because 2.11 requires SDK 37, which the CI SDK channel does not provide.
 
 ## 2. Build and test
 
 ```bash
 ./gradlew :app:assembleDebug                         # app/build/outputs/apk/debug/Tenseven-Launcher-debug.apk
+./gradlew :phone:assembleDebug :calendar:assembleDebug # independently buildable companions
 ./gradlew :app:assembleRelease                       # R8-minified: Tenseven-Launcher-release.apk when signed (section 2a), else -release-unsigned.apk
-./gradlew :design:testDebugUnitTest :app:testDebugUnitTest
-./gradlew :design:lintDebug :app:lintDebug           # reports in build/reports/lint-results-debug.*
+./gradlew :design:testDebugUnitTest :app:testDebugUnitTest :phone:testDebugUnitTest :calendar:testDebugUnitTest
+./gradlew :design:lintDebug :app:lintDebug :phone:lintDebug :calendar:lintDebug # reports in build/reports/lint-results-debug.*
 ./gradlew detekt ktlintCheck                         # reports in build/reports/detekt, build/reports/ktlint
 ./gradlew :design:koverXmlReportDebug :app:koverXmlReportDebug
 bash tests/run.sh                                    # static checks; needs python3, optionally shellcheck and xmllint
 ```
 
-Install the debug build next to anything else: its id is `io.github.aimindseye.tenseven.debug`.
+L0 debug core ID is `io.github.aimindseye.tenseven.debug.l0`, isolated from existing Full and older debug installations. Do not install on Titan 2 without owner approval.
 
 ### 2a. Signing a release build
 

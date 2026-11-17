@@ -115,9 +115,8 @@ def parse_xml_report(repo, path, family, snapshot=None):
 
 def report_paths(repo):
     result = {family: [] for family in REPORT_FAMILIES}
-    modules = sorted(item.parent for item in repo.glob("*/build.gradle.kts"))
-    if {module.name for module in modules} != {"app", "design"}:
-        raise QualityError("Module inventory changed; review required report matrix")
+    from quality_gate_module_policy import modules as verified_modules
+    modules = [repo / name for name in verified_modules(repo)]
     for module in modules:
         reports = module / "build/reports"
         result["detekt"].append(reports / "detekt/detekt.xml")
@@ -349,7 +348,8 @@ def qualify(args, repo, base, evidence, changed):
         result["analysis_configuration"] = analysis_configuration(repo, baseline)
         result["analysis_configuration"]["compose_overlay"] = result["policy"]["compose_overlay"]
         with temporary_compose_overlay(baseline, result["policy"]["compose_overlay"]):
-            for label, root, tasks in (("baseline", baseline, QUALITY_TASKS), ("candidate", repo.path, GRADLE_TASKS)):
+            for label, root, tasks in (("baseline", baseline, module_tasks(baseline, False)),
+                                       ("candidate", repo.path, module_tasks(repo.path, True))):
                 child = evidence.child(label)
                 try:
                     result[label] = analyze(root, child, tasks, repo.path, args.reports_only)
@@ -393,6 +393,21 @@ def main():
     finally:
         evidence.close()
 
+
+
+def module_tasks(root, build):
+    from quality_gate_module_policy import modules
+    names = modules(root)
+    if names == ["app", "design"]:
+        return GRADLE_TASKS if build else QUALITY_TASKS
+    quality = tuple(":" + name + ":lintDebug" for name in names) + ("detekt", "ktlintCheck")
+    if not build:
+        return quality
+    tests = tuple(":" + name + ":testDebugUnitTest" for name in names)
+    apks = tuple(":" + name + ":assemble" + kind for name in names if name != "design"
+                 for kind in ("Debug", "Release", "DebugAndroidTest"))
+    coverage = tuple(":" + name + ":koverXmlReportDebug" for name in names)
+    return tests + apks + quality + coverage
 
 if __name__ == "__main__":
     try:

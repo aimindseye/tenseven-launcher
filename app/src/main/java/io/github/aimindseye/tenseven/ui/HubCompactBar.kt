@@ -27,7 +27,6 @@ import io.github.aimindseye.tenseven.model.HubFilter
 private const val HUB_COMPACT_BAR_HUB_COMPACT_VIEWS_VALUE_3 = 3
 
 /** Hub's own three-action navigation: never display the shared Home dock inside Hub. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun HubCompactBar(
     onViews: () -> Unit,
@@ -50,7 +49,6 @@ internal fun HubCompactBar(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun HubCompactControl(
     label: String,
@@ -73,7 +71,6 @@ private fun HubCompactControl(
 }
 
 /** A flat list of the extra Hub views; none is mistaken for a new notification source. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun HubCompactViews(
     ui: HubConversationsUi,
