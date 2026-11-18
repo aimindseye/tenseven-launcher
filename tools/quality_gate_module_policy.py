@@ -181,6 +181,9 @@ def history(repo, head, before, after):
 
 def verify(repo, base):
     """Validate exact current bytes and every before/after ancestry state."""
+    from quality_gate_robolectric_policy import active as dependency_active, verify as verify_dependency
+    if dependency_active(repo):
+        return verify_dependency(repo, base)
     head = repo.head()
     base = repo.resolve(base)
     if not repo.ancestor(base, head):
@@ -308,6 +311,7 @@ def harness_records(repo, base, verified=None):
     records = []
     for name, pair in legacy.TEST_HARNESS_ENDPOINTS.items():
         current = ENDPOINTS.get(name, {}).get("after", pair[1])
+        current = verified.get("dependency_endpoints", {}).get(name, current)
         previous = repo.blob_id(base, name)
         if previous not in {pair[0], pair[1], current}:
             raise QualityError("Unknown R2.1 comparison endpoint")
@@ -316,6 +320,13 @@ def harness_records(repo, base, verified=None):
             origin_parent=legacy.TEST_HARNESS_BASE, comparison_base=base,
             comparison_base_blob=previous, verification_mode="immutable_origin",
             module_origin=verified["origin"], approval="Original R2.1 plus exact L0 source-set transition"))
+        if name in verified.get("dependency_endpoints", {}):
+            records[-1].update(
+                dependency_origin=verified["dependency_origin"],
+                dependency_parent=verified["dependency_parent"],
+                dependency_verification_mode=verified["dependency_verification_mode"],
+                approval="Exact reviewed Robolectric 4.18.1 extension; original R2.1 and L0 origins retained",
+                analysis_effect="Test-only 4.18 -> 4.18.1; no analyzer overlay")
     return records
 
 

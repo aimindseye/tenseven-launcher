@@ -284,6 +284,9 @@ def _verify_original_ci(repo, blob_id):
 
 def verify_l0_controller(repo, base, snapshot, blob_id):
     """Independently derive controller bytes; never trust its proposed after-ID."""
+    from quality_gate_robolectric_policy import active as dependency_active, verify as verify_dependency
+    if dependency_active(repo):
+        return verify_dependency(repo, base)["controller"]
     head = repo.head()
     if not repo.ancestor(base, head):
         raise QualityError("L0 comparison ancestry differs")
@@ -430,3 +433,5 @@ def _l0_java_variant(repo, head, after):
     result = dict(after)
     result[WORKFLOW] = _L0_JAVA_WORKFLOW_BLOB
     return result
+
+_ROBOLECTRIC_REVIEWED_HELPER_BLOB = 'b7b2a6604a5428e954ce2b175a415305350e1c8e'

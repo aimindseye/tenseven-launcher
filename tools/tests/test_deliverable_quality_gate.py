@@ -1549,7 +1549,7 @@ class PostCommitHistoryModel:
         self.parents, self.states, self.overrides = {}, {}, {}
         self.current = POSTCOMMIT_CI._L0_CORRECTION_BASE
         self.data = {name: real.blob(self.current, name) for name in POSTCOMMIT_CI._L0_PATHS}
-        helper = Path(POSTCOMMIT_CI.__file__).read_bytes()
+        helper = real.blob("6b3918755f7ac4945b59e7278c4dbb2da7a2e78a", POSTCOMMIT_CI.HELPER)
         controller = self.data[POSTCOMMIT_CI.POLICY]
         old = POSTCOMMIT_CI._L0_CORRECTION_OLD_HELPER.encode()
         self.original = POSTCOMMIT_CI._l0_state(real, self.current)
@@ -1558,6 +1558,16 @@ class PostCommitHistoryModel:
         self.corrected_data[POSTCOMMIT_CI.POLICY] = controller.replace(old, POLICY.blob_id(helper).encode(), 1)
         self.corrected = {name: POLICY.blob_id(value) for name, value in self.corrected_data.items()}
         self.ancestor_cache = {}
+
+    def files(self):
+        if self.current not in self.states:
+            return self.real.tree_files(self.current)
+        original = self.real.tree_files(POSTCOMMIT_CI._L0_CORRECTION_BASE)
+        changed = self.states[self.current]
+        return (original - set(changed)) | {name for name, oid in changed.items() if oid is not None}
+
+    def resolve(self, value):
+        return RUNTIME.object_id(value) if value in self.parents else self.real.resolve(value)
 
     def head(self):
         return self.current
@@ -1604,6 +1614,23 @@ class PostCommitHistoryModel:
         return value
 
     def _read(self, args):
+        if args[0] == 'log' and args[2] in self.parents:
+            head = args[2]
+            paths = args[args.index('--') + 1:]
+            changed, real_roots = set(), set()
+            for commit in self.ancestors(head):
+                if commit not in self.states:
+                    continue
+                for parent in self.parents[commit]:
+                    if parent not in self.states:
+                        real_roots.add(parent)
+                    for name in paths:
+                        previous = self.states[parent].get(name) if parent in self.states else (self.real.blob_id(parent, name) if name in self.real.tree_files(parent) else None)
+                        if self.states[commit].get(name) != previous:
+                            changed.add(commit)
+            for root in real_roots:
+                changed.update(self.real._read(['log', '--format=%H', root, '--', *paths]).decode().splitlines())
+            return ('\n'.join(sorted(changed)) + ('\n' if changed else '')).encode()
         if args[0] == 'rev-list' and '--parents' in args:
             commit = args[-2]
             if commit in self.parents:
@@ -1916,5 +1943,427 @@ class PostCommitControllerTests(unittest.TestCase):
             self.reject(POSTCOMMIT_CI._L0_CORRECTION_BASE)
 
 
+
+# PR144 exact Robolectric transition regressions.
+"""Execute draft source against immutable real Git plus in-memory future nodes.
+
+Synthetic OIDs below exist only inside this test process. Nothing creates a Git
+object, commit, index, checkout or worktree. They are never approval records.
+"""
+from contextlib import contextmanager
+import copy
+import hashlib
+from pathlib import Path
+import sys
+import unittest
+from unittest.mock import patch
+
+import os
+ROOT = Path(os.environ.get('TENSEVEN_POLICY_REPO', str(Path(__file__).resolve().parents[2])))
+CANDIDATE_SOURCE_ROOT = ROOT / os.environ.get('PR144_POLICY_PROPOSAL', '')
+import quality_gate_policy as legacy
+import quality_gate_module_policy as modules
+import quality_gate_ci_policy as ci
+import quality_gate_robolectric_policy as candidate
+from quality_gate_runtime import GitRepository, QualityError
+
+REAL = GitRepository(ROOT)
+READS = {}
+
+
+class CandidateRepository:
+    def __init__(self):
+        self.path = ROOT
+        self.current_head = candidate.BASE
+        self.parents = {}
+        self.states = {}
+        self.real_ancestors = set(REAL._read(['rev-list', candidate.BASE, '--']).decode().splitlines())
+        self.before = {name: REAL.blob(candidate.BASE, name) for name in candidate.BEFORE}
+        self.proposed = dict(self.before)
+        for name in (candidate.NEW, candidate.CATALOG, candidate.MODULE, ci.HELPER, candidate.TESTS):
+            self.proposed[name] = (CANDIDATE_SOURCE_ROOT / name).read_bytes()
+        self.current = dict(self.proposed)
+
+    def head(self):
+        return self.current_head
+
+    def resolve(self, value):
+        return value if value in self.parents else REAL.resolve(value)
+
+    def files(self):
+        return (set(REAL.files()) - set(candidate.BEFORE) - {candidate.NEW}) | set(self.current)
+
+    def ancestors(self, commit):
+        if commit in self.parents:
+            result = {commit}
+            for parent in self.parents[commit]:
+                result.update(self.ancestors(parent))
+            return result
+        if commit == candidate.BASE:
+            return self.real_ancestors
+        return set(REAL._read(['rev-list', commit, '--']).decode().splitlines())
+
+    def ancestor(self, older, newer):
+        return older in self.ancestors(newer)
+
+    def add(self, label, data=None, parents=None):
+        identifier = hashlib.sha1(('TEST ONLY:' + label).encode(), usedforsecurity=False).hexdigest()
+        self.parents[identifier] = parents if parents is not None else [self.head()]
+        self.states[identifier] = dict(self.proposed if data is None else data)
+        self.current_head = identifier
+        return identifier
+
+    def blob(self, commit, name):
+        if commit in self.states:
+            return self.states[commit][name]
+        return self._read(['show', commit + ':' + name])
+
+    def blob_id(self, commit, name):
+        try:
+            return legacy.blob_id(self.blob(commit, name))
+        except KeyError:
+            return None
+
+    def _read(self, args):
+        if args[0] == 'ls-tree':
+            commit = next(value for value in args if len(value) == 40 and all(c in '0123456789abcdef' for c in value))
+            if commit in self.states:
+                names = args[args.index('--') + 1:]
+                return b''.join(('100644 blob ' + legacy.blob_id(raw) + '\t' + name + '\0').encode()
+                                for name, raw in sorted(self.states[commit].items()) if name in names)
+        if args[0] == 'rev-list':
+            if '--parents' in args and args[-2] in self.parents:
+                commit = args[-2]
+                return (' '.join([commit, *self.parents[commit]]) + '\n').encode()
+            revisions = [value for value in args if '..' in value]
+            if revisions and revisions[0].split('..')[1] in self.parents:
+                root, head = revisions[0].split('..')
+                values = self.ancestors(head) - self.ancestors(root)
+                return ('\n'.join(c for c in self.parents if c in values) + '\n').encode()
+            if len(args) == 3 and args[1] in self.parents:
+                return ('\n'.join(sorted(self.ancestors(args[1]))) + '\n').encode()
+        if args[0] == 'log' and args[2] in self.parents:
+            paths = args[args.index('--') + 1:]
+            changed = []
+            for commit in self.ancestors(args[2]):
+                if commit not in self.states:
+                    continue
+                for parent in self.parents[commit]:
+                    for name in paths:
+                        previous = self.states[parent].get(name) if parent in self.states else (REAL.blob(parent, name) if name in REAL.tree_files(parent) else None)
+                        if self.states[commit].get(name) != previous:
+                            changed.append(commit)
+            return ('\n'.join(sorted(set(changed))) + ('\n' if changed else '')).encode()
+        key = tuple(args)
+        if key not in READS:
+            READS[key] = REAL._read(args)
+        return READS[key]
+
+    @contextmanager
+    def snapshot(self, repo, names):
+        if not set(names) <= self.current.keys():
+            raise QualityError('Missing simulated source')
+        yield {name: self.current[name] for name in names}
+
+
+class JointProposalTests(unittest.TestCase):
+    def setUp(self):
+        self.repo = CandidateRepository()
+
+    def verify(self, base=None):
+        with patch.object(legacy, '_source_snapshot', self.repo.snapshot):
+            return modules.verify(self.repo, base or self.repo.head())
+
+    def reject(self):
+        self.assertRaises(QualityError, self.verify)
+
+    def test_real_frozen_history_precommit_and_all_original_origins(self):
+        result = self.verify()
+        self.assertIsNone(result['dependency_origin'])
+        self.assertEqual('pre_commit', result['dependency_verification_mode'])
+        self.assertEqual('925b08da25802d8acb5b9e770d42297b20f64a8f', result['origin'])
+        self.assertEqual(candidate.BASE, result['dependency_parent'])
+
+    def test_actual_controller_entry_uses_same_precommit_verification(self):
+        with patch.object(legacy, '_source_snapshot', self.repo.snapshot):
+            result = ci.verify_l0_controller(self.repo, self.repo.head(), legacy._source_snapshot, legacy.blob_id)
+        self.assertIsNone(result['dependency_origin'])
+        self.assertEqual(candidate.BASE, result['dependency_parent'])
+
+    def test_harness_records_report_new_catalog_without_rewriting_old_approval(self):
+        with patch.object(legacy, '_source_snapshot', self.repo.snapshot):
+            records = modules.harness_records(self.repo, candidate.BASE)
+        catalog = next(r for r in records if r['path'] == candidate.CATALOG)
+        self.assertEqual('2d634ead94e415f54f013df883b4c4077f2ecd70', catalog['after'])
+        self.assertEqual('cef0f4dde1afc5d33114b5701ed13752f425a783', catalog['original_after'])
+
+    def test_joint_origin_is_discovered_from_future_history_model(self):
+        origin = self.repo.add('joint-origin')
+        self.assertEqual(origin, self.verify()['dependency_origin'])
+
+    def test_unchanged_descendant_preserves_origin(self):
+        origin = self.repo.add('joint-origin')
+        self.repo.add('unchanged-descendant')
+        self.assertEqual(origin, self.verify()['dependency_origin'])
+
+    def test_main_relative_comparison_keeps_original_ancestry(self):
+        self.repo.add('joint-origin')
+        self.assertEqual('immutable_origin', self.verify('2fa46c0ed9b5cfea43fd7b52322e592caab170a7')['dependency_verification_mode'])
+
+    def test_catalog_only_edit_is_rejected(self):
+        self.repo.current = dict(self.repo.before, **{candidate.NEW: self.repo.proposed[candidate.NEW], candidate.CATALOG: self.repo.proposed[candidate.CATALOG]})
+        self.reject()
+
+    def test_controller_only_edit_is_rejected(self):
+        self.repo.current[candidate.CATALOG] = self.repo.before[candidate.CATALOG]
+        self.reject()
+
+    def test_missing_helper_is_rejected(self):
+        self.repo.current.pop(candidate.NEW)
+        self.reject()
+
+    def test_helper_one_byte_change_is_rejected(self):
+        self.repo.current[candidate.NEW] += b'\n'
+        self.reject()
+
+    def test_controller_one_byte_change_is_rejected(self):
+        self.repo.current[ci.HELPER] += b'\n'
+        self.reject()
+
+    def test_module_one_byte_change_is_rejected(self):
+        self.repo.current[candidate.MODULE] += b'\n'
+        self.reject()
+
+    def test_frozen_assertion_mutation_is_rejected(self):
+        self.repo.current[next(iter(modules.FIXTURES))] += b'\n'
+        self.reject()
+
+    def test_split_commits_fail(self):
+        partial = dict(self.repo.before, **{candidate.CATALOG: self.repo.proposed[candidate.CATALOG]})
+        self.repo.add('partial', partial)
+        self.repo.add('completion')
+        self.reject()
+
+    def test_late_origin_fails(self):
+        self.repo.add('unrelated', self.repo.before)
+        self.repo.add('late-transition')
+        self.reject()
+
+    def test_late_precommit_fails(self):
+        self.repo.add('unrelated', self.repo.before)
+        self.reject()
+
+    def test_two_parent_origin_fails(self):
+        self.repo.add('merge-origin', parents=[candidate.BASE, REAL.parent(candidate.BASE)])
+        self.reject()
+
+    def test_duplicate_origins_fail(self):
+        first = self.repo.add('first-origin')
+        second = self.repo.add('second-origin', parents=[candidate.BASE])
+        self.repo.add('merge', parents=[first, second])
+        self.reject()
+
+    def test_restored_catalog_history_fails(self):
+        self.repo.add('joint-origin')
+        mutated = dict(self.repo.proposed, **{candidate.CATALOG: self.repo.proposed[candidate.CATALOG] + b'\n'})
+        self.repo.add('mutated', mutated)
+        self.repo.add('restored')
+        self.reject()
+
+    def test_restored_fixture_history_fails(self):
+        self.repo.add('joint-origin')
+        mutated = dict(self.repo.proposed)
+        mutated[next(iter(modules.FIXTURES))] += b'\n'
+        self.repo.add('mutated', mutated)
+        self.repo.add('restored')
+        self.reject()
+
+    def test_revert_cannot_erase_activation(self):
+        self.repo.add('joint-origin')
+        self.repo.add('revert', self.repo.before)
+        self.repo.current = dict(self.repo.before)
+        self.reject()
+
+    def test_all_original_policy_anchors_are_preserved(self):
+        changed = {name for name, raw in self.repo.proposed.items() if self.repo.before.get(name) != raw}
+        self.assertEqual({candidate.NEW, candidate.CATALOG, candidate.MODULE, ci.HELPER, candidate.TESTS}, changed)
+        self.assertEqual(11, len(modules.FIXTURES))
+        self.assertEqual(2, len(modules.COPIES))
+
+    def test_test_model_adjustment_preserves_all_test_definitions(self):
+        import ast
+        def methods(raw):
+            return [ast.dump(n) for n in ast.walk(ast.parse(raw))
+                    if isinstance(n, ast.FunctionDef) and n.name.startswith('test_')]
+        original_methods = methods(self.repo.before[candidate.TESTS])
+        self.assertEqual(original_methods, [item for item in methods(self.repo.proposed[candidate.TESTS]) if item in original_methods])
+
+    def test_catalog_record_has_separate_dependency_provenance(self):
+        origin = self.repo.add('joint-origin')
+        with patch.object(legacy, '_source_snapshot', self.repo.snapshot):
+            records = modules.harness_records(self.repo, candidate.BASE)
+        catalog = next(r for r in records if r['path'] == candidate.CATALOG)
+        self.assertEqual(origin, catalog['dependency_origin'])
+        self.assertEqual(candidate.BASE, catalog['dependency_parent'])
+        self.assertEqual('immutable_origin', catalog['dependency_verification_mode'])
+        self.assertIn('Robolectric 4.18.1', catalog['approval'])
+        self.assertIn('no analyzer overlay', catalog['analysis_effect'])
+
+    def test_analysis_records_match_both_actual_catalog_endpoints(self):
+        class Parent:
+            path = ROOT
+
+            def head(self):
+                return candidate.BASE
+
+            def blob_id(self, commit, name):
+                return REAL.blob_id(commit, name)
+
+        parent = Parent()
+        def read(repository, name):
+            return self.repo.current[name] if repository is self.repo else self.repo.before[name]
+        with patch.object(legacy, '_source_snapshot', self.repo.snapshot), patch.object(legacy, 'source_bytes', read):
+            records = modules.analysis(self.repo, parent)
+        catalog = records[candidate.CATALOG]
+        self.assertEqual('e3daaf8f266a03f85e77de9861f628299b88f148604f8c9773813c5303af069a', catalog['parent_sha256'])
+        self.assertEqual('c7d73b4526858fc3fe0dd4038706173ee6b12abea5c27c65fa8342fae18e8ba9', catalog['candidate_sha256'])
+        self.assertIsNone(catalog['dependency_origin'])
+        self.assertEqual('pre_commit', catalog['dependency_verification_mode'])
+
+    def test_every_unchanged_anchor_remains_individually_pinned(self):
+        changed = {candidate.NEW, candidate.CATALOG, candidate.MODULE, ci.HELPER, candidate.TESTS}
+        for name in self.repo.current.keys() - changed:
+            with self.subTest(path=name):
+                original = self.repo.current[name]
+                self.repo.current[name] = original + b'\n'
+                self.reject()
+                self.repo.current[name] = original
+
+    def test_wrong_catalog_version_cannot_match_reviewed_pin(self):
+        self.repo.current[candidate.CATALOG] = self.repo.current[candidate.CATALOG].replace(b'4.18.1', b'4.18.2')
+        self.reject()
+
+    def test_current_head_drift_is_rejected(self):
+        with patch.object(self.repo, 'head', side_effect=[candidate.BASE, 'f' * 40]):
+            self.reject()
+
+
+
+
+class ActivationAndMergeReviewTests(unittest.TestCase):
+    setUp = JointProposalTests.setUp
+    verify = JointProposalTests.verify
+    reject = JointProposalTests.reject
+    def physical_source(self, repository, installed):
+        import tempfile
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        repository.path = Path(directory.name)
+        for module in modules.MODULES:
+            p = repository.path / module / 'build.gradle.kts'
+            p.parent.mkdir(parents=True)
+            p.write_text('// synthetic filesystem fixture only\n')
+        if installed:
+            p = repository.path / candidate.NEW
+            p.parent.mkdir(parents=True)
+            p.write_bytes(self.repo.proposed[candidate.NEW])
+        return repository
+
+    def main_branch(self, label='main-unrelated', mutate=None):
+        main = '2fa46c0ed9b5cfea43fd7b52322e592caab170a7'
+        source = {name: REAL.blob(main, name) for name in candidate.BEFORE if name in REAL.tree_files(main)}
+        if mutate is not None:
+            mutate(source)
+        return self.repo.add(label, source, parents=[main])
+
+    def test_historical_inventory_ignores_both_physical_helper_conditions(self):
+        for installed in [False, True]:
+            with self.subTest(installed=installed):
+                historical = self.physical_source(PostCommitHistoryModel(REAL), installed)
+                self.assertNotIn(candidate.NEW, historical.files())
+                self.assertFalse(candidate.active(historical))
+                self.assertEqual(historical.head(), historical.resolve(historical.head()))
+
+    def test_actual_legacy_controller_verifies_with_physical_installed_helper(self):
+        for installed in [False, True]:
+            with self.subTest(installed=installed):
+                historical = self.physical_source(PostCommitHistoryModel(REAL), installed)
+                result = ci.verify_l0_controller(historical, historical.head(), historical.snapshot, legacy.blob_id)
+                self.assertEqual('925b08da25802d8acb5b9e770d42297b20f64a8f', result['origin'])
+                self.assertIsNone(result['correction_verification_mode'])
+
+    def test_proposed_precommit_verifies_with_or_without_physical_helper(self):
+        for installed in [False, True]:
+            with self.subTest(installed=installed):
+                self.physical_source(self.repo, installed)
+                self.assertTrue(candidate.active(self.repo))
+                self.assertIsNone(self.verify()['dependency_origin'])
+
+    def test_deleted_helper_history_still_activates_and_rejects_restoration(self):
+        self.repo.add('dependency-origin')
+        self.repo.add('unreviewed-revert', self.repo.before)
+        self.repo.current = dict(self.repo.before)
+        self.assertNotIn(candidate.NEW, self.repo.files())
+        self.assertTrue(candidate.active(self.repo))
+        self.reject()
+
+    def test_new_main_side_and_second_parent_source_are_compatible(self):
+        origin = self.repo.add('dependency-origin')
+        side = self.main_branch()
+        self.repo.add('synthetic-ci-merge', parents=[side, origin])
+        self.assertEqual(origin, self.verify(side)['dependency_origin'])
+
+    def test_first_parent_source_merge_is_compatible(self):
+        origin = self.repo.add('dependency-origin')
+        side = self.main_branch()
+        self.repo.add('integration-merge', parents=[origin, side])
+        self.assertEqual(origin, self.verify()['dependency_origin'])
+
+    def test_unrelated_pre_origin_sibling_preserves_unique_origin(self):
+        origin = self.repo.add('dependency-origin')
+        sibling = self.repo.add('ordinary-sibling', self.repo.before, parents=[candidate.BASE])
+        self.repo.add('sibling-merge', parents=[origin, sibling])
+        self.assertEqual(origin, self.verify()['dependency_origin'])
+
+    def test_side_catalog_modified_then_restored_is_rejected(self):
+        origin = self.repo.add('dependency-origin')
+        def mutate(source):
+            source[candidate.CATALOG] += b'\n'
+        changed = self.main_branch('changed-side', mutate)
+        main = '2fa46c0ed9b5cfea43fd7b52322e592caab170a7'
+        restored = {name: REAL.blob(main, name) for name in candidate.BEFORE if name in REAL.tree_files(main)}
+        side = self.repo.add('restored-side', restored, parents=[changed])
+        self.repo.add('restored-merge', parents=[origin, side])
+        self.reject()
+
+    def test_side_workflow_mutation_is_not_authorized_by_final_merge(self):
+        origin = self.repo.add('dependency-origin')
+        def mutate(source):
+            source[ci.WORKFLOW] += b'# unauthorized step\n'
+        side = self.main_branch('workflow-side', mutate)
+        self.repo.add('workflow-merge', parents=[origin, side])
+        self.reject()
+
+    def test_unrelated_git_root_cannot_borrow_an_origin(self):
+        origin = self.repo.add('dependency-origin')
+        side = self.repo.add('unrelated-git-root', {}, parents=[])
+        self.repo.add('foreign-root-merge', parents=[origin, side])
+        self.reject()
+
+    def test_side_partial_dependency_cannot_borrow_a_joint_approval(self):
+        origin = self.repo.add('dependency-origin')
+        def mutate(source):
+            source[candidate.CATALOG] = self.repo.proposed[candidate.CATALOG]
+        side = self.main_branch('catalog-only-side', mutate)
+        self.repo.add('partial-merge', parents=[origin, side])
+        self.reject()
+
+    def test_side_fixture_mutation_is_not_authorized_by_final_merge(self):
+        origin = self.repo.add('dependency-origin')
+        def mutate(source):
+            source[next(iter(modules.FIXTURES))] = b'fun removedAssertions() = Unit\n'
+        side = self.main_branch('fixture-side', mutate)
+        self.repo.add('fixture-merge', parents=[origin, side])
+        self.reject()
 if __name__ == '__main__':
     unittest.main()
