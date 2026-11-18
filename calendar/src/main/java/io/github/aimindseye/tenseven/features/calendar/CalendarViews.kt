@@ -10,6 +10,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import io.github.aimindseye.tenseven.calendar.R
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
 
 /** Shared Calendar view primitives; retains the approved Activity context and geometry. */
@@ -64,6 +65,38 @@ internal class CalendarViews(
             }
         parent.addView(text)
         return text
+    }
+
+    /** Account identifiers stay hidden from both display and accessibility until explicitly requested. */
+    fun accountHeader(
+        parent: LinearLayout,
+        account: String,
+    ) {
+        if (account == "On this device") {
+            label(parent, "On this device", CALENDAR_CALENDAR_SELECTION_SP_14_F, true, muted)
+            return
+        }
+        val header = activity.layoutInflater.inflate(R.layout.calendar_account_header, parent, false)
+        val toggle = header.findViewById<TextView>(R.id.calendar_account_toggle)
+        val value = header.findViewById<TextView>(R.id.calendar_account_value)
+        listOf(toggle, value).forEach { view ->
+            view.textSize = CALENDAR_CALENDAR_SELECTION_SP_14_F
+            view.setTextColor(muted)
+            view.setTypeface(null, Typeface.BOLD)
+            view.setPadding(
+                dp(CALENDAR_FORM_AND_LABEL_INSET_DP),
+                dp(CALENDAR_LABEL_VERTICAL_INSET_DP),
+                dp(CALENDAR_LABEL_END_INSET_DP),
+                dp(CALENDAR_LABEL_VERTICAL_INSET_DP),
+            )
+        }
+        toggle.setOnClickListener {
+            val reveal = value.visibility != View.VISIBLE
+            value.text = if (reveal) account else ""
+            value.visibility = if (reveal) View.VISIBLE else View.GONE
+            toggle.setText(if (reveal) R.string.calendar_account_hide else R.string.calendar_account_reveal)
+        }
+        parent.addView(header)
     }
 
     fun pill(

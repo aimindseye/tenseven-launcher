@@ -20,16 +20,14 @@ private const val DIALPAD_ON_CREATE_RGB_239 = 239
 private const val DIALPAD_ON_CREATE_RGB_31 = 31
 private const val DIALPAD_ON_CREATE_RGB_45 = 45
 
-private object DialpadMetrics {
-    const val SIDE_DP = 18
-    const val TOP_DP = 9
-    const val BOTTOM_DP = 11
-    const val NUMBER_HEIGHT_DP = 48
-    const val KEY_TEXT_SP = 25f
-    const val KEY_HEIGHT_DP = 47
-    const val ACTION_TEXT_SP = 17f
-    const val ACTION_HEIGHT_DP = 46
-}
+private const val DIALPAD_SIDE_DP = 18
+private const val DIALPAD_TOP_DP = 9
+private const val DIALPAD_BOTTOM_DP = 11
+private const val DIALPAD_NUMBER_HEIGHT_DP = 48
+private const val DIALPAD_KEY_TEXT_SP = 25f
+private const val DIALPAD_KEY_HEIGHT_DP = 47
+private const val DIALPAD_ACTION_TEXT_SP = 17f
+private const val DIALPAD_ACTION_HEIGHT_DP = 46
 
 /** An opt-in dialog-sized floating keypad; no SYSTEM_ALERT_WINDOW privilege or system overlay claimed. */
 class TenSevenFloatingDialpadActivity : Activity() {
@@ -47,12 +45,12 @@ class TenSevenFloatingDialpadActivity : Activity() {
                 val key =
                     TextView(this).apply {
                         text = digit.toString()
-                        textSize = DialpadMetrics.KEY_TEXT_SP
+                        textSize = DIALPAD_KEY_TEXT_SP
                         setTextColor(Color.WHITE)
                         gravity = Gravity.CENTER
                         setOnClickListener { number.append(digit.toString()) }
                     }
-                line.addView(key, LinearLayout.LayoutParams(0, dp(DialpadMetrics.KEY_HEIGHT_DP), 1f))
+                line.addView(key, LinearLayout.LayoutParams(0, dp(DIALPAD_KEY_HEIGHT_DP), 1f))
             }
         }
     }
@@ -65,10 +63,10 @@ class TenSevenFloatingDialpadActivity : Activity() {
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(
-                    dp(DialpadMetrics.SIDE_DP),
-                    dp(DialpadMetrics.TOP_DP),
-                    dp(DialpadMetrics.SIDE_DP),
-                    dp(DialpadMetrics.BOTTOM_DP),
+                    dp(DIALPAD_SIDE_DP),
+                    dp(DIALPAD_TOP_DP),
+                    dp(DIALPAD_SIDE_DP),
+                    dp(DIALPAD_BOTTOM_DP),
                 )
                 setBackgroundColor(
                     Color.rgb(
@@ -86,7 +84,7 @@ class TenSevenFloatingDialpadActivity : Activity() {
                 setHintTextColor(Color.LTGRAY)
             }
         number.showSoftInputOnFocus = false
-        root.addView(number, LinearLayout.LayoutParams(-1, dp(DialpadMetrics.NUMBER_HEIGHT_DP)))
+        root.addView(number, LinearLayout.LayoutParams(-1, dp(DIALPAD_NUMBER_HEIGHT_DP)))
         addDigitKeys(root, number)
         val place =
             TextView(this).apply {
@@ -94,7 +92,7 @@ class TenSevenFloatingDialpadActivity : Activity() {
                     this@TenSevenFloatingDialpadActivity.getString(
                         io.github.aimindseye.tenseven.phone.R.string.tenseven_float_open_dialer,
                     )
-                textSize = DialpadMetrics.ACTION_TEXT_SP
+                textSize = DIALPAD_ACTION_TEXT_SP
                 setTextColor(Color.rgb(0, DIALPAD_ON_CREATE_RGB_173, DIALPAD_ON_CREATE_RGB_239))
                 gravity = Gravity.CENTER
                 setOnClickListener {
@@ -105,7 +103,7 @@ class TenSevenFloatingDialpadActivity : Activity() {
                     finish()
                 }
             }
-        root.addView(place, LinearLayout.LayoutParams(-1, dp(DialpadMetrics.ACTION_HEIGHT_DP)))
+        root.addView(place, LinearLayout.LayoutParams(-1, dp(DIALPAD_ACTION_HEIGHT_DP)))
         setContentView(root)
     }
 }

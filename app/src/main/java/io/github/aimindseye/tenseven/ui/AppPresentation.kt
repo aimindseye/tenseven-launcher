@@ -343,7 +343,7 @@ private fun AppMarkLoadedIcon(
             // Until the icon loads: the first letter in the glyph colours, no tile.
             Box(modifier = Modifier.size(size.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    text = appMark(app),
+                    text = appFallbackMark(app),
                     fontWeight = FontWeight.Bold,
                     fontSize = (size * 0.5f).sp,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -442,7 +442,7 @@ internal fun loadLauncherIcon(
         LauncherIcon(bitmap, monochrome = false)
     }.getOrNull()
 
-internal fun appMark(app: AppEntry): String =
+internal fun appFallbackMark(app: AppEntry): String =
     app.label
         .trim()
         .take(1)

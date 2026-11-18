@@ -64,7 +64,6 @@ class ScreenCaptureService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    @Suppress("DEPRECATION")
     override fun onStartCommand(
         intent: Intent?,
         flags: Int,
@@ -73,7 +72,7 @@ class ScreenCaptureService : Service() {
         if (intent?.action == STOP) {
             stopSelf()
         } else if (projection == null) {
-            val consent = intent?.getParcelableExtra<Intent>(CONSENT)
+            val consent = intent?.getParcelableExtra(CONSENT, Intent::class.java)
             if (consent == null) stopSelf() else startConsentedSharing(consent)
         }
         return START_NOT_STICKY

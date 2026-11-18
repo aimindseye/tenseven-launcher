@@ -30,18 +30,16 @@ import java.util.concurrent.Executors
 private const val PHONE_DATA_PEOPLE_COL_2 = 2
 private const val PHONE_DATA_PEOPLE_COL_3 = 3
 
-private object PhoneDataLimits {
-    const val PHOTO_CACHE_ENTRIES = 48
-    const val PHOTO_WORKERS = 2
-    const val LARGE_AVATAR_MIN_DP = 75
-    const val LARGE_AVATAR_TEXT_SP = 28f
-    const val SMALL_AVATAR_TEXT_SP = 16f
-    const val MAX_CONTACTS = 1500
-    const val MAX_CALL_HISTORY = 100
-    const val MAX_PHONE_NUMBERS = 15
-    const val MAX_EMAILS = 10
-    const val RECENT_YESTERDAY_WINDOW_MS = 2L * 24L * 60L * 60L * 1000L
-}
+private const val PHONE_DATA_PHOTO_CACHE_ENTRIES = 48
+private const val PHONE_DATA_PHOTO_WORKERS = 2
+private const val PHONE_DATA_LARGE_AVATAR_MIN_DP = 75
+private const val PHONE_DATA_LARGE_AVATAR_TEXT_SP = 28f
+private const val PHONE_DATA_SMALL_AVATAR_TEXT_SP = 16f
+private const val PHONE_DATA_MAX_CONTACTS = 1500
+private const val PHONE_DATA_MAX_CALL_HISTORY = 100
+private const val PHONE_DATA_MAX_PHONE_NUMBERS = 15
+private const val PHONE_DATA_MAX_EMAILS = 10
+private const val PHONE_DATA_RECENT_YESTERDAY_WINDOW_MS = 2L * 24L * 60L * 60L * 1000L
 
 /** Shared immutable colors; constructing a palette never needs an Activity or permissions. */
 internal class PhonePalette {
@@ -57,8 +55,8 @@ internal class PhonePalette {
 
 /** Contacts photos remain on device. Decoded off UI thread with a bounded image cache. */
 internal object TenSevenContactPhotos {
-    private val cache = LruCache<String, Bitmap>(PhoneDataLimits.PHOTO_CACHE_ENTRIES)
-    private val executor = Executors.newFixedThreadPool(PhoneDataLimits.PHOTO_WORKERS)
+    private val cache = LruCache<String, Bitmap>(PHONE_DATA_PHOTO_CACHE_ENTRIES)
+    private val executor = Executors.newFixedThreadPool(PHONE_DATA_PHOTO_WORKERS)
     private val mainThread = Handler(Looper.getMainLooper())
 
     fun lookupContactId(
@@ -135,7 +133,7 @@ internal object TenSevenContactPhotos {
     ) {
         // Keep view references weak: a photo request must not retain a dismissed Phone screen.
         val key = target.key
-        val large = target.sizeDp >= PhoneDataLimits.LARGE_AVATAR_MIN_DP
+        val large = target.sizeDp >= PHONE_DATA_LARGE_AVATAR_MIN_DP
         val imageRef = WeakReference(target.image)
         val fallbackRef = WeakReference(target.fallback)
         val resolver = context.applicationContext.contentResolver
@@ -170,10 +168,10 @@ internal object TenSevenContactPhotos {
             TextView(context).apply {
                 text = PhoneUiRules.initials(displayName)
                 textSize =
-                    if (sizeDp >= PhoneDataLimits.LARGE_AVATAR_MIN_DP) {
-                        PhoneDataLimits.LARGE_AVATAR_TEXT_SP
+                    if (sizeDp >= PHONE_DATA_LARGE_AVATAR_MIN_DP) {
+                        PHONE_DATA_LARGE_AVATAR_TEXT_SP
                     } else {
-                        PhoneDataLimits.SMALL_AVATAR_TEXT_SP
+                        PHONE_DATA_SMALL_AVATAR_TEXT_SP
                     }
                 setTextColor(palette.fg)
                 gravity = Gravity.CENTER
@@ -182,7 +180,7 @@ internal object TenSevenContactPhotos {
         if (id != null && id >= 1L &&
             context.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
         ) {
-            val key = "$id:${sizeDp >= PhoneDataLimits.LARGE_AVATAR_MIN_DP}"
+            val key = "$id:${sizeDp >= PHONE_DATA_LARGE_AVATAR_MIN_DP}"
             val image =
                 ImageView(context).apply {
                     scaleType = ImageView.ScaleType.CENTER_CROP
@@ -242,7 +240,7 @@ internal class TenSevenPhoneData(
                     null,
                     "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} COLLATE LOCALIZED ASC",
                 )?.use { c ->
-                    while (c.moveToNext() && result.size < PhoneDataLimits.MAX_CONTACTS) {
+                    while (c.moveToNext() && result.size < PHONE_DATA_MAX_CONTACTS) {
                         result.add(
                             Person(
                                 c.getLong(0),
@@ -268,7 +266,7 @@ internal class TenSevenPhoneData(
                 DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(timestamp))
             }
 
-            today.timeInMillis - timestamp < PhoneDataLimits.RECENT_YESTERDAY_WINDOW_MS -> {
+            today.timeInMillis - timestamp < PHONE_DATA_RECENT_YESTERDAY_WINDOW_MS -> {
                 "Yesterday"
             }
 
@@ -290,7 +288,7 @@ internal class TenSevenPhoneData(
                     null,
                     "${CallLog.Calls.DATE} DESC",
                 )?.use { cursor ->
-                    while (cursor.moveToNext() && rows.size < PhoneDataLimits.MAX_CALL_HISTORY) {
+                    while (cursor.moveToNext() && rows.size < PHONE_DATA_MAX_CALL_HISTORY) {
                         val timestamp = cursor.getLong(2)
                         rows.add(
                             Call(
@@ -323,7 +321,7 @@ internal class TenSevenPhoneData(
                     arrayOf(contactId.toString()),
                     null,
                 )?.use { c ->
-                    while (c.moveToNext() && result.size < PhoneDataLimits.MAX_PHONE_NUMBERS) {
+                    while (c.moveToNext() && result.size < PHONE_DATA_MAX_PHONE_NUMBERS) {
                         appendNumberFromCursor(c, result)
                     }
                 }
@@ -358,7 +356,7 @@ internal class TenSevenPhoneData(
                     arrayOf(contactId.toString()),
                     null,
                 )?.use { c ->
-                    while (c.moveToNext() && result.size < PhoneDataLimits.MAX_EMAILS) {
+                    while (c.moveToNext() && result.size < PHONE_DATA_MAX_EMAILS) {
                         c.getString(0)?.takeIf(String::isNotBlank)?.let(result::add)
                     }
                 }

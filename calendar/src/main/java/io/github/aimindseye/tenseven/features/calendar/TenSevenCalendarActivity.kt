@@ -657,32 +657,30 @@ class TenSevenCalendarActivity : Activity() {
 }
 
 /** Calendar rendering geometry is intentionally fixed to the approved BB10 design. */
-private object CalendarDrawingSpecs {
-    const val DAYS_PER_WEEK = 7
-    const val LAST_DAY_INDEX = DAYS_PER_WEEK - 1
-    const val CELL_CENTER = 0.5f
-    const val HEADER_BASELINE = 0.7f
-    const val MONTH_HEADER_DP = 32f
-    const val WEEKDAY_TEXT_SP = 12f
-    const val MONTH_DAY_TEXT_SP = 14f
-    const val MONTH_RING_WIDTH = 0.36f
-    const val MONTH_RING_HEIGHT = 0.38f
-    const val MONTH_RING_STROKE_DP = 1.1f
-    const val SELECTED_DAY_RADIUS = 0.8f
-    const val DAY_NUMBER_BASELINE_DP = 5f
-    const val ARC_EVENT_LIMIT = 24
-    const val ARC_FULL_DEGREES = 360f
-    const val ARC_START_DEGREES = -90f
-    const val ARC_MIN_DEGREES = 3f
-    const val ARC_LAYER_COUNT = 3
-    const val ARC_STROKE_DP = 2.7f
-    const val MONTH_SWIPE_DP = 65f
-    const val TIMELINE_HOURS = 24
-    const val TIMELINE_HOUR_MINUTES = 60f
-    const val TIMELINE_GUTTER_DP = 54f
-    const val TIMELINE_EVENT_LIMIT = 100
-    const val TIMELINE_MAX_LANES = 3
-}
+private const val CALENDAR_DRAWING_DAYS_PER_WEEK = 7
+private const val CALENDAR_DRAWING_LAST_DAY_INDEX = CALENDAR_DRAWING_DAYS_PER_WEEK - 1
+private const val CALENDAR_DRAWING_CELL_CENTER = 0.5f
+private const val CALENDAR_DRAWING_HEADER_BASELINE = 0.7f
+private const val CALENDAR_DRAWING_MONTH_HEADER_DP = 32f
+private const val CALENDAR_DRAWING_WEEKDAY_TEXT_SP = 12f
+private const val CALENDAR_DRAWING_MONTH_DAY_TEXT_SP = 14f
+private const val CALENDAR_DRAWING_MONTH_RING_WIDTH = 0.36f
+private const val CALENDAR_DRAWING_MONTH_RING_HEIGHT = 0.38f
+private const val CALENDAR_DRAWING_MONTH_RING_STROKE_DP = 1.1f
+private const val CALENDAR_DRAWING_SELECTED_DAY_RADIUS = 0.8f
+private const val CALENDAR_DRAWING_DAY_NUMBER_BASELINE_DP = 5f
+private const val CALENDAR_DRAWING_ARC_EVENT_LIMIT = 24
+private const val CALENDAR_DRAWING_ARC_FULL_DEGREES = 360f
+private const val CALENDAR_DRAWING_ARC_START_DEGREES = -90f
+private const val CALENDAR_DRAWING_ARC_MIN_DEGREES = 3f
+private const val CALENDAR_DRAWING_ARC_LAYER_COUNT = 3
+private const val CALENDAR_DRAWING_ARC_STROKE_DP = 2.7f
+private const val CALENDAR_DRAWING_MONTH_SWIPE_DP = 65f
+private const val CALENDAR_DRAWING_TIMELINE_HOURS = 24
+private const val CALENDAR_DRAWING_TIMELINE_HOUR_MINUTES = 60f
+private const val CALENDAR_DRAWING_TIMELINE_GUTTER_DP = 54f
+private const val CALENDAR_DRAWING_TIMELINE_EVENT_LIMIT = 100
+private const val CALENDAR_DRAWING_TIMELINE_MAX_LANES = 3
 
 internal data class CalendarEventPaint(
     val events: List<D5R2Event>,
@@ -748,25 +746,24 @@ internal class BusyMonthView private constructor(
             month.atDay(1).dayOfWeek.value - 1
         } else {
             month.atDay(1).dayOfWeek.value %
-                CalendarDrawingSpecs.DAYS_PER_WEEK
+                CALENDAR_DRAWING_DAYS_PER_WEEK
         }
     private val start = month.atDay(1).minusDays(offset.toLong())
     private val rows =
-        (offset + month.lengthOfMonth() + CalendarDrawingSpecs.LAST_DAY_INDEX) /
-            CalendarDrawingSpecs
-                .DAYS_PER_WEEK
+        (offset + month.lengthOfMonth() + CALENDAR_DRAWING_LAST_DAY_INDEX) /
+            CALENDAR_DRAWING_DAYS_PER_WEEK
     private var touchX = 0f
     private val arcBounds = RectF()
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val cellWidth = width.toFloat() / CalendarDrawingSpecs.DAYS_PER_WEEK
-        val titleHeight = CalendarDrawingSpecs.MONTH_HEADER_DP * density
+        val cellWidth = width.toFloat() / CALENDAR_DRAWING_DAYS_PER_WEEK
+        val titleHeight = CALENDAR_DRAWING_MONTH_HEADER_DP * density
         val cellHeight = (height.toFloat() - titleHeight) / rows
         paint.textAlign = Paint.Align.CENTER
         paint.typeface = Typeface.DEFAULT_BOLD
         paint.style = Paint.Style.FILL
-        paint.textSize = CalendarDrawingSpecs.WEEKDAY_TEXT_SP * density
+        paint.textSize = CALENDAR_DRAWING_WEEKDAY_TEXT_SP * density
         paint.color = fg
         (
             if (mondayStart) {
@@ -777,12 +774,12 @@ internal class BusyMonthView private constructor(
         ).forEachIndexed { i, label ->
             canvas.drawText(
                 label,
-                cellWidth * (i + CalendarDrawingSpecs.CELL_CENTER),
-                titleHeight * CalendarDrawingSpecs.HEADER_BASELINE,
+                cellWidth * (i + CALENDAR_DRAWING_CELL_CENTER),
+                titleHeight * CALENDAR_DRAWING_HEADER_BASELINE,
                 paint,
             )
         }
-        for (index in 0 until rows * CalendarDrawingSpecs.DAYS_PER_WEEK) {
+        for (index in 0 until rows * CALENDAR_DRAWING_DAYS_PER_WEEK) {
             drawMonthCell(canvas, index, cellWidth, titleHeight, cellHeight)
         }
     }
@@ -796,17 +793,17 @@ internal class BusyMonthView private constructor(
     ) {
         val day = start.plusDays(index.toLong())
         if (day.month != month.month) return
-        val x = cellWidth * (index % CalendarDrawingSpecs.DAYS_PER_WEEK + CalendarDrawingSpecs.CELL_CENTER)
+        val x = cellWidth * (index % CALENDAR_DRAWING_DAYS_PER_WEEK + CALENDAR_DRAWING_CELL_CENTER)
         val y =
             titleHeight + cellHeight *
-                (index / CalendarDrawingSpecs.DAYS_PER_WEEK + CalendarDrawingSpecs.CELL_CENTER)
+                (index / CALENDAR_DRAWING_DAYS_PER_WEEK + CALENDAR_DRAWING_CELL_CENTER)
         val radius =
             minOf(
-                cellWidth * CalendarDrawingSpecs.MONTH_RING_WIDTH,
-                cellHeight * CalendarDrawingSpecs.MONTH_RING_HEIGHT,
+                cellWidth * CALENDAR_DRAWING_MONTH_RING_WIDTH,
+                cellHeight * CALENDAR_DRAWING_MONTH_RING_HEIGHT,
             )
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = CalendarDrawingSpecs.MONTH_RING_STROKE_DP * density
+        paint.strokeWidth = CALENDAR_DRAWING_MONTH_RING_STROKE_DP * density
         paint.color = outline
         canvas.drawCircle(x, y, radius, paint)
         drawMonthArcs(canvas, day, x, y, radius)
@@ -829,22 +826,22 @@ internal class BusyMonthView private constructor(
                 .toEpochMilli()
         val period = (dayEnd - dayStart).coerceAtLeast(1L).toFloat()
         val matched = events.filter { it.start < dayEnd && it.end > dayStart }
-        matched.take(CalendarDrawingSpecs.ARC_EVENT_LIMIT).forEachIndexed { order, event ->
+        matched.take(CALENDAR_DRAWING_ARC_EVENT_LIMIT).forEachIndexed { order, event ->
             val first = ((maxOf(event.start, dayStart) - dayStart) / period).coerceIn(0f, 1f)
             val last = ((minOf(event.end, dayEnd) - dayStart) / period).coerceIn(0f, 1f)
             val sweep =
                 maxOf(
-                    CalendarDrawingSpecs.ARC_MIN_DEGREES,
-                    (last - first) * CalendarDrawingSpecs.ARC_FULL_DEGREES,
+                    CALENDAR_DRAWING_ARC_MIN_DEGREES,
+                    (last - first) * CALENDAR_DRAWING_ARC_FULL_DEGREES,
                 )
             val radiusLayer =
-                radius - (order % CalendarDrawingSpecs.ARC_LAYER_COUNT) * CalendarDrawingSpecs.ARC_STROKE_DP * density
+                radius - (order % CALENDAR_DRAWING_ARC_LAYER_COUNT) * CALENDAR_DRAWING_ARC_STROKE_DP * density
             paint.color = colors[event.calendarId] ?: selectedColor
-            paint.strokeWidth = CalendarDrawingSpecs.ARC_STROKE_DP * density
+            paint.strokeWidth = CALENDAR_DRAWING_ARC_STROKE_DP * density
             arcBounds.set(x - radiusLayer, y - radiusLayer, x + radiusLayer, y + radiusLayer)
             canvas.drawArc(
                 arcBounds,
-                CalendarDrawingSpecs.ARC_START_DEGREES + first * CalendarDrawingSpecs.ARC_FULL_DEGREES,
+                CALENDAR_DRAWING_ARC_START_DEGREES + first * CALENDAR_DRAWING_ARC_FULL_DEGREES,
                 sweep,
                 false,
                 paint,
@@ -862,16 +859,16 @@ internal class BusyMonthView private constructor(
         if (day == selected) {
             paint.style = Paint.Style.FILL
             paint.color = selectedColor
-            canvas.drawCircle(x, y, radius * CalendarDrawingSpecs.SELECTED_DAY_RADIUS, paint)
+            canvas.drawCircle(x, y, radius * CALENDAR_DRAWING_SELECTED_DAY_RADIUS, paint)
         }
         paint.style = Paint.Style.FILL
         paint.typeface = if (day == selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-        paint.textSize = CalendarDrawingSpecs.MONTH_DAY_TEXT_SP * density
+        paint.textSize = CALENDAR_DRAWING_MONTH_DAY_TEXT_SP * density
         paint.color = if (day == selected) Color.WHITE else fg
         canvas.drawText(
             day.dayOfMonth.toString(),
             x,
-            y + CalendarDrawingSpecs.DAY_NUMBER_BASELINE_DP * density,
+            y + CALENDAR_DRAWING_DAY_NUMBER_BASELINE_DP * density,
             paint,
         )
     }
@@ -896,11 +893,11 @@ internal class BusyMonthView private constructor(
 
     private fun handleMonthTouchUp(event: MotionEvent): Boolean {
         val swipe = event.x - touchX
-        if (kotlin.math.abs(swipe) > CalendarDrawingSpecs.MONTH_SWIPE_DP * density) {
+        if (kotlin.math.abs(swipe) > CALENDAR_DRAWING_MONTH_SWIPE_DP * density) {
             onMonthSwipe(if (swipe < 0) 1 else -1)
             return true
         }
-        val titleHeight = CalendarDrawingSpecs.MONTH_HEADER_DP * density
+        val titleHeight = CALENDAR_DRAWING_MONTH_HEADER_DP * density
         if (event.y >= titleHeight) {
             selectMonthCell(event, titleHeight)
         }
@@ -913,12 +910,12 @@ internal class BusyMonthView private constructor(
     ) {
         val cellHeight = (height.toFloat() - titleHeight) / rows
         val col =
-            (event.x / (width.toFloat() / CalendarDrawingSpecs.DAYS_PER_WEEK)).toInt().coerceIn(
+            (event.x / (width.toFloat() / CALENDAR_DRAWING_DAYS_PER_WEEK)).toInt().coerceIn(
                 0,
-                CalendarDrawingSpecs.LAST_DAY_INDEX,
+                CALENDAR_DRAWING_LAST_DAY_INDEX,
             )
         val row = ((event.y - titleHeight) / cellHeight).toInt().coerceIn(0, rows - 1)
-        val day = start.plusDays((row * CalendarDrawingSpecs.DAYS_PER_WEEK + col).toLong())
+        val day = start.plusDays((row * CALENDAR_DRAWING_DAYS_PER_WEEK + col).toLong())
         if (day.month == month.month) onSelected(day)
     }
 
@@ -953,14 +950,14 @@ internal class D5DayTimelineView private constructor(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val density = resources.displayMetrics.density
     private val targets = mutableListOf<Pair<RectF, D5R2Event>>()
-    private val targetBounds = Array(CalendarDrawingSpecs.TIMELINE_EVENT_LIMIT) { RectF() }
-    private val laneBuffers = Array(CalendarDrawingSpecs.TIMELINE_MAX_LANES) { LongArray(it + 1) }
-    private val gutter = CalendarDrawingSpecs.TIMELINE_GUTTER_DP * density
+    private val targetBounds = Array(CALENDAR_DRAWING_TIMELINE_EVENT_LIMIT) { RectF() }
+    private val laneBuffers = Array(CALENDAR_DRAWING_TIMELINE_MAX_LANES) { LongArray(it + 1) }
+    private val gutter = CALENDAR_DRAWING_TIMELINE_GUTTER_DP * density
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         targets.clear()
-        val hourHeight = height / CalendarDrawingSpecs.TIMELINE_HOURS.toFloat()
+        val hourHeight = height / CALENDAR_DRAWING_TIMELINE_HOURS.toFloat()
         drawTimelineRuler(canvas, hourHeight)
         val beginning = day.atStartOfDay(zone).toInstant().toEpochMilli()
         val ending =
@@ -975,9 +972,9 @@ internal class D5DayTimelineView private constructor(
                 ordered.maxOfOrNull { first ->
                     ordered.count { other -> other.start < first.end && other.end > first.start }
                 } ?: 1
-            ).coerceIn(1, CalendarDrawingSpecs.TIMELINE_MAX_LANES)
+            ).coerceIn(1, CALENDAR_DRAWING_TIMELINE_MAX_LANES)
         val laneEnd = laneBuffers[peak - 1].apply { fill(Long.MIN_VALUE) }
-        ordered.take(CalendarDrawingSpecs.TIMELINE_EVENT_LIMIT).forEach { event ->
+        ordered.take(CALENDAR_DRAWING_TIMELINE_EVENT_LIMIT).forEach { event ->
             val first = maxOf(event.start, beginning)
             val last = minOf(event.end, ending)
             if (last <= first) return@forEach
@@ -987,14 +984,12 @@ internal class D5DayTimelineView private constructor(
             val y =
                 (
                     (first - beginning).toFloat() / (ending - beginning) *
-                        CalendarDrawingSpecs
-                            .TIMELINE_HOURS
+                        CALENDAR_DRAWING_TIMELINE_HOURS
                 ) * hourHeight
             val bottom =
                 (
                     (last - beginning).toFloat() / (ending - beginning) *
-                        CalendarDrawingSpecs
-                            .TIMELINE_HOURS
+                        CALENDAR_DRAWING_TIMELINE_HOURS
                 ) * hourHeight
             val fullWidth = (width - gutter - CALENDAR_DRAW_VALUE_7 * density).coerceAtLeast(CALENDAR_DRAW_RATIO_30_F)
             val laneWidth = fullWidth / peak.toFloat()
@@ -1020,7 +1015,7 @@ internal class D5DayTimelineView private constructor(
     ) {
         if (day == LocalDate.now(zone)) {
             val now = java.time.LocalTime.now(zone)
-            val y = (now.hour + now.minute / CalendarDrawingSpecs.TIMELINE_HOUR_MINUTES) * hourHeight
+            val y = (now.hour + now.minute / CALENDAR_DRAWING_TIMELINE_HOUR_MINUTES) * hourHeight
             paint.color = Color.rgb(0, CALENDAR_DRAW_RGB_169, CALENDAR_DRAW_RGB_238)
             paint.strokeWidth = 2f * density
             canvas.drawLine(gutter, y, width.toFloat(), y, paint)
@@ -1035,12 +1030,12 @@ internal class D5DayTimelineView private constructor(
         paint.typeface = Typeface.DEFAULT
         paint.textAlign = Paint.Align.RIGHT
         paint.textSize = CALENDAR_DRAW_SP_11_F * density
-        for (hour in 0..CalendarDrawingSpecs.TIMELINE_HOURS) {
+        for (hour in 0..CALENDAR_DRAWING_TIMELINE_HOURS) {
             val y = hour * hourHeight
             paint.color = Color.rgb(CALENDAR_DRAW_RGB_50, CALENDAR_DRAW_RGB_57, CALENDAR_DRAW_RGB_66)
             paint.strokeWidth = density
             canvas.drawLine(gutter, y, width.toFloat(), y, paint)
-            if (hour < CalendarDrawingSpecs.TIMELINE_HOURS) {
+            if (hour < CALENDAR_DRAWING_TIMELINE_HOURS) {
                 paint.color = Color.rgb(CALENDAR_DRAW_RGB_180, CALENDAR_DRAW_RGB_192, CALENDAR_DRAW_RGB_205)
                 canvas.drawText(
                     String.format(Locale.US, "%02d:00", hour),

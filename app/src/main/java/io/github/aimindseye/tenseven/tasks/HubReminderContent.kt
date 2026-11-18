@@ -36,14 +36,12 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private object TaskLimits {
-    const val MAX_TITLE_CHARS = 240
-    const val MAX_DETAILS_CHARS = 16000
-    const val MAX_TAG_INPUT_CHARS = 1500
-    const val MAX_NOTE_ID_CHARS = 240
-    const val MAX_TAG_CHARS = 60
-    const val MAX_TAGS = 24
-}
+private const val TASK_MAX_TITLE_CHARS = 240
+private const val TASK_MAX_DETAILS_CHARS = 16000
+private const val TASK_MAX_TAG_INPUT_CHARS = 1500
+private const val TASK_MAX_NOTE_ID_CHARS = 240
+private const val TASK_MAX_TAG_CHARS = 60
+private const val TASK_MAX_TAGS = 24
 
 @Composable
 internal fun TaskItem(
@@ -126,14 +124,14 @@ private fun TaskTitleDetailsFields(
 ) {
     OutlinedTextField(
         value = title,
-        onValueChange = { onTitle(it.take(TaskLimits.MAX_TITLE_CHARS)) },
+        onValueChange = { onTitle(it.take(TASK_MAX_TITLE_CHARS)) },
         label = { Text("Title") },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
     )
     OutlinedTextField(
         value = details,
-        onValueChange = { onDetails(it.take(TaskLimits.MAX_DETAILS_CHARS)) },
+        onValueChange = { onDetails(it.take(TASK_MAX_DETAILS_CHARS)) },
         label = { Text("Details (optional)") },
         modifier = Modifier.fillMaxWidth(),
         maxLines = 4,
@@ -194,9 +192,9 @@ private class TaskEditDraft(
         val cleaned =
             tags
                 .split(",")
-                .map { it.trim().take(TaskLimits.MAX_TAG_CHARS) }
+                .map { it.trim().take(TASK_MAX_TAG_CHARS) }
                 .filter { it.isNotEmpty() }
-                .take(TaskLimits.MAX_TAGS)
+                .take(TASK_MAX_TAGS)
                 .toSet()
         return task.copy(
             title = title.trim(),
@@ -217,13 +215,13 @@ private class TaskEditDraft(
 private fun TaskTagsFields(draft: TaskEditDraft) {
     OutlinedTextField(
         value = draft.tags,
-        onValueChange = { draft.tags = it.take(TaskLimits.MAX_TAG_INPUT_CHARS) },
+        onValueChange = { draft.tags = it.take(TASK_MAX_TAG_INPUT_CHARS) },
         label = { Text("Tags (comma separated)") },
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = draft.noteId,
-        onValueChange = { draft.noteId = it.take(TaskLimits.MAX_NOTE_ID_CHARS) },
+        onValueChange = { draft.noteId = it.take(TASK_MAX_NOTE_ID_CHARS) },
         label = { Text("Linked note ID (optional)") },
         modifier = Modifier.fillMaxWidth(),
     )

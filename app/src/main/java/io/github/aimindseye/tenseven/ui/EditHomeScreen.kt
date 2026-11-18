@@ -621,7 +621,7 @@ internal fun HostedWidgetsEditor(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(name.toString(), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             PageButton(stringResource(R.string.widgets_up)) { controller.move(id, -1) }
             PageButton(stringResource(R.string.widgets_down)) { controller.move(id, 1) }
             PageButton(stringResource(R.string.widgets_remove)) { controller.remove(id) }

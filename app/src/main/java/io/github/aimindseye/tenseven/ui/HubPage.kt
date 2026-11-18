@@ -220,7 +220,7 @@ private fun hubPageJumpKey(
     val native = event.nativeKeyEvent
     val allowed =
         session.model.filter == HubFilter.Contacts &&
-            people.items.isNotEmpty() && native.metaState and HUB_JUMP_BLOCKING_META == 0
+            people.items.isNotEmpty() && (native.metaState and HUB_JUMP_BLOCKING_META) == 0
     val char = native.unicodeChar.takeIf { it > 0 }?.toChar()
     val index = if (allowed && char != null) HubPeople.jump(people.items, char) else null
     if (index != null && event.type == KeyEventType.KeyDown) {

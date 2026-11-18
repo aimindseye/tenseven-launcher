@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.design
 
 /** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val MINIMUM_TOUCH_TARGET_DP = 48
 private const val SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_2 = 2
 private const val SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_4 = 4
 
@@ -358,7 +359,10 @@ object SableTokenRules {
     }
 
     /** Human-readable violations; empty when the palette satisfies the contract. */
-    fun violations(): List<String> {
+    fun violations(
+        rowMinimumDp: Int = SableGeometryTokens.ROW_MIN_HEIGHT_DP,
+        focusStrokeDp: Int = SableGeometryTokens.FOCUS_STROKE_DP,
+    ): List<String> {
         val out = mutableListOf<String>()
         for (rule in contrastRules()) {
             if (!rule.passes) {
@@ -371,8 +375,8 @@ object SableTokenRules {
         }
         val g = SableGeometryTokens
         if (g.spaces.any { it % g.SPACE_GRID_DP != 0 }) out += "space token off the 4dp grid"
-        if (g.ROW_MIN_HEIGHT_DP < 48) out += "row minimum below 48dp"
-        if (g.FOCUS_STROKE_DP < 2) out += "focus stroke below 2dp"
+        if (rowMinimumDp < MINIMUM_TOUCH_TARGET_DP) out += "row minimum below 48dp"
+        if (focusStrokeDp < 2) out += "focus stroke below 2dp"
         return out
     }
 }

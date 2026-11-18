@@ -86,7 +86,7 @@ internal class CalendarOptionsContent(
     ) {
         val grouped = activity.calendars.groupBy { it.account.ifBlank { "On this device" } }
         grouped.forEach { (account, items) ->
-            activity.views.label(list, account, CALENDAR_CALENDAR_SELECTION_SP_14_F, true, activity.views.muted)
+            activity.views.accountHeader(list, account)
             items.forEach { source ->
                 val item =
                     activity.views.row().apply {
@@ -102,7 +102,7 @@ internal class CalendarOptionsContent(
                     CheckBox(activity).apply {
                         isChecked = source.id in picked
                         buttonTintList = ColorStateList.valueOf(activity.views.accent)
-                        contentDescription = "Show ${source.name} from $account"
+                        contentDescription = "Show ${selectionLabel(source)}"
                         setOnCheckedChangeListener { _, enabled ->
                             if (enabled) picked.add(source.id) else picked.remove(source.id)
                             activity.storeIds(picked)
@@ -127,7 +127,7 @@ internal class CalendarOptionsContent(
                 )
                 item.addView(
                     TextView(activity).apply {
-                        text = source.name
+                        text = selectionLabel(source)
                         textSize = CALENDAR_CALENDAR_SELECTION_SP_15_F
                         setTextColor(activity.views.fg)
                         gravity = Gravity.CENTER_VERTICAL
@@ -140,6 +140,9 @@ internal class CalendarOptionsContent(
             }
         }
     }
+
+    private fun selectionLabel(source: D5R2Calendar): String =
+        if (source.account.isBlank()) source.name else source.name.replace(source.account, "Account", ignoreCase = true)
 
     fun renderSettings(body: LinearLayout) {
         val scroll = ScrollView(activity)

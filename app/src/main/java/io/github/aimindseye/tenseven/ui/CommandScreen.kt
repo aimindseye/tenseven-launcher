@@ -564,7 +564,7 @@ private fun LazyListScope.addSearchResults(
     }
     if (model.best.app != null || model.best.command != null) {
         item(key = "best") {
-            SearchBestMatch {
+            SearchBestMatchCard {
                 val bestApp = model.best.app
                 if (bestApp != null) {
                     SearchAppResult(bestApp, ui, actions)
@@ -1211,7 +1211,7 @@ internal fun assignRows(
 // Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
 @Suppress("FunctionNaming")
 @Composable
-private fun SearchBestMatch(content: @Composable () -> Unit) {
+private fun SearchBestMatchCard(content: @Composable () -> Unit) {
     SectionLabel(t("best_match"))
     Box(
         Modifier

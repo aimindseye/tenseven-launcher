@@ -163,11 +163,11 @@ object QuickBar {
     ): Int? {
         val index =
             when {
-                metaState and META_FUNCTION_ON != 0 -> {
+                (metaState and META_FUNCTION_ON) != 0 -> {
                     keyCode - KEYCODE_1
                 }
 
-                metaState and META_ALT_ON != 0 -> {
+                (metaState and META_ALT_ON) != 0 -> {
                     if (unicode in '1'.code..'9'.code) unicode - '1'.code else keyCode - KEYCODE_1
                 }
 

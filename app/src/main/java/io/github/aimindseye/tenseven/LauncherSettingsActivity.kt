@@ -550,7 +550,6 @@ private fun Settings2Permissions(context: android.content.Context) {
 
 @Composable
 private fun Settings2UnifiedHomeStatus(state: StartStateRepository) {
-    val style = homeStyleState(state).value
     var mode by remember { mutableStateOf(state.loadHomeStatusMode()) }
     var metrics by remember { mutableStateOf(state.loadHomeDials()) }
     Text(

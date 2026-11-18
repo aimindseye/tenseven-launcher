@@ -56,32 +56,30 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-private object RingMetrics {
-    const val DEFAULT_SIZE_DP = 36
-    const val SPACING_DP = 6
-    const val LOW_BATTERY = 0.2f
-    const val PERCENT_SCALE = 100
-    const val SIGNAL_BARS = 4
-    const val WARNING_THRESHOLD = 0.85f
-    const val ANIMATION_MS = 900
-    const val TRACK_ALPHA = 0.18f
-    const val STROKE_RATIO = 0.11f
-    const val START_DEGREES = 135f
-    const val SWEEP_DEGREES = 270f
-    const val VISIBLE_ARC_THRESHOLD = 0.005f
-    const val GLOW_ALPHA = 0.22f
-    const val GLOW_STROKE_SCALE = 1.9f
-    const val CAP_ALPHA = 0.9f
-    const val THIN_STROKE_SCALE = 0.45f
-    const val INNER_STROKE_OFFSET = 1.15f
-    const val LABEL_OFFSET_DP = 3
-    const val SMALL_TEXT_SP = 9
-    const val TEXT_SP = 11
-    const val SMALL_LINE_SP = 10
-    const val LINE_SP = 12
-    const val LABEL_TEXT_SP = 10
-    const val DISABLED_WARNING_THRESHOLD = 2f
-}
+private const val RING_DEFAULT_SIZE_DP = 36
+private const val RING_SPACING_DP = 6
+private const val RING_LOW_BATTERY = 0.2f
+private const val RING_PERCENT_SCALE = 100
+private const val RING_SIGNAL_BARS = 4
+private const val RING_WARNING_THRESHOLD = 0.85f
+private const val RING_ANIMATION_MS = 900
+private const val RING_TRACK_ALPHA = 0.18f
+private const val RING_STROKE_RATIO = 0.11f
+private const val RING_START_DEGREES = 135f
+private const val RING_SWEEP_DEGREES = 270f
+private const val RING_VISIBLE_ARC_THRESHOLD = 0.005f
+private const val RING_GLOW_ALPHA = 0.22f
+private const val RING_GLOW_STROKE_SCALE = 1.9f
+private const val RING_CAP_ALPHA = 0.9f
+private const val RING_THIN_STROKE_SCALE = 0.45f
+private const val RING_INNER_STROKE_OFFSET = 1.15f
+private const val RING_LABEL_OFFSET_DP = 3
+private const val RING_SMALL_TEXT_SP = 9
+private const val RING_TEXT_SP = 11
+private const val RING_SMALL_LINE_SP = 10
+private const val RING_LINE_SP = 12
+private const val RING_LABEL_TEXT_SP = 10
+private const val RING_DISABLED_WARNING_THRESHOLD = 2f
 
 private val RingGreen = Color(0xFF35C66B)
 private val RingPurple = Color(0xFF7A42E8)
@@ -97,7 +95,7 @@ private const val SAMPLE_INTERVAL_MS = 3_000L
 @Composable
 fun SableStatusRings(
     modifier: Modifier = Modifier,
-    ringSize: Dp = RingMetrics.DEFAULT_SIZE_DP.dp,
+    ringSize: Dp = RING_DEFAULT_SIZE_DP.dp,
     visible: Set<String> = io.github.aimindseye.tenseven.model.HomeDisplayPolicy.DEFAULT_DIALS,
 ) {
     val context = LocalContext.current.applicationContext
@@ -119,8 +117,8 @@ fun SableStatusRings(
     val error = MaterialTheme.colorScheme.error
     FlowRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(RingMetrics.SPACING_DP.dp),
-        verticalArrangement = Arrangement.spacedBy(RingMetrics.SPACING_DP.dp),
+        horizontalArrangement = Arrangement.spacedBy(RING_SPACING_DP.dp),
+        verticalArrangement = Arrangement.spacedBy(RING_SPACING_DP.dp),
     ) {
         if ("wifi" in visible) NetRing(label = "Wi-Fi", up = st.wifiUp, down = st.wifiDown, size = ringSize)
         if ("mobile" in visible) NetRing(label = t("mobile"), up = st.mobileUp, down = st.mobileDown, size = ringSize)
@@ -133,7 +131,7 @@ fun SableStatusRings(
                 fraction = st.storage,
                 color = RingPurple,
                 size = ringSize,
-                center = listOf(st.storage?.let { "${(it * RingMetrics.PERCENT_SCALE).roundToInt()}%" } ?: "–"),
+                center = listOf(st.storage?.let { "${(it * RING_PERCENT_SCALE).roundToInt()}%" } ?: "–"),
             )
         }
         if ("cell" in visible) {
@@ -142,8 +140,8 @@ fun SableStatusRings(
                 fraction = st.signal,
                 color = RingOrange,
                 size = ringSize,
-                center = listOf(st.signal?.let { "${(it * RingMetrics.SIGNAL_BARS).roundToInt()}/4" } ?: "–"),
-                hotAbove = RingMetrics.DISABLED_WARNING_THRESHOLD,
+                center = listOf(st.signal?.let { "${(it * RING_SIGNAL_BARS).roundToInt()}/4" } ?: "–"),
+                hotAbove = RING_DISABLED_WARNING_THRESHOLD,
             )
         }
     }
@@ -158,9 +156,9 @@ private val batteryStatusRing: @Composable (DeviceStats, Dp, Color) -> Unit = { 
                 else -> "BAT"
             },
         fraction = st.battery,
-        color = if (st.battery <= RingMetrics.LOW_BATTERY && !st.charging) error else RingGreen,
+        color = if (st.battery <= RING_LOW_BATTERY && !st.charging) error else RingGreen,
         size = ringSize,
-        hotAbove = RingMetrics.DISABLED_WARNING_THRESHOLD,
+        hotAbove = RING_DISABLED_WARNING_THRESHOLD,
     )
 }
 
@@ -180,25 +178,25 @@ private fun StatRing(
     /** Replaces the percentage in the middle; two short lines at most. */
     center: List<String>? = null,
     /** Fraction above which the arc turns the error colour; above 1 never. */
-    hotAbove: Float = RingMetrics.WARNING_THRESHOLD,
+    hotAbove: Float = RING_WARNING_THRESHOLD,
 ) {
     val value by animateFloatAsState(
         targetValue = (fraction ?: 0f).coerceIn(0f, 1f),
-        animationSpec = tween(durationMillis = RingMetrics.ANIMATION_MS, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = RING_ANIMATION_MS, easing = FastOutSlowInEasing),
         label = "ring",
     )
     val innerValue by animateFloatAsState(
         targetValue = (innerFraction ?: 0f).coerceIn(0f, 1f),
-        animationSpec = tween(durationMillis = RingMetrics.ANIMATION_MS, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = RING_ANIMATION_MS, easing = FastOutSlowInEasing),
         label = "inner",
     )
-    val track = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = RingMetrics.TRACK_ALPHA)
+    val track = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = RING_TRACK_ALPHA)
     val arcColor = if (fraction != null && fraction > hotAbove) MaterialTheme.colorScheme.error else color
     val textColor = MaterialTheme.colorScheme.onBackground
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val centerLines =
         center
-            ?: listOf(if (fraction == null) "–" else "${(value * RingMetrics.PERCENT_SCALE).roundToInt()}")
+            ?: listOf(if (fraction == null) "–" else "${(value * RING_PERCENT_SCALE).roundToInt()}")
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -222,8 +220,8 @@ private fun StatRing(
                 centerLines.take(2).forEachIndexed { i, line ->
                     Text(
                         text = line,
-                        fontSize = if (twoLines) RingMetrics.SMALL_TEXT_SP.sp else RingMetrics.TEXT_SP.sp,
-                        lineHeight = if (twoLines) RingMetrics.SMALL_LINE_SP.sp else RingMetrics.LINE_SP.sp,
+                        fontSize = if (twoLines) RING_SMALL_TEXT_SP.sp else RING_TEXT_SP.sp,
+                        lineHeight = if (twoLines) RING_SMALL_LINE_SP.sp else RING_LINE_SP.sp,
                         color = if (i == 0 && fraction != null) textColor else muted,
                         fontWeight = if (i == 0) FontWeight.SemiBold else FontWeight.Normal,
                         textAlign = TextAlign.Center,
@@ -235,10 +233,10 @@ private fun StatRing(
         }
         Text(
             text = label,
-            fontSize = RingMetrics.LABEL_TEXT_SP.sp,
+            fontSize = RING_LABEL_TEXT_SP.sp,
             color = muted,
             maxLines = 1,
-            modifier = Modifier.offset(y = (-RingMetrics.LABEL_OFFSET_DP).dp),
+            modifier = Modifier.offset(y = (-RING_LABEL_OFFSET_DP).dp),
         )
     }
 }
@@ -255,12 +253,12 @@ private data class RingArcState(
 )
 
 private fun DrawScope.drawRingArcs(spec: RingArcState) {
-    val stroke = spec.ringSize.toPx() * RingMetrics.STROKE_RATIO
+    val stroke = spec.ringSize.toPx() * RING_STROKE_RATIO
     val inset = stroke / 2 + 1.dp.toPx()
     val arcSize = Size(this.size.width - inset * 2, this.size.height - inset * 2)
     val topLeft = Offset(inset, inset)
-    val startAngle = RingMetrics.START_DEGREES
-    val sweepMax = RingMetrics.SWEEP_DEGREES
+    val startAngle = RING_START_DEGREES
+    val sweepMax = RING_SWEEP_DEGREES
     drawArc(
         spec.track,
         startAngle,
@@ -291,16 +289,16 @@ private fun DrawScope.drawOuterRing(
     val topLeft = geometry.topLeft
     val startAngle = geometry.startAngle
     val sweepMax = geometry.sweepMax
-    if (spec.fraction != null && spec.value > RingMetrics.VISIBLE_ARC_THRESHOLD) {
+    if (spec.fraction != null && spec.value > RING_VISIBLE_ARC_THRESHOLD) {
         val sweep = sweepMax * spec.value
         drawArc(
-            spec.arcColor.copy(alpha = RingMetrics.GLOW_ALPHA),
+            spec.arcColor.copy(alpha = RING_GLOW_ALPHA),
             startAngle,
             sweep,
             false,
             topLeft,
             arcSize,
-            style = Stroke(stroke * RingMetrics.GLOW_STROKE_SCALE, cap = StrokeCap.Round),
+            style = Stroke(stroke * RING_GLOW_STROKE_SCALE, cap = StrokeCap.Round),
         )
         drawArc(
             spec.arcColor,
@@ -314,8 +312,8 @@ private fun DrawScope.drawOuterRing(
         val rad = Math.toRadians((startAngle + sweep).toDouble())
         val r = arcSize.width / 2
         drawCircle(
-            Color.White.copy(alpha = RingMetrics.CAP_ALPHA),
-            radius = stroke * RingMetrics.THIN_STROKE_SCALE,
+            Color.White.copy(alpha = RING_CAP_ALPHA),
+            radius = stroke * RING_THIN_STROKE_SCALE,
             center =
                 Offset(
                     this.size.width / 2 + (r * cos(rad)).toFloat(),
@@ -333,14 +331,14 @@ private fun DrawScope.drawInnerRing(
     sweepMax: Float,
 ) {
     if (spec.innerFraction != null) {
-        val innerInset = inset + stroke * RingMetrics.INNER_STROKE_OFFSET
+        val innerInset = inset + (stroke * RING_INNER_STROKE_OFFSET)
         val innerSize = Size(this.size.width - innerInset * 2, this.size.height - innerInset * 2)
         val innerTopLeft = Offset(innerInset, innerInset)
-        val innerStroke = Stroke(stroke * RingMetrics.THIN_STROKE_SCALE, cap = StrokeCap.Round)
+        val innerStroke = Stroke(stroke * RING_THIN_STROKE_SCALE, cap = StrokeCap.Round)
         drawArc(spec.track, startAngle, sweepMax, false, innerTopLeft, innerSize, style = innerStroke)
-        if (spec.innerValue > RingMetrics.VISIBLE_ARC_THRESHOLD) {
+        if (spec.innerValue > RING_VISIBLE_ARC_THRESHOLD) {
             drawArc(
-                spec.innerColor.copy(alpha = RingMetrics.CAP_ALPHA),
+                spec.innerColor.copy(alpha = RING_CAP_ALPHA),
                 startAngle,
                 sweepMax * spec.innerValue,
                 false,
@@ -371,6 +369,6 @@ private fun NetRing(
         innerFraction = DeviceStatsFormat.heat(up),
         innerColor = MaterialTheme.colorScheme.primary,
         center = listOf("↓" + DeviceStatsFormat.rate(down), "↑" + DeviceStatsFormat.rate(up)),
-        hotAbove = RingMetrics.DISABLED_WARNING_THRESHOLD,
+        hotAbove = RING_DISABLED_WARNING_THRESHOLD,
     )
 }

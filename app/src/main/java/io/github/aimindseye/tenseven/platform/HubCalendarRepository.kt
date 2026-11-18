@@ -7,20 +7,19 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.provider.CalendarContract
 
-private object CalendarQueryLimits {
-    const val UPCOMING_DAYS = 7L
-    const val HOURS_PER_DAY = 24L
-    const val MINUTES_PER_HOUR = 60L
-    const val SECONDS_PER_MINUTE = 60L
-    const val MILLIS_PER_SECOND = 1000L
-    const val UPCOMING_WINDOW_MS =
-        UPCOMING_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLIS_PER_SECOND
-    const val MAX_UPCOMING_ROWS = 20
-    const val DEFAULT_DISPLAY_ROWS = 3
-    const val INSTANCE_CALENDAR_ID_INDEX = 5
-    const val INSTANCE_ALL_DAY_INDEX = 3
-    const val INSTANCE_CALENDAR_NAME_INDEX = 4
-}
+private const val CALENDAR_QUERY_UPCOMING_DAYS = 7L
+private const val CALENDAR_QUERY_HOURS_PER_DAY = 24L
+private const val CALENDAR_QUERY_MINUTES_PER_HOUR = 60L
+private const val CALENDAR_QUERY_SECONDS_PER_MINUTE = 60L
+private const val CALENDAR_QUERY_MILLIS_PER_SECOND = 1000L
+private const val CALENDAR_QUERY_UPCOMING_WINDOW_MS =
+    CALENDAR_QUERY_UPCOMING_DAYS * CALENDAR_QUERY_HOURS_PER_DAY * CALENDAR_QUERY_MINUTES_PER_HOUR *
+        CALENDAR_QUERY_SECONDS_PER_MINUTE * CALENDAR_QUERY_MILLIS_PER_SECOND
+private const val CALENDAR_QUERY_MAX_UPCOMING_ROWS = 20
+private const val CALENDAR_QUERY_DEFAULT_DISPLAY_ROWS = 3
+private const val CALENDAR_QUERY_INSTANCE_CALENDAR_ID_INDEX = 5
+private const val CALENDAR_QUERY_INSTANCE_ALL_DAY_INDEX = 3
+private const val CALENDAR_QUERY_INSTANCE_CALENDAR_NAME_INDEX = 4
 
 /** Read-only, on-demand events from *all* calendars exposed by Android CalendarProvider.
  * Multiple synced account calendars are supported; apps not syncing with this provider are not.
@@ -89,7 +88,7 @@ class HubCalendarRepository(
         if (!hasPermission()) return emptyList()
         val uri = CalendarContract.Instances.CONTENT_URI.buildUpon()
         ContentUris.appendId(uri, now)
-        ContentUris.appendId(uri, now + CalendarQueryLimits.UPCOMING_WINDOW_MS)
+        ContentUris.appendId(uri, now + CALENDAR_QUERY_UPCOMING_WINDOW_MS)
         return try {
             val found = mutableListOf<HubCalendarEvent>()
             context.contentResolver
@@ -124,13 +123,12 @@ class HubCalendarRepository(
         selectedIds: Set<Long>?,
     ) {
         // On-device calendar data only; no persistent cache and no network access.
-        while (cursor.moveToNext() && found.size < CalendarQueryLimits.MAX_UPCOMING_ROWS) {
+        while (cursor.moveToNext() && found.size < CALENDAR_QUERY_MAX_UPCOMING_ROWS) {
             val ends = cursor.getLong(2)
             if (ends <= now ||
                 (
                     selectedIds != null && cursor.getLong(
-                        CalendarQueryLimits
-                            .INSTANCE_CALENDAR_ID_INDEX,
+                        CALENDAR_QUERY_INSTANCE_CALENDAR_ID_INDEX,
                     ) !in selectedIds
                 )
             ) {
@@ -141,14 +139,14 @@ class HubCalendarRepository(
                     title = cursor.getString(0).orEmpty().ifBlank { "Calendar event" },
                     beginsAt = cursor.getLong(1),
                     endsAt = ends,
-                    allDay = cursor.getInt(CalendarQueryLimits.INSTANCE_ALL_DAY_INDEX) != 0,
+                    allDay = cursor.getInt(CALENDAR_QUERY_INSTANCE_ALL_DAY_INDEX) != 0,
                     calendarName =
                         cursor
                             .getString(
-                                CalendarQueryLimits.INSTANCE_CALENDAR_NAME_INDEX,
+                                CALENDAR_QUERY_INSTANCE_CALENDAR_NAME_INDEX,
                             ).orEmpty()
                             .ifBlank { "Calendar" },
-                    calendarId = cursor.getLong(CalendarQueryLimits.INSTANCE_CALENDAR_ID_INDEX),
+                    calendarId = cursor.getLong(CALENDAR_QUERY_INSTANCE_CALENDAR_ID_INDEX),
                 )
         }
     }
@@ -157,7 +155,7 @@ class HubCalendarRepository(
 object HubCalendarPolicy {
     fun next(
         rows: List<HubCalendarEvent>,
-        max: Int = CalendarQueryLimits.DEFAULT_DISPLAY_ROWS,
+        max: Int = CALENDAR_QUERY_DEFAULT_DISPLAY_ROWS,
     ): List<HubCalendarEvent> =
         rows
             .distinctBy { Triple(it.title, it.beginsAt, it.calendarId to it.calendarName) }

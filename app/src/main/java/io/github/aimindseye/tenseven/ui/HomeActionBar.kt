@@ -320,8 +320,8 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawQuickSlotPhoneG
             radius = unit * PHONE_END_RADIUS_RATIO,
             center =
                 Offset(
-                    center.x + radius * kotlin.math.cos(rad).toFloat(),
-                    center.y + radius * kotlin.math.sin(rad).toFloat(),
+                    center.x + (radius * kotlin.math.cos(rad).toFloat()),
+                    center.y + (radius * kotlin.math.sin(rad).toFloat()),
                 ),
         )
     }

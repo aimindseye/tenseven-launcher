@@ -1,50 +1,46 @@
 package io.github.aimindseye.tenseven.model
 
-private object TextScale {
-    const val SMALL = 0.90f
-    const val DEFAULT = 1.0f
-    const val LARGE = 1.10f
-}
+private const val TEXT_SCALE_SMALL = 0.90f
+private const val TEXT_SCALE_DEFAULT = 1.0f
+private const val TEXT_SCALE_LARGE = 1.10f
 
 /** Preserve exact WMO weather-code to label mapping used by the launcher. */
-private object WmoCode {
-    const val CLEAR = 0
-    const val MAINLY_CLEAR = 1
-    const val PARTLY_CLOUDY = 2
-    const val OVERCAST = 3
-    const val FOG = 45
-    const val RIME_FOG = 48
-    const val DRIZZLE_LIGHT = 51
-    const val DRIZZLE_MODERATE = 53
-    const val DRIZZLE_DENSE = 55
-    const val FREEZING_DRIZZLE_LIGHT = 56
-    const val FREEZING_DRIZZLE_DENSE = 57
-    const val RAIN_SLIGHT = 61
-    const val RAIN_MODERATE = 63
-    const val RAIN_HEAVY = 65
-    const val FREEZING_RAIN_LIGHT = 66
-    const val FREEZING_RAIN_HEAVY = 67
-    const val SNOW_SLIGHT = 71
-    const val SNOW_MODERATE = 73
-    const val SNOW_HEAVY = 75
-    const val SNOW_GRAINS = 77
-    const val SHOWERS_SLIGHT = 80
-    const val SHOWERS_MODERATE = 81
-    const val SHOWERS_VIOLENT = 82
-    const val SNOW_SHOWERS_SLIGHT = 85
-    const val SNOW_SHOWERS_HEAVY = 86
-    const val THUNDERSTORM = 95
-    const val THUNDER_HAIL_SLIGHT = 96
-    const val THUNDER_HAIL_HEAVY = 99
-}
+private const val WMO_CLEAR = 0
+private const val WMO_MAINLY_CLEAR = 1
+private const val WMO_PARTLY_CLOUDY = 2
+private const val WMO_OVERCAST = 3
+private const val WMO_FOG = 45
+private const val WMO_RIME_FOG = 48
+private const val WMO_DRIZZLE_LIGHT = 51
+private const val WMO_DRIZZLE_MODERATE = 53
+private const val WMO_DRIZZLE_DENSE = 55
+private const val WMO_FREEZING_DRIZZLE_LIGHT = 56
+private const val WMO_FREEZING_DRIZZLE_DENSE = 57
+private const val WMO_RAIN_SLIGHT = 61
+private const val WMO_RAIN_MODERATE = 63
+private const val WMO_RAIN_HEAVY = 65
+private const val WMO_FREEZING_RAIN_LIGHT = 66
+private const val WMO_FREEZING_RAIN_HEAVY = 67
+private const val WMO_SNOW_SLIGHT = 71
+private const val WMO_SNOW_MODERATE = 73
+private const val WMO_SNOW_HEAVY = 75
+private const val WMO_SNOW_GRAINS = 77
+private const val WMO_SHOWERS_SLIGHT = 80
+private const val WMO_SHOWERS_MODERATE = 81
+private const val WMO_SHOWERS_VIOLENT = 82
+private const val WMO_SNOW_SHOWERS_SLIGHT = 85
+private const val WMO_SNOW_SHOWERS_HEAVY = 86
+private const val WMO_THUNDERSTORM = 95
+private const val WMO_THUNDER_HAIL_SLIGHT = 96
+private const val WMO_THUNDER_HAIL_HEAVY = 99
 
 /** Bounded launcher-owned typography; never changes Android's system font size. */
 enum class LauncherTextSize(
     val multiplier: Float,
 ) {
-    Small(TextScale.SMALL),
-    Default(TextScale.DEFAULT),
-    Large(TextScale.LARGE),
+    Small(TEXT_SCALE_SMALL),
+    Default(TEXT_SCALE_DEFAULT),
+    Large(TEXT_SCALE_LARGE),
     ;
 
     companion object {
@@ -56,39 +52,39 @@ enum class LauncherTextSize(
 object HomeWeatherCodes {
     fun description(code: Int): String =
         when (code) {
-            WmoCode.CLEAR -> "Clear"
+            WMO_CLEAR -> "Clear"
 
-            WmoCode.MAINLY_CLEAR, WmoCode.PARTLY_CLOUDY -> "Partly cloudy"
+            WMO_MAINLY_CLEAR, WMO_PARTLY_CLOUDY -> "Partly cloudy"
 
-            WmoCode.OVERCAST -> "Cloudy"
+            WMO_OVERCAST -> "Cloudy"
 
-            WmoCode.FOG, WmoCode.RIME_FOG -> "Fog"
+            WMO_FOG, WMO_RIME_FOG -> "Fog"
 
-            WmoCode.DRIZZLE_LIGHT,
-            WmoCode.DRIZZLE_MODERATE,
-            WmoCode.DRIZZLE_DENSE,
-            WmoCode.FREEZING_DRIZZLE_LIGHT,
-            WmoCode.FREEZING_DRIZZLE_DENSE,
+            WMO_DRIZZLE_LIGHT,
+            WMO_DRIZZLE_MODERATE,
+            WMO_DRIZZLE_DENSE,
+            WMO_FREEZING_DRIZZLE_LIGHT,
+            WMO_FREEZING_DRIZZLE_DENSE,
             -> "Drizzle"
 
-            WmoCode.RAIN_SLIGHT,
-            WmoCode.RAIN_MODERATE,
-            WmoCode.RAIN_HEAVY,
-            WmoCode.FREEZING_RAIN_LIGHT,
-            WmoCode.FREEZING_RAIN_HEAVY,
+            WMO_RAIN_SLIGHT,
+            WMO_RAIN_MODERATE,
+            WMO_RAIN_HEAVY,
+            WMO_FREEZING_RAIN_LIGHT,
+            WMO_FREEZING_RAIN_HEAVY,
             -> "Rain"
 
-            WmoCode.SNOW_SLIGHT,
-            WmoCode.SNOW_MODERATE,
-            WmoCode.SNOW_HEAVY,
-            WmoCode.SNOW_GRAINS,
+            WMO_SNOW_SLIGHT,
+            WMO_SNOW_MODERATE,
+            WMO_SNOW_HEAVY,
+            WMO_SNOW_GRAINS,
             -> "Snow"
 
-            WmoCode.SHOWERS_SLIGHT, WmoCode.SHOWERS_MODERATE, WmoCode.SHOWERS_VIOLENT -> "Showers"
+            WMO_SHOWERS_SLIGHT, WMO_SHOWERS_MODERATE, WMO_SHOWERS_VIOLENT -> "Showers"
 
-            WmoCode.SNOW_SHOWERS_SLIGHT, WmoCode.SNOW_SHOWERS_HEAVY -> "Snow showers"
+            WMO_SNOW_SHOWERS_SLIGHT, WMO_SNOW_SHOWERS_HEAVY -> "Snow showers"
 
-            WmoCode.THUNDERSTORM, WmoCode.THUNDER_HAIL_SLIGHT, WmoCode.THUNDER_HAIL_HEAVY -> "Storm"
+            WMO_THUNDERSTORM, WMO_THUNDER_HAIL_SLIGHT, WMO_THUNDER_HAIL_HEAVY -> "Storm"
 
             else -> "Weather"
         }

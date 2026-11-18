@@ -16,22 +16,15 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
-
-private const val WEATHER_HTTP_SUCCESS_MAX = 299
 
 /** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
 private const val WEATHER_CURRENT_NEAR_DEVIC_TIME_1000_L = 1000L
 private const val WEATHER_CURRENT_NEAR_DEVIC_TIME_8_000_L = 8_000L
 private const val WEATHER_CURRENT_NEAR_DEVIC_VALUE_2 = 2
 private const val WEATHER_CURRENT_NEAR_DEVIC_VALUE_60 = 60
-private const val WEATHER_JSON_MAX_160_000 = 160_000
-private const val WEATHER_JSON_VALUE_200 = 200
-private const val WEATHER_JSON_VALUE_5000 = 5000
 private const val WEATHER_RESOLVE_LOCALITY_TIME_3_500_L = 3_500L
 
 /** The user chooses a city. No GPS permission, IP-location lookup or tracking is used. */
@@ -271,22 +264,7 @@ internal class HomeWeatherClient(
         }
     }
 
-    private fun json(url: String): JSONObject {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        try {
-            connection.connectTimeout = WEATHER_JSON_VALUE_5000
-            connection.readTimeout = WEATHER_JSON_VALUE_5000
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Accept", "application/json")
-            if (connection.responseCode !in WEATHER_JSON_VALUE_200..WEATHER_HTTP_SUCCESS_MAX) {
-                error("Weather HTTP ${connection.responseCode}")
-            }
-            val response = connection.inputStream.bufferedReader().use { it.readText().take(WEATHER_JSON_MAX_160_000) }
-            return JSONObject(response)
-        } finally {
-            connection.disconnect()
-        }
-    }
+    private fun json(url: String): JSONObject = HomeWeatherTransport.json(url)
 
     companion object {
         const val CACHE_LIFETIME_MS = 30 * 60_000L

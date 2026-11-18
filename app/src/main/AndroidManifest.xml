@@ -132,6 +132,7 @@
         android:protectionLevel="signature" />
 
     <application
+        android:networkSecurityConfig="@xml/weather_network_security_config"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_tenseven"
