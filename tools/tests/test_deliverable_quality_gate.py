@@ -1613,41 +1613,67 @@ class PostCommitHistoryModel:
             raise GATE.QualityError('Synthetic Java variant differs from reviewed bytes')
         return value
 
-    def _read(self, args):
-        if args[0] == 'log' and args[2] in self.parents:
-            head = args[2]
-            paths = args[args.index('--') + 1:]
-            changed, real_roots = set(), set()
-            for commit in self.ancestors(head):
-                if commit not in self.states:
-                    continue
-                for parent in self.parents[commit]:
-                    if parent not in self.states:
-                        real_roots.add(parent)
-                    for name in paths:
-                        previous = self.states[parent].get(name) if parent in self.states else (self.real.blob_id(parent, name) if name in self.real.tree_files(parent) else None)
-                        if self.states[commit].get(name) != previous:
-                            changed.add(commit)
-            for root in real_roots:
-                changed.update(self.real._read(['log', '--format=%H', root, '--', *paths]).decode().splitlines())
-            return ('\n'.join(sorted(changed)) + ('\n' if changed else '')).encode()
-        if args[0] == 'rev-list' and '--parents' in args:
+    def _previous_identity(self, parent, name):
+        if parent in self.states:
+            return self.states[parent].get(name)
+        if name in self.real.tree_files(parent):
+            return self.real.blob_id(parent, name)
+        return None
+
+    def _changed_edges(self, head, paths):
+        changed, real_roots = set(), set()
+        for commit in self.ancestors(head):
+            if commit in self.states:
+                self._inspect_parent_edges(commit, paths, changed, real_roots)
+        return changed, real_roots
+
+    def _inspect_parent_edges(self, commit, paths, changed, real_roots):
+        for parent in self.parents[commit]:
+            if parent not in self.states:
+                real_roots.add(parent)
+            for name in paths:
+                if self.states[commit].get(name) != self._previous_identity(parent, name):
+                    changed.add(commit)
+
+    def _read_log(self, args):
+        paths = args[args.index('--') + 1:]
+        changed, real_roots = self._changed_edges(args[2], paths)
+        for root in real_roots:
+            changed.update(self.real._read(['log', '--format=%H', root, '--', *paths]).decode().splitlines())
+        return ('\n'.join(sorted(changed)) + ('\n' if changed else '')).encode()
+
+    def _read_revisions(self, args):
+        if '--parents' in args:
             commit = args[-2]
             if commit in self.parents:
                 return (' '.join([commit, *self.parents[commit]]) + '\n').encode()
-        if args[0] == 'rev-list' and '--ancestry-path' in args:
+        if '--ancestry-path' in args:
             revision = next(value for value in args if '..' in value)
             root, head = revision.split('..')
             if head in self.parents:
                 values = self.ancestors(head) - self.ancestors(root)
                 return ('\n'.join(sorted(c for c in values if self.ancestor(root, c))) + '\n').encode()
-        if args[0] == 'rev-list' and len(args) == 3 and args[1] in self.parents:
+        if len(args) == 3 and args[1] in self.parents:
             return ('\n'.join(sorted(self.ancestors(args[1]))) + '\n').encode()
-        if args[0] == 'ls-tree':
-            commit = next(value for value in args[1:] if RUNTIME.OID.fullmatch(value))
-            if commit in self.states:
-                return b''.join(('100644 blob ' + oid + '\t' + name + '\0').encode()
-                                for name, oid in self.states[commit].items() if oid is not None)
+        return None
+
+    def _read_tree(self, args):
+        commit = next(value for value in args[1:] if RUNTIME.OID.fullmatch(value))
+        if commit not in self.states:
+            return None
+        return b''.join(('100644 blob ' + oid + '\t' + name + '\0').encode()
+                        for name, oid in self.states[commit].items() if oid is not None)
+
+    def _read(self, args):
+        if args[0] == 'log' and args[2] in self.parents:
+            return self._read_log(args)
+        value = None
+        if args[0] == 'rev-list':
+            value = self._read_revisions(args)
+        elif args[0] == 'ls-tree':
+            value = self._read_tree(args)
+        if value is not None:
+            return value
         key = tuple(args)
         if key not in self._reads:
             self._reads[key] = self.real._read(args)
@@ -1981,7 +2007,7 @@ class CandidateRepository:
         self.before = {name: REAL.blob(candidate.BASE, name) for name in candidate.BEFORE}
         self.proposed = dict(self.before)
         for name in (candidate.NEW, candidate.CATALOG, candidate.MODULE, ci.HELPER, candidate.TESTS):
-            self.proposed[name] = (CANDIDATE_SOURCE_ROOT / name).read_bytes()
+            self.proposed[name] = REAL.blob(candidate.DEPENDENCY_ORIGIN, name)
         self.current = dict(self.proposed)
 
     def head(self):
@@ -2024,36 +2050,61 @@ class CandidateRepository:
         except KeyError:
             return None
 
+    def _previous_source(self, parent, name):
+        if parent in self.states:
+            return self.states[parent].get(name)
+        if name in REAL.tree_files(parent):
+            return REAL.blob(parent, name)
+        return None
+
+    def _changed_log_commits(self, head, paths):
+        changed = set()
+        for commit in self.ancestors(head):
+            if commit in self.states and self._has_changed_edge(commit, paths):
+                changed.add(commit)
+        return sorted(changed)
+
+    def _has_changed_edge(self, commit, paths):
+        comparisons = [self.states[commit].get(name) != self._previous_source(parent, name)
+                       for parent in self.parents[commit] for name in paths]
+        return any(comparisons)
+
+    def _read_log(self, args):
+        paths = args[args.index('--') + 1:]
+        changed = self._changed_log_commits(args[2], paths)
+        return ('\n'.join(changed) + ('\n' if changed else '')).encode()
+
+    def _read_revisions(self, args):
+        if '--parents' in args and args[-2] in self.parents:
+            commit = args[-2]
+            return (' '.join([commit, *self.parents[commit]]) + '\n').encode()
+        revisions = [value for value in args if '..' in value]
+        if revisions and revisions[0].split('..')[1] in self.parents:
+            root, head = revisions[0].split('..')
+            values = self.ancestors(head) - self.ancestors(root)
+            return ('\n'.join(c for c in self.parents if c in values) + '\n').encode()
+        if len(args) == 3 and args[1] in self.parents:
+            return ('\n'.join(sorted(self.ancestors(args[1]))) + '\n').encode()
+        return None
+
+    def _read_tree(self, args):
+        commit = next(value for value in args if len(value) == 40 and all(c in '0123456789abcdef' for c in value))
+        if commit not in self.states:
+            return None
+        names = args[args.index('--') + 1:]
+        return b''.join(('100644 blob ' + legacy.blob_id(raw) + '\t' + name + '\0').encode()
+                        for name, raw in sorted(self.states[commit].items()) if name in names)
+
     def _read(self, args):
-        if args[0] == 'ls-tree':
-            commit = next(value for value in args if len(value) == 40 and all(c in '0123456789abcdef' for c in value))
-            if commit in self.states:
-                names = args[args.index('--') + 1:]
-                return b''.join(('100644 blob ' + legacy.blob_id(raw) + '\t' + name + '\0').encode()
-                                for name, raw in sorted(self.states[commit].items()) if name in names)
-        if args[0] == 'rev-list':
-            if '--parents' in args and args[-2] in self.parents:
-                commit = args[-2]
-                return (' '.join([commit, *self.parents[commit]]) + '\n').encode()
-            revisions = [value for value in args if '..' in value]
-            if revisions and revisions[0].split('..')[1] in self.parents:
-                root, head = revisions[0].split('..')
-                values = self.ancestors(head) - self.ancestors(root)
-                return ('\n'.join(c for c in self.parents if c in values) + '\n').encode()
-            if len(args) == 3 and args[1] in self.parents:
-                return ('\n'.join(sorted(self.ancestors(args[1]))) + '\n').encode()
         if args[0] == 'log' and args[2] in self.parents:
-            paths = args[args.index('--') + 1:]
-            changed = []
-            for commit in self.ancestors(args[2]):
-                if commit not in self.states:
-                    continue
-                for parent in self.parents[commit]:
-                    for name in paths:
-                        previous = self.states[parent].get(name) if parent in self.states else (REAL.blob(parent, name) if name in REAL.tree_files(parent) else None)
-                        if self.states[commit].get(name) != previous:
-                            changed.append(commit)
-            return ('\n'.join(sorted(set(changed))) + ('\n' if changed else '')).encode()
+            return self._read_log(args)
+        value = None
+        if args[0] == 'ls-tree':
+            value = self._read_tree(args)
+        elif args[0] == 'rev-list':
+            value = self._read_revisions(args)
+        if value is not None:
+            return value
         key = tuple(args)
         if key not in READS:
             READS[key] = REAL._read(args)
@@ -2365,5 +2416,213 @@ class ActivationAndMergeReviewTests(unittest.TestCase):
         side = self.main_branch('fixture-side', mutate)
         self.repo.add('fixture-merge', parents=[origin, side])
         self.reject()
+
+
+class MaintainabilityRepository(CandidateRepository):
+    """Future review nodes over real R2 history; never creates a Git object."""
+
+    def __init__(self):
+        super().__init__()
+        self.dependency_source = dict(self.proposed)
+        proposal = Path(candidate.__file__).resolve().parents[1]
+        for name in (candidate.NEW, ci.HELPER, candidate.TESTS):
+            self.proposed[name] = (proposal / name).read_bytes()
+        self.current = dict(self.proposed)
+        self.current_head = candidate.REVIEW_BASE
+
+    def _read_revisions(self, args):
+        revisions = [value for value in args if '..' in value]
+        if revisions and revisions[0].split('..')[1] in self.parents:
+            root, head = revisions[0].split('..')
+            values = self.ancestors(head) - self.ancestors(root)
+            real = sorted(values - self.parents.keys())
+            modeled = [commit for commit in self.parents if commit in values]
+            return ('\n'.join([*real, *modeled]) + '\n').encode()
+        return super()._read_revisions(args)
+
+
+class MaintainabilityTransitionTests(unittest.TestCase):
+    def setUp(self):
+        self.repo = MaintainabilityRepository()
+
+    def verify(self, base=None):
+        with patch.object(legacy, '_source_snapshot', self.repo.snapshot):
+            return modules.verify(self.repo, base or self.repo.head())
+
+    def reject(self):
+        self.assertRaises(QualityError, self.verify)
+
+    def commit_review(self):
+        return self.repo.add('review-origin')
+
+    def mutate(self, name):
+        source = dict(self.repo.proposed)
+        source[name] += b'\n'
+        return source
+
+    def test_exact_precommit_retains_actual_dependency_origin(self):
+        record = self.verify()
+        self.assertEqual(candidate.DEPENDENCY_ORIGIN, record['dependency_origin'])
+        self.assertIsNone(record['maintainability_origin'])
+        self.assertEqual(candidate.REVIEW_BASE, record['maintainability_parent'])
+
+    def test_original_dependency_state_is_still_verified(self):
+        self.repo.current_head = candidate.DEPENDENCY_ORIGIN
+        self.repo.current = dict(self.repo.dependency_source)
+        record = self.verify()
+        self.assertEqual(candidate.DEPENDENCY_ORIGIN, record['dependency_origin'])
+        self.assertIsNone(record['maintainability_origin'])
+
+    def test_real_tls_state_remains_valid_before_activation(self):
+        self.repo.current = dict(self.repo.dependency_source)
+        self.assertIsNone(self.verify()['maintainability_origin'])
+
+    def test_exact_joint_origin_is_discovered(self):
+        origin = self.commit_review()
+        record = self.verify()
+        self.assertEqual(origin, record['maintainability_origin'])
+        self.assertEqual(candidate.DEPENDENCY_ORIGIN, record['dependency_origin'])
+
+    def test_unrelated_descendant_preserves_both_origins(self):
+        origin = self.commit_review()
+        self.repo.add('ordinary-descendant')
+        self.assertEqual(origin, self.verify()['maintainability_origin'])
+
+    def test_second_parent_ci_merge_preserves_origin(self):
+        origin = self.commit_review()
+        main = '2fa46c0ed9b5cfea43fd7b52322e592caab170a7'
+        self.repo.add('ci-merge', parents=[main, origin])
+        self.assertEqual(origin, self.verify(main)['maintainability_origin'])
+
+    def test_first_parent_integration_merge_preserves_origin(self):
+        origin = self.commit_review()
+        main = '2fa46c0ed9b5cfea43fd7b52322e592caab170a7'
+        self.repo.add('integration-merge', parents=[origin, main])
+        self.assertEqual(origin, self.verify(main)['maintainability_origin'])
+
+    def test_wrong_direct_parent_is_rejected(self):
+        self.repo.add('wrong-parent', parents=[candidate.DEPENDENCY_ORIGIN])
+        self.reject()
+
+    def test_two_parent_origin_is_rejected(self):
+        self.repo.add('merge-origin', parents=[candidate.REVIEW_BASE, candidate.DEPENDENCY_ORIGIN])
+        self.reject()
+
+    def test_late_origin_is_rejected(self):
+        self.repo.add('unrelated-first', self.repo.dependency_source)
+        self.commit_review()
+        self.reject()
+
+    def test_late_precommit_is_rejected(self):
+        self.repo.add('unrelated-first', self.repo.dependency_source)
+        self.reject()
+
+    def test_duplicate_origins_are_rejected(self):
+        first = self.commit_review()
+        second = self.repo.add('second-origin', parents=[candidate.REVIEW_BASE])
+        self.repo.add('merged-origins', parents=[first, second])
+        self.reject()
+
+    def test_controller_only_transition_is_rejected(self):
+        self.repo.current = dict(self.repo.dependency_source)
+        self.repo.current[ci.HELPER] = self.repo.proposed[ci.HELPER]
+        self.reject()
+
+    def test_split_transition_is_rejected(self):
+        partial = dict(self.repo.dependency_source)
+        partial[ci.HELPER] = self.repo.proposed[ci.HELPER]
+        self.repo.add('partial-origin', partial)
+        self.repo.add('completed-later')
+        self.reject()
+
+    def test_unknown_test_bytes_are_rejected(self):
+        self.repo.current[candidate.TESTS] += b'\n'
+        self.reject()
+
+    def test_unknown_helper_bytes_are_rejected(self):
+        self.repo.current[candidate.NEW] += b'\n'
+        self.reject()
+
+    def test_unknown_controller_bytes_are_rejected(self):
+        self.repo.current[ci.HELPER] += b'\n'
+        self.reject()
+
+    def test_test_history_modified_then_restored_is_rejected(self):
+        self.commit_review()
+        self.repo.add('modified-tests', self.mutate(candidate.TESTS))
+        self.repo.add('restored-tests')
+        self.reject()
+
+    def test_helper_history_modified_then_restored_is_rejected(self):
+        self.commit_review()
+        self.repo.add('modified-helper', self.mutate(candidate.NEW))
+        self.repo.add('restored-helper')
+        self.reject()
+
+    def test_controller_history_modified_then_restored_is_rejected(self):
+        self.commit_review()
+        self.repo.add('modified-controller', self.mutate(ci.HELPER))
+        self.repo.add('restored-controller')
+        self.reject()
+
+    def test_restoring_old_current_bytes_cannot_erase_activation(self):
+        self.commit_review()
+        self.repo.current = dict(self.repo.dependency_source)
+        self.reject()
+
+    def test_revert_history_cannot_erase_activation(self):
+        self.commit_review()
+        self.repo.add('revert', self.repo.dependency_source)
+        self.repo.current = dict(self.repo.dependency_source)
+        self.reject()
+
+    def test_deleted_helper_is_rejected(self):
+        self.commit_review()
+        del self.repo.current[candidate.NEW]
+        self.assertTrue(candidate.active(self.repo))
+        self.reject()
+
+    def test_catalog_change_is_not_part_of_approval(self):
+        self.repo.current[candidate.CATALOG] += b'\n'
+        self.reject()
+
+    def test_frozen_fixture_change_is_not_part_of_approval(self):
+        self.repo.current[next(iter(modules.FIXTURES))] += b'\n'
+        self.reject()
+
+    def test_new_loaded_helper_pin_is_independent(self):
+        with patch.object(ci, '_ROBOLECTRIC_R3_REVIEWED_HELPER_BLOB', 'f' * 40):
+            self.reject()
+
+    def test_loaded_controller_must_match_exact_derived_source(self):
+        historical = REAL.blob(candidate.DEPENDENCY_ORIGIN, ci.HELPER)
+        self.assertEqual('4a82823a1b4bf8d7755d3314cca040f60bee6b4a', legacy.blob_id(historical))
+        with ExitStack() as stack:
+            directory = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            controller = directory / 'historical_r2_controller.py'
+            controller.write_bytes(historical)
+            stack.enter_context(patch.object(ci, '__file__', str(controller)))
+            self.reject()
+
+    def test_current_head_race_is_rejected(self):
+        calls = iter([candidate.REVIEW_BASE, 'f' * 40])
+        with patch.object(self.repo, 'head', side_effect=lambda: next(calls, 'f' * 40)):
+            self.reject()
+
+    def test_unrelated_comparison_is_rejected(self):
+        origin = self.commit_review()
+        unrelated = self.repo.add('foreign-branch', self.repo.dependency_source, parents=[])
+        self.repo.current_head = origin
+        self.assertRaises(QualityError, self.verify, unrelated)
+
+    def test_side_protected_change_cannot_borrow_merge_endpoint(self):
+        origin = self.commit_review()
+        main = '2fa46c0ed9b5cfea43fd7b52322e592caab170a7'
+        source = {name: REAL.blob(main, name) for name in candidate.BEFORE if name in REAL.tree_files(main)}
+        source[candidate.CATALOG] += b'\n'
+        side = self.repo.add('modified-main-side', source, parents=[main])
+        self.repo.add('side-merge', parents=[origin, side])
+        self.reject()
+
 if __name__ == '__main__':
     unittest.main()

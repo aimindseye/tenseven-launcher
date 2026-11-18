@@ -435,3 +435,5 @@ def _l0_java_variant(repo, head, after):
     return result
 
 _ROBOLECTRIC_REVIEWED_HELPER_BLOB = 'b7b2a6604a5428e954ce2b175a415305350e1c8e'
+
+_ROBOLECTRIC_R3_REVIEWED_HELPER_BLOB = 'e8aa6baeca7a8e7b6d5407e292126ceae64e4851'

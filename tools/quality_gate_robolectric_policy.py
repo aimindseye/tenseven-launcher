@@ -19,6 +19,11 @@ TESTS = 'tools/tests/test_deliverable_quality_gate.py'
 APPENDED_TESTS_BLOB = '408bd29be2b6df1fefc8a842056294f180c4fa31'
 APPEND_MARKER = b'\n# PR144 exact Robolectric transition regressions.\n'
 MAIN_BLOCK = b"if __name__ == '__main__':\n    unittest.main()\n"
+
+DEPENDENCY_ORIGIN = '4e1283cea4fdc8777b44a117defac8861195fcb8'
+REVIEW_BASE = '49d08bffcb03e7183ee071e5d1caf86e991b2509'
+REVIEW_TESTS_BLOB = '3df77dd5cc1eef755065085275bd95e969adf6f7'
+REVIEW_PIN_LINE = b"\n_ROBOLECTRIC_R3_REVIEWED_HELPER_BLOB = '@REVIEWED_HELPER_BLOB@'\n"
 BEFORE = {'.editorconfig': 'e02a4ece681bd31785db9618c566295d6b5a332c',
  '.github/workflows/android.yml': '53d88c20accba33a9874145b394b795688fd2e22',
  '.github/workflows/checks.yml': '81b81ec453580c7fc927b03d3e95011f986ad12c',
@@ -165,13 +170,10 @@ def frozen_provenance(repo):
     return harness, origin, correction
 
 
-def after_state(repo, data):
+def _dependency_after_state(repo, data):
     helper = legacy.blob_id(data[NEW])
     if helper != ci._ROBOLECTRIC_REVIEWED_HELPER_BLOB:
         raise QualityError('Robolectric executable helper pin differs')
-    # Verify bytes executing in the copied runtime match the securely read source.
-    if legacy.blob_id(Path(__file__).read_bytes()) != helper:
-        raise QualityError('Loaded Robolectric helper differs from candidate')
     result = dict(BEFORE, **{NEW: helper})
     if data[TESTS].count(APPEND_MARKER) != 1 or not data[TESTS].endswith(MAIN_BLOCK):
         raise QualityError('Missing exact appended dependency regressions')
@@ -212,13 +214,60 @@ def _verify_side_commit(repo, commit, states, frozen, names):
             raise QualityError('Unreviewed protected change on side ancestry')
 
 
-def transition_history(repo, head, before, after):
+def after_states(repo):
+    """Derive v5 independently from its frozen inputs, then the exact R3 extension."""
+    original = {name: repo.blob(DEPENDENCY_ORIGIN, name) for name in set(BEFORE) | {NEW}}
+    after = _dependency_after_state(repo, original)
+    if state(repo, DEPENDENCY_ORIGIN, after) != after or not ci._single_parent(repo, DEPENDENCY_ORIGIN, BASE):
+        raise QualityError('Original immutable dependency endpoint/origin differs')
+    helper = legacy.blob_id(Path(__file__).read_bytes())
+    if helper != ci._ROBOLECTRIC_R3_REVIEWED_HELPER_BLOB:
+        raise QualityError('Loaded R3 helper differs from independent controller pin')
+    controller = original[ci.HELPER] + REVIEW_PIN_LINE.replace(b'@REVIEWED_HELPER_BLOB@', helper.encode())
+    if Path(ci.__file__).read_bytes() != controller:
+        raise QualityError('Loaded R3 controller differs from independent derivation')
+    reviewed = {**after, NEW: helper, TESTS: REVIEW_TESTS_BLOB, ci.HELPER: legacy.blob_id(controller)}
+    return after, reviewed
+
+
+def _review_origin(repo, states, reviewed):
+    changed = [commit for commit, value in states.items() if value == reviewed]
+    if not changed:
+        return None
+    origins = [commit for commit in changed if ci._single_parent(repo, commit, REVIEW_BASE)]
+    if len(origins) != 1:
+        raise QualityError('Need one exact R3 origin directly after qualified TLS parent')
+    return origins[0]
+
+
+def _expected_transition_state(repo, commit, origins, endpoints):
+    dependency, review = origins
+    before, after, reviewed = endpoints
+    if review is not None and repo.ancestor(review, commit):
+        return reviewed
+    if repo.ancestor(dependency, commit):
+        return after
+    if repo.ancestor(BASE, commit):
+        return before
+    return None
+
+
+def _verify_transition_states(repo, states, origins, endpoints, frozen):
+    for commit, value in states.items():
+        expected = _expected_transition_state(repo, commit, origins, endpoints)
+        if expected is None:
+            _verify_side_commit(repo, commit, states, frozen, endpoints[1])
+        elif value != expected:
+            raise QualityError('Dependency/R3 protected history modified, partial or restored')
+
+
+def transition_history(repo, head, before, after, reviewed):
     if not repo.ancestor(BASE, head):
         raise QualityError('Frozen Robolectric base outside candidate ancestry')
     revision = BASE + '..' + object_id(head)
     commits = [object_id(c) for c in repo._read(['rev-list', '--reverse', revision, '--']).decode().splitlines()]
     if not commits:
-        return None
+        return None, None
     frozen = {object_id(c) for c in repo._read(['rev-list', BASE, '--']).decode().splitlines()}
     states = {commit: state(repo, commit, after) for commit in commits}
     origins = [commit for commit, value in states.items()
@@ -226,18 +275,18 @@ def transition_history(repo, head, before, after):
     if len(origins) != 1:
         raise QualityError('Need one joint Robolectric origin directly after frozen parent')
     origin = origins[0]
-    for commit, value in states.items():
-        if repo.ancestor(origin, commit):
-            if value != after:
-                raise QualityError('Robolectric policy/fixture history modified, partial or restored')
-        elif repo.ancestor(BASE, commit):
-            if value != before:
-                raise QualityError('Unreviewed protected change before dependency origin')
-        else:
-            # A mainline side branch may evolve ordinary source, but every
-            # protected edge must remain identical to its authenticated fork.
-            _verify_side_commit(repo, commit, states, frozen, after)
-    return origin
+    review = _review_origin(repo, states, reviewed)
+    _verify_transition_states(repo, states, (origin, review), (before, after, reviewed), frozen)
+    return origin, review
+
+
+def _verify_current_family(head, current, after, reviewed, review_origin):
+    if current == after and review_origin is None:
+        return
+    if current != reviewed:
+        raise QualityError('Unknown, partial or reverted R3 protected endpoint')
+    if review_origin is None and head != REVIEW_BASE:
+        raise QualityError('R3 precommit must be at exact qualified TLS parent')
 
 
 def verify(repo, base):
@@ -250,25 +299,31 @@ def verify(repo, base):
     ci._verify_l0_comparison_workflow(repo, base)
     names = set(BEFORE) | {NEW}
     with legacy._source_snapshot(repo, names) as data:
-        after = after_state(repo, data)
-        if {name: legacy.blob_id(raw) for name, raw in data.items()} != after:
-            raise QualityError('Unknown or partial Robolectric joint endpoint/fixture')
+        after, reviewed = after_states(repo)
+        current = {name: legacy.blob_id(raw) for name, raw in data.items()}
         before = dict(BEFORE, **{NEW: None})
         if state(repo, BASE, names) != before:
             raise QualityError('Frozen Robolectric joint parent differs')
-        origin = transition_history(repo, head, before, after)
+        origin, review_origin = transition_history(repo, head, before, after, reviewed)
+        _verify_current_family(head, current, after, reviewed, review_origin)
     if {item.parent.name for item in repo.path.glob('*/build.gradle.kts')} != modules.MODULES:
         raise QualityError('Android module inventory differs')
     modules.verify_workflow_inventory(repo)
     if repo.head() != head:
         raise QualityError('Robolectric candidate HEAD changed')
-    controller = dict(origin=module_origin, parent=modules.BASE,
-        endpoints={name: after[name] for name in ci._L0_PATHS},
-        verification_mode='immutable_origin', correction_origin=correction,
-        correction_parent=ci._L0_CORRECTION_BASE, correction_verification_mode='immutable_origin',
-        dependency_origin=origin, dependency_parent=BASE)
-    return dict(status='VERIFIED_EXACT_MODULE_TRANSITION', base=modules.BASE,
-        origin=module_origin, verification_mode='immutable_origin', r21_origin=harness,
-        modules=sorted(modules.MODULES), dependency_origin=origin, dependency_parent=BASE,
-        dependency_verification_mode='pre_commit' if origin is None else 'immutable_origin',
-        dependency_endpoints={CATALOG: after[CATALOG]}, controller=controller)
+    controller = {
+        'origin': module_origin, 'parent': modules.BASE,
+        'endpoints': {name: current[name] for name in ci._L0_PATHS},
+        'verification_mode': 'immutable_origin', 'correction_origin': correction,
+        'correction_parent': ci._L0_CORRECTION_BASE, 'correction_verification_mode': 'immutable_origin',
+        'dependency_origin': origin, 'dependency_parent': BASE,
+        'maintainability_origin': review_origin, 'maintainability_parent': REVIEW_BASE,
+    }
+    return {
+        'status': 'VERIFIED_EXACT_MODULE_TRANSITION', 'base': modules.BASE,
+        'origin': module_origin, 'verification_mode': 'immutable_origin', 'r21_origin': harness,
+        'modules': sorted(modules.MODULES), 'dependency_origin': origin, 'dependency_parent': BASE,
+        'dependency_verification_mode': 'pre_commit' if origin is None else 'immutable_origin',
+        'dependency_endpoints': {CATALOG: current[CATALOG]}, 'controller': controller,
+        'maintainability_origin': review_origin, 'maintainability_parent': REVIEW_BASE,
+    }
