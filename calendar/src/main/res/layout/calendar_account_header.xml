@@ -14,5 +14,6 @@
         android:id="@+id/calendar_account_value"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:saveEnabled="false"
         android:visibility="gone" />
 </LinearLayout>

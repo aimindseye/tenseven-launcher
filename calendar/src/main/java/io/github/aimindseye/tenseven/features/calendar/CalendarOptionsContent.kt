@@ -14,7 +14,6 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.TextView
 import androidx.core.content.edit
 import io.github.aimindseye.tenseven.D5BbDialogs
 import java.time.format.DateTimeFormatter
@@ -86,7 +85,8 @@ internal class CalendarOptionsContent(
     ) {
         val grouped = activity.calendars.groupBy { it.account.ifBlank { "On this device" } }
         grouped.forEach { (account, items) ->
-            activity.views.accountHeader(list, account)
+            val names = mutableListOf<CalendarSelectionName>()
+            activity.views.accountHeader(list, account) { revealed -> names.forEach { it.reveal(revealed) } }
             items.forEach { source ->
                 val item =
                     activity.views.row().apply {
@@ -102,7 +102,6 @@ internal class CalendarOptionsContent(
                     CheckBox(activity).apply {
                         isChecked = source.id in picked
                         buttonTintList = ColorStateList.valueOf(activity.views.accent)
-                        contentDescription = "Show ${selectionLabel(source)}"
                         setOnCheckedChangeListener { _, enabled ->
                             if (enabled) picked.add(source.id) else picked.remove(source.id)
                             activity.storeIds(picked)
@@ -125,24 +124,13 @@ internal class CalendarOptionsContent(
                         activity.views.dp(CALENDAR_SELECTION_MARK_DP),
                     ),
                 )
-                item.addView(
-                    TextView(activity).apply {
-                        text = selectionLabel(source)
-                        textSize = CALENDAR_CALENDAR_SELECTION_SP_15_F
-                        setTextColor(activity.views.fg)
-                        gravity = Gravity.CENTER_VERTICAL
-                        setPadding(activity.views.dp(CALENDAR_FORM_AND_LABEL_INSET_DP), 0, 0, 0)
-                        setOnClickListener { toggle.isChecked = !toggle.isChecked }
-                    },
-                    LinearLayout.LayoutParams(0, -1, 1f),
-                )
+                val name = calendarSelectionName(activity, source, toggle, item)
+                names.add(name)
+                item.addView(name.view, LinearLayout.LayoutParams(0, -1, 1f))
                 activity.views.divider(list)
             }
         }
     }
-
-    private fun selectionLabel(source: D5R2Calendar): String =
-        if (source.account.isBlank()) source.name else source.name.replace(source.account, "Account", ignoreCase = true)
 
     fun renderSettings(body: LinearLayout) {
         val scroll = ScrollView(activity)

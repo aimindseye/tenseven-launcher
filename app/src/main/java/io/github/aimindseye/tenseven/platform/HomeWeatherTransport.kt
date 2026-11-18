@@ -45,7 +45,6 @@ internal object HomeWeatherTransport {
             while (used < chars.size) {
                 val count = reader.read(chars, used, chars.size - used)
                 if (count < 0) break
-                check(count > 0) { "Weather response made no progress" }
                 used += count
             }
         }

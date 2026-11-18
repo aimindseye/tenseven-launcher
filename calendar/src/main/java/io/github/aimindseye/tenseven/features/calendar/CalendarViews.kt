@@ -71,6 +71,7 @@ internal class CalendarViews(
     fun accountHeader(
         parent: LinearLayout,
         account: String,
+        onDisclosure: (Boolean) -> Unit = {},
     ) {
         if (account == "On this device") {
             label(parent, "On this device", CALENDAR_CALENDAR_SELECTION_SP_14_F, true, muted)
@@ -90,11 +91,13 @@ internal class CalendarViews(
                 dp(CALENDAR_LABEL_VERTICAL_INSET_DP),
             )
         }
+        // XML starts this field GONE; authorized text stays hidden until explicit disclosure.
+        value.text = account
         toggle.setOnClickListener {
             val reveal = value.visibility != View.VISIBLE
-            value.text = if (reveal) account else ""
             value.visibility = if (reveal) View.VISIBLE else View.GONE
             toggle.setText(if (reveal) R.string.calendar_account_hide else R.string.calendar_account_reveal)
+            onDisclosure(reveal)
         }
         parent.addView(header)
     }

@@ -30,8 +30,8 @@ class CalendarAccountPrivacyTest {
             val actions = CalendarContentActions({}, {}, {}, {}, {}, {})
             CalendarOptionsContent(activity, actions).renderCalendarSelection(root)
             val views = Views.descendants(root)
-            assertFalse(views.filterIsInstance<TextView>().any { it.text.contains(ACCOUNT) })
-            assertFalse(views.any { it.contentDescription?.contains(ACCOUNT) == true })
+            assertFalse(views.filter { displayed(it) }.filterIsInstance<TextView>().any { it.text.contains(ACCOUNT) })
+            assertFalse(views.filter { displayed(it) }.any { it.contentDescription?.contains(ACCOUNT) == true })
             val header = Views.text(root, "Account · tap to show")
             assertTrue(header.isFocusable)
             assertTrue(header.performClick())
@@ -40,7 +40,7 @@ class CalendarAccountPrivacyTest {
             assertEquals(View.VISIBLE, accountValue.visibility)
             assertEquals("Hide account", header.text.toString())
             assertTrue(header.performClick())
-            assertEquals("", accountValue.text.toString())
+            assertEquals(ACCOUNT, accountValue.text.toString())
             assertEquals(View.GONE, accountValue.visibility)
             assertEquals("Account · tap to show", header.text.toString())
             val toggle = views.filterIsInstance<CheckBox>().single()
@@ -60,13 +60,47 @@ class CalendarAccountPrivacyTest {
             val actions = CalendarContentActions({}, {}, {}, {}, {}, {})
             CalendarOptionsContent(activity, actions).renderCalendarSelection(root)
             val views = Views.descendants(root)
-            assertEquals("Work · Account", Views.text(root, "Work · Account").text.toString())
-            assertFalse(views.filterIsInstance<TextView>().any { it.text.contains(ACCOUNT) })
-            assertFalse(views.any { it.contentDescription?.contains(ACCOUNT) == true })
-            Views.text(root, "Work · Account").performClick()
+            assertEquals("Calendar", Views.text(root, "Calendar").text.toString())
+            assertFalse(views.filter { displayed(it) }.filterIsInstance<TextView>().any { it.text.contains(ACCOUNT) })
+            assertFalse(views.filter { displayed(it) }.any { it.contentDescription?.contains(ACCOUNT) == true })
+            Views.text(root, "Calendar").performClick()
             assertEquals(emptySet<Long>(), activity.selectedIds())
             Views.text(root, "Account · tap to show").performClick()
             assertEquals(ACCOUNT, root.findViewById<TextView>(R.id.calendar_account_value).text.toString())
+            val fullName = Views.text(root, "Work · $ACCOUNT")
+            assertEquals(View.VISIBLE, fullName.visibility)
+            assertEquals("Show Work · $ACCOUNT", views.filterIsInstance<CheckBox>().single().contentDescription)
+            Views.text(root, "Hide account").performClick()
+            assertEquals(View.GONE, fullName.visibility)
+            assertFalse(views.filter { displayed(it) }.any { it.contentDescription?.contains(ACCOUNT) == true })
+        }
+    }
+
+    @Test
+    fun disclosureIsScopedToOneAccountAndResetsOnViewRebuild() {
+        Views.permission(Manifest.permission.READ_CALENDAR, true)
+        Robolectric.buildActivity(TenSevenCalendarActivity::class.java).create().use { controller ->
+            val activity = controller.get()
+            val other = "other@example.invalid"
+            activity.calendars =
+                listOf(D5R2Calendar(1L, ACCOUNT, Color.BLUE, ACCOUNT), D5R2Calendar(2L, other, Color.RED, other))
+            val actions = CalendarContentActions({}, {}, {}, {}, {}, {})
+            val root = LinearLayout(activity)
+            CalendarOptionsContent(activity, actions).renderCalendarSelection(root)
+            Views.text(root, "Account · tap to show").performClick()
+            val labels = Views.descendants(root).filterIsInstance<TextView>()
+            assertTrue(labels.any { displayed(it) && it.text.toString() == ACCOUNT })
+            assertFalse(labels.any { displayed(it) && it.text.toString() == other })
+            val rebuilt = LinearLayout(activity)
+            CalendarOptionsContent(activity, actions).renderCalendarSelection(rebuilt)
+            assertFalse(
+                Views
+                    .descendants(rebuilt)
+                    .filter { displayed(it) }
+                    .filterIsInstance<TextView>()
+                    .any { it.text.contains(ACCOUNT) || it.text.contains(other) },
+            )
+            assertEquals(setOf(1L, 2L), activity.selectedIds())
         }
     }
 
@@ -78,6 +112,16 @@ class CalendarAccountPrivacyTest {
             activity.views.accountHeader(root, "On this device")
             assertFalse(Views.text(root, "On this device").performClick())
         }
+    }
+
+    /** Detached test roots still have real visibility flags; do not mistake all detached views for hidden. */
+    private fun displayed(view: View): Boolean {
+        var current: View? = view
+        while (current != null) {
+            if (current.visibility != View.VISIBLE) return false
+            current = current.parent as? View
+        }
+        return true
     }
 
     private companion object {
