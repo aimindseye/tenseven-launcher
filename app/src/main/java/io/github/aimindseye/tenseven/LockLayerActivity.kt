@@ -38,7 +38,7 @@ class LockLayerActivity : ComponentActivity() {
         }
 
     /** Whether this is a preview from a settings screen (it closes itself rather than asking for the PIN). */
-    private val isPreview get() = intent?.hasExtra(EXTRA_RETURN_TO) == true
+    private val isPreview get() = lockPreviewReturnIntent(this, intent?.getStringExtra(EXTRA_RETURN_TO)) != null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,11 +81,9 @@ class LockLayerActivity : ComponentActivity() {
     /** A preview started from Setup or Launcher Settings goes back to that screen, not to Home. */
     override fun finish() {
         val back = intent?.getStringExtra(EXTRA_RETURN_TO)
-        if (back != null) {
-            intent?.removeExtra(EXTRA_RETURN_TO)
-            runCatching {
-                startActivity(Intent().setClassName(this, back).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-            }
+        intent?.removeExtra(EXTRA_RETURN_TO)
+        lockPreviewReturnIntent(this, back)?.let { destination ->
+            runCatching { startActivity(destination) }
         }
         super.finish()
     }

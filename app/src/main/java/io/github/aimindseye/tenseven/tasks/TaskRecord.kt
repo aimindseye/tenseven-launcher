@@ -6,6 +6,7 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 enum class TaskPriority { Low, Normal, High }
+
 enum class TaskRepeat { Never, Daily, Weekly, Monthly }
 
 /**
@@ -49,13 +50,42 @@ data class TaskRecord(
 
 /** Pure calendar-free, timezone-aware scheduling policy, not an OS exact-alarm guarantee. */
 object TaskReminderTimes {
-    fun tomorrowAt(hour: Int, minute: Int, zone: ZoneId, now: Instant): Instant =
-        now.atZone(zone).toLocalDate().plusDays(1).atTime(hour, minute).atZone(zone).toInstant()
+    fun tomorrowAt(
+        hour: Int,
+        minute: Int,
+        zone: ZoneId,
+        now: Instant,
+    ): Instant =
+        now
+            .atZone(zone)
+            .toLocalDate()
+            .plusDays(1)
+            .atTime(hour, minute)
+            .atZone(zone)
+            .toInstant()
 
-    fun eveningAt(hour: Int = 18, zone: ZoneId, now: Instant): Instant {
+    fun eveningAt(
+        hour: Int = 18,
+        zone: ZoneId,
+        now: Instant,
+    ): Instant {
         require(hour in 16..22)
         val local = ZonedDateTime.ofInstant(now, zone)
-        val today = local.toLocalDate().atTime(hour, 0).atZone(zone).toInstant()
-        return if (today > now) today else local.toLocalDate().plusDays(1).atTime(hour, 0).atZone(zone).toInstant()
+        val today =
+            local
+                .toLocalDate()
+                .atTime(hour, 0)
+                .atZone(zone)
+                .toInstant()
+        return if (today > now) {
+            today
+        } else {
+            local
+                .toLocalDate()
+                .plusDays(1)
+                .atTime(hour, 0)
+                .atZone(zone)
+                .toInstant()
+        }
     }
 }

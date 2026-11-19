@@ -42,6 +42,7 @@ enum class Bb7Panel(
 ) {
     Favorites("favorites"),
     All("all"),
+    Recent("recent_apps", fixedTitle = "Recent"),
     Downloads("downloads"),
 
     /** The apps opened most from Tenseven (English title: it is Tenseven's own, not an imported Sable panel). */
@@ -53,27 +54,49 @@ enum class Bb7Panel(
 
 /** Which panels the tray cycles through, in order; kept as their names. Frequent is off until the user adds it. */
 object Bb7Panels {
-    val DEFAULT: List<Bb7Panel> = listOf(Bb7Panel.Favorites, Bb7Panel.All, Bb7Panel.Downloads)
+    private const val RECENT_VERSION = "@bb7_recent_v1"
+    val DEFAULT: List<Bb7Panel> = listOf(Bb7Panel.Favorites, Bb7Panel.All, Bb7Panel.Recent, Bb7Panel.Downloads)
 
-    /** Reads the saved names; unknown names drop, the order is the panels' own, and none left means the default. */
+    /** Preserve explicitly saved order and disabled panels; discard only unknown/duplicate names. */
     fun normalize(names: Collection<String>?): List<Bb7Panel> {
         if (names == null) return DEFAULT
-        val chosen = Bb7Panel.entries.filter { panel -> names.any { it == panel.name } }
-        return chosen.ifEmpty { DEFAULT }
+        val byName = Bb7Panel.entries.associateBy { it.name }
+        return names.mapNotNull { byName[it] }.distinct().ifEmpty { DEFAULT }
     }
 
-    /** [panel] shown or hidden; the last panel cannot be hidden. */
+    /** The last visible panel cannot be hidden. Adding Recent never re-enables another panel. */
     fun toggle(
         current: List<Bb7Panel>,
         panel: Bb7Panel,
-    ): List<Bb7Panel> {
-        val next = if (panel in current) current - panel else (current + panel)
-        return if (next.isEmpty()) current else Bb7Panel.entries.filter { it in next }
+    ): List<Bb7Panel> =
+        when {
+            panel in current -> (current - panel).ifEmpty { current }
+            panel == Bb7Panel.Recent -> withRecent(current)
+            else -> current + panel
+        }
+
+    /** An unknown trailing marker remains harmless when an older Launcher reads the saved list. */
+    fun encode(panels: List<Bb7Panel>): String = (panels.map { it.name } + RECENT_VERSION).joinToString(",")
+
+    fun decode(text: String?): List<Bb7Panel> {
+        if (text == null) return DEFAULT
+        val names = text.split(',').map(String::trim)
+        val panels = normalize(names)
+        return if (RECENT_VERSION in names) panels else withRecent(panels)
     }
 
-    fun encode(panels: List<Bb7Panel>): String = panels.joinToString(",") { it.name }
-
-    fun decode(text: String?): List<Bb7Panel> = normalize(text?.split(',')?.map(String::trim))
+    private fun withRecent(panels: List<Bb7Panel>): List<Bb7Panel> {
+        if (Bb7Panel.Recent in panels) return panels
+        val downloads = panels.indexOf(Bb7Panel.Downloads)
+        val all = panels.indexOf(Bb7Panel.All)
+        val position =
+            when {
+                downloads >= 0 -> downloads
+                all >= 0 -> all + 1
+                else -> panels.size
+            }
+        return panels.toMutableList().apply { add(position, Bb7Panel.Recent) }
+    }
 }
 
 /** How see-through the BlackBerry 7 banner and tray are over the wallpaper: 0 (clear) to 3 (dark). */
@@ -110,14 +133,17 @@ object Bb7Home {
     /** Rows of icons the closed tray shows on the home screen; one more opens the whole panel. */
     const val MIN_HOME_ROWS = 1
     const val MAX_HOME_ROWS = 3
+
     /** Dedicated wallpaper-area shortcuts; never turn the desktop into a scrollable app drawer. */
     const val MAX_DESKTOP_SHORTCUTS = 8
 
-    fun desktopShortcuts(keys: List<String>): List<String> =
-        keys.distinct().take(MAX_DESKTOP_SHORTCUTS)
+    fun desktopShortcuts(keys: List<String>): List<String> = keys.distinct().take(MAX_DESKTOP_SHORTCUTS)
 
     /** Existing shortcuts are retained; reaching capacity does not overwrite the last icon. */
-    fun addDesktopShortcut(current: List<String>, key: String): List<String> {
+    fun addDesktopShortcut(
+        current: List<String>,
+        key: String,
+    ): List<String> {
         val limited = desktopShortcuts(current)
         return if (key in limited || limited.size >= MAX_DESKTOP_SHORTCUTS) limited else limited + key
     }
@@ -144,13 +170,25 @@ object Bb7Home {
     ): List<AppEntry> {
         val byName = apps.sortedBy { it.label.lowercase() }
         return when (panel) {
-            Bb7Panel.All -> byName
-            Bb7Panel.Frequent ->
+            Bb7Panel.All -> {
+                byName
+            }
+
+            Bb7Panel.Recent -> {
+                emptyList()
+            }
+
+            Bb7Panel.Frequent -> {
                 byName
                     .filter { usage.score(it.stableKey()) > 0 }
                     .sortedByDescending { usage.score(it.stableKey()) }
                     .take(FREQUENT_APPS)
-            Bb7Panel.Downloads -> byName.filter { it.canUninstall }
+            }
+
+            Bb7Panel.Downloads -> {
+                byName.filter { it.canUninstall }
+            }
+
             Bb7Panel.Favorites -> {
                 val byKey = apps.associateBy { it.stableKey() }
                 val chosen = favoriteKeys.orEmpty().mapNotNull { byKey[it] }
@@ -186,7 +224,14 @@ object Bb7Home {
         if (q.isEmpty()) return emptyList()
         val byName = apps.sortedBy { it.label.lowercase() }
         val starts = byName.filter { it.label.lowercase().startsWith(q) }
-        val word = byName.filter { it !in starts && it.label.lowercase().split(' ').any { w -> w.startsWith(q) } }
+        val word =
+            byName.filter {
+                it !in starts &&
+                    it.label
+                        .lowercase()
+                        .split(' ')
+                        .any { w -> w.startsWith(q) }
+            }
         val any = byName.filter { it !in starts && it !in word && q in it.label.lowercase() }
         return starts + word + any
     }

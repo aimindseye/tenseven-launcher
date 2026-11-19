@@ -80,9 +80,6 @@ internal fun ActiveFramesPage(
         if (shown(HomeLayout.WEATHER)) {
             DateHeader(
                 refreshGeneration,
-                snapshot.hubApps.filter { it.packageName in enabledApps }.sumOf { it.count },
-                onShowHub,
-                !strip,
                 if (dials.isEmpty()) onOpenSettings else null,
             )
             if (strip) HomeNotificationStrip(snapshot.hubApps, enabledApps, expanded, onShowHub, onOpenApp = onOpenNotificationApp)

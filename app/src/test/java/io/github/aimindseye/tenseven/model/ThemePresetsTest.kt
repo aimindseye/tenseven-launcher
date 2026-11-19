@@ -9,8 +9,20 @@ import org.junit.Test
 class ThemePresetsTest {
     @Test
     fun idsAreUniqueAndEveryThemeHasItsWallpaper() {
-        assertEquals(ThemePresets.ALL.size, ThemePresets.ALL.map { it.id }.toSet().size)
-        assertEquals(WallpaperSets.ALL.size, WallpaperSets.ALL.map { it.id }.toSet().size)
+        assertEquals(
+            ThemePresets.ALL.size,
+            ThemePresets.ALL
+                .map { it.id }
+                .toSet()
+                .size,
+        )
+        assertEquals(
+            WallpaperSets.ALL.size,
+            WallpaperSets.ALL
+                .map { it.id }
+                .toSet()
+                .size,
+        )
         ThemePresets.ALL.forEach { theme ->
             assertEquals(theme.wallpaperId, WallpaperSets.byId(theme.wallpaperId).id)
         }

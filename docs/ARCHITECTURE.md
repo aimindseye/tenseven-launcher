@@ -1,5 +1,7 @@
 # Architecture
 
+> **2.0 approved target, not yet implemented:** [ADR-0001](decisions/ADR-0001-MODULAR-COMPANION-APKS.md) commits to a Full-only Launcher APK plus independently installed optional companion APKs, with a Launcher-led installer and verified data migration. See [staged roadmap](2.0/MODULARIZATION_ROADMAP.md), [distribution spec](2.0/COMPANION_DISTRIBUTION.md) and [PR127 handoff](2.0/PR127_HANDOFF.md). The module layout and embedded extras described below are **the current codebase**, not the new destination. Keep the historical technical details for recovery until the corresponding extraction is complete.
+
 Current behavior: 1.0.0 preparation. Dated acceptance sections below retain historical context.
 
 ## Modules
@@ -28,7 +30,7 @@ Directory `app/src/main/java/io/github/aimindseye/tenseven` (packages renamed fr
 | `conversations/` | `io.github.aimindseye.tenseven.conversations` | Notification access: `ConversationListenerService` reads message and email notifications into `ConversationHub` (in memory only); feeds the Hub bar counts; ported from Mink, see `third_party/minklauncher/PORTING.md` |
 | `ui/` | `io.github.aimindseye.tenseven.ui` | Compose: `SableStartScreen` (BlackBerry 10 home, Hub, Command, All Apps), `Bb7HomeScreen` (BlackBerry 7 home, tray, menu), `SoundProfileButton`, `LineIcon` (Tabler-style line icons drawn from path data), glyphs and status rings |
 | `live/` | `io.github.aimindseye.tenseven.live` | Models for the live tiles (calendar, mail, media) |
-| `extras/` | `io.github.aimindseye.tenseven.extras` | Optional apps ported from SableOS: Calc Plus, Notes, Sound Profiles, ten games. Their manifest entries are disabled with their own task affinity; `ExtraAppsControl` switches them on. Each has its own palette and strings so it does not touch the launcher's |
+| `extras/` | `io.github.aimindseye.tenseven.extras` | Optional apps ported from SableOS: Calc Plus, Notes and Sound Profiles. Their manifest entries are disabled with their own task affinity; `ExtraAppsControl` switches them on. Each has its own palette and strings so it does not touch the launcher's |
 | (root) | `io.github.aimindseye.tenseven` | `SableStartActivity` (HOME, both layouts, the BlackBerry 10 detour), `HomeStyleActivity`, `LauncherSettingsActivity` and `SettingsSections` (the setting groups shared with Setup), `HubSettingsActivity`, `LockLayerActivity`, `BackupActivity`, `OnboardingActivity`, `LauncherTheme` |
 
 Tenseven-only files worth knowing: `model/GridColumns`, `model/HubApps`, `model/LockLayer`, `model/ThemePresets` (themes and `WallpaperSets`), `model/WidgetList`, `platform/WidgetHostController`, `platform/WallpaperArt`, `platform/LockLayerLauncher` and `LockLayerState`, `platform/RecentLaunchesRepository`, `ui/WidgetsPage`, `ui/HubPeek`, `model/Bb7Home` (panels, grid maths), `model/LauncherSettings` (icon sizes, which widgets can be switched), `model/HomeLayout` (`GlanceWidgets`), `model/RingerProfile` (sound-mode cycle), `platform/DefaultApps` (finds the phone's own dialer, messages, mail, camera, calendar, browser, gallery and music apps), `platform/SoundProfileControl`, `platform/NextAlarm`.
@@ -97,7 +99,7 @@ replaces the missing data.
 | Privacy row for work and private profile apps | `createContextAsUser` for that profile | `UserContexts.forUser` returns null; the row says "permissions · unavailable" | Accept; document |
 | Lock and unlock Private Space | `MODIFY_QUIET_MODE` | Android decides whether a non-system launcher may do it; the call is already wrapped, so a refusal leaves the space as it was | Mink Private Space port; test on Android 15+ |
 | Hub (messages, calls, contacts, notifications) | Sable Hub, Messages and Phone publish snapshot providers | Notification-based Hub (Mink conversations), in memory only | Done |
-| Watch (Sable Watch) | Sable Hub, Calendar and Weather providers, read by Sable Watch directly | `HubCountsProvider` (`io.github.aimindseye.tenseven.hubcounts/apps`): the Hub bar's per-app counts, no text, behind the signature permission `READ_HUB_COUNTS`, so only a same-key app reads it; nothing while notification access is off | Done |
+| Watch (Sable Watch) | Sable Hub, Calendar and Weather providers, read by Sable Watch directly | `HubCountsProvider` (`io.github.aimindseye.tenseven.hubcounts/apps`): the Hub bar's per-app counts, no text, behind the signature permission `READ_HUB_COUNTS`, so only a same-key app reads it; nothing while notification access is off | Implemented; production-signed Watch/Titan 2 acceptance pending |
 | Appearance (theme, accent) | Settings hosts `org.sableos.appearance` | Launcher's own preferences (Launcher Settings): `LauncherTheme` uses the saved choice when there is one and the Sable provider otherwise; `ThemePresets` and `WallpaperSets` are pure models | Done |
 | Lock layer | Not applicable (the phone's keyguard is Android's) | `LockLayerActivity` (show-when-locked cover, started on screen-on by the notification listener when the overlay permission is granted); it never replaces the keyguard and asks Android to dismiss it before opening anything | Written, not yet run on a phone |
 | Speed dial | Sable Phone provider and `org.sableos.permission.SPEED_DIAL` | Not available; letter shortcuts for apps still work | Launcher-owned letter-to-contact map |
@@ -268,3 +270,9 @@ and reconciliation policies; WidgetHostStore journals local pending setup/sizes 
 Android UI. WidgetHostController validates stage/id/provider/profile before committing,
 and WidgetAvailability clears hosted content outside resumed, unlocked Home.
 Physical target qualification is tracked separately in P3_DEVICE_QUALIFICATION.md.
+
+### L0 provider identity and qualification
+
+The production URI remains content://io.github.aimindseye.tenseven.hubcounts/apps, with separate signature READ_HUB_COUNTS and WRITE_HUB_COUNTS permissions. Manifest applicationId placeholders and runtime package-derived URIs keep the L0 debug URI at content://io.github.aimindseye.tenseven.debug.l0.hubcounts/apps. Debug permission names use the same isolated application ID. Debug never claims production's provider or signing identity; production-signed Sable Watch does not authenticate to a debug-signed core merely by package-name matching.
+
+Only package/count rows are returned. Notification access denial returns no cursor; insert/update/delete always reject writes. Count snapshots deduplicate observer notifications from Hub and lock-layer listeners; shutdown unregisters them. No Watch installation is required. Runtime signature enforcement and device behavior require Android instrumentation/owner acceptance; source integration is not device acceptance.

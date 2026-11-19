@@ -8,22 +8,43 @@ import io.github.aimindseye.tenseven.live.AppUnreadCount
  * into separate totals; other active sources remain individually addressable.
  */
 object HubSourceGroups {
-    data class AppSource(val packageName: String, val count: Int)
-    data class Summary(val messages: Int, val email: Int, val otherApps: List<AppSource>)
-
-    private val mailPackages = setOf(
-        "com.google.android.gm", "com.microsoft.office.outlook",
-        "com.yahoo.mobile.client.android.mail", "ch.protonmail.android",
-        "com.readdle.spark", "me.bluemail.mail",
+    data class AppSource(
+        val packageName: String,
+        val count: Int,
     )
+
+    data class Summary(
+        val messages: Int,
+        val email: Int,
+        val otherApps: List<AppSource>,
+    )
+
+    private val mailPackages =
+        setOf(
+            "com.google.android.gm",
+            "com.microsoft.office.outlook",
+            "com.yahoo.mobile.client.android.mail",
+            "ch.protonmail.android",
+            "com.readdle.spark",
+            "me.bluemail.mail",
+        )
+
     fun isKnownMailPackage(packageName: String): Boolean = packageName in mailPackages
 
-    private val messagePackages = setOf(
-        "com.google.android.apps.messaging", "com.whatsapp", "com.whatsapp.w4b",
-        "org.thoughtcrime.securesms", "org.telegram.messenger", "org.telegram.messenger.web",
-        "com.discord", "com.facebook.orca", "com.viber.voip",
-        "jp.naver.line.android", "com.skype.raider",
-    )
+    private val messagePackages =
+        setOf(
+            "com.google.android.apps.messaging",
+            "com.whatsapp",
+            "com.whatsapp.w4b",
+            "org.thoughtcrime.securesms",
+            "org.telegram.messenger",
+            "org.telegram.messenger.web",
+            "com.discord",
+            "com.facebook.orca",
+            "com.viber.voip",
+            "jp.naver.line.android",
+            "com.skype.raider",
+        )
 
     fun summarize(
         counts: List<AppUnreadCount>,
@@ -34,7 +55,8 @@ object HubSourceGroups {
         var messages = 0
         var email = 0
         val other = mutableListOf<AppSource>()
-        counts.asSequence()
+        counts
+            .asSequence()
             .filter { it.packageName in enabledPackages && it.packageName != HubBar.REDACTED && it.count > 0 }
             .groupBy { it.packageName }
             .forEach { (pkg, rows) ->
@@ -45,7 +67,10 @@ object HubSourceGroups {
                     else -> other += AppSource(pkg, count)
                 }
             }
-        return Summary(messages, email,
-            other.sortedWith(compareByDescending<AppSource> { it.count }.thenBy { it.packageName }))
+        return Summary(
+            messages,
+            email,
+            other.sortedWith(compareByDescending<AppSource> { it.count }.thenBy { it.packageName }),
+        )
     }
 }

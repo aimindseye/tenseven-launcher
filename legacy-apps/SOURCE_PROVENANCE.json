@@ -1,0 +1,267 @@
+[
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/calculator/MainActivity.kt",
+    "blob": "2c620d9a5cc5676a6715e94e9c1ee6ee91a49eb7",
+    "sha256": "9c74fb3435bf0d7fa40cb10d582d9828a0928d005cb3c7534126ac0eb1fc96df",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/calculator/MainActivity.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/convert/ConverterScreen.kt",
+    "blob": "81b930478c33a6e5ea8bf6692ac306a4d7cf1b96",
+    "sha256": "ccfd6855e1c3d2ecd9df6eb95cd84cede9adacd028586f361d857828d2ae4dc7",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/convert/ConverterScreen.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/MainActivity.kt",
+    "blob": "f6d178a35a2a3900518892bb7ee6047fadef9282",
+    "sha256": "58c5a9ac9b66618cfc759859b9c4e4d25bcf31bc55a2de15e8105c0f3005a471",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/notes/MainActivity.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/NotesController.kt",
+    "blob": "169ec17188fd0f1793986c3d8395f50553acb1a9",
+    "sha256": "ce332e3bf32be7d5e54b53da04b659a556aab5eaec16322a7526df6983a3cf5a",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/notes/NotesController.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/ui/EditorScreen.kt",
+    "blob": "6341c48141d61557368e6aa40755db5cce754f89",
+    "sha256": "6b90c7ffbc192482c359f3ce1e9ae3762452385ba71c1aba8593da9edfc22331",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/notes/ui/EditorScreen.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/ui/NotesApp.kt",
+    "blob": "5f06d308582d927a07c03d86d7491ce360dff1ef",
+    "sha256": "0611fd39d360ef37ef471ef7929f43f150225bfb3c9274bfc6e9b9bfd2b12412",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/notes/ui/NotesApp.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/ui/NotesUiState.kt",
+    "blob": "41535a4a603f8258b7108e5be1d7f1cef524f485",
+    "sha256": "3ad22568d9ea88a59a5d5994adf8808aab88bee7296d8d37e4d0737d311e4ead",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/notes/ui/NotesUiState.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/profiles/MainActivity.kt",
+    "blob": "6c2b52afa50c0082c44b38a57a86c03976899274",
+    "sha256": "fc7c98b292a5b52c379b936bbc1f0280f6a5101baa10e510e885c2c62da418d3",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/profiles/MainActivity.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/profiles/SoundProfileApplier.kt",
+    "blob": "0023f940a32354ade7213d8eddd8817dd4bf0eb2",
+    "sha256": "a94c59f4854d4f9ac73cf3c79ed1b61e7ff09d7e1e25b618770ef48a4a80a914",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/extras/profiles/SoundProfileApplier.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/tasks/TaskAlarmReceiver.kt",
+    "blob": "a452c9f3a5b402332486cf01b9aca53930469836",
+    "sha256": "061c329d127f114c5e8d207d383ae7eea7448a3453e3b4f9dcd1386de6e787a5",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/tasks/TaskAlarmReceiver.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/tasks/TasksActivity.kt",
+    "blob": "ee7b6ef5208162a4b391655fea83b94543ae553f",
+    "sha256": "20bc3e12096391cd89d359edef8a5fcceb959847a32580c712224d852b5125de",
+    "artifact": "preserved-legacy-source/src/main/java/io/github/aimindseye/tenseven/tasks/TasksActivity.kt"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/ExtraKeys.kt",
+    "blob": "eb9cce771a888c40576da6ceccdc43dadb4adc96",
+    "sha256": "a8a4de3cd6ccf19b6fc21c7e219a060e20ff430eb96088a50a9c5c8d8081937c",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/ExtraKeys.kt",
+    "candidate_sha256": "a8a4de3cd6ccf19b6fc21c7e219a060e20ff430eb96088a50a9c5c8d8081937c",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/calculator/CalculatorKeys.kt",
+    "blob": "5df1f49359f7a719d557b22dc92105abc2926394",
+    "sha256": "84f178db69926d5e6329871f70c12cde7b4a42e9968e97e32aa84321fda05920",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/calculator/CalculatorKeys.kt",
+    "candidate_sha256": "a9bbe92345eb726bbcc7dbdc351eb31e208321fc710a9480335cd3e8f0603631",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/calculator/CalculatorText.kt",
+    "blob": "16ecaf633897e5eb8a2cace340556e1bf07f9953",
+    "sha256": "669787cc2b8af5a7064f3f0998120e3401e393448c90c8ecc87e6c7dcb8aba0c",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/calculator/CalculatorText.kt",
+    "candidate_sha256": "8679ae0fa67535a79967e6524b45b97f6c0a8c568e8d33288533a4597e1b68b6",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/calculator/NativeBridge.kt",
+    "blob": "aa4d3753a5f364580569cbbddd5fe121eeb30823",
+    "sha256": "2f5a9382731841216462f4ae27b2a48687de50572d95acec0d54fe7d40ee6257",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/calculator/NativeBridge.kt",
+    "candidate_sha256": "6853fb8f9247660305003149c96057cc45344cfaf041b9e147d00ce31e2eb58a",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/convert/ConvertText.kt",
+    "blob": "900ffc75f9443fe70da900fa748c079680863378",
+    "sha256": "27c6d3013ac861b09e7e49980ca65e64601c71db11ff030f0a7ff831ccf4084f",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/convert/ConvertText.kt",
+    "candidate_sha256": "0317fc99fd5c56cf1d3c91bd5d10c0d8778739ef91d9ed356c59e226bd2778f0",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/convert/NativeBridge.kt",
+    "blob": "dbca7e65a26672e9ff999eebda5e72fddb8a5af2",
+    "sha256": "3512f5d79cc51fd00578818609a4925757e3e4e35c6d43c393577dc915cd9f64",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/convert/NativeBridge.kt",
+    "candidate_sha256": "115b85eb60d587c88459e233c3ec4abbd7d3260b6da8e61353c72460a5b34021",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/Checklist.kt",
+    "blob": "087bbe1756eeff76a0296d6159ee6f697f6031b0",
+    "sha256": "aa56fa33a953fa7423d00ecb58fa9c909bfbd20ce6208dff3916873df840c9d8",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/Checklist.kt",
+    "candidate_sha256": "ea78c3b25c0ac4d7dddb7b6ea47513560475f69079f2f7932ab6db9948e166b8",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/Note.kt",
+    "blob": "fa922af10d64d1d224bd3575250c5fe47a0d4f8d",
+    "sha256": "f1f2d8502a48699f67b9bca503d6f8b0995f525a20f163dce916a5f3757793e9",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/Note.kt",
+    "candidate_sha256": "dea1dfd4fa9dc017f2d16e9f58319d82ab77f859f22e787f50b46cc00a173cc0",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/NoteCodec.kt",
+    "blob": "60766b5489d6e8f84ce6fb3388d35d79be2b414a",
+    "sha256": "4b0441d72d5e47725442c6d8e3ba27a9141e3c3db26bd8c16dabc5080179ac64",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/NoteCodec.kt",
+    "candidate_sha256": "af4f1b98962420843e46a7d09c2769118ee25d8b3f4dbe25ca08b3e2aa88037b",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/NoteSearch.kt",
+    "blob": "796ac9637f58e45d28b8c1aa4db5583144b5d6e4",
+    "sha256": "1b9c3226dae9d4d6a445ad0fadb61d8106d38c1377d9630cbba45efc13e5ecb8",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/NoteSearch.kt",
+    "candidate_sha256": "db7ba058833c08d81ccedecceaf4d77816851d613732e96ed8f6bcf3ac3d7d18",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/NoteStore.kt",
+    "blob": "60cf4634fde4f3dd69d368643dee6b3ca57ae00c",
+    "sha256": "f391c98d787f0e6c2c9c6d03184f6d6de78b5f9fa74cf167fa87b47b10b58497",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/NoteStore.kt",
+    "candidate_sha256": "a172cf398c3afd9c4bf2a1d5dbaa45525897ef8b3b2dfad8f8d64d3b71e0e39c",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/NoteTime.kt",
+    "blob": "3d96ec9f8c4f9fee37f1ceb3bf7eea25d5adfbe8",
+    "sha256": "a26e6e8657b509839f5239bd0e318e387ee4f80ac6e75807993ae117dd89c0d0",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/NoteTime.kt",
+    "candidate_sha256": "232897574c9a0cfc32cd594d48d701eabae6a3b0122acfdd4bb71657ff6bc6b7",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/NotesKeys.kt",
+    "blob": "68aaf8a7b4b3e636e51a8dfd43b7380ecf2be5d2",
+    "sha256": "88292b72079660043d389c1e3de97ee0a4f75354aecb6b2f661638a930e02a95",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/NotesKeys.kt",
+    "candidate_sha256": "cd5e0e153372d7359c1f233ee216ff6adc35ab55caa24743464b114877a8a09a",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/NotesText.kt",
+    "blob": "27e42f6a70a2d6dbb23de2171f871379f71dfae0",
+    "sha256": "c5f199a01822df8d5cef4af6fc378900876457e3fd4482e68e049eb7eae6d61a",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/NotesText.kt",
+    "candidate_sha256": "f4136bd5c145103f4bb6080d4e8a9ece52779478bd771106944ef25f261994b1",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/notes/core/Tasks.kt",
+    "blob": "96ecc27b9f9f582c0025761c2184947e19aed2ae",
+    "sha256": "4f74b7048c89e27ccfa79802df9ca7f9d3b3c191b2d2f7b5453a8b2f046dc998",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/notes/core/Tasks.kt",
+    "candidate_sha256": "5b631b3570ee379693306a1777ac7ef8b55ad554c13f40e11b7fbe5e0c0d2707",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/profiles/core/ProfilesText.kt",
+    "blob": "fb4cbdb298eb8d6f70e0501a2952637d57df151b",
+    "sha256": "91b57d30a9d1f1d343a002cc3ed7e22f41a95f5e4a7d160d9c9806547949cc4d",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/profiles/core/ProfilesText.kt",
+    "candidate_sha256": "1911b148f53c991d82fa584ec60508b35b6c974d82103eb91edd9401b6fc1458",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/java/io/github/aimindseye/tenseven/extras/profiles/core/SoundProfiles.kt",
+    "blob": "4647d6f301db6240ccc5c81d160ad6b5924f9d16",
+    "sha256": "38bd77de255e0bbd31b8da54b372eab88b732ecb51b9c43cff10a8a64a3be15e",
+    "test_only": "app/src/test/java/io/github/aimindseye/tenseven/extras/profiles/core/SoundProfiles.kt",
+    "candidate_sha256": "1c0553da1aad443a0a04a318da01ab2053cca25948c37c303678d69402468508",
+    "candidate_scope": "Test-only compatibility; attribution wrapped and focused debt corrections; original Git blob remains the recovery source"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/res/drawable/ic_tenseven_tasks_background.xml",
+    "blob": "1cc09783bc6d38a1a954d66afb57b4de4745b647",
+    "sha256": "42e091f849a9948905b4e19c4de6038d2bb35ee27971c04a323e8d92f22aefbf",
+    "artifact": "preserved-legacy-source/resources/drawable/ic_tenseven_tasks_background.xml"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/res/drawable/ic_tenseven_tasks_foreground.xml",
+    "blob": "21babf3b10e5ac4f154057b91e8fd6cc9dc9cf37",
+    "sha256": "3ca6b8caf7ca54b432c7c5f195ac8c67aa6a2093de78e25ca1f6ce40394169a8",
+    "artifact": "preserved-legacy-source/resources/drawable/ic_tenseven_tasks_foreground.xml"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/res/drawable/ic_tenseven_tasks_monochrome.xml",
+    "blob": "f3a78df26011f87cb0aef4c6f0c14535ae6ba09a",
+    "sha256": "48d741dd3d9624e4d087b5814fadc3ade1867b64626b7e865dd40117514ecb3c",
+    "artifact": "preserved-legacy-source/resources/drawable/ic_tenseven_tasks_monochrome.xml"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/res/mipmap-anydpi/ic_tenseven_tasks.xml",
+    "blob": "06783746fb7c37ff51d423d6663a3f3e7dd70b58",
+    "sha256": "47f235a3270ab69b60571a2a95bc40adbe752bcc2bc2556c8ff131be590cdaea",
+    "artifact": "preserved-legacy-source/resources/mipmap-anydpi/ic_tenseven_tasks.xml"
+  },
+  {
+    "base": "09d331d9f9b278ba1bed1323056cf1504e456629",
+    "original": "app/src/main/res/mipmap-anydpi/ic_tenseven_tasks_round.xml",
+    "blob": "06783746fb7c37ff51d423d6663a3f3e7dd70b58",
+    "sha256": "47f235a3270ab69b60571a2a95bc40adbe752bcc2bc2556c8ff131be590cdaea",
+    "artifact": "preserved-legacy-source/resources/mipmap-anydpi/ic_tenseven_tasks_round.xml"
+  }
+]

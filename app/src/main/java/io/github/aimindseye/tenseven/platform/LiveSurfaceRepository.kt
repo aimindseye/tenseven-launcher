@@ -155,7 +155,11 @@ class LiveSurfaceRepository(
         runCatching {
             appContext.packageManager
                 .queryIntentActivities(
-                    android.content.Intent.makeMainSelectorActivity(android.content.Intent.ACTION_MAIN, DefaultApps.CALENDAR),
+                    android.content.Intent.makeMainSelectorActivity(
+                        android.content.Intent.ACTION_MAIN,
+                        DefaultApps
+                            .CALENDAR,
+                    ),
                     PackageManager.MATCH_ALL,
                 ).map { it.activityInfo.packageName }
                 .toSet()

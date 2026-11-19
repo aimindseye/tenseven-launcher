@@ -39,13 +39,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Android SDK 36
+      - name: Android SDK 36 and 37
         run: |
           set -euo pipefail
           sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           test -n "$sdkmanager"
           yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0'
+          "$sdkmanager" 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0'
 
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
@@ -54,7 +54,9 @@ jobs:
       - name: Build coverage and lint reports
         run: >-
           ./gradlew --no-daemon --console=plain --continue
-          :design:koverXmlReportDebug :app:koverXmlReportDebug :app:lintDebug
+          :design:koverXmlReportDebug :app:koverXmlReportDebug
+          :phone:koverXmlReportDebug :calendar:koverXmlReportDebug
+          :design:lintDebug :app:lintDebug :phone:lintDebug :calendar:lintDebug
 
       - name: Run SonarQube Cloud analysis
         uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
@@ -66,8 +68,8 @@ jobs:
           args: >
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
-            -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/kover/reportDebug.xml,design/build/reports/kover/reportDebug.xml
-            -Dsonar.androidLint.reportPaths=app/build/reports/lint-results-debug.xml
+            -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/kover/reportDebug.xml,design/build/reports/kover/reportDebug.xml,phone/build/reports/kover/reportDebug.xml,calendar/build/reports/kover/reportDebug.xml
+            -Dsonar.androidLint.reportPaths=app/build/reports/lint-results-debug.xml,design/build/reports/lint-results-debug.xml,phone/build/reports/lint-results-debug.xml,calendar/build/reports/lint-results-debug.xml
 
       - name: Report quality gate findings
         if: always()

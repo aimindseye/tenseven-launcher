@@ -51,7 +51,6 @@ import io.github.aimindseye.tenseven.iconpacks.IconPresentationState
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.AppGlyphs
 import io.github.aimindseye.tenseven.model.AppProfiles
-import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.IconPresentationPolicy
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.stableKey
@@ -109,20 +108,7 @@ internal fun AppRow(
                 }
             }
 
-            // Actions are also reachable with Menu / Fn+Enter; never touch-only.
-            TextButton(
-                onClick = onContext,
-                modifier =
-                    Modifier
-                        .heightIn(min = 48.dp)
-                        .semantics { contentDescription = t("actions_for", app.label) },
-            ) {
-                Text(
-                    text = "›",
-                    fontSize = 26.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            AppRowAction(app, onContext)
         }
         if (expanded) {
             PrivacyDetail(
@@ -130,6 +116,27 @@ internal fun AppRow(
                 modifier = Modifier.padding(start = 56.dp, bottom = 8.dp),
             )
         }
+    }
+}
+
+// All app-row actions are reachable with Menu / Fn+Enter; not touch-only.
+@Composable
+private fun AppRowAction(
+    app: AppEntry,
+    onContext: () -> Unit,
+) {
+    TextButton(
+        onClick = onContext,
+        modifier =
+            Modifier
+                .heightIn(min = 48.dp)
+                .semantics { contentDescription = t("actions_for", app.label) },
+    ) {
+        Text(
+            text = "›",
+            fontSize = 26.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -289,13 +296,14 @@ internal fun AppMark(
     val context = LocalContext.current
     IconPacks.init(context)
     IconPresentationState.init(context)
-    val iconPack = IconPacks.selected
     val iconStyle = IconPresentationState.selected
-    val isOwnExtra =
-        app.component.packageName == context.packageName &&
-            ExtraApps.byClassName(app.component.className) != null
+    // Explicit Original mode means original installed artwork, not a leftover external pack.
+    val iconPack =
+        IconPacks.selected.takeIf {
+            iconStyle == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
+        }
     val glyph =
-        if (IconPresentationPolicy.useGlyph(iconStyle, isOwnExtra, iconPack != null)) {
+        if (IconPresentationPolicy.useGlyph(iconStyle, iconPack != null)) {
             AppGlyphs.forComponent(app.component.packageName, app.component.className)
         } else {
             null
@@ -320,13 +328,22 @@ internal fun AppMark(
             }
         }
 
-    val loadedIcon = icon
+    AppMarkLoadedIcon(icon, app, size)
+}
+
+// Icon rendering is independent of the asynchronous loading state.
+@Composable
+private fun AppMarkLoadedIcon(
+    loadedIcon: LauncherIcon?,
+    app: AppEntry,
+    size: Int,
+) {
     when {
         loadedIcon == null -> {
             // Until the icon loads: the first letter in the glyph colours, no tile.
             Box(modifier = Modifier.size(size.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    text = appMark(app),
+                    text = appFallbackMark(app),
                     fontWeight = FontWeight.Bold,
                     fontSize = (size * 0.5f).sp,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -425,7 +442,7 @@ internal fun loadLauncherIcon(
         LauncherIcon(bitmap, monochrome = false)
     }.getOrNull()
 
-internal fun appMark(app: AppEntry): String =
+internal fun appFallbackMark(app: AppEntry): String =
     app.label
         .trim()
         .take(1)

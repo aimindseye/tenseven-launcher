@@ -23,22 +23,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.RingerIcon
+import io.github.aimindseye.tenseven.model.RingerProfile
 import io.github.aimindseye.tenseven.platform.SoundProfileControl
 
-/**
- * The speaker icon: shows Sound, Vibrate or Silent. A tap opens Sound Profiles when that extra is on, otherwise it
- * switches between Android's own modes; a long press is the quick switch (or, without the extra, Silent access).
- */
-@OptIn(ExperimentalFoundationApi::class)
+/** Native quick sound control; an installed independent companion supplies full preset management. */
 @Composable
-fun SoundProfileButton(modifier: Modifier = Modifier) {
+private fun rememberSoundProfile(): RingerProfile {
     val context = LocalContext.current
-    var profile by remember { mutableStateOf(SoundProfileControl.current(context)) }
-    // The profile also changes from the volume keys and Quick Settings, so follow the system.
-    DisposableEffect(context) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var profile by remember(context) { mutableStateOf(SoundProfileControl.current(context)) }
+    DisposableEffect(context, lifecycle) {
         val receiver =
             object : BroadcastReceiver() {
                 override fun onReceive(
@@ -48,7 +50,11 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
                     profile = SoundProfileControl.current(context)
                 }
             }
-        profile = SoundProfileControl.current(context)
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) profile = SoundProfileControl.current(context)
+            }
+        lifecycle.addObserver(observer)
         runCatching {
             ContextCompat.registerReceiver(
                 context,
@@ -57,8 +63,20 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
         }
-        onDispose { runCatching { context.unregisterReceiver(receiver) } }
+        onDispose {
+            lifecycle.removeObserver(observer)
+            runCatching { context.unregisterReceiver(receiver) }
+        }
     }
+    return profile
+}
+
+/** Tap opens an installed companion or cycles native modes. Hold switches quickly or opens Silent access. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun SoundProfileButton(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val profile = rememberSoundProfile()
     LineIcon(
         paths =
             when (profile.icon) {
@@ -70,15 +88,19 @@ fun SoundProfileButton(modifier: Modifier = Modifier) {
             modifier
                 .clip(RoundedCornerShape(8.dp))
                 .background(Color.Black.copy(alpha = 0.35f))
-                .semantics { contentDescription = profile.label }
+                .semantics {
+                    contentDescription = "Sound Profiles: ${profile.label}"
+                    stateDescription = profile.label
+                }.sableFocusRing()
                 .combinedClickable(
+                    onClickLabel = "Open installed Sound Profiles or switch sound mode",
+                    onLongClickLabel = "Quick sound switch or Silent access",
                     onClick = {
-                        // With the Sound Profiles extra on, the icon opens it; otherwise it uses Android's own modes.
-                        if (!SoundProfileControl.openProfiles(context)) profile = SoundProfileControl.cycle(context)
+                        if (!SoundProfileControl.openProfiles(context)) SoundProfileControl.cycle(context)
                     },
                     onLongClick = {
                         if (SoundProfileControl.profilesEnabled(context)) {
-                            profile = SoundProfileControl.cycle(context)
+                            SoundProfileControl.cycle(context)
                         } else {
                             SoundProfileControl.openSilentAccess(context)
                         }

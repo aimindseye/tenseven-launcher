@@ -19,9 +19,15 @@ class NotificationRecoveryController(
         val justGranted = permitted && !wasGranted
         wasGranted = permitted
         val currentGeneration = ++generation
-        val retry = NotificationReconnectPolicy.shouldRetry(
-            declared(), permitted, connected(), lastRequest, now(), justGranted,
-        )
+        val retry =
+            NotificationReconnectPolicy.shouldRetry(
+                declared(),
+                permitted,
+                connected(),
+                lastRequest,
+                now(),
+                justGranted,
+            )
         if (retry) requestRebind()
         if (declared() && !connected() && (retry || !permitted)) {
             for (delay in longArrayOf(1_000L, 3_000L, 10_000L)) {

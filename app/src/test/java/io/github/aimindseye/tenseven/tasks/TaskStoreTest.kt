@@ -14,19 +14,26 @@ class TaskStoreTest {
         val dir = Files.createTempDirectory("tenseven-tasks-").toFile()
         try {
             val store = TaskStore(dir)
-            val task = TaskRecord(
-                title = "Email the report", details = "Line one\nRésumé and Gujarati ગુજરાતી",
-                dueAtEpochMs = 1_900_000_000_000L, remindAtEpochMs = 1_899_999_000_000L,
-                priority = TaskPriority.High, tags = setOf("work", "home"),
-                zoneId = "America/New_York", updatedAtEpochMs = 16L,
-            )
+            val task =
+                TaskRecord(
+                    title = "Email the report",
+                    details = "Line one\nRésumé and Gujarati ગુજરાતી",
+                    dueAtEpochMs = 1_900_000_000_000L,
+                    remindAtEpochMs = 1_899_999_000_000L,
+                    priority = TaskPriority.High,
+                    tags = setOf("work", "home"),
+                    zoneId = "America/New_York",
+                    updatedAtEpochMs = 16L,
+                )
             store.save(task)
             assertEquals(listOf(task), store.list())
             store.save(task.copy(completed = true))
             assertTrue(store.list().single().completed)
             store.delete(task.id)
             assertTrue(store.list().isEmpty())
-        } finally { dir.deleteRecursively() }
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     @Test fun invalidAndCorruptRecordsAreIgnored() {
@@ -36,7 +43,9 @@ class TaskStoreTest {
             FileLikeCorrupt.write(dir, UUID.randomUUID().toString())
             assertTrue(store.list().isEmpty())
             assertTrue(runCatching { store.save(TaskRecord(title = "")) }.isFailure)
-        } finally { dir.deleteRecursively() }
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     @Test fun failedAtomicReplacementCleansTemporaryFileAndKeepsExistingData() {
@@ -48,7 +57,9 @@ class TaskStoreTest {
             assertTrue(runCatching { TaskStore(dir).save(task) }.isFailure)
             assertEquals("retain", existing.readText())
             assertTrue(dir.listFiles()!!.none { it.name.contains(".tmp-") })
-        } finally { dir.deleteRecursively() }
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     @Test fun reminderTimesUseLocalZoneAcrossDst() {
@@ -62,7 +73,10 @@ class TaskStoreTest {
     }
 
     private object FileLikeCorrupt {
-        fun write(dir: java.io.File, id: String) {
+        fun write(
+            dir: java.io.File,
+            id: String,
+        ) {
             java.io.File(dir, "$id.task").writeText("incorrect-format")
         }
     }

@@ -21,3 +21,6 @@ rootProject.name = "tenseven-launcher"
 
 include(":design")
 include(":app")
+
+include(":phone")
+include(":calendar")

@@ -1,5 +1,7 @@
 # TenSeven Launcher user guide
 
+> **Future 2.0 change:** Optional Phone, Calendar, Tasks/Remind, Notes, Calculator, Sound Profiles and Games Pack are planned as separately installed APKs with an installation wizard inside Launcher Setup and Settings. **They are still bundled in the current development APK**. This guide's existing install steps describe the current shipped experience, not a working multi-APK wizard. See [ADR-0001](decisions/ADR-0001-MODULAR-COMPANION-APKS.md) and [release/install specification](2.0/COMPANION_DISTRIBUTION.md).
+
 This branch documents the upcoming 2.0 changes. The installation download and screenshots
 below still refer to released version 1.0.0; they do not show the new navigation or action panels.
 

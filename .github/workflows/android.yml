@@ -9,6 +9,8 @@ on:
     paths:
       - 'app/**'
       - 'design/**'
+      - 'phone/**'
+      - 'calendar/**'
       - 'config/**'
       - 'gradle/**'
       - 'build.gradle.kts'
@@ -17,12 +19,17 @@ on:
       - '.editorconfig'
       - '.github/workflows/android.yml'
       - 'tools/verify-release-apks.sh'
+      - 'tools/deliverable_quality_gate.py'
+      - 'tools/tests/**'
+      - 'tools/quality_gate_*.py'
       - '!**/*.md'
   push:
     branches: [main]
     paths:
       - 'app/**'
       - 'design/**'
+      - 'phone/**'
+      - 'calendar/**'
       - 'config/**'
       - 'gradle/**'
       - 'build.gradle.kts'
@@ -31,6 +38,9 @@ on:
       - '.editorconfig'
       - '.github/workflows/android.yml'
       - 'tools/verify-release-apks.sh'
+      - 'tools/deliverable_quality_gate.py'
+      - 'tools/tests/**'
+      - 'tools/quality_gate_*.py'
       - '!**/*.md'
   workflow_dispatch:
 
@@ -50,17 +60,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: '17'
-      - name: Android SDK 36
+      - name: Android SDK 36 and 37
         run: |
           set -euo pipefail
           sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           test -n "$sdkmanager"
           yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0'
+          "$sdkmanager" 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: Build, test and check
         env:
@@ -68,10 +79,72 @@ jobs:
         # --continue reports every failing gate in one run.
         run: >-
           ./gradlew --no-daemon --console=plain --continue "-Ptenseven.strictQuality=$STRICT"
-          :design:testDebugUnitTest :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
-          :design:lintDebug :app:lintDebug
+          :design:testDebugUnitTest :app:testDebugUnitTest :phone:testDebugUnitTest :calendar:testDebugUnitTest
+          :app:assembleDebug :phone:assembleDebug :calendar:assembleDebug
+          :app:assembleRelease :phone:assembleRelease :calendar:assembleRelease
+          :app:assembleDebugAndroidTest :phone:compileDebugAndroidTestKotlin :calendar:compileDebugAndroidTestKotlin
+          :design:lintDebug :app:lintDebug :phone:lintDebug :calendar:lintDebug
           detekt ktlintCheck
           :design:koverXmlReportDebug :app:koverXmlReportDebug
+          :phone:koverXmlReportDebug :calendar:koverXmlReportDebug
+      - name: Qualify checker against genuine exact-parent reports
+        if: github.event_name == 'pull_request'
+        env:
+          QUALITY_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 -B - <<'PYCHECKER'
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+          workspace = Path(os.environ["GITHUB_WORKSPACE"])
+          sys.path.insert(0, str(workspace / "tools"))
+          from quality_gate_runtime import GitRepository
+          repo = GitRepository(workspace)
+          head = repo.resolve(os.environ["QUALITY_HEAD"])
+          if not repo.ancestor(head, repo.head()):
+              raise SystemExit("PR source is not in checkout ancestry")
+          parent = repo.parent(head)
+          if parent is None:
+              raise SystemExit("Source requires an exact parent")
+          root = Path(os.environ["RUNNER_TEMP"])
+          candidate = root / "tenseven-checker-source"
+          evidence = root / "tenseven-checker-exact-parent"
+          subprocess.run(["git", "worktree", "add", "--detach", str(candidate), head], check=True)
+          subprocess.run([
+              sys.executable, "-B", str(workspace / "tools/deliverable_quality_gate.py"),
+              "--repo", str(candidate), "--base-ref", parent, "--out", str(evidence),
+              "--approved-compose-policy",
+          ], check=True)
+          environment = dict(os.environ,
+              TENSEVEN_REAL_BASE=str(evidence / "baseline-source"),
+              TENSEVEN_REAL_CANDIDATE=str(candidate),
+              TENSEVEN_POLICY_REPO=str(workspace),
+          )
+          subprocess.run([
+              sys.executable, "-B", "-m", "unittest", "discover",
+              "-s", str(workspace / "tools/tests"), "-p", "test_deliverable_quality_gate.py", "-v",
+          ], cwd=workspace, env=environment, check=True)
+          exported = {name: environment[name] for name in (
+              "TENSEVEN_REAL_BASE", "TENSEVEN_REAL_CANDIDATE", "TENSEVEN_POLICY_REPO",
+          )}
+          if any("\n" in value or "\r" in value for value in exported.values()):
+              raise SystemExit("Invalid checker report/history environment path")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as stream:
+              for name, value in exported.items():
+                  stream.write(name + "=" + value + "\n")
+          PYCHECKER
+      - name: Enforce changed-file quality
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          BASE="$(git merge-base "origin/$BASE_BRANCH" HEAD)"
+          python3 -B -m unittest discover -s tools/tests -p 'test_deliverable_quality_gate.py' -v
+          python3 -B tools/deliverable_quality_gate.py \
+            --repo "$GITHUB_WORKSPACE" --base-ref "$BASE" \
+            --out "$RUNNER_TEMP/tenseven-deliverable-quality" --approved-compose-policy
       - name: Verify compiled Full APK manifest
         run: |
           bash tools/verify-release-apks.sh --ci-unsigned \
@@ -81,7 +154,7 @@ jobs:
           python3 - <<'PY'
           import os, xml.etree.ElementTree as ET
           lines = []
-          for module in ("design", "app"):
+          for module in ("design", "app", "phone", "calendar"):
               r = ET.parse(f"{module}/build/reports/kover/reportDebug.xml").getroot()
               c = next(x for x in r.findall("counter") if x.attrib.get("type") == "LINE")
               cov, mis = int(c.attrib["covered"]), int(c.attrib["missed"])
@@ -95,7 +168,10 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tenseven-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            phone/build/outputs/apk/debug/*.apk
+            calendar/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 14
       - name: Upload reports

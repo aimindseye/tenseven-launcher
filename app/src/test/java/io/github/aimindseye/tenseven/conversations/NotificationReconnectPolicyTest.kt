@@ -6,10 +6,15 @@ import org.junit.Test
 
 class NotificationReconnectPolicyTest {
     @Test fun grantedDisconnectedListenerCanRecoverImmediately() {
-        assertTrue(NotificationReconnectPolicy.shouldRetry(
-            declared = true, granted = true, connected = false,
-            lastAttemptMs = -1L, nowMs = 10_000L,
-        ))
+        assertTrue(
+            NotificationReconnectPolicy.shouldRetry(
+                declared = true,
+                granted = true,
+                connected = false,
+                lastAttemptMs = -1L,
+                nowMs = 10_000L,
+            ),
+        )
     }
 
     @Test fun neverRequestsListenerWithoutPermissionOrDeclaredService() {
@@ -19,14 +24,26 @@ class NotificationReconnectPolicyTest {
     }
 
     @Test fun aNewGrantBypassesAnEarlierRecoveryThrottle() {
-        assertTrue(NotificationReconnectPolicy.shouldRetry(
-            declared = true, granted = true, connected = false,
-            lastAttemptMs = 10_000L, nowMs = 10_100L, permissionJustGranted = true,
-        ))
-        assertFalse(NotificationReconnectPolicy.shouldRetry(
-            declared = true, granted = false, connected = false,
-            lastAttemptMs = 10_000L, nowMs = 10_100L, permissionJustGranted = true,
-        ))
+        assertTrue(
+            NotificationReconnectPolicy.shouldRetry(
+                declared = true,
+                granted = true,
+                connected = false,
+                lastAttemptMs = 10_000L,
+                nowMs = 10_100L,
+                permissionJustGranted = true,
+            ),
+        )
+        assertFalse(
+            NotificationReconnectPolicy.shouldRetry(
+                declared = true,
+                granted = false,
+                connected = false,
+                lastAttemptMs = 10_000L,
+                nowMs = 10_100L,
+                permissionJustGranted = true,
+            ),
+        )
     }
 
     @Test fun avoidsRepeatedBindingOnEveryHomeResume() {

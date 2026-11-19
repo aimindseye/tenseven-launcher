@@ -9,6 +9,10 @@ import android.os.Bundle
 import io.github.aimindseye.tenseven.model.ActiveFrame
 import io.github.aimindseye.tenseven.model.ActiveFrames
 
+/** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val RECENT_TASKS_REPOSITORY_FRAMES_MAX_12 = 12
+private const val RECENT_TASKS_REPOSITORY_SNAPSHOT_VALUE_512 = 512
+
 /** Android task bridge. Every privileged operation checks the same detected capabilities as the UI. */
 class RecentTasksRepository(
     context: Context,
@@ -43,7 +47,7 @@ class RecentTasksRepository(
             .filterNot {
                 it.packageName in excludedPackages + appContext.packageName || it.userId in hiddenUsers
             }.distinctBy { it.taskId }
-            .take(12)
+            .take(RECENT_TASKS_REPOSITORY_FRAMES_MAX_12)
     }
 
     // The task's last picture (low resolution first), or null when Android has none for it.
@@ -113,7 +117,9 @@ class RecentTasksRepository(
                 val hardware = Bitmap.wrapHardwareBuffer(it, colorSpace) ?: return@runCatching null
                 val software = hardware.copy(Bitmap.Config.ARGB_8888, false)
                 hardware.recycle()
-                if (software.width <= 512 && software.height <= 512) {
+                if (software.width <= RECENT_TASKS_REPOSITORY_SNAPSHOT_VALUE_512 &&
+                    software.height <= RECENT_TASKS_REPOSITORY_SNAPSHOT_VALUE_512
+                ) {
                     software
                 } else {
                     val scale = 512f / maxOf(software.width, software.height)

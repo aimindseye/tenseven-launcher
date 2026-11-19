@@ -16,13 +16,18 @@ object LockLayerState {
     private val listeners = CopyOnWriteArrayList<() -> Unit>()
 
     fun update(newCounts: Map<String, Int>) {
-        val changed = newCounts != counts
-        counts = newCounts
+        val snapshot = newCounts.toMap()
+        val changed = snapshot != counts
+        counts = snapshot
         if (changed) listeners.forEach { it() }
     }
 
     /** Called after the counts change, on the caller's thread. */
     fun addChangeListener(listener: () -> Unit) {
-        listeners += listener
+        listeners.addIfAbsent(listener)
+    }
+
+    fun removeChangeListener(listener: () -> Unit) {
+        listeners -= listener
     }
 }

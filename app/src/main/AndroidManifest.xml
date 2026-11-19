@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Optional Home weather; normal Internet permission, no GPS or location access. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Optional foreground approximate device location for Home weather. Never background or fine location. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <!-- Wallpaper-backed Home photo counts (optional; asked for when the user turns that on). -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission
@@ -23,8 +28,10 @@
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
          Tenseven under Settings, Usage access, and "appops set" is ignored. The user still grants it there. -->
-    <!-- Sound Profiles (an extra) sets tones, vibration and the light; the user allows it once under "Modify system settings". -->
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
+
+
+    <!-- Home's native Sound/Vibrate quick control; normal permission, not Do Not Disturb access. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Lets the user give Tenseven Do Not Disturb access, which Android requires before an app may pick Silent. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -49,7 +56,16 @@
       "unavailable"). Replacements built from public APIs are on the roadmap (docs/ARCHITECTURE.md).
     -->
 
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
     <queries>
+        <package android:name="io.github.aimindseye.tenseven.phone.debug" />
+        <package android:name="io.github.aimindseye.tenseven.calendar.debug" />
+        <package android:name="io.github.aimindseye.tenseven.tasks.debug" />
+        <package android:name="io.github.aimindseye.tenseven.notes.debug" />
+        <package android:name="io.github.aimindseye.tenseven.calculator.debug" />
+        <package android:name="io.github.aimindseye.tenseven.profiles.debug" />
+
         <intent><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -100,19 +116,23 @@
         <provider android:authorities="org.sableos.media.snapshot" />
         <provider android:authorities="org.sableos.dialer.speeddial" />
         <package android:name="org.sableos.messages" />
+        <!-- M2-A proposed companion identities: scoped discovery ONLY, not signer trust. -->
+        <package android:name="io.github.aimindseye.tenseven.phone" />
+        <package android:name="io.github.aimindseye.tenseven.calendar" />
+        <package android:name="io.github.aimindseye.tenseven.tasks" />
+        <package android:name="io.github.aimindseye.tenseven.notes" />
+        <package android:name="io.github.aimindseye.tenseven.calculator" />
+        <package android:name="io.github.aimindseye.tenseven.profiles" />
     </queries>
 
-    <!-- Lets a paired watch app read the Hub's unread counts (package and count, no message text) from
-         HubCountsProvider. Signature level: only apps signed with Tenseven's own key, such as Sable Watch, get it. -->
-    <permission
-        android:name="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS"
+    <!-- Counts only, same-signature readers. applicationId isolates debug installations. -->
+    <permission android:name="${applicationId}.permission.READ_HUB_COUNTS"
         android:protectionLevel="signature" />
-    <!-- The provider is read-only; writes are closed behind a separate permission that no app is meant to hold. -->
-    <permission
-        android:name="io.github.aimindseye.tenseven.permission.WRITE_HUB_COUNTS"
+    <permission android:name="${applicationId}.permission.WRITE_HUB_COUNTS"
         android:protectionLevel="signature" />
 
     <application
+        android:networkSecurityConfig="@xml/weather_network_security_config"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_tenseven"
@@ -122,28 +142,20 @@
         android:theme="@style/Theme.SableLauncher"
         android:usesCleartextTraffic="false">
 
-        <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
+        <!-- Optional D5 companions: disabled until the user enables them under Apps & Features.
+             Neither requests Android's default Phone role or changes in-call UI. -->
 
-        <!-- Remind scheduler is independent of the optional Notes and Tasks launcher icons. -->
-        <receiver android:name=".tasks.TaskAlarmReceiver" android:enabled="true" android:exported="false">
+        <receiver android:name=".platform.HubReminderAlarmReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
-        <activity android:name=".tasks.TasksActivity" android:exported="false"
-            android:taskAffinity="io.github.aimindseye.tenseven.tasks"
-            android:label="TenSeven Tasks" android:theme="@android:style/Theme.Material.NoActionBar" />
-        <activity-alias android:name=".tasks.TasksLauncherActivity"
-            android:targetActivity=".tasks.TasksActivity"
-            android:exported="true" android:enabled="false"
-            android:icon="@mipmap/ic_tenseven_tasks" android:label="TenSeven Tasks">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
+        <!-- M2-B: user-initiated companion selection only; no installer capability. -->
+        <activity android:name=".CompanionWizardActivity" android:exported="false" />
+        <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
+
         <activity
             android:name="io.github.aimindseye.tenseven.SableStartActivity"
             android:clearTaskOnLaunch="true"
@@ -208,12 +220,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Tenseven's own icon in All Apps (and what "Open" in app info starts): it opens Launcher Settings. -->
+        <!-- Tenseven's own icon in All Apps (and what "Open" in app info starts): it opens Home. -->
         <activity-alias
             android:name=".LauncherEntry"
             android:exported="true"
             android:label="@string/tenseven_app_name"
-            android:targetActivity=".LauncherSettingsActivity">
+            android:targetActivity=".SableStartActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -258,174 +270,6 @@
                 android:resource="@xml/lock_accessibility_service" />
         </service>
 
-        <!-- Extra apps ported from SableOS: Calculator (with a unit converter), Notes and ten games. Every one
-             ships switched off; Setup turns on the ones the user picks (platform/ExtraAppsControl). No permissions. -->
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.calculator.MainActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.calculator_MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Calc Plus"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.profiles.MainActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.profiles_MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Sound Profiles"
-            android:theme="@android:style/Theme.Material.NoActionBar"
-            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.notes.MainActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.notes_MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Notes"
-            android:theme="@android:style/Theme.Material.NoActionBar"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <!-- Text shared from another app becomes a new note. -->
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.SudokuActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_SudokuActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Sudoku"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.MinesweeperActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_MinesweeperActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Minesweeper"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.Game2048Activity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_Game2048Activity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="2048"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.BricksActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_BricksActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Bricks"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.SnakeActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_SnakeActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Snake"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.BlocksActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_BlocksActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Blocks"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.ReversiActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_ReversiActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Reversi"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.SolitaireActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_SolitaireActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Solitaire"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.MahjongActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_MahjongActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Mahjong"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name="io.github.aimindseye.tenseven.extras.games.WordsActivity"
-            android:taskAffinity="io.github.aimindseye.tenseven.extras.games_WordsActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:label="Words"
-            android:theme="@android:style/Theme.Material.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
         <!-- Backup and restore of launcher settings through the system file picker. -->
         <activity
             android:name=".BackupActivity"
@@ -433,8 +277,7 @@
             android:label="@string/backup_menu" />
 
         <!-- Notification access, optional and off until the user grants it: groups message and email
-             notifications into conversations for the Hub bar. In memory only, nothing is stored or sent; only the
-             per-app counts can be read, by a same-key watch app through HubCountsProvider. -->
+             notifications into conversations for the Hub bar. In memory only, nothing is stored or sent. -->
         <service
             android:name=".conversations.ConversationListenerService"
             android:exported="true"
@@ -449,13 +292,13 @@
         <service android:name=".platform.ScreenCaptureService" android:exported="false"
             android:foregroundServiceType="mediaProjection" />
         <activity android:name=".FrameIntegrationsActivity" android:exported="false" />
-        <!-- The Hub's unread counts for Sable Watch; see the READ_HUB_COUNTS permission above. Read-only:
-             insert, update and delete always throw, and writing also needs WRITE_HUB_COUNTS. -->
+
         <provider
             android:name=".platform.HubCountsProvider"
-            android:authorities="io.github.aimindseye.tenseven.hubcounts"
+            android:authorities="${applicationId}.hubcounts"
             android:exported="true"
-            android:readPermission="io.github.aimindseye.tenseven.permission.READ_HUB_COUNTS"
-            android:writePermission="io.github.aimindseye.tenseven.permission.WRITE_HUB_COUNTS" />
+            android:grantUriPermissions="false"
+            android:readPermission="${applicationId}.permission.READ_HUB_COUNTS"
+            android:writePermission="${applicationId}.permission.WRITE_HUB_COUNTS" />
     </application>
 </manifest>

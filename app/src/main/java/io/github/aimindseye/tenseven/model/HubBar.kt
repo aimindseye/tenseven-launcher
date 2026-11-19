@@ -1,7 +1,7 @@
 package io.github.aimindseye.tenseven.model
 
-import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.live.AppUnreadCount
+import io.github.aimindseye.tenseven.model.StartText.t
 
 /** Hub page tabs: "All · Messages · Calls · Contacts". */
 enum class HubFilter(

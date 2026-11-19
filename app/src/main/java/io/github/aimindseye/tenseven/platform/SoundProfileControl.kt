@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.provider.Settings
-import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.RINGER_NORMAL
 import io.github.aimindseye.tenseven.model.RingerProfile
 
@@ -39,17 +38,18 @@ object SoundProfileControl {
         }
     }
 
-    private val profilesApp get() = ExtraApps.ALL.first { it.id == "profiles" }
+    /** A launchable independent companion, regardless of retired bundled-app choices. */
+    fun profilesEnabled(context: Context): Boolean =
+        runCatching { CompanionLaunches.intent(context, "profiles") != null }.getOrDefault(false)
 
-    /** Whether the Sound Profiles extra is switched on (Setup, Extra apps). */
-    fun profilesEnabled(context: Context): Boolean = runCatching { ExtraAppsControl.isEnabled(context, profilesApp) }.getOrDefault(false)
-
-    /** Opens the Sound Profiles extra; false (and nothing opened) when it is off. */
+    /** User-initiated companion launch only; false when absent or no longer available. */
     fun openProfiles(context: Context): Boolean {
-        if (!profilesEnabled(context)) return false
-        return runCatching {
-            context.startActivity(Intent().setClassName(context.packageName, profilesApp.className).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            true
-        }.getOrDefault(false)
+        val target = runCatching { CompanionLaunches.intent(context, "profiles") }.getOrNull()
+        return target?.let { intent ->
+            runCatching {
+                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                true
+            }.getOrDefault(false)
+        } ?: false
     }
 }

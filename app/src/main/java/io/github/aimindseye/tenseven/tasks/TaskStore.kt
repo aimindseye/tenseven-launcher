@@ -9,9 +9,12 @@ import java.util.Properties
  * Transactional app-private task files. This does not change NoteCodec or migrate existing Notes.
  * The first revision deliberately excludes raw notification text and third-party PendingIntents.
  */
-class TaskStore(private val directory: File) {
+class TaskStore(
+    private val directory: File,
+) {
     fun list(): List<TaskRecord> =
-        directory.listFiles { file -> file.isFile && file.name.endsWith(SUFFIX) }
+        directory
+            .listFiles { file -> file.isFile && file.name.endsWith(SUFFIX) }
             .orEmpty()
             .mapNotNull { file ->
                 runCatching { decode(file.name.removeSuffix(SUFFIX), file.inputStream().use(::loadProperties)) }.getOrNull()
@@ -25,8 +28,12 @@ class TaskStore(private val directory: File) {
         temporary.outputStream().use { properties(task).store(it, "TenSeven Tasks v1") }
         try {
             try {
-                Files.move(temporary.toPath(), destination.toPath(), StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING)
+                Files.move(
+                    temporary.toPath(),
+                    destination.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
             } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
                 Files.move(temporary.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
             }
@@ -44,8 +51,12 @@ class TaskStore(private val directory: File) {
         return File(directory, "$id$SUFFIX")
     }
 
-    private fun decode(id: String, props: Properties): TaskRecord {
+    private fun decode(
+        id: String,
+        props: Properties,
+    ): TaskRecord {
         require(props.getProperty("format") == FORMAT && props.getProperty("version") == "1")
+
         fun optionalLong(key: String): Long? = props.getProperty(key)?.takeIf(String::isNotBlank)?.toLong()
         val tagsCount = props.getProperty("tags.count", "0").toInt()
         require(tagsCount in 0..24) { "Invalid tag count" }
@@ -67,28 +78,28 @@ class TaskStore(private val directory: File) {
         )
     }
 
-    private fun properties(task: TaskRecord) = Properties().apply {
-        setProperty("format", FORMAT)
-        setProperty("version", "1")
-        setProperty("title", task.title)
-        setProperty("details", task.details)
-        setProperty("completed", task.completed.toString())
-        setProperty("dueAt", task.dueAtEpochMs?.toString().orEmpty())
-        setProperty("remindAt", task.remindAtEpochMs?.toString().orEmpty())
-        setProperty("zone", task.zoneId)
-        setProperty("priority", task.priority.name)
-        setProperty("repeat", task.repeat.name)
-        setProperty("updatedAt", task.updatedAtEpochMs.toString())
-        setProperty("linkedNote", task.linkedNoteId.orEmpty())
-        setProperty("originPackage", task.originPackage.orEmpty())
-        setProperty("originToken", task.originToken.orEmpty())
-        val ordered = task.tags.sorted()
-        setProperty("tags.count", ordered.size.toString())
-        ordered.forEachIndexed { index, tag -> setProperty("tags.$index", tag) }
-    }
+    private fun properties(task: TaskRecord) =
+        Properties().apply {
+            setProperty("format", FORMAT)
+            setProperty("version", "1")
+            setProperty("title", task.title)
+            setProperty("details", task.details)
+            setProperty("completed", task.completed.toString())
+            setProperty("dueAt", task.dueAtEpochMs?.toString().orEmpty())
+            setProperty("remindAt", task.remindAtEpochMs?.toString().orEmpty())
+            setProperty("zone", task.zoneId)
+            setProperty("priority", task.priority.name)
+            setProperty("repeat", task.repeat.name)
+            setProperty("updatedAt", task.updatedAtEpochMs.toString())
+            setProperty("linkedNote", task.linkedNoteId.orEmpty())
+            setProperty("originPackage", task.originPackage.orEmpty())
+            setProperty("originToken", task.originToken.orEmpty())
+            val ordered = task.tags.sorted()
+            setProperty("tags.count", ordered.size.toString())
+            ordered.forEachIndexed { index, tag -> setProperty("tags.$index", tag) }
+        }
 
-    private fun loadProperties(stream: java.io.InputStream): Properties =
-        Properties().apply { load(stream) }
+    private fun loadProperties(stream: java.io.InputStream): Properties = Properties().apply { load(stream) }
 
     companion object {
         private const val FORMAT = "tenseven-task"

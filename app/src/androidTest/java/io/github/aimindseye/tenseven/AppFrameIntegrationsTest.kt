@@ -24,7 +24,8 @@ class AppFrameIntegrationsTest {
         val calc = context.getSharedPreferences("calculator_frame", Context.MODE_PRIVATE)
         val oldCalc = calc.getString("last_result", null)
         try {
-            notes.save(note); tasks.save(task)
+            notes.save(note)
+            tasks.save(task)
             calc.edit().putString("last_result", "2 + 3 = 5").commit()
             prefs.local = true
             val repository = AppFrameSummaryRepository(context)
@@ -35,7 +36,9 @@ class AppFrameIntegrationsTest {
             prefs.local = false
             assertFalse(repository.snapshot(now).any { it.key.startsWith("local:") })
         } finally {
-            notes.delete(note.id); tasks.delete(task.id); prefs.local = prior
+            notes.delete(note.id)
+            tasks.delete(task.id)
+            prefs.local = prior
             calc.edit().putString("last_result", oldCalc).commit()
         }
     }
@@ -45,16 +48,21 @@ class AppFrameIntegrationsTest {
         val prefs = context.getSharedPreferences("frame_integrations_device", Context.MODE_PRIVATE)
         val oldExcerpts = prefs.getBoolean("notification_excerpts", false)
         try {
-            prefs.edit().putString("document_word", "content://removed.example/word")
+            prefs
+                .edit()
+                .putString("document_word", "content://removed.example/word")
                 .putString("document_excel", "content://removed.example/excel")
                 .putString("document_powerpoint", "content://removed.example/powerpoint")
-                .putBoolean("notification_excerpts", true).commit()
+                .putBoolean("notification_excerpts", true)
+                .commit()
             val choices = FrameIntegrationPreferences(context)
             assertFalse(prefs.contains("document_word"))
             assertFalse(prefs.contains("document_excel"))
             assertFalse(prefs.contains("document_powerpoint"))
             assertTrue(choices.excerpts)
             FrameIntegrationPreferences(context) // migration is idempotent
-        } finally { prefs.edit().putBoolean("notification_excerpts", oldExcerpts).commit() }
+        } finally {
+            prefs.edit().putBoolean("notification_excerpts", oldExcerpts).commit()
+        }
     }
 }

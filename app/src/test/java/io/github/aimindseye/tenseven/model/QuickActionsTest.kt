@@ -28,7 +28,8 @@ class QuickActionsTest {
     }
 
     @Test
-    fun preservesExplicitWebUrl() = assertEquals("https://google.com/path?q=mink", QuickActions.normalizedWebUrl("https://google.com/path?q=mink"))
+    fun preservesExplicitWebUrl() =
+        assertEquals("https://google.com/path?q=mink", QuickActions.normalizedWebUrl("https://google.com/path?q=mink"))
 
     @Test
     fun upgradesWwwAndBareDomainsToHttps() {

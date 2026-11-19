@@ -2,7 +2,7 @@ name: P2 quality ratchet
 on:
   pull_request:
     branches: [main]
-    paths: ['app/**', 'design/**', 'tools/quality_ratchet.py', 'tests/test_quality_ratchet.py', '.github/workflows/p2-quality.yml']
+    paths: ['app/**', 'design/**', 'phone/**', 'calendar/**', 'tools/quality_ratchet.py', 'tests/test_quality_ratchet.py', '.github/workflows/p2-quality.yml']
 permissions:
   contents: read
 concurrency:
@@ -22,15 +22,15 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
-      - name: Android SDK 36
+      - name: Android SDK 36 and 37
         run: |
           sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
           yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0'
+          "$sdkmanager" 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Formatting evidence for changed Kotlin sources
         run: |
           git diff --name-only 6036d24e2ceafc1af0b780e657a6b068d49b91f4 HEAD -- '*.kt' '*.kts' > /tmp/p2-format-paths
-          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false ktlintFormat
+          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false --rerun-tasks --no-build-cache ktlintFormat
           python3 - <<'PY'
           import base64, pathlib, subprocess
           paths = pathlib.Path('/tmp/p2-format-paths').read_text().splitlines()
@@ -48,7 +48,7 @@ jobs:
         run: |
           git worktree add --detach /tmp/tenseven-quality-base 6036d24e2ceafc1af0b780e657a6b068d49b91f4
           cd /tmp/tenseven-quality-base
-          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false ktlintFormat
+          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false --rerun-tasks --no-build-cache ktlintFormat
           python3 - <<'PYBASE'
           from pathlib import Path
           import subprocess
@@ -60,6 +60,6 @@ jobs:
           ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false :app:lintDebug :design:lintDebug detekt ktlintCheck
       - name: Current reports and enforcement
         run: |
-          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false :app:lintDebug :design:lintDebug detekt ktlintCheck
+          ./gradlew --no-daemon --console=plain -Ptenseven.strictQuality=false :app:lintDebug :design:lintDebug :phone:lintDebug :calendar:lintDebug detekt ktlintCheck
           python3 tools/quality_ratchet.py /tmp/tenseven-quality-base "$GITHUB_WORKSPACE"
           python3 tests/test_quality_ratchet.py

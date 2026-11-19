@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.design
 
-import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,6 +50,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.design.DesignText.t
+import android.view.KeyEvent as AndroidKeyEvent
 
 /*
  * Compose building blocks for DESIGN-KF-D part 2. The decisions live in the
@@ -118,12 +118,15 @@ fun SableAdaptiveTopNav(
                     metrics = metrics,
                     availableWidthDp = availableDp,
                 ) { label ->
-                    with(density) { measurer.measure(label, style, maxLines = 1).size.width.toDp().value }
+                    with(density) {
+                        measurer
+                            .measure(label, style, maxLines = 1)
+                            .size.width
+                            .toDp()
+                            .value
+                    }
                 }
             }
-        var moreOpen by remember { mutableStateOf(false) }
-        val overflowSelected = layout.overflow.any { it.id == selectedId }
-
         Row(modifier = Modifier.fillMaxWidth()) {
             layout.visible.forEach { destination ->
                 SableNavTab(
@@ -135,37 +138,49 @@ fun SableAdaptiveTopNav(
                 )
             }
             if (layout.hasOverflow) {
-                Box(modifier = Modifier.weight(1f)) {
-                    SableNavTab(
-                        label = SableNavigationPolicy.MORE_LABEL,
-                        selected = overflowSelected,
-                        accent = accent,
-                        description =
-                            t("sable_more_destinations", layout.overflow.joinToString(", ") { it.label }),
-                        onClick = { moreOpen = true },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
-                        layout.overflow.forEach { destination ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = destination.label,
-                                        color = if (destination.id == selectedId) accent else Color.Unspecified,
-                                    )
-                                },
-                                onClick = {
-                                    moreOpen = false
-                                    onSelect(destination.id)
-                                },
-                            )
-                        }
-                    }
-                }
+                sableOverflowNavigation(
+                    layout.overflow,
+                    selectedId,
+                    accent,
+                    onSelect,
+                    Modifier.weight(1f),
+                )
             }
         }
     }
 }
+
+private val sableOverflowNavigation:
+    @Composable (List<SableDestination>, String?, Color, (String) -> Unit, Modifier) -> Unit =
+    { destinations, selectedId, accent, onSelect, modifier ->
+        var moreOpen by remember { mutableStateOf(false) }
+        Box(modifier = modifier) {
+            SableNavTab(
+                label = SableNavigationPolicy.MORE_LABEL,
+                selected = destinations.any { it.id == selectedId },
+                accent = accent,
+                description = t("sable_more_destinations", destinations.joinToString(", ") { it.label }),
+                onClick = { moreOpen = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
+                destinations.forEach { destination ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = destination.label,
+                                color = if (destination.id == selectedId) accent else Color.Unspecified,
+                            )
+                        },
+                        onClick = {
+                            moreOpen = false
+                            onSelect(destination.id)
+                        },
+                    )
+                }
+            }
+        }
+    }
 
 @Composable
 private fun SableNavTab(

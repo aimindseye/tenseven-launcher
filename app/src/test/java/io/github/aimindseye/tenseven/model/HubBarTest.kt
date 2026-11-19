@@ -1,10 +1,10 @@
 package io.github.aimindseye.tenseven.model
 
+import io.github.aimindseye.tenseven.live.AppUnreadCount
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import io.github.aimindseye.tenseven.live.AppUnreadCount
 
 /** The Hub page's unread bar (Ripe/BB7 style) and its tabs. */
 class HubBarTest {
@@ -85,7 +85,13 @@ class HubBarTest {
 
     @Test
     fun theDefaultMessagesPhoneAndContactsAppsOpenTheirTabs() {
-        fun target(pkg: String) = HubBar.target(pkg, messages = "com.google.android.apps.messaging", dialer = "com.google.android.dialer", contacts = "com.google.android.contacts")
+        fun target(pkg: String) =
+            HubBar.target(
+                pkg,
+                messages = "com.google.android.apps.messaging",
+                dialer = "com.google.android.dialer",
+                contacts = "com.google.android.contacts",
+            )
         assertEquals(HubBar.Target.Tab(HubFilter.Messages), target("com.google.android.apps.messaging"))
         assertEquals(HubBar.Target.Tab(HubFilter.Calls), target("com.google.android.dialer"))
         assertEquals(HubBar.Target.Tab(HubFilter.Contacts), target("com.google.android.contacts"))

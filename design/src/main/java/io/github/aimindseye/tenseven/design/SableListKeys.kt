@@ -10,9 +10,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import io.github.aimindseye.tenseven.design.DesignText.t
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import io.github.aimindseye.tenseven.design.DesignText.t
 
 /** BlackBerry single-key list movement: T top, B bottom, Space page down, Shift+Space page up, N next, P previous. */
 enum class SableListMove { Top, Bottom, PageDown, PageUp, Next, Previous }

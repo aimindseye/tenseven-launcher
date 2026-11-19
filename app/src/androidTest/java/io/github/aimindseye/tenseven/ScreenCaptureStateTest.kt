@@ -21,6 +21,9 @@ class ScreenCaptureStateTest {
             assertNull(ScreenCaptureState.state.value.bitmap)
             ScreenCaptureState.stopped(error = true)
             assertTrue(ScreenCaptureState.state.value.error)
-        } finally { ScreenCaptureState.stopped(); bitmap.recycle() }
+        } finally {
+            ScreenCaptureState.stopped()
+            bitmap.recycle()
+        }
     }
 }

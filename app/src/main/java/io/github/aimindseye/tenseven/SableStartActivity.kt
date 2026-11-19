@@ -14,9 +14,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import io.github.aimindseye.tenseven.design.DesignText
+import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.applySableSystemBars
 import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
 import io.github.aimindseye.tenseven.design.writeGlobalSableAppearance
@@ -124,176 +126,222 @@ class SableStartActivity : ComponentActivity() {
             }
         }
 
-        setContent {
-            val appearance = rememberLauncherAppearance()
+        setContent { HomeContent() }
+    }
 
-            SideEffect {
-                applySableSystemBars(
-                    window = window,
-                    darkTheme =
-                        resolveSableDarkAppearance(
-                            context = this@SableStartActivity,
-                            appearance = appearance,
-                        ),
-                )
-            }
+    @Composable
+    private fun HomeContent() {
+        val appearance = rememberLauncherAppearance()
 
-            val bb7 = screen.homeStyle.value == HomeStyle.Bb7 && !screen.bb10Detour.value
-            SideEffect { showWallpaper(bb7 || screen.homeWallpaper.value) }
-            if (bb7) {
-                Bb7HomeScreen(
-                    apps = screen.appsState.value,
-                    favoriteKeys = screen.bb7Favorites.value,
-                    homeRows = screen.bb7HomeRows.intValue,
-                    liveSurfaceRepository = liveSurfaceRepository,
-                    appearance = appearance,
-                    refreshGeneration = screen.liveRefreshGeneration.intValue,
-                    homeGeneration = screen.homeGeneration.intValue,
-                    onLaunchApp = { entry -> launcherAppsRepository.launch(entry) },
-                    onOpenAppInfo = { entry -> launcherAppsRepository.openAppDetails(entry) },
-                    onOpenHub = {
-                        screen.hubRequestFilter.value = null
-                        screen.hubGeneration.intValue += 1
-                        startBb10Detour(returnOnHome = true)
-                    },
-                    onFavoritesChanged = { keys ->
-                        screen.bb7Favorites.value = keys
-                        startStateRepository.saveHomeApps(keys)
-                    },
-                    onHomeRowsChanged = { rows ->
-                        screen.bb7HomeRows.intValue = rows
-                        startStateRepository.saveBb7HomeRows(rows)
-                    },
-                    desktopKeys = screen.bb7Desktop.value,
-                    onDesktopChanged = { keys ->
-                        screen.bb7Desktop.value = keys
-                        startStateRepository.saveBb7Desktop(keys)
-                    },
-                    onOpenMenu = ::showBb7Menu,
-                    onOpenCommand = ::openCommandFromBb7,
-                    iconSize = screen.bb7IconSize.value,
-                    gridColumns = screen.gridColumns.intValue,
-                    showLabels = screen.gridLabels.value,
-                    widgets = screen.homeWidgets.value,
-                    onDoubleTapEmpty = doubleTapLockCallback(),
-                    panels = screen.bb7Panels.value,
-                    scrimLevel = screen.bb7Scrim.intValue,
-                    onPanelsChanged = { panels ->
-                        screen.bb7Panels.value = panels
-                        startStateRepository.saveBb7Panels(panels)
-                    },
-                    onScrimChanged = { level ->
-                        screen.bb7Scrim.intValue = level
-                        startStateRepository.saveBb7Scrim(level)
-                    },
-                    onOpenWallpaper = {
-                        runCatching {
-                            startActivity(
-                                Intent.createChooser(Intent(Intent.ACTION_SET_WALLPAPER), getString(R.string.bb7_wallpaper)),
-                            )
-                        }
-                    },
-                )
-                return@setContent
-            }
+        SideEffect {
+            applySableSystemBars(
+                window = window,
+                darkTheme =
+                    resolveSableDarkAppearance(
+                        context = this@SableStartActivity,
+                        appearance = appearance,
+                    ),
+            )
+        }
 
+        val bb7 = screen.homeStyle.value == HomeStyle.Bb7 && !screen.bb10Detour.value
+        SideEffect { showWallpaper(screen.homeWallpaper.value) }
+        if (bb7) {
+            Bb7Content(appearance)
+        } else {
             val request = screen.startRequest.value
             key(request.serial, screen.widgetsPageEnabled.value) {
-                SableStartScreen(
-                    apps = screen.appsState.value,
-                    speedDial = speedDialRepository,
-                    letterShortcuts = letterShortcutRepository,
-                    privateSpaceLocked = screen.privateSpaceLockedState.value,
-                    onTogglePrivateSpace = ::togglePrivateSpace,
-                    workProfilePaused = screen.workPausedState.value,
-                    onDoubleTapEmpty = doubleTapLockCallback(),
-                    onToggleWorkProfile = ::toggleWorkProfile,
-                    liveSurfaceRepository = liveSurfaceRepository,
-                    appearance = appearance,
-                    refreshGeneration = screen.liveRefreshGeneration.intValue,
-                    homeGeneration = screen.homeGeneration.intValue,
-                    backGeneration = screen.backGeneration.intValue,
-                    initialScreen = request.screen,
-                    blankHomePage = screen.homeStyle.value == HomeStyle.Bb7,
-                    onBackToHomePage = {
-                        // Back from the Hub to a BlackBerry 7 home: show it now instead of after the slide.
-                        if (screen.bb10Detour.value && screen.bb7Detour.endsAt(false)) endBb10Detour()
-                    },
-                    onCanNavigateBackChanged = { value ->
-                        screen.canNavigateBack = value
-                        screen.bb7Detour = screen.bb7Detour.onCanNavigateBack(value)
-                        if (screen.bb10Detour.value && screen.bb7Detour.endsAt(value)) endBb10Detour()
-                    },
-                    initialStartTileKeys = startStateRepository.loadStartTileKeys(),
-                    initialHomeApps = startStateRepository.loadHomeApps(),
-                    initialGridOrder = startStateRepository.loadGridOrder(),
-                    onGridOrderChanged = startStateRepository::saveGridOrder,
-                    initialQuickBar = startStateRepository.loadQuickBar(),
-                    onQuickBarChanged = startStateRepository::saveQuickBar,
-                    initialGlanceWidgets = startStateRepository.loadGlanceWidgets(),
-                    typeToSearch = screen.typeToSearch.value,
-                    widgetsPage = screen.widgetsPageEnabled.value,
-                    widgetsController = widgetController,
-                    widgetIds = screen.widgetIds.value,
-                    homeWidgetIds = screen.homeWidgetIds.value,
-                    wallpaperBehind = screen.homeWallpaper.value,
-                    widgetsGeneration = screen.widgetsGeneration.intValue,
-                    showIconLabels = screen.gridLabels.value,
-                    gridColumnsSetting = screen.gridColumns.intValue,
-                    gridIconSize = screen.bb7IconSize.value,
-                    onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
-                    initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
-                    onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
-                    framesState = activeFrames.state.value,
-                    frameSnapshot = activeFrames::snapshot,
-                    onResumeFrame = activeFrames.coordinator::open,
-                    onCloseFrame = activeFrames.coordinator::close,
-                    onAllowUsageAccess = {
-                        runCatching {
-                            startActivity(
-                                Intent(this@SableStartActivity, OnboardingActivity::class.java)
-                                    .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.USAGE.name),
-                            )
-                        }
-                    },
-                    onAppearanceChanged = { next ->
-                        startStateRepository.saveAppearance(next.mode.stableValue, next.accent.stableValue)
-                        writeGlobalSableAppearance(this@SableStartActivity, next)
-                    },
-                    onResetAppearance = {
-                        startStateRepository.saveAppearance(null, null)
-                        writeGlobalSableAppearance(
-                            this@SableStartActivity,
-                            io.github.aimindseye.tenseven.design
-                                .SableAppearance(),
-                        )
-                    },
-                    onLaunchApp = { entry ->
-                        launcherAppsRepository.launch(entry)
-                    },
-                    onOpenSystemSettings = ::openSystemSettings,
-                    onStartIntent = { intent ->
-                        runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                    },
-                    onOpenAppInfo = { entry ->
-                        launcherAppsRepository.openAppDetails(entry)
-                    },
-                    onOpenNotificationSettings = { entry ->
-                        launcherAppsRepository.openNotificationSettings(entry)
-                    },
-                    onUninstallApp = { entry ->
-                        launcherAppsRepository.requestUninstall(entry)
-                    },
-                    onRequestLivePermissions = ::requestLivePermissions,
-                    onRefreshLive = {
-                        screen.liveRefreshGeneration.intValue += 1
-                    },
-                    hubGeneration = screen.hubGeneration.intValue,
-                    hubRequestFilter = screen.hubRequestFilter.value,
-                    onRequestContactsPermission = ::requestContactsPermission,
-                )
+                Bb10Content(appearance, request)
             }
         }
+    }
+
+    @Composable
+    private fun Bb7Content(appearance: SableAppearance) {
+        Bb7HomeScreen(
+            apps = screen.appsState.value,
+            favoriteKeys = screen.bb7Favorites.value,
+            homeRows = screen.bb7HomeRows.intValue,
+            liveSurfaceRepository = liveSurfaceRepository,
+            appearance = appearance,
+            refreshGeneration = screen.liveRefreshGeneration.intValue,
+            homeGeneration = screen.homeGeneration.intValue,
+            onLaunchApp = ::launchBb7App,
+            onOpenAppInfo = { entry -> launcherAppsRepository.openAppDetails(entry) },
+            onOpenHub = ::openHubFromBb7,
+            onFavoritesChanged = ::saveBb7Favorites,
+            onHomeRowsChanged = ::saveBb7Rows,
+            desktopKeys = screen.bb7Desktop.value,
+            onDesktopChanged = ::saveBb7Desktop,
+            onOpenMenu = ::showBb7Menu,
+            onOpenCommand = ::openCommandFromBb7,
+            iconSize = screen.bb7IconSize.value,
+            gridColumns = screen.gridColumns.intValue,
+            showLabels = screen.gridLabels.value,
+            widgets = screen.homeWidgets.value,
+            onDoubleTapEmpty = doubleTapLockCallback(),
+            panels = screen.bb7Panels.value,
+            scrimLevel = screen.bb7Scrim.intValue,
+            onPanelsChanged = ::saveBb7Panels,
+            onScrimChanged = ::saveBb7Scrim,
+            onOpenWallpaper = ::openWallpaperPicker,
+        )
+    }
+
+    @Composable
+    private fun Bb10Content(
+        appearance: SableAppearance,
+        request: io.github.aimindseye.tenseven.runtime.LauncherRequest,
+    ) {
+        SableStartScreen(
+            apps = screen.appsState.value,
+            speedDial = speedDialRepository,
+            letterShortcuts = letterShortcutRepository,
+            privateSpaceLocked = screen.privateSpaceLockedState.value,
+            onTogglePrivateSpace = ::togglePrivateSpace,
+            workProfilePaused = screen.workPausedState.value,
+            onDoubleTapEmpty = doubleTapLockCallback(),
+            onToggleWorkProfile = ::toggleWorkProfile,
+            liveSurfaceRepository = liveSurfaceRepository,
+            appearance = appearance,
+            refreshGeneration = screen.liveRefreshGeneration.intValue,
+            homeGeneration = screen.homeGeneration.intValue,
+            backGeneration = screen.backGeneration.intValue,
+            initialScreen = request.screen,
+            blankHomePage = screen.homeStyle.value == HomeStyle.Bb7,
+            onBackToHomePage = ::backToBb7,
+            onCanNavigateBackChanged = ::canNavigateBackChanged,
+            initialStartTileKeys = startStateRepository.loadStartTileKeys(),
+            initialHomeApps = startStateRepository.loadHomeApps(),
+            initialGridOrder = startStateRepository.loadGridOrder(),
+            onGridOrderChanged = startStateRepository::saveGridOrder,
+            initialQuickBar = startStateRepository.loadQuickBar(),
+            onQuickBarChanged = startStateRepository::saveQuickBar,
+            initialGlanceWidgets = startStateRepository.loadGlanceWidgets(),
+            typeToSearch = screen.typeToSearch.value,
+            widgetsPage = screen.widgetsPageEnabled.value,
+            widgetsController = widgetController,
+            widgetIds = screen.widgetIds.value,
+            homeWidgetIds = screen.homeWidgetIds.value,
+            wallpaperBehind = screen.homeWallpaper.value,
+            widgetsGeneration = screen.widgetsGeneration.intValue,
+            showIconLabels = screen.gridLabels.value,
+            gridColumnsSetting = screen.gridColumns.intValue,
+            gridIconSize = screen.bb7IconSize.value,
+            onGlanceWidgetsChanged = startStateRepository::saveGlanceWidgets,
+            initialHiddenHomeSections = startStateRepository.loadHiddenHomeSections(),
+            onHiddenHomeSectionsChanged = startStateRepository::saveHiddenHomeSections,
+            framesState = activeFrames.state.value,
+            frameSnapshot = activeFrames::snapshot,
+            onResumeFrame = activeFrames.coordinator::open,
+            onCloseFrame = activeFrames.coordinator::close,
+            onAllowUsageAccess = ::openUsageSetup,
+            onAppearanceChanged = ::saveHomeAppearance,
+            onResetAppearance = ::resetHomeAppearance,
+            onLaunchApp = launcherAppsRepository::launch,
+            onOpenSystemSettings = ::openSystemSettings,
+            onStartIntent = ::startHomeIntent,
+            onOpenAppInfo = launcherAppsRepository::openAppDetails,
+            onOpenNotificationSettings = launcherAppsRepository::openNotificationSettings,
+            onUninstallApp = launcherAppsRepository::requestUninstall,
+            onRequestLivePermissions = ::requestLivePermissions,
+            onRefreshLive = ::refreshLive,
+            hubGeneration = screen.hubGeneration.intValue,
+            hubRequestFilter = screen.hubRequestFilter.value,
+            onRequestContactsPermission = ::requestContactsPermission,
+        )
+    }
+
+    private fun launchBb7App(entry: io.github.aimindseye.tenseven.model.AppEntry): Boolean =
+        if (
+            entry.component.className == SableStartActivity::class.java.name ||
+            entry.component.className == "io.github.aimindseye.tenseven.LauncherEntry"
+        ) {
+            screen.homeGeneration.intValue += 1
+            true
+        } else {
+            launcherAppsRepository.launch(entry)
+        }
+
+    private fun openHubFromBb7() {
+        screen.hubRequestFilter.value = null
+        screen.hubGeneration.intValue += 1
+        startBb10Detour(returnOnHome = true)
+    }
+
+    private fun saveBb7Favorites(keys: List<String>?) {
+        screen.bb7Favorites.value = keys
+        startStateRepository.saveHomeApps(keys)
+    }
+
+    private fun saveBb7Rows(rows: Int) {
+        screen.bb7HomeRows.intValue = rows
+        startStateRepository.saveBb7HomeRows(rows)
+    }
+
+    private fun saveBb7Desktop(keys: List<String>) {
+        screen.bb7Desktop.value = keys
+        startStateRepository.saveBb7Desktop(keys)
+    }
+
+    private fun saveBb7Panels(panels: List<io.github.aimindseye.tenseven.model.Bb7Panel>) {
+        screen.bb7Panels.value = panels
+        startStateRepository.saveBb7Panels(panels)
+    }
+
+    private fun saveBb7Scrim(level: Int) {
+        screen.bb7Scrim.intValue = level
+        startStateRepository.saveBb7Scrim(level)
+    }
+
+    private fun openWallpaperPicker() {
+        runCatching {
+            startActivity(
+                Intent.createChooser(Intent(Intent.ACTION_SET_WALLPAPER), getString(R.string.bb7_wallpaper)),
+            )
+        }
+    }
+
+    private fun backToBb7() {
+        // Back from the Hub to a BlackBerry 7 home: show it now instead of after the slide.
+        if (screen.bb10Detour.value && screen.bb7Detour.endsAt(false)) endBb10Detour()
+    }
+
+    private fun canNavigateBackChanged(value: Boolean) {
+        screen.canNavigateBack = value
+        screen.bb7Detour = screen.bb7Detour.onCanNavigateBack(value)
+        if (screen.bb10Detour.value && screen.bb7Detour.endsAt(value)) endBb10Detour()
+    }
+
+    private fun openUsageSetup() {
+        runCatching {
+            startActivity(
+                Intent(this@SableStartActivity, OnboardingActivity::class.java)
+                    .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.USAGE.name),
+            )
+        }
+    }
+
+    private fun saveHomeAppearance(next: SableAppearance) {
+        startStateRepository.saveAppearance(next.mode.stableValue, next.accent.stableValue)
+        writeGlobalSableAppearance(this@SableStartActivity, next)
+    }
+
+    private fun resetHomeAppearance() {
+        startStateRepository.saveAppearance(null, null)
+        writeGlobalSableAppearance(
+            this@SableStartActivity,
+            io.github.aimindseye.tenseven.design
+                .SableAppearance(),
+        )
+    }
+
+    private fun startHomeIntent(intent: Intent) {
+        runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
+
+    private fun refreshLive() {
+        screen.liveRefreshGeneration.intValue += 1
     }
 
     override fun onStart() {
@@ -434,31 +482,9 @@ class SableStartActivity : ComponentActivity() {
      * items ([contextual]) first, then the home's own, then Close.
      */
     private fun showBb7Menu(contextual: List<Pair<String, () -> Unit>>) {
-        val global =
-            listOf<Pair<String, () -> Unit>>(
-                t("hub") to {
-                    screen.hubRequestFilter.value = null
-                    screen.hubGeneration.intValue += 1
-                    startBb10Detour(returnOnHome = true)
-                },
-                getString(R.string.bb7_command) to ::openCommandFromBb7,
-                getString(R.string.bb7_widgets) to ::openWidgetsFromBb7,
-                getString(R.string.launcher_settings) to {
-                    runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
-                },
-                t("home_screen_style_2") to {
-                    runCatching { startActivity(Intent(this, HomeStyleActivity::class.java)) }
-                },
-                getString(R.string.setup_menu) to {
-                    runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
-                },
-                getString(R.string.backup_menu) to {
-                    runCatching { startActivity(Intent(this, BackupActivity::class.java)) }
-                },
-                t("settings") to ::openSystemSettings,
-                t("close") to {},
-            )
-        val items = contextual + global
+        // D4r4: the BB7 screen already supplies exactly four Home actions.
+        // Do not append legacy global actions; icon-specific actions remain contextual.
+        val items = contextual
         // BB7 menu is a translucent on-wallpaper surface, never a system-white dialog.
         // Views retain native D-pad/trackpad focus and accessibility click actions.
         val density = resources.displayMetrics.density
@@ -549,19 +575,6 @@ class SableStartActivity : ComponentActivity() {
         screen.startRequest.value =
             io.github.aimindseye.tenseven.runtime
                 .LauncherRequest(SCREEN_SEARCH, screen.startRequest.value.serial + 1)
-        startBb10Detour(returnOnHome = true)
-    }
-
-    /** The Widgets page from the BlackBerry 7 home: shown on the BlackBerry 10 screen like Hub, Back returns. */
-    private fun openWidgetsFromBb7() {
-        if (!screen.widgetsPageEnabled.value) {
-            runCatching { startActivity(Intent(this, LauncherSettingsActivity::class.java)) }
-            return
-        }
-        screen.homeGeneration.intValue = 0
-        screen.backGeneration.intValue = 0
-        screen.hubGeneration.intValue = 0
-        screen.widgetsGeneration.intValue += 1
         startBb10Detour(returnOnHome = true)
     }
 

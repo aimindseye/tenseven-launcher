@@ -38,6 +38,8 @@ if python3 -I -m py_compile tools/*.py; then pass "python tools compile"; else f
 if python3 -I tools/tabler_icons.py check; then :; else fail "tabler icons"; fi
 if python3 -I tools/brand_assets.py check; then :; else fail "brand assets"; fi
 
+if python3 -B tests/test_games_decoupling.py; then pass "bundled games removed; six tools preserved"; else fail "games decoupling"; fi
+
 # 4. The detekt config is the byte-exact SableOS copy it says it is.
 # shellcheck source=config/DETEKT_PROVENANCE.env
 source config/DETEKT_PROVENANCE.env

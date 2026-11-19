@@ -31,15 +31,20 @@ object DefaultApps {
     ): String? =
         runCatching {
             when (category) {
-                MESSAGING -> Telephony.Sms.getDefaultSmsPackage(context)
-                else ->
+                MESSAGING -> {
+                    Telephony.Sms.getDefaultSmsPackage(context)
+                }
+
+                else -> {
                     context.packageManager
                         .resolveActivity(
                             Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, category),
                             PackageManager.MATCH_DEFAULT_ONLY,
-                        )?.activityInfo?.packageName
+                        )?.activityInfo
+                        ?.packageName
                         // With no default chosen, Android answers with its own chooser.
                         ?.takeIf { it != "android" }
+                }
             }
         }.getOrNull()
 
@@ -52,7 +57,9 @@ object DefaultApps {
         runCatching {
             context.packageManager
                 .resolveActivity(Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE), PackageManager.MATCH_DEFAULT_ONLY)
-                ?.activityInfo?.packageName?.takeIf { it != "android" }
+                ?.activityInfo
+                ?.packageName
+                ?.takeIf { it != "android" }
         }.getOrNull()
 
     /**

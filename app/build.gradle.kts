@@ -63,7 +63,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = ".debug.l0"
             versionNameSuffix = "-debug"
         }
         release {
@@ -83,6 +83,20 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        val localTestRoots =
+            file("src/test/java/io/github/aimindseye/tenseven")
+                .listFiles()
+                .orEmpty()
+                .filter { it.isDirectory && it.name != "features" }
+        getByName("test").java.setSrcDirs(localTestRoots)
+        getByName("test").kotlin.setSrcDirs(localTestRoots)
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     lint {
@@ -120,6 +134,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)

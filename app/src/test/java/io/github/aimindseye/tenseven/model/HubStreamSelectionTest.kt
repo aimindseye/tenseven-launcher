@@ -4,11 +4,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class HubStreamSelectionTest {
-    private data class Row(val name: String, val packages: List<String>)
+    private data class Row(
+        val name: String,
+        val packages: List<String>,
+    )
 
     @Test fun multipleMailClientsRemainSeparateSelectableSources() {
-        val rows = listOf(Row("Gmail", listOf("com.google.android.gm")),
-            Row("Outlook", listOf("com.microsoft.office.outlook")), Row("Signal", listOf("org.thoughtcrime.securesms")))
+        val rows =
+            listOf(
+                Row("Gmail", listOf("com.google.android.gm")),
+                Row("Outlook", listOf("com.microsoft.office.outlook")),
+                Row("Signal", listOf("org.thoughtcrime.securesms")),
+            )
         assertEquals(3, HubStreamSelection.apply(rows, null) { it.packages }.size)
         assertEquals(listOf("Outlook"), HubStreamSelection.apply(rows, "com.microsoft.office.outlook") { it.packages }.map { it.name })
         assertEquals(listOf("Gmail"), HubStreamSelection.apply(rows, "com.google.android.gm") { it.packages }.map { it.name })
@@ -22,7 +29,9 @@ class HubStreamSelectionTest {
     }
 
     @Test fun sourceLabelsDeduplicateAndSortByName() {
-        assertEquals(listOf("a" to "Gmail", "b" to "Outlook"),
-            HubStreamSelection.options(listOf("b" to "Outlook", "a" to "Gmail", "a" to "Gmail")))
+        assertEquals(
+            listOf("a" to "Gmail", "b" to "Outlook"),
+            HubStreamSelection.options(listOf("b" to "Outlook", "a" to "Gmail", "a" to "Gmail")),
+        )
     }
 }

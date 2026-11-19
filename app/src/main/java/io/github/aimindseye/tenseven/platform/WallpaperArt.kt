@@ -22,6 +22,28 @@ enum class WallpaperTarget { HOME, LOCK, BOTH }
  * Draws Tenseven's own wallpapers and sets them. Nothing is downloaded and no image ships in the app: each wallpaper is
  * painted from the few colours of its [WallpaperSet], so there is no third-party or BlackBerry artwork in it.
  */
+private const val ART_RADIUS_BASE = 0.22f
+private const val ART_RADIUS_VARIATION = 0.1f
+private const val ART_CENTER_X_BASE = 0.3f
+private const val ART_CENTER_X_VARIATION = 0.4f
+private const val ART_CENTER_Y_BASE = 0.22f
+private const val ART_CENTER_Y_VARIATION = 0.12f
+private const val ART_HALO_SCALE = 2.2f
+private const val ART_OUTER_ALPHA = 230
+private const val ART_INNER_ALPHA = 235
+private const val ART_CORE_SCALE = 0.55f
+private const val ART_RIDGE_LAYERS = 3
+private const val ART_RIDGE_BASE = 0.52f
+private const val ART_RIDGE_STEP = 0.14f
+private const val ART_WAVE_AMPLITUDE = 0.05f
+private const val ART_WAVE_DECAY = 0.008f
+private const val ART_WAVE_CYCLES = 1.2f
+private const val ART_CYCLE_VARIATION = 1.4f
+private const val ART_CYCLE_STEP = 0.5f
+private const val ART_RIDGE_SAMPLE_STEP = 4f
+private const val ART_RIDGE_ALPHA_BASE = 90
+private const val ART_RIDGE_ALPHA_STEP = 55
+
 object WallpaperArt {
     fun render(
         set: WallpaperSet,
@@ -37,40 +59,52 @@ object WallpaperArt {
         canvas.drawRect(0f, 0f, w, h, paint)
 
         val random = Random(set.seed)
-        val radius = w * (0.22f + random.nextFloat() * 0.1f)
-        val cx = w * (0.3f + random.nextFloat() * 0.4f)
-        val cy = h * (0.22f + random.nextFloat() * 0.12f)
+        val radius = w * (ART_RADIUS_BASE + random.nextFloat() * ART_RADIUS_VARIATION)
+        val cx = w * (ART_CENTER_X_BASE + random.nextFloat() * ART_CENTER_X_VARIATION)
+        val cy = h * (ART_CENTER_Y_BASE + random.nextFloat() * ART_CENTER_Y_VARIATION)
         paint.shader =
             RadialGradient(
                 cx,
                 cy,
-                radius * 2.2f,
-                intArrayOf(ColorUtils.setAlphaComponent(set.glow, 230), ColorUtils.setAlphaComponent(set.glow, 0)),
+                radius * ART_HALO_SCALE,
+                intArrayOf(
+                    ColorUtils.setAlphaComponent(set.glow, ART_OUTER_ALPHA),
+                    ColorUtils
+                        .setAlphaComponent(set.glow, 0),
+                ),
                 null,
                 Shader.TileMode.CLAMP,
             )
-        canvas.drawCircle(cx, cy, radius * 2.2f, paint)
+        canvas.drawCircle(cx, cy, radius * ART_HALO_SCALE, paint)
         paint.shader = null
-        paint.color = ColorUtils.setAlphaComponent(set.glow, 235)
-        canvas.drawCircle(cx, cy, radius * 0.55f, paint)
+        paint.color = ColorUtils.setAlphaComponent(set.glow, ART_INNER_ALPHA)
+        canvas.drawCircle(cx, cy, radius * ART_CORE_SCALE, paint)
 
         // Ridges: three layers of slow waves, each closer and darker than the one behind it.
-        val layers = 3
+        val layers = ART_RIDGE_LAYERS
         for (layer in 0 until layers) {
-            val base = h * (0.52f + layer * 0.14f)
-            val amplitude = h * (0.05f - layer * 0.008f)
-            val cycles = 1.2f + random.nextFloat() * 1.4f + layer * 0.5f
+            val base = h * (ART_RIDGE_BASE + layer * ART_RIDGE_STEP)
+            val amplitude = h * (ART_WAVE_AMPLITUDE - layer * ART_WAVE_DECAY)
+            val cycles =
+                ART_WAVE_CYCLES +
+                    random.nextFloat() * ART_CYCLE_VARIATION +
+                    layer * ART_CYCLE_STEP
             val phase = random.nextFloat() * (2 * PI).toFloat()
             val path = Path().apply { moveTo(0f, h) }
             var x = 0f
-            while (x <= w + 4f) {
+            while (x <= w + ART_RIDGE_SAMPLE_STEP) {
                 val y = base + amplitude * sin(cycles * 2 * PI * (x / w) + phase).toFloat()
                 path.lineTo(x, y)
-                x += 4f
+                x += ART_RIDGE_SAMPLE_STEP
             }
             path.lineTo(w, h)
             path.close()
-            paint.color = ColorUtils.setAlphaComponent(set.ridge, 90 + layer * 55)
+            paint.color =
+                ColorUtils.setAlphaComponent(
+                    set.ridge,
+                    ART_RIDGE_ALPHA_BASE + layer *
+                        ART_RIDGE_ALPHA_STEP,
+                )
             canvas.drawPath(path, paint)
         }
         return bitmap

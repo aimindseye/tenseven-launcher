@@ -42,6 +42,14 @@ Calc Plus, Notes and the ten games come from the SableOS patch set at the pin ab
 0076, 0077 and 0085 (profile model, applier, screen), rewritten to use Tenseven's package names and a private palette. Provenance
 and licences for these and the Mink ports are also listed in `THIRD_PARTY_NOTICES.md`.
 
+## Design and UX references (no source imported)
+
+| Project / author credit | Reference used | Source code or assets imported? | Link / licensing status |
+|---|---|---|---|
+| **JLauncher (JL10 v0.6)** | Owner-supplied app and screenshots/video used to study BlackBerry 10-style Hub source drawers, message actions, settings structure, gestures and Active Frames presentation for TenSeven 2.0. See [review](2.0/JL10_BB10_REFERENCE_REVIEW_20261112.md). | **No** — design/behavior research only; no JL10 code, artwork, APK resources, boot scripts or system hooks incorporated. | No public GitHub repository supplied as of the 2026-11-12 review; copyright/licensing permissions for copying source/assets have **not** been established. Do not invent an upstream URL or license. |
+
+This section is intentionally distinct from the upstream **code/data provenance** table above. Credit for reviewing another product does not imply permission to copy it, an endorsement, an official collaboration, or a third-party runtime dependency.
+
 ## Package rename
 
 The sources were renamed from `org.sableos.start`, `com.sable.start` and `org.sableos.design` to

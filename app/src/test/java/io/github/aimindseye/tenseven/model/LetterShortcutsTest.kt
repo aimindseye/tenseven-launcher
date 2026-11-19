@@ -28,13 +28,32 @@ class LetterShortcutsTest {
     }
 
     @Test fun rejectsNonLettersAndBadComponents() {
-        assertTrue(LetterShortcuts.EMPTY.assign('1', mail).letters.isEmpty())
-        assertTrue(LetterShortcuts.EMPTY.assign('m', "no slash").letters.isEmpty())
-        assertTrue(LetterShortcuts.EMPTY.assign('m', "a/b;c=d").letters.isEmpty())
+        assertTrue(
+            LetterShortcuts.EMPTY
+                .assign('1', mail)
+                .letters
+                .isEmpty(),
+        )
+        assertTrue(
+            LetterShortcuts.EMPTY
+                .assign('m', "no slash")
+                .letters
+                .isEmpty(),
+        )
+        assertTrue(
+            LetterShortcuts.EMPTY
+                .assign('m', "a/b;c=d")
+                .letters
+                .isEmpty(),
+        )
     }
 
     @Test fun removeFreesTheLetter() {
-        val s = LetterShortcuts.EMPTY.assign('m', mail).assign('n', notes).remove(mail)
+        val s =
+            LetterShortcuts.EMPTY
+                .assign('m', mail)
+                .assign('n', notes)
+                .remove(mail)
         assertEquals(setOf('n'), s.letters)
     }
 

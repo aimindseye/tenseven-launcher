@@ -1,62 +1,38 @@
 package io.github.aimindseye.tenseven.platform
 
-import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
+import androidx.core.content.edit
 import io.github.aimindseye.tenseven.model.ExtraApp
 import io.github.aimindseye.tenseven.model.ExtraApps
 
-/**
- * Turns the bundled extra apps on and off. Each one is a launcher activity that ships switched off; enabling it
- * gives it a launcher entry (so it appears in All Apps and the grid), disabling it takes the entry away. Nothing is
- * installed or downloaded, and the state lives in Android's own component settings.
- */
+/** L0 optional-app choices are informational; installed apps remain independently discoverable. */
 object ExtraAppsControl {
+    private const val STORE = "l0_optional_app_choices"
+    private const val IDS = "selected"
+
     fun isEnabled(
         context: Context,
         app: ExtraApp,
-    ): Boolean =
-        runCatching {
-            context.packageManager.getComponentEnabledSetting(component(context, app)) ==
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        }.getOrDefault(false)
+    ): Boolean = app.id in enabledIds(context)
 
-    fun enabledIds(context: Context): Set<String> = ExtraApps.ALL.filter { isEnabled(context, it) }.map { it.id }.toSet()
+    fun enabledIds(context: Context): Set<String> =
+        ExtraApps.normalize(context.getSharedPreferences(STORE, Context.MODE_PRIVATE).getStringSet(IDS, emptySet()))
 
     fun setEnabled(
         context: Context,
         app: ExtraApp,
         enabled: Boolean,
     ) {
-        runCatching {
-            context.packageManager.setComponentEnabledSetting(
-                component(context, app),
-                if (enabled) {
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                } else {
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-                },
-                PackageManager.DONT_KILL_APP,
-            )
-        }
+        val old = enabledIds(context)
+        apply(context, if (enabled) old + app.id else old - app.id)
     }
 
-    /** Makes exactly [ids] enabled. */
     fun apply(
         context: Context,
         ids: Set<String>,
     ) {
-        val (on, off) = ExtraApps.changes(enabledIds(context), ids)
-        ExtraApps.ALL.forEach { app ->
-            when (app.id) {
-                in on -> setEnabled(context, app, true)
-                in off -> setEnabled(context, app, false)
-            }
+        context.getSharedPreferences(STORE, Context.MODE_PRIVATE).edit {
+            putStringSet(IDS, ExtraApps.normalize(ids))
         }
     }
-
-    private fun component(
-        context: Context,
-        app: ExtraApp,
-    ) = ComponentName(context.packageName, app.className)
 }

@@ -1,10 +1,10 @@
 package io.github.aimindseye.tenseven.model
 
+import io.github.aimindseye.tenseven.live.LiveAvailability
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import io.github.aimindseye.tenseven.live.LiveAvailability
 
 /** The Active Frames header (BB10 Home) and the Glance widgets shown as frames. */
 class HomeLayoutTest {

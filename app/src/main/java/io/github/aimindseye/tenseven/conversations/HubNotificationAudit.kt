@@ -78,7 +78,7 @@ internal object HubNotificationAudit {
         val totals = categories.map { reason -> events.count { it.reason == reason } }
         latest =
             buildString {
-                appendLine("TenSeven D0 Hub snapshot diagnostics (in-memory counts only)")
+                appendLine("TenSeven Hub notification diagnostics (in-memory counts only)")
                 appendLine("This is a snapshot, not WhatsApp/chat history or an Android notification-shade dump.")
                 appendLine(
                     "Silent candidate means low channel importance or channel sound disabled, " +

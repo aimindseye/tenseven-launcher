@@ -115,7 +115,12 @@ private fun FrameCapabilitySwitch(
     if (status == CapabilityStatus.Ready) {
         SwitchRow(title, detail, value, onChange)
     } else {
-        Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+            shape =
+                MaterialTheme.shapes.medium,
+        ) {
             Row(Modifier.padding(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text(title, style = MaterialTheme.typography.titleMedium)
@@ -134,7 +139,8 @@ private fun ScreenCaptureControls() {
     var explain by remember { mutableStateOf(false) }
     Text("User-approved screen capture", style = MaterialTheme.typography.titleMedium)
     Text(
-        "One shared-screen preview, separate from app snapshots. Images stay in memory and freeze while Home is visible. No audio is captured.",
+        "One shared-screen preview, separate from app snapshots. Images stay in memory and freeze while " +
+            "Home is visible. No audio is captured.",
     )
     if (preview.error) Text("Capture ended or could not start. Start again to request fresh consent.")
     Button(onClick = {
@@ -150,7 +156,10 @@ private fun ScreenCaptureControls() {
             title = { Text("Share a screen with Active Frames?") },
             text = {
                 Text(
-                    "Android will ask what to share. Choose a single app when available. Whole-screen sharing can include anything visible while away from Home. Return to Home to see the last preview. Stop from this setting or the sharing notification; locking the phone also ends capture. Protected screens may appear blank.",
+                    "Android will ask what to share. Choose a single app when available. Whole-screen " +
+                        "sharing can include anything visible while away from Home. Return to Home to see " +
+                        "the last preview. Stop from this setting or the sharing notification; locking the " +
+                        "phone also ends capture. Protected screens may appear blank.",
                 )
             },
             confirmButton = {
@@ -169,7 +178,8 @@ private fun FrameIntegrationControls() {
     val context = LocalContext.current
     Text("App integrations", style = MaterialTheme.typography.titleMedium)
     Text(
-        "Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar access. TenSeven local summaries do not need notification access.",
+        "Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar " +
+            "access. TenSeven local summaries do not need notification access.",
     )
     Button(onClick = {
         context.startActivity(android.content.Intent(context, FrameIntegrationsActivity::class.java))

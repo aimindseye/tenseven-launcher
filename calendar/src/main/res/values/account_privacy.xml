@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calendar_account_reveal">Account · tap to show</string>
+    <string name="calendar_account_hide">Hide account</string>
+    <string name="calendar_private_name">Calendar</string>
+</resources>

@@ -5,6 +5,6 @@ package io.github.aimindseye.tenseven.model
  */
 object GridSettingsPolicy {
     fun showBb7OnlyOptions(style: HomeStyle): Boolean = style == HomeStyle.Bb7
-    fun showSharedGridOptions(style: HomeStyle): Boolean =
-        style == HomeStyle.Bb7 || style == HomeStyle.Bb10
+
+    fun showSharedGridOptions(style: HomeStyle): Boolean = style == HomeStyle.Bb7 || style == HomeStyle.Bb10
 }

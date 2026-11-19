@@ -15,10 +15,14 @@ class SpeedDialKeys {
         /** Swallow the key (an assigned letter waiting for its release or long press). */
         data object Consume : Step
 
-        data class Call(val letter: Char) : Step
+        data class Call(
+            val letter: Char,
+        ) : Step
 
         /** Start search with [seed]: the waiting letter was released, or another key followed it. */
-        data class Search(val seed: String) : Step
+        data class Search(
+            val seed: String,
+        ) : Step
     }
 
     private var pendingKey = NONE
@@ -61,8 +65,14 @@ class SpeedDialKeys {
                     called = true
                     Step.Call(letterFor(keyCode) ?: return Step.Consume)
                 }
-                down -> Step.Consume
-                else -> finish()
+
+                down -> {
+                    Step.Consume
+                }
+
+                else -> {
+                    finish()
+                }
             }
         }
         // Another key while the letter is still down (fast typing): search with both, in order.
@@ -92,7 +102,6 @@ class SpeedDialKeys {
         // Shift, Alt, Sym, Fn, Ctrl and Meta: a chord is never a speed dial.
         private const val CHORD_META = 0xc1 or 0x32 or 0x4 or 0x8 or 0x7000 or 0x70000
 
-        fun letterFor(keyCode: Int): Char? =
-            if (keyCode in KEYCODE_A..KEYCODE_Z) 'a' + (keyCode - KEYCODE_A) else null
+        fun letterFor(keyCode: Int): Char? = if (keyCode in KEYCODE_A..KEYCODE_Z) 'a' + (keyCode - KEYCODE_A) else null
     }
 }

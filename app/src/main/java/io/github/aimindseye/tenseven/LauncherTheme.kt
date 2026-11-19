@@ -8,10 +8,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
-import androidx.compose.ui.graphics.Color
 import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.SableCustomColors
 import io.github.aimindseye.tenseven.design.SableTheme
@@ -59,6 +59,7 @@ fun rememberLauncherAppearance(): SableAppearance {
 private fun customColors(state: StartStateRepository): SableCustomColors? {
     val id = state.loadActiveCustomThemeId() ?: return null
     val theme = state.loadCustomThemes().firstOrNull { it.id == id } ?: return null
+
     fun c(value: Int?) = value?.let { Color(it) }
     return SableCustomColors(
         accent = Color(theme.accent),
@@ -87,5 +88,27 @@ fun LauncherTheme(
         }
     }
     // The same palette the Hub and the home pages use, so every screen Tenseven draws looks like one app.
-    SableTheme(appearance = appearance) { Bb10Theme(appearance, content) }
+    SableTheme(appearance = appearance) {
+        Bb10Theme(appearance) {
+            // Apply the bounded type scale *after* the Settings palette, or the palette's
+            // MaterialTheme would override it and make the font-size preference appear inert.
+            val settingsSurface =
+                context is LauncherSettingsActivity ||
+                    context is HubSettingsActivity ||
+                    context is OnboardingActivity ||
+                    context is FrameIntegrationsActivity ||
+                    context is HomeStyleActivity ||
+                    context is DeviceCompatibilityActivity ||
+                    context is BackupActivity
+            if (settingsSurface) {
+                Settings2VisualTheme(appearance = appearance) {
+                    io.github.aimindseye.tenseven.ui
+                        .ScaledLauncherTextTheme(content)
+                }
+            } else {
+                io.github.aimindseye.tenseven.ui
+                    .ScaledLauncherTextTheme(content)
+            }
+        }
+    }
 }

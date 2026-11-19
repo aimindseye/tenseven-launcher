@@ -31,9 +31,7 @@ class UsageRecentsRepository(
         excluded: Set<String> = emptySet(),
         limit: Int = RecentApps.MAX,
         windowMs: Long = WINDOW_MS,
-    ): List<String> {
-        return recentEvents(excluded, limit, windowMs).map(ForegroundEvent::packageName)
-    }
+    ): List<String> = recentEvents(excluded, limit, windowMs).map(ForegroundEvent::packageName)
 
     fun recentEvents(
         excluded: Set<String> = emptySet(),
@@ -68,7 +66,11 @@ class UsageRecentsRepository(
         return selectEvents(started + events, excluded, limit)
     }
 
-    private fun selectEvents(events: List<ForegroundEvent>, excluded: Set<String>, limit: Int): List<ForegroundEvent> {
+    private fun selectEvents(
+        events: List<ForegroundEvent>,
+        excluded: Set<String>,
+        limit: Int,
+    ): List<ForegroundEvent> {
         val ordered = events.sortedByDescending(ForegroundEvent::timeMs).distinctBy(ForegroundEvent::packageName)
         val packages = RecentApps.select(ordered, excluded + appContext.packageName + RecentTasksRepository.excludedPackages, limit).toSet()
         return ordered.filter { it.packageName in packages }

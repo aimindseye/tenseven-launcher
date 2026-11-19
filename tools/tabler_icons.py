@@ -47,7 +47,10 @@ GLYPH_SCALE = GLYPH_BOX / 24.0
 GLYPH_OFFSET = (CANVAS - GLYPH_BOX) / 2.0
 
 SVG_NS = "{http://www.w3.org/2000/svg}"
-NAME_RE = re.compile(r'^\s+[A-Z_0-9]+\("([a-z0-9-]+)",\s*0x', re.M)
+NAME_RE = re.compile(
+    r'^\s+[A-Z_0-9]+\("([a-z0-9-]+)",\s*(?:0x[0-9A-Fa-f]+|GLYPH_ACCENT_[A-Z0-9_]+)\s*\)',
+    re.M,
+)
 
 
 def sha256(path):
@@ -195,9 +198,8 @@ def launcher_files(icon_name=ICON_NAME, glyph=ICON_GLYPH):
 def generated():
     names = used_icons()
     files = {os.path.relpath(KOTLIN_OUT, ROOT): kotlin_table()}
-    for icon_name, glyph in ((ICON_NAME, ICON_GLYPH), ("ic_tenseven_tasks", "clipboard-check")):
-        for rel, text in launcher_files(icon_name, glyph).items():
-            files[os.path.relpath(os.path.join(RES, rel), ROOT)] = text
+    for rel, text in launcher_files().items():
+        files[os.path.relpath(os.path.join(RES, rel), ROOT)] = text
     files[os.path.relpath(MANIFEST, ROOT)] = manifest_rows(names)
     return files
 

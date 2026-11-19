@@ -30,7 +30,10 @@ subprojects {
 
     extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
         buildUponDefaultConfig = true
-        config.setFrom(rootProject.file("config/detekt.yml"))
+        config.setFrom(
+            rootProject.file("config/detekt.yml"),
+            rootProject.file("config/detekt-tenseven.yml"),
+        )
         ignoreFailures = !strictQuality.get()
         parallel = true
     }
