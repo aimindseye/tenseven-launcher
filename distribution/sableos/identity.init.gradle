@@ -1,0 +1,18 @@
+// SableOS identity for the one launcher source tree. Pass it to the build with:
+//   ./gradlew -I distribution/sableos/identity.init.gradle :app:assembleRelease
+// Optional: -Plauncher.applicationId=<id> (default org.sableos.launcher).
+// It changes the application ID and overlays the name, home icon and status-dial default. Nothing else differs.
+allprojects { project ->
+    project.plugins.withId('com.android.application') {
+        def overlay = new File(project.rootDir, 'distribution/sableos/res')
+        project.android {
+            defaultConfig {
+                applicationId = project.findProperty('launcher.applicationId') ?: 'org.sableos.launcher'
+            }
+            sourceSets {
+                debug.res.srcDir(overlay)
+                release.res.srcDir(overlay)
+            }
+        }
+    }
+}
