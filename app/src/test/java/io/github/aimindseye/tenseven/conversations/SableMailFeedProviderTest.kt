@@ -7,8 +7,6 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import io.github.aimindseye.tenseven.model.HubMessageKind
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -20,6 +18,8 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /** A stand-in for Sable Mail's feed: two inbox rows, and it remembers which message was marked read. */
 class FakeMailFeed : ContentProvider() {

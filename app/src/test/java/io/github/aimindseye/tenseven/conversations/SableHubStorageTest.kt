@@ -26,7 +26,17 @@ class SableHubStorageTest {
     ): HubNotification {
         val message = ConversationMessage("m-$key", "c-$key", key, pkg, "Chat", "hi $key", at, "Ann", false)
         return HubNotification(
-            key, "c-$key", "Ann", pkg, "Chat", at, false, listOf(message), null, null, HubMessageKind.Message,
+            key,
+            "c-$key",
+            "Ann",
+            pkg,
+            "Chat",
+            at,
+            false,
+            listOf(message),
+            null,
+            null,
+            HubMessageKind.Message,
         )
     }
 

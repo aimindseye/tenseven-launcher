@@ -477,7 +477,11 @@ private fun HubSwitch(
 }
 
 @Composable
-private fun HubSourceOptions(rows: List<Pair<String, String>>, sources: HubSourceSettings, onToggle: (String) -> Unit) {
+private fun HubSourceOptions(
+    rows: List<Pair<String, String>>,
+    sources: HubSourceSettings,
+    onToggle: (String) -> Unit,
+) {
     var filters by remember { mutableStateOf(false) }
     Text(stringResource(R.string.hub_apps), style = MaterialTheme.typography.titleMedium)
     HubSwitch(
@@ -503,7 +507,10 @@ private fun HubSourceOptions(rows: List<Pair<String, String>>, sources: HubSourc
 }
 
 @Composable
-private fun HubListenerDiagnostics(access: HubAccessSettings, enabled: HubSourceSettings) {
+private fun HubListenerDiagnostics(
+    access: HubAccessSettings,
+    enabled: HubSourceSettings,
+) {
     val connected = io.github.aimindseye.tenseven.conversations.NotificationConnection.connected
     val activeCount = io.github.aimindseye.tenseven.conversations.NotificationConnection.activeCount
     val conversationsCount = ConversationHub.notifications().size

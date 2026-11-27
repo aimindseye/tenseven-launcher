@@ -665,7 +665,11 @@ private fun searchAppActions(
     }
 
 @Composable
-private fun SearchAppResult(app: AppEntry, ui: SearchUiState, actions: SearchResultActions) {
+private fun SearchAppResult(
+    app: AppEntry,
+    ui: SearchUiState,
+    actions: SearchResultActions,
+) {
     val key = "app:" + app.stableKey()
     AppRow(
         app = app,
@@ -697,7 +701,10 @@ private fun SearchAppResult(app: AppEntry, ui: SearchUiState, actions: SearchRes
 }
 
 @Composable
-private fun SearchCommandResult(command: SearchCommand, ui: SearchUiState) {
+private fun SearchCommandResult(
+    command: SearchCommand,
+    ui: SearchUiState,
+) {
     val key = "cmd:" + command.source + ":" + command.title
     SearchCommandRow(command = command, onActions = { ui.toggleActions(key) })
     if (ui.actionsFor == key) EditOptions(command.actions.ifEmpty { listOf("open" to command.onClick) })

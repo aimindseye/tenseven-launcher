@@ -429,7 +429,10 @@ private fun HubSelectedMessageContext(
 }
 
 @Composable
-private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) {
+private fun HubPanelReply(
+    label: String = "Reply",
+    onSend: (String) -> Boolean,
+) {
     var draft by remember { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
     val focus =
@@ -561,7 +564,11 @@ private fun Modifier.hubPanelDismiss(
 /** Capabilities come from the latest selected source, not older notifications grouped with the same person. */
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
-private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConversationsUi, onClose: () -> Unit) {
+private fun HubMessageReplyActions(
+    conversation: HubConversation,
+    ui: HubConversationsUi,
+    onClose: () -> Unit,
+) {
     val source = conversation.latestNotification
     val context = LocalContext.current
     var selected by remember(source) { mutableStateOf<HubSourceAction?>(null) }

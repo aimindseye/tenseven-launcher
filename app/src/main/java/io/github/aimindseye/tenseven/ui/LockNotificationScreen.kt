@@ -146,7 +146,11 @@ private fun rememberLockContent(
 }
 
 @Composable
-private fun LockNotificationBody(content: LockContent, actions: LockScreenActions, modifier: Modifier) {
+private fun LockNotificationBody(
+    content: LockContent,
+    actions: LockScreenActions,
+    modifier: Modifier,
+) {
     var marker by remember { mutableFloatStateOf(INITIAL_MARKER_PX) }
     val railScroll = rememberScrollState()
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -191,7 +195,11 @@ private fun LockNotificationBody(content: LockContent, actions: LockScreenAction
 }
 
 @Composable
-private fun LockFooterAction(label: String, description: String, onClick: () -> Unit) {
+private fun LockFooterAction(
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+) {
     Text(
         label,
         Modifier

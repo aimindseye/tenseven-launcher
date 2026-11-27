@@ -140,7 +140,12 @@ private fun homeControlPaths(glyph: String): List<String> =
     }
 
 @Composable
-private fun HubBarTarget(pages: HomeBarPages, unread: Int, actions: HomeBarActions, star: Boolean = false) {
+private fun HubBarTarget(
+    pages: HomeBarPages,
+    unread: Int,
+    actions: HomeBarActions,
+    star: Boolean = false,
+) {
     Box(
         Modifier.onPreviewKeyEvent { event ->
             val native = event.nativeKeyEvent
