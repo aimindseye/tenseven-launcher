@@ -41,7 +41,7 @@ object RecentLaunches {
         packageName: String,
         timeMs: Long,
     ): List<ForegroundEvent> =
-        (listOf(ForegroundEvent(packageName, timeMs)) + events.filterNot { it.packageName == packageName })
+        (events.filterNot { it.packageName == packageName } + ForegroundEvent(packageName, timeMs))
             .sortedByDescending(ForegroundEvent::timeMs)
             .take(KEEP)
 }

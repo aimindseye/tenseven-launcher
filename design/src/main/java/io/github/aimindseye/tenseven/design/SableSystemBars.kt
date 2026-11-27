@@ -57,10 +57,3 @@ fun applySableSystemBars(
         decorView.post { applyAppearance() }
     }
 }
-
-fun applySableDarkSystemBars(window: Window) {
-    applySableSystemBars(
-        window = window,
-        darkTheme = true,
-    )
-}

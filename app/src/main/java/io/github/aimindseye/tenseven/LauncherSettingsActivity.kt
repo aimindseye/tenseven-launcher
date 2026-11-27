@@ -47,8 +47,18 @@ private const val LAUNCHER_SETTINGS_ACTIVITY_SETTINGS2_READABIL_MAX_90 = 90
  * Device and Privacy. Every change is saved at once; the home screens read it when they come forward.
  */
 private fun settingsCategory(candidate: String?): String =
-    io.github.aimindseye.tenseven.model.Settings2Flow
-        .destination(candidate)
+    candidate?.takeIf {
+        it in
+            setOf(
+                "permissions",
+                "appearance_home",
+                "themes",
+                "lock",
+                "frames",
+                "apps",
+                "review",
+            )
+    } ?: "root"
 
 class LauncherSettingsActivity : ComponentActivity() {
     private val resumeGeneration = androidx.compose.runtime.mutableIntStateOf(0)
@@ -95,12 +105,11 @@ class LauncherSettingsActivity : ComponentActivity() {
                             LauncherSettingsActions(
                                 onLanguage = {
                                     val intent =
-                                        Intent(Settings.ACTION_APP_LOCALE_SETTINGS)
-                                            .setData("package:$packageName".toUri())
+                                        Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(android.net.Uri.parse("package:$packageName"))
                                     runCatching { startActivity(intent) }
                                 },
                                 onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },
-                                onSetup = { settingsPage.value = "permissions" },
+                                onSetup = { settingsPage.value = "appearance_home" },
                                 onAndroidSettings = { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } },
                             ),
                     )
@@ -125,7 +134,7 @@ private fun LauncherSettings(
 ) {
     var destination by settingsDestination
     val context = androidx.compose.ui.platform.LocalContext.current
-    // Mark Hub Settings as part of the six-screen navigation flow; preserve
+    // Mark Hub Settings as part of the seven-screen navigation flow; preserve
     // the existing LauncherSettingsActivity for Back/Next return via onNewIntent.
     val openHubFlow: () -> Unit = {
         runCatching {
@@ -171,44 +180,34 @@ private fun LauncherSettings(
 }
 
 private val launcherRootCategories: @Composable ((String) -> Unit, () -> Unit) -> Unit = { select, openHubFlow ->
-    Text("TenSeven Launcher", style = MaterialTheme.typography.titleLarge)
+    Text("Sable Launcher", style = MaterialTheme.typography.titleLarge)
     Text("Launcher Settings", style = MaterialTheme.typography.titleMedium)
     Settings2Category(
-        "permissions",
-        "1. Permissions",
-        "Contacts, photos, recent apps and notifications",
-    ) { select(it) }
-    Settings2Category(
         "appearance_home",
-        "2. Appearance & Home",
+        "1. Appearance & Home",
         "Home style, status, icons, theme and wallpaper",
     ) {
         select(it)
     }
     Settings2Category(
         "hub",
-        "3. Hub Settings",
+        "2. Hub Settings",
         "Compose, notifications, sources and diagnostics",
     ) { openHubFlow() }
     Settings2Category(
         "lock",
-        "4. Lockscreen Settings",
+        "3. Lockscreen Settings",
         "Notifications, Peek and privacy",
     ) { select(it) }
     Settings2Category(
-        "frames",
-        "5. Active Frames Settings",
-        "Media, app summaries and controls",
+        "apps",
+        "4. Apps & Features",
+        "Optional Sable Launcher apps and integrations",
     ) { select(it) }
     Settings2Category(
         "review",
-        "6. Review & Finish",
+        "5. Review & Finish",
         "Confirm settings and return to Home",
-    ) { select(it) }
-    Settings2Category(
-        "companions",
-        "Optional companion apps",
-        "Presence and setup planning; no APK installation",
     ) { select(it) }
 }
 
@@ -235,7 +234,7 @@ private val launcherPageBody: @Composable (
             "themes" -> "Other Themes, Wallpapers"
             "lock" -> "Lockscreen Settings"
             "frames" -> "Active Frames Settings"
-            "companions" -> "Optional companion apps"
+            "apps" -> "Apps & Features"
             else -> "Review & Finish"
         },
         style = MaterialTheme.typography.titleLarge,
@@ -265,8 +264,8 @@ private val launcherPageBody: @Composable (
                 launcherFramesPage(state, context)
             }
 
-            "companions" -> {
-                CompanionAppsStatusSection()
+            "apps" -> {
+                launcherAppsPage(state)
             }
 
             "review" -> {
@@ -283,10 +282,20 @@ private val launcherAppearancePage: @Composable (
 ) -> Unit = { state, first, select ->
     Section("Home style")
     HomeStyleSection(state, first)
-    Section("Home status")
-    Settings2UnifiedHomeStatus(state)
     Section("Home readability")
     Settings2ReadabilityOptions(state)
+    run {
+        val dimContext = androidx.compose.ui.platform.LocalContext.current
+        var extraDim by remember { mutableStateOf(io.github.aimindseye.tenseven.platform.SableExtraDim.isEnabled(dimContext)) }
+        SwitchRow(
+            "Extra dim at lowest brightness",
+            "With the brightness slider at the bottom, Android's Extra dim makes the screen dimmer than the panel goes",
+            extraDim,
+        ) {
+            extraDim = it
+            io.github.aimindseye.tenseven.platform.SableExtraDim.setEnabled(dimContext, it)
+        }
+    }
     Section("Icons & layout")
     IconGridSection(state)
     IconPresentationSection(state)
@@ -294,8 +303,6 @@ private val launcherAppearancePage: @Composable (
         Section("BlackBerry 7 options")
         Settings2Bb7Options(state)
     }
-    Section("Keyboard & search")
-    launcherKeyboardSection(state)
     Section("Theme & wallpapers")
     Settings2AppearanceChoices(state) { select("themes") }
 }
@@ -354,7 +361,8 @@ private val launcherFramesPage: @Composable (
     }
 }
 
-private val launcherKeyboardSection: @Composable (StartStateRepository) -> Unit = { state ->
+private val launcherAppsPage: @Composable (StartStateRepository) -> Unit = { state ->
+    Section("Other features")
     var typeToSearch by remember { mutableStateOf(state.loadTypeToSearch()) }
     SwitchRow(
         "Type to search",
@@ -364,6 +372,8 @@ private val launcherKeyboardSection: @Composable (StartStateRepository) -> Unit 
         typeToSearch = it
         state.saveTypeToSearch(it)
     }
+    CompanionAppsStatusSection()
+    DeviceCompatibilityLink()
 }
 
 private val launcherReviewPage: @Composable (
@@ -391,41 +401,8 @@ private val launcherReviewPage: @Composable (
     ) {
         select("appearance_home")
     }
-    Card(
-        "Home status",
-        state.loadHomeStatusMode().name.let {
-            if (it ==
-                "Text"
-            ) {
-                "Icons"
-            } else {
-                it
-            }
-        },
-        false,
-    ) { select("appearance_home") }
-    val overlayAllowedForReview = android.provider.Settings.canDrawOverlays(context)
-    val weatherLocationForReview =
-        context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            android.content.pm.PackageManager.PERMISSION_GRANTED
-    Card(
-        "Permissions",
-        listOf(
-            access.contactsGranted,
-            access.photosGranted,
-            access.usageAccess,
-            access.notificationAccess,
-            overlayAllowedForReview,
-            weatherLocationForReview,
-        ).count { it }.toString() +
-            " of 6 enabled",
-        false,
-    ) { select("permissions") }
     Card("Hub", "Compose and notification source choices", false, onClick = openHubFlow)
-    Card("Active Frames", "Saved media and recent-app settings", false) {
-        select("frames")
-    }
-    Card("Finish & Return Home", "Save choices and open TenSeven Home", true) {
+    Card("Finish & Return Home", "Save choices and open Sable Launcher Home", true) {
         state.saveOnboardingDone()
         context.startActivity(
             Intent(context, SableStartActivity::class.java)
@@ -439,7 +416,6 @@ private val launcherReviewPage: @Composable (
     }
     Section("Advanced")
     DeviceSettingsLinks(actions.onLanguage, actions.onBackup, actions.onSetup, actions.onAndroidSettings)
-    D5PhoneRoleSetting()
 }
 
 private val launcherSettingsFooter: @Composable (
@@ -452,12 +428,7 @@ private val launcherSettingsFooter: @Composable (
     val flow = io.github.aimindseye.tenseven.model.Settings2Flow
     Settings2FlowFooter(
         backText = "Back",
-        nextText =
-            when (destination) {
-                "review" -> "Finish"
-                "companions" -> "Done"
-                else -> "Next"
-            },
+        nextText = if (destination == "review") "Finish" else "Next",
         onBack = {
             when (val previous = flow.previous(destination)) {
                 null -> (context as? android.app.Activity)?.finish()
@@ -489,6 +460,7 @@ private val launcherSettingsFooter: @Composable (
 }
 
 /** Consistent, sticky Settings navigation, including Hub's standalone settings activity. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2FlowFooter(
     backText: String,
@@ -515,6 +487,7 @@ internal fun Settings2FlowFooter(
 }
 
 /** Same return link for the seven internal pages and the standalone Hub Settings activity. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2BackLink(onBack: () -> Unit) {
     androidx.compose.material3.TextButton(onClick = onBack) {
@@ -522,6 +495,7 @@ internal fun Settings2BackLink(onBack: () -> Unit) {
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2Permissions(context: android.content.Context) {
     var permissionRefresh by remember { androidx.compose.runtime.mutableIntStateOf(0) }
@@ -539,8 +513,6 @@ private fun Settings2Permissions(context: android.content.Context) {
     Settings2PeoplePermissions(context, access) { permissionRefresh++ }
     Settings2SpecialPermissions(context, access)
     Settings2LocationPermission(context)
-    Section("Device")
-    DeviceCompatibilityLink()
     Text(
         "Android controls these permissions. Restrictions and profile privacy remain enforced.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -548,60 +520,8 @@ private fun Settings2Permissions(context: android.content.Context) {
     )
 }
 
-@Composable
-private fun Settings2UnifiedHomeStatus(state: StartStateRepository) {
-    var mode by remember { mutableStateOf(state.loadHomeStatusMode()) }
-    var metrics by remember { mutableStateOf(state.loadHomeDials()) }
-    Text(
-        "One status configuration shared by BlackBerry 7 and BlackBerry 10.",
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        io.github.aimindseye.tenseven.model.HomeStatusMode.entries.forEach { choice ->
-            StyleCard(if (choice.name == "Text") "Icons" else choice.name, "", choice == mode, Modifier.weight(1f)) {
-                mode = choice
-                state.saveHomeStatusMode(choice)
-            }
-        }
-    }
-    if (mode != io.github.aimindseye.tenseven.model.HomeStatusMode.Hidden) {
-        Section("Status size")
-        var statusSize by remember { mutableStateOf(state.loadHomeStatusSize()) }
-        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            io.github.aimindseye.tenseven.model.HomeStatusSize.entries.forEach { choice ->
-                StyleCard(choice.title, choice.description, choice == statusSize, Modifier.weight(1f)) {
-                    statusSize = choice
-                    state.saveHomeStatusSize(choice)
-                }
-            }
-        }
-        Section("Status items")
-        val choices =
-            listOf(
-                "cpu" to "CPU",
-                "ram" to "RAM",
-                "battery" to "Battery",
-                "wifi" to "Wi-Fi",
-                "mobile" to "Mobile",
-                "cell" to "Cell",
-                "storage" to "Storage",
-            )
-        choices.forEach { (key, label) ->
-            SwitchRow(
-                label,
-                "Shown in ${
-                    if (mode.name == "Text") "icons" else mode.name.lowercase()
-                } mode when Android supplies a reading",
-                key in metrics,
-            ) { selected ->
-                metrics = if (selected) metrics + key else metrics - key
-                state.saveHomeDials(metrics)
-            }
-        }
-    }
-}
-
 /** Weather is off until a city is provided. No GPS, location or personal history. */
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2HomeRolePermission(
     context: android.content.Context,
@@ -610,7 +530,7 @@ private fun Settings2HomeRolePermission(
     if (!access.homeRoleHeld) {
         Card(
             "Default Home · Not selected",
-            "Choose TenSeven as your Home app for the full launcher experience. You can do this later.",
+            "Choose Sable Launcher as your Home app for the full launcher experience. You can do this later.",
             false,
         ) {
             context.startActivity(Intent(android.provider.Settings.ACTION_HOME_SETTINGS))
@@ -618,6 +538,7 @@ private fun Settings2HomeRolePermission(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2PeoplePermissions(
     context: android.content.Context,
@@ -668,6 +589,7 @@ private fun Settings2PeoplePermissions(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2SpecialPermissions(
     context: android.content.Context,
@@ -699,7 +621,7 @@ private fun Settings2SpecialPermissions(
     val overlayAllowed = android.provider.Settings.canDrawOverlays(context)
     Card(
         "Display over other apps · " + if (overlayAllowed) "Allowed" else "Not allowed",
-        "Required only for the optional TenSeven lock screen to appear over other apps. Without it, " +
+        "Required only for the optional Sable Launcher lock screen to appear over other apps. Without it, " +
             "Home and Hub still work.",
         false,
     ) {
@@ -714,6 +636,7 @@ private fun Settings2SpecialPermissions(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2LocationPermission(context: android.content.Context) {
     val locationPermission = android.Manifest.permission.ACCESS_COARSE_LOCATION
@@ -729,7 +652,7 @@ private fun Settings2LocationPermission(context: android.content.Context) {
         ) { granted -> locationGranted = granted }
     Card(
         "Weather location · " + if (locationGranted) "Allowed" else "Not allowed",
-        "Approximate location only, while TenSeven is open. Used for optional Home weather. If " +
+        "Approximate location only, while Sable Launcher is open. Used for optional Home weather. If " +
             "declined, enter a city manually; Home and Hub still work.",
         false,
     ) {
@@ -745,6 +668,7 @@ private fun Settings2LocationPermission(context: android.content.Context) {
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2ReadabilityOptions(state: StartStateRepository) {
     var size by remember { mutableStateOf(state.loadLauncherTextSize()) }
@@ -765,6 +689,7 @@ private fun Settings2ReadabilityOptions(state: StartStateRepository) {
     Settings2WeatherOptions(state)
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2WeatherOptions(state: StartStateRepository) {
     var weather by remember { mutableStateOf(state.loadHomeWeatherEnabled()) }
@@ -776,7 +701,7 @@ private fun Settings2WeatherOptions(state: StartStateRepository) {
         var useDevice by remember { mutableStateOf(state.loadHomeWeatherUseDeviceLocation()) }
         SwitchRow(
             "Use approximate device location",
-            "Optional. Grant Weather location under Permissions; otherwise the manual city is used.",
+            "Optional. Allow location for the home in Android Settings > Apps; otherwise the manual city is used.",
             useDevice,
         ) {
             useDevice = it
@@ -786,6 +711,7 @@ private fun Settings2WeatherOptions(state: StartStateRepository) {
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2WeatherCityEditor(state: StartStateRepository) {
     var city by remember { mutableStateOf(state.loadHomeWeatherCity()) }
@@ -808,6 +734,7 @@ private fun Settings2WeatherCityEditor(state: StartStateRepository) {
     Settings2WeatherCheck(city)
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2WeatherCheck(city: String) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -851,25 +778,13 @@ private fun Settings2WeatherCheck(city: String) {
     )
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2Bb7Options(state: StartStateRepository) {
     Text(
         "Favorites tray rows and icon labels are configured under Icons & layout.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    var panels by remember { mutableStateOf(state.loadBb7Panels()) }
-    SwitchRow(
-        "Recent panel",
-        "Apps launched from TenSeven; follows Remember returned apps",
-        io.github.aimindseye.tenseven.model.Bb7Panel.Recent in panels,
-    ) {
-        panels =
-            io.github.aimindseye.tenseven.model.Bb7Panels.toggle(
-                panels,
-                io.github.aimindseye.tenseven.model.Bb7Panel.Recent,
-            )
-        state.saveBb7Panels(panels)
-    }
     Text("Tray darkness", style = MaterialTheme.typography.titleMedium)
     var darkness by remember { mutableIntStateOf(state.loadBb7Scrim()) }
     androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -884,6 +799,7 @@ private fun Settings2Bb7Options(state: StartStateRepository) {
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun Settings2Category(
     id: String,
@@ -952,7 +868,7 @@ private fun settings2CategoryIconPaths(id: String): List<String> =
             listOf("M3 5h12v10h-12z", "M9 9h12v10h-12z")
         }
 
-        "companions" -> {
+        "apps" -> {
             listOf("M3 3h7v7h-7z", "M14 3h7v7h-7z", "M3 14h7v7h-7z", "M14 14h7v7h-7z")
         }
 
@@ -961,6 +877,7 @@ private fun settings2CategoryIconPaths(id: String): List<String> =
         }
     }
 
+@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2AppearanceChoices(
     state: StartStateRepository,
@@ -1041,6 +958,7 @@ private fun DeviceSettingsLinks(
     onSetup: () -> Unit,
     onAndroidSettings: () -> Unit,
 ) {
+    DeviceCompatibilityLink()
     Card(stringResource(R.string.ls_language), stringResource(R.string.ls_language_detail), false, onClick = onLanguage)
     Card(stringResource(R.string.ls_backup), stringResource(R.string.ls_backup_detail), false, onClick = onBackup)
     Card(stringResource(R.string.ls_setup), stringResource(R.string.ls_setup_detail), false, onClick = onSetup)

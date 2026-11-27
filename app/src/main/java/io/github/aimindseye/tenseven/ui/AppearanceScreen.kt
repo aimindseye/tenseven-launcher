@@ -136,6 +136,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.appearanceAccentRows(
 }
 
 // Icon pack choices use the same selection state as the original Appearance page.
+@Suppress("FunctionNaming")
 @Composable
 private fun AppearanceIconPacks(accent: Color) {
     val context = LocalContext.current
@@ -165,6 +166,7 @@ private fun AppearanceIconPacks(accent: Color) {
 }
 
 // Lock choice remains optional when Android does not expose the service.
+@Suppress("FunctionNaming")
 @Composable
 private fun AppearanceLockChoice(accent: Color) {
     val context = LocalContext.current
@@ -199,6 +201,7 @@ private fun AppearanceLockChoice(accent: Color) {
 }
 
 // Reset is independent of the other Appearance selections.
+@Suppress("FunctionNaming")
 @Composable
 private fun AppearanceResetChoice(onReset: () -> Unit) {
     Spacer(Modifier.height(14.dp))

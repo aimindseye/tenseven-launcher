@@ -59,6 +59,10 @@ data class FramesState(
 
 /** Merge partial native results with recents. A dismissed native task cannot sneak back in. */
 object FramePolicy {
+    /** App stores and Google-services shims run in the background and never belong in Active Frames. */
+    val EXCLUDED_PACKAGES =
+        setOf("com.aurora.store", "com.google.android.gms", "com.google.android.gsf", "com.android.vending")
+
     fun state(
         input: FrameInput,
         dismissals: Map<String, Long>,
@@ -78,7 +82,7 @@ object FramePolicy {
                 input.openings.orEmpty().associate { it.app.key to it.at }
         val native = input.native.filter { FrameApp(it.packageName, it.userId) in input.availableApps }
         val items =
-            input.openings?.map { opening ->
+            input.openings?.takeIf { native.isEmpty() }?.map { opening ->
                 FrameItem(
                     opening.app,
                     native.firstOrNull {
@@ -96,8 +100,7 @@ object FramePolicy {
             items
                 .filter { item ->
                     val closed = dismissals[item.key] ?: dismissals[item.app.key]
-                    item.app in input.availableApps &&
-                        (closed == null || opened.getOrDefault(item.app.key, 0L) > closed)
+                    item.app.packageName !in EXCLUDED_PACKAGES && item.app in input.availableApps && (closed == null || opened.getOrDefault(item.app.key, 0L) > closed)
                 }.distinctBy { it.key }
                 .take(settings.maximum)
         return FramesState(
@@ -124,23 +127,15 @@ object FrameDismissals {
             .mapNotNull { line ->
                 val parts = line.split('\t')
                 val at = parts.getOrNull(1)?.toLongOrNull()
-                if (at == null || !validEntry(parts, at)) {
+                if (parts.size != 2 || at == null || at < 0 ||
+                    !parts[0].matches(Regex("[0-9]+:[a-zA-Z0-9_.]+(?:/[a-zA-Z0-9_.$]+)?(?::recent|:task:[0-9]+)?"))
+                ) {
                     null
                 } else {
                     parts[0] to at
                 }
             }.take(MAX)
             .toMap()
-
-    private fun validEntry(
-        parts: List<String>,
-        at: Long?,
-    ): Boolean = parts.size == 2 && at != null && validIdentity(parts[0], at)
-
-    private fun validIdentity(
-        key: String,
-        at: Long,
-    ): Boolean = at >= 0 && key.matches(Regex("[0-9]+:[a-zA-Z0-9_.]+(?:/[a-zA-Z0-9_.$]+)?(?::recent|:task:[0-9]+)?"))
 
     fun encode(entries: Map<String, Long>): String =
         entries.entries
@@ -158,11 +153,11 @@ object FrameMessages {
         enabled: Set<String>,
         personalUser: Int,
     ): Int =
-        if (messagesAllowed(state) && item.app.userId == personalUser && item.app.packageName in enabled) {
+        if (state.settings.newMessages && state.notificationsAllowed && item.app.userId == personalUser &&
+            item.app.packageName in enabled
+        ) {
             counts.firstOrNull { it.packageName == item.app.packageName }?.count ?: 0
         } else {
             0
         }
-
-    private fun messagesAllowed(state: FramesState): Boolean = state.settings.newMessages && state.notificationsAllowed
 }

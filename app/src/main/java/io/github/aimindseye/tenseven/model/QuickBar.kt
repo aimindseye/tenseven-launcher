@@ -163,11 +163,11 @@ object QuickBar {
     ): Int? {
         val index =
             when {
-                (metaState and META_FUNCTION_ON) != 0 -> {
+                metaState and META_FUNCTION_ON != 0 -> {
                     keyCode - KEYCODE_1
                 }
 
-                (metaState and META_ALT_ON) != 0 -> {
+                metaState and META_ALT_ON != 0 -> {
                     if (unicode in '1'.code..'9'.code) unicode - '1'.code else keyCode - KEYCODE_1
                 }
 
@@ -177,20 +177,6 @@ object QuickBar {
             }
         return index.takeIf { it in 0 until minOf(slotCount, MAX_SLOTS) }
     }
-
-    /**
-     * Phone slot type-to-dial (SABLE_START_SCREEN_DESIGN.md "Type digits while
-     * Phone quick icon focused"): the dial character a key typed, or null. On
-     * the Q25 the digits are the Alt layer (W E R S D F Z X C = 1..9), so the
-     * character the key map produced decides, not the key code.
-     */
-    fun dialChar(unicode: Int): Char? {
-        if (unicode <= 0) return null
-        val char = unicode.toChar()
-        return char.takeIf { it in '0'..'9' || it in DIAL_SYMBOLS }
-    }
-
-    private const val DIAL_SYMBOLS = "*#+"
 
     /** "Alt+1".."Alt+3": the shortcut as printed on the keys (Fn devices accept it too). */
     fun shortcutLabel(index: Int): String = "Alt+${index + 1}"

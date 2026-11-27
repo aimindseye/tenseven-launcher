@@ -13,14 +13,6 @@ class RecentLaunchesRepository(
 
     fun load(): List<ForegroundEvent> = RecentLaunches.decode(preferences.getString(KEY, null))
 
-    /** Home never reads remembered launches while the existing history preference is disabled. */
-    fun loadForHome(): List<ForegroundEvent> =
-        if (StartStateRepository(appContext).loadFrameSettings().rememberReturnedApps) {
-            load().filterNot { it.packageName == appContext.packageName }
-        } else {
-            emptyList()
-        }
-
     fun record(packageName: String) {
         if (!StartStateRepository(appContext).loadFrameSettings().rememberReturnedApps) return
         val next = RecentLaunches.record(load(), packageName, System.currentTimeMillis())

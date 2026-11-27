@@ -176,13 +176,18 @@ internal class LauncherRuntime(
         onRefresh()
     }
 
-    fun refresh() {
-        main.post {
+    private val refreshNow =
+        Runnable {
             if (started && !closed) {
                 onRefresh()
                 coordinator.refresh()
             }
         }
+
+    /** Bursts of changes (an app store updating many apps) collapse into one refresh so Active Frames doesn't flicker. */
+    fun refresh() {
+        main.removeCallbacks(refreshNow)
+        main.postDelayed(refreshNow, REFRESH_DEBOUNCE_MS)
     }
 
     fun setPrivateLocked(locked: Boolean) =
@@ -228,6 +233,7 @@ internal class LauncherRuntime(
     }
 
     private companion object {
+        const val REFRESH_DEBOUNCE_MS = 400L
         fun profileActions(): List<String> =
             buildList {
                 add(Intent.ACTION_MANAGED_PROFILE_ADDED)

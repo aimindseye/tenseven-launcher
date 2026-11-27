@@ -8,8 +8,8 @@ class LauncherSettingsTest {
     @Test
     fun iconSizeRoundTripsAndFallsBackToMedium() {
         Bb7IconSize.entries.forEach { assertEquals(it, Bb7IconSize.fromStable(it.stable)) }
-        assertEquals(Bb7IconSize.Medium, Bb7IconSize.fromStable(99))
-        assertEquals(Bb7IconSize.Medium, Bb7IconSize.fromStable(null))
+        assertEquals(Bb7IconSize.Large, Bb7IconSize.fromStable(99))
+        assertEquals(Bb7IconSize.Large, Bb7IconSize.fromStable(null))
     }
 
     @Test

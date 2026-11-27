@@ -20,7 +20,7 @@ import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.design.SableAppearance
 
-internal val SableBlue = Color(0xFF4D9CFF)
+internal val SableBlue = Color(0xFF2E9BD6)
 internal val SableGreen = Color(0xFF35C66B)
 internal val SablePurple = Color(0xFF7A42E8)
 internal val SableSlate = Color(0xFF64748B)

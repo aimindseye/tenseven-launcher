@@ -31,9 +31,7 @@ class Bb7HomeTest {
 
     @Test
     fun panelsWrapBothWays() {
-        assertEquals(Bb7Panel.All, Bb7Home.step(Bb7Panel.Favorites, 1))
-        assertEquals(Bb7Panel.Recent, Bb7Home.step(Bb7Panel.All, 1))
-        assertEquals(Bb7Panel.Downloads, Bb7Home.step(Bb7Panel.Recent, 1))
+        assertEquals(Bb7Panel.Recent, Bb7Home.step(Bb7Panel.Favorites, 1))
         assertEquals(Bb7Panel.Downloads, Bb7Home.step(Bb7Panel.Favorites, -1))
         assertEquals(Bb7Panel.Favorites, Bb7Home.step(Bb7Panel.Downloads, 1))
     }
@@ -91,10 +89,9 @@ class Bb7HomeTest {
     fun panelsFollowTheUsersChoiceAndKeepTheirOrder() {
         assertEquals(Bb7Panels.DEFAULT, Bb7Panels.normalize(null))
         assertEquals(Bb7Panels.DEFAULT, Bb7Panels.normalize(emptyList()))
-        assertEquals(listOf(Bb7Panel.Frequent, Bb7Panel.All), Bb7Panels.normalize(listOf("Frequent", "bogus", "All")))
+        assertEquals(listOf(Bb7Panel.All, Bb7Panel.Frequent), Bb7Panels.normalize(listOf("Frequent", "bogus", "All")))
         val withFrequent = Bb7Panels.toggle(Bb7Panels.DEFAULT, Bb7Panel.Frequent)
-        val expected = listOf(Bb7Panel.Favorites, Bb7Panel.All, Bb7Panel.Recent, Bb7Panel.Downloads, Bb7Panel.Frequent)
-        assertEquals(expected, withFrequent)
+        assertEquals(listOf(Bb7Panel.Favorites, Bb7Panel.Recent, Bb7Panel.All, Bb7Panel.Downloads, Bb7Panel.Frequent), withFrequent)
         assertEquals(Bb7Panels.DEFAULT, Bb7Panels.toggle(withFrequent, Bb7Panel.Frequent))
         // The last panel cannot be hidden.
         assertEquals(listOf(Bb7Panel.All), Bb7Panels.toggle(listOf(Bb7Panel.All), Bb7Panel.All))
@@ -144,25 +141,5 @@ class Bb7HomeTest {
         assertEquals(1, Bb7Home.rowsFor(4, 4))
         assertEquals(2, Bb7Home.rowsFor(5, 4))
         assertEquals(3, Bb7Home.rowsFor(40, 4))
-    }
-
-    @Test
-    fun legacyPanelUpgradePreservesCustomOrderAndHiddenPanels() {
-        assertEquals(
-            listOf(Bb7Panel.Frequent, Bb7Panel.All, Bb7Panel.Recent),
-            Bb7Panels.decode("Frequent,All"),
-        )
-        assertEquals(listOf(Bb7Panel.All, Bb7Panel.Recent), Bb7Panels.decode("All"))
-        assertEquals(Bb7Panels.DEFAULT, Bb7Panels.decode("Favorites,All,Downloads"))
-    }
-
-    @Test
-    fun explicitlyHiddenRecentRemainsHiddenOnReload() {
-        val hidden = Bb7Panels.toggle(Bb7Panels.DEFAULT, Bb7Panel.Recent)
-        assertEquals(listOf(Bb7Panel.Favorites, Bb7Panel.All, Bb7Panel.Downloads), hidden)
-        assertEquals(hidden, Bb7Panels.decode(Bb7Panels.encode(hidden)))
-        assertEquals(Bb7Panels.DEFAULT, Bb7Panels.toggle(hidden, Bb7Panel.Recent))
-        val oldNames = setOf("Favorites", "All", "Downloads", "Frequent")
-        assertEquals(hidden.map { it.name }, Bb7Panels.encode(hidden).split(',').filter { it in oldNames })
     }
 }

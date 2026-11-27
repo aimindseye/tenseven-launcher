@@ -34,6 +34,8 @@ object ConversationHub {
 
     /** Reads what was marked read or snoozed, once per process. */
     fun ensureStateLoaded(context: Context) {
+        SableMailFeed.start(context) { listeners.forEach { it() } }
+        SableHubHistory.init(context)
         if (stateLoaded) return
         synchronized(lock) {
             if (!stateLoaded) {
@@ -65,6 +67,7 @@ object ConversationHub {
     ) {
         conversation.notifications.forEach { n ->
             markHubSourceRead(context, n)
+            SableMailFeed.markRead(context, n)
         }
         val now = maxOf(System.currentTimeMillis(), conversation.messages.maxOfOrNull(ConversationMessage::timestamp) ?: 0L)
         changeState(context) { it.markRead(conversation.id, now) }
@@ -81,9 +84,11 @@ object ConversationHub {
         conversation: HubConversation,
     ) = changeState(context) { it.wake(conversation.id) }
 
-    fun notifications(): List<HubNotification> = synchronized(lock) { items }
+    fun notifications(): List<HubNotification> = synchronized(lock) { SableHubHistory.view(SableMailFeed.merge(items)) }
 
-    fun conversations(): List<HubConversation> = synchronized(lock) { buildConversations(items, sentReplies) }
+    fun conversations(): List<HubConversation> = synchronized(lock) {
+            SableHubHistory.rows(buildConversations(SableHubHistory.view(SableMailFeed.merge(items)), sentReplies))
+        }
 
     /** Package and count per app, most unread first. No message text. */
     fun unreadCounts(maxApps: Int = DEFAULT_MAX_APPS): List<AppUnreadCount> =
@@ -113,14 +118,21 @@ object ConversationHub {
     internal fun clear() = update { emptyList() }
 
     /** Forgets what the Hub holds for apps the user turned off, now. Their notifications in the shade are untouched. */
-    internal fun dropPackages(packages: Set<String>) = update { old -> old.filterNot { it.packageName in packages } }
+    internal fun dropPackages(packages: Set<String>) {
+        SableHubHistory.forget(packages)
+        update { old -> old.filterNot { it.packageName in packages } }
+    }
 
     /** The "Clear the Hub now" button: the Hub's in-memory copy goes; the shade keeps its notifications. */
-    fun clearNow() = clear()
+    fun clearNow() {
+        SableHubHistory.clear()
+        clear()
+    }
 
     private fun update(change: (List<HubNotification>) -> List<HubNotification>) {
         synchronized(lock) {
             items = change(items)
+            SableHubHistory.record(items)
             // A reply belongs to a conversation that is still in the shade; drop the rest.
             val active = items.map(HubNotification::conversationId).toSet()
             sentReplies = sentReplies.filter { it.conversationId in active }
@@ -175,6 +187,28 @@ object ConversationHub {
         }
         return sent
     }
+
+    /** SableOS: the conversation counts as unread again, from its newest incoming message. */
+    fun markUnread(
+        context: Context,
+        conversation: HubConversation,
+    ) {
+        val at = SableHubKeep.unreadMark(conversation) ?: return
+        changeState(context) { it.markRead(conversation.id, at) }
+    }
+
+    /** SableOS: Delete takes the row out of the Hub and its notifications out of the shade. */
+    fun delete(
+        context: Context,
+        conversation: HubConversation,
+    ) {
+        ensureStateLoaded(context)
+        SableHubHistory.delete(conversation.notifications)
+        ConversationListenerService.cancelKeys(conversation.notifications.map(HubNotification::key))
+        notifyChanged()
+    }
+
+    fun notifyChanged() = listeners.forEach { it() }
 
     const val DEFAULT_MAX_APPS = 32
 }

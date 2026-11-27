@@ -58,12 +58,7 @@ internal fun HubRemindersPanel(records: List<TaskRecord>) {
                                 repository.save(
                                     task.copy(
                                         completed = false,
-                                        remindAtEpochMs =
-                                            TaskSchedule.preset(
-                                                "Tomorrow morning",
-                                                Instant.now(),
-                                                ZoneId.systemDefault(),
-                                            ),
+                                        remindAtEpochMs = TaskSchedule.preset("Tomorrow morning", Instant.now(), ZoneId.systemDefault()),
                                         updatedAtEpochMs = System.currentTimeMillis(),
                                     ),
                                 )
@@ -80,6 +75,7 @@ internal fun HubRemindersPanel(records: List<TaskRecord>) {
 }
 
 // Keep the editing dialog in the Hub while isolating save/delete callbacks.
+@Suppress("FunctionNaming")
 @Composable
 private fun HubReminderEditor(
     task: TaskRecord,
@@ -94,6 +90,7 @@ private fun HubReminderEditor(
         ) {
             TaskEditor(
                 task = task,
+                isNew = false,
                 onCancel = { onClose() },
                 onSave = {
                     repository.save(it)

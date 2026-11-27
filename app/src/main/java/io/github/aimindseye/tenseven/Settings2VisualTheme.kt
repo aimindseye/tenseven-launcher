@@ -7,17 +7,18 @@ import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.design.SableAppearance
 
-private val TENSEVEN_CLASSIC_ACCENT_COLOR = Color(0xFF4D9CFF)
+private val TENSEVEN_CLASSIC_ACCENT_COLOR = Color(0xFF2E9BD6)
 
-private val TENSEVEN_CLASSIC_SURFACE_COLOR = Color(0xFF0D1115)
+private val TENSEVEN_CLASSIC_SURFACE_COLOR = Color(0xFF141414)
 
-private val TENSEVEN_CLASSIC_OUTLINE_COLOR = Color(0xFF444A52)
+private val TENSEVEN_CLASSIC_OUTLINE_COLOR = Color(0xFF4D4D4D)
 
 /**
  * One Settings/Setup surface palette. No launcher Home, Peek, Active Frames source, or system UI
  * is altered. The BB10 default uses black/white with distinct blue borders rather than legacy
  * cyan-filled emphasis; selected nondefault palettes keep their user-specified accent.
  */
+@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2VisualTheme(
     appearance: SableAppearance,

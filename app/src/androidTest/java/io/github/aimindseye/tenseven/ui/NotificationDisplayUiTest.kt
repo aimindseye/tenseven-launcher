@@ -117,6 +117,7 @@ class NotificationDisplayUiTest {
                                 closeSearchRequest = 0,
                             ),
                         onTabChange = { selectedTab = it },
+                        onOpenCalendar = { calendarOpens++ },
                     )
                     HubCompactBar(
                         onViews = { viewsOpen = true },

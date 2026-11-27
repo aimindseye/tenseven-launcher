@@ -62,7 +62,7 @@ class CustomThemesTest {
     @Test
     fun notThemeJsonIsRefused() {
         assertTrue(reason("hello").contains("not valid"))
-        assertTrue(reason("""{"format":"other","version":1}""").contains("not a Tenseven theme"))
+        assertTrue(reason("""{"format":"other","version":1}""").contains("not a Sable Launcher theme"))
         assertTrue(reason(full.replace("\"version\": 1", "\"version\": 2")).contains("newer"))
         assertTrue(reason(full + " trailing").contains("not valid"))
     }

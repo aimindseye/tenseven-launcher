@@ -36,6 +36,12 @@ class ConversationListenerService : NotificationListenerService() {
         private var live = java.lang.ref.WeakReference<ConversationListenerService>(null)
 
         /** Main-thread callers can import a fresh snapshot without rebinding a connected service. */
+        /** SableOS Hub Delete: also clears those notifications from the shade (when the app allows). */
+        fun cancelKeys(keys: List<String>) {
+            val service = live.get() ?: return
+            keys.forEach { key -> runCatching { service.cancelNotification(key) } }
+        }
+
         fun refreshConnected(): Boolean {
             val service = live.get() ?: return false
             if (!NotificationConnection.connected) return false

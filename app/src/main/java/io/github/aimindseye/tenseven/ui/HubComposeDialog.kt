@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 /** The original BB10 Hub's choice of message type, using only Android-public compose intents. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun HubComposeDialog(
     onEmail: () -> Unit,

@@ -36,10 +36,4 @@ class RecentLaunchesTest {
         val usage = listOf(ForegroundEvent("old", 50), ForegroundEvent("fresh", 40))
         assertEquals(listOf("fresh", "old"), RecentApps.select(launches + usage, emptySet()))
     }
-
-    @Test
-    fun equalTimestampStillKeepsTheLastLaunchFirst() {
-        val previous = listOf(ForegroundEvent("first", 1))
-        assertEquals(listOf("second", "first"), RecentLaunches.record(previous, "second", 1).map { it.packageName })
-    }
 }

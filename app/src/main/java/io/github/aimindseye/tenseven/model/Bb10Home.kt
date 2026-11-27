@@ -33,7 +33,6 @@ object ActiveFrames {
 
     /** Two columns; two rows fill the square screen, the rest scroll vertically. */
     const val COLUMNS = 2
-    const val ROWS_PER_SCREEN = 2
 
     private const val KEYCODE_X = 52
     private const val KEYCODE_DEL = 67

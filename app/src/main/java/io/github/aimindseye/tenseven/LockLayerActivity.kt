@@ -15,6 +15,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
@@ -38,7 +40,7 @@ class LockLayerActivity : ComponentActivity() {
         }
 
     /** Whether this is a preview from a settings screen (it closes itself rather than asking for the PIN). */
-    private val isPreview get() = lockPreviewReturnIntent(this, intent?.getStringExtra(EXTRA_RETURN_TO)) != null
+    private val isPreview get() = intent?.hasExtra(EXTRA_RETURN_TO) == true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +48,7 @@ class LockLayerActivity : ComponentActivity() {
         setShowWhenLocked(true)
         setTurnScreenOn(true)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        enterFullScreen()
         val filter =
             IntentFilter().apply {
                 addAction(Intent.ACTION_USER_PRESENT)
@@ -78,12 +81,31 @@ class LockLayerActivity : ComponentActivity() {
         }
     }
 
+    /** The cover fills the whole screen: status and navigation bars are hidden (they return briefly on a swipe). */
+    private fun enterFullScreen() {
+        window.attributes =
+            window.attributes.apply {
+                layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) enterFullScreen()
+    }
+
     /** A preview started from Setup or Launcher Settings goes back to that screen, not to Home. */
     override fun finish() {
         val back = intent?.getStringExtra(EXTRA_RETURN_TO)
-        intent?.removeExtra(EXTRA_RETURN_TO)
-        lockPreviewReturnIntent(this, back)?.let { destination ->
-            runCatching { startActivity(destination) }
+        if (back != null) {
+            intent?.removeExtra(EXTRA_RETURN_TO)
+            runCatching {
+                startActivity(Intent().setClassName(this, back).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+            }
         }
         super.finish()
     }

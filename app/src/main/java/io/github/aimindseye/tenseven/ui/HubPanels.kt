@@ -124,6 +124,15 @@ internal fun HubPanelsHost(
                 onSwipeLeft = {
                     if (settings || selected != null) close() else onSwipeLeft()
                 },
+            ).then(
+                if (sableSwipeDownMenu()) {
+                    Modifier.hubMenuSwipeDown {
+                        settings = true
+                        selected = null
+                    }
+                } else {
+                    Modifier
+                },
             ),
     ) {
         CompositionLocalProvider(
@@ -142,6 +151,7 @@ internal fun HubPanelsHost(
 }
 
 // Panel content is kept inside the parent's BoxScope for alignment semantics.
+@Suppress("FunctionNaming")
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.HubSidePanel(
     settings: Boolean,
@@ -150,14 +160,33 @@ private fun androidx.compose.foundation.layout.BoxScope.HubSidePanel(
     onAllSettings: () -> Unit,
     onClose: () -> Unit,
 ) {
+    val panelContext = LocalContext.current
+    val bb7Profile =
+        remember(panelContext, conversation) {
+            io.github.aimindseye.tenseven.platform
+                .StartStateRepository(panelContext)
+                .loadHomeStyle() == io.github.aimindseye.tenseven.model.HomeStyle.Bb7
+        }
+    val menuFromBottom = !settings && bb7Profile
     if (settings || conversation != null) {
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable { onClose() })
         Column(
             Modifier
-                .align(if (settings) Alignment.CenterStart else Alignment.CenterEnd)
-                .widthIn(max = 340.dp)
-                .fillMaxWidth(HUB_PANEL_FRACTION)
-                .fillMaxHeight()
+                .align(
+                    if (menuFromBottom) {
+                        Alignment.BottomCenter
+                    } else if (settings) {
+                        Alignment.CenterStart
+                    } else {
+                        Alignment.CenterEnd
+                    },
+                ).then(
+                    if (menuFromBottom) {
+                        Modifier.fillMaxWidth().heightIn(max = 420.dp)
+                    } else {
+                        Modifier.widthIn(max = 340.dp).fillMaxWidth(HUB_PANEL_FRACTION).fillMaxHeight()
+                    },
+                )
                 .hubPanelDismiss(settings) { onClose() }
                 .background(MaterialTheme.colorScheme.background)
                 .testTag(if (settings) "hub-settings-panel" else "hub-message-panel")
@@ -175,6 +204,39 @@ private fun androidx.compose.foundation.layout.BoxScope.HubSidePanel(
         }
     }
 }
+
+@Composable
+private fun sableSwipeDownMenu(): Boolean {
+    val context = LocalContext.current
+    return remember(context) {
+        runCatching {
+            android.provider.Settings.Secure.getString(context.contentResolver, "sable_profile")
+        }.getOrNull() != "bb7"
+    }
+}
+
+/** A drag down from the top strip of the page opens the menu (BlackBerry 10). */
+private fun Modifier.hubMenuSwipeDown(onOpen: () -> Unit): Modifier =
+    pointerInput(onOpen) {
+        val topStripPx = 56.dp.toPx()
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            if (down.position.y > topStripPx) return@awaitEachGesture
+            var claimed = false
+            do {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                val change = event.changes.firstOrNull { it.id == down.id } ?: return@awaitEachGesture
+                val dx = change.position.x - down.position.x
+                val dy = change.position.y - down.position.y
+                if (!claimed && (dy < 0f || abs(dx) > viewConfiguration.touchSlop * 2f)) return@awaitEachGesture
+                if (!claimed && dy > viewConfiguration.touchSlop * 2f) {
+                    claimed = true
+                    onOpen()
+                }
+                if (claimed) change.consume()
+            } while (change.pressed)
+        }
+    }
 
 /** Hub owns horizontal gestures while it is the selected page: right -> settings, left -> Home.
  * Vertical scrolling stays unclaimed, including scrolling inside the Hub message list.
@@ -249,14 +311,6 @@ private fun HubMessagePanel(
 ) {
     var remind by remember(conversation.id) { mutableStateOf(false) }
     HubSelectedMessageContext(conversation, ui)
-    PanelAction(
-        io.github.aimindseye.tenseven.model.HubActionPolicy
-            .openLabel(conversation.latestNotification.kind),
-        iconName = "mail",
-    ) {
-        ui.onOpen(conversation)
-        onClose()
-    }
     HubMessageReplyActions(conversation, ui, onClose)
     if (ui.state.unreadCount(conversation) > 0) {
         PanelAction("Mark read", iconName = "list-check") {
@@ -272,6 +326,7 @@ private fun HubMessagePanel(
         }
         onClose()
     }
+    SableHubRowActions(conversation, ui, onClose)
     val remindLocation = remember { BringIntoViewRequester() }
     LaunchedEffect(remind) {
         if (remind) {
@@ -294,6 +349,7 @@ private data class RemindOptionsActions(
 )
 
 // Remind action choices are separated from their remembered expanded state.
+@Suppress("FunctionNaming")
 @Composable
 private fun HubMessageRemindOptions(
     remind: Boolean,
@@ -332,6 +388,7 @@ private fun HubMessageRemindOptions(
 }
 
 // The message-context highlight is privacy-gated and has no mutable action state.
+@Suppress("FunctionNaming")
 @Composable
 private fun HubSelectedMessageContext(
     conversation: HubConversation,
@@ -353,11 +410,18 @@ private fun HubSelectedMessageContext(
             color = MaterialTheme.colorScheme.background,
             border = BorderStroke(2.dp, Bb10Blue),
         ) {
-            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            val short = io.github.aimindseye.tenseven.design.isSableShortWindow()
+            Column(Modifier.padding(if (short) 7.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(if (short) 2.dp else 5.dp)) {
                 Text("SELECTED MESSAGE", color = Bb10Muted, style = MaterialTheme.typography.labelSmall)
                 Text(conversation.name, color = Bb10Text, style = MaterialTheme.typography.titleMedium)
                 if (!preview.isNullOrBlank()) {
-                    Text(preview, color = Bb10Muted, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+                    Text(
+                        preview,
+                        color = Bb10Muted,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = if (short) 1 else 3,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -369,6 +433,14 @@ private fun HubSelectedMessageContext(
 private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) {
     var draft by remember { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val send = {
+        if (draft.isNotBlank()) {
+            failed = !onSend(draft)
+            if (!failed) draft = ""
+        }
+    }
     OutlinedTextField(
         value = draft,
         onValueChange = {
@@ -377,21 +449,20 @@ private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) 
         },
         label = { Text(label) },
         placeholder = { Text(stringResource(R.string.hub_reply_hint)) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().focusRequester(focus),
         isError = failed,
+        singleLine = true,
+        keyboardOptions =
+            androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
     )
-    PanelAction(stringResource(R.string.hub_send)) {
-        if (draft.isNotBlank()) {
-            failed = !onSend(draft)
-            if (!failed) draft = ""
-        }
-    }
+    PanelAction(stringResource(R.string.hub_send)) { send() }
     if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)
 }
 
 @Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun PanelAction(
+internal fun PanelAction(
     label: String,
     modifier: Modifier = Modifier,
     iconName: String? = null,
@@ -490,15 +561,38 @@ private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConvers
     val source = conversation.latestNotification
     val context = LocalContext.current
     var selected by remember(source) { mutableStateOf<HubSourceAction?>(null) }
-    var primary by remember(source) { mutableStateOf(false) }
+    var primary by remember(source) {
+        mutableStateOf(conversation.replyTargets.size <= 1 && (conversation.replyTarget ?: source).canReply)
+    }
     var failed by remember(source) { mutableStateOf(false) }
+    var choiceTick by remember(conversation.id) { mutableStateOf(0) }
     if (ui.deviceLocked) return
+    val replySource = remember(conversation, choiceTick) { conversation.replyTarget ?: source }
     val primaryLabel =
-        source.replyAction
+        replySource.replyAction
             ?.title
             ?.toString()
             ?.takeIf(String::isNotBlank) ?: "Reply"
-    if (source.canReply) {
+    val replyChoices = conversation.replyTargets
+    if (replyChoices.size > 1) {
+        replyChoices.forEach { choice ->
+            val label =
+                choice.replyAction
+                    ?.title
+                    ?.toString()
+                    ?.takeIf(String::isNotBlank) ?: "Reply"
+            PanelAction(
+                (if (choice === replySource) "\u2713 " else "") + label + " \u00b7 " + choice.appName,
+                iconName = "message-dots",
+            ) {
+                io.github.aimindseye.tenseven.conversations.SableReplyChoice
+                    .choose(conversation.id, choice.packageName)
+                choiceTick++
+                primary = true
+                selected = null
+            }
+        }
+    } else if (replySource.canReply) {
         PanelAction(primaryLabel, iconName = "message-dots") {
             primary = !primary
             selected = null
@@ -516,7 +610,7 @@ private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConvers
         }
     }
     if (primary) {
-        androidx.compose.runtime.key(source.key, primaryLabel) {
+        androidx.compose.runtime.key(replySource.key, primaryLabel) {
             HubPanelReply(primaryLabel) { ui.onReply(conversation, it) }
         }
     }

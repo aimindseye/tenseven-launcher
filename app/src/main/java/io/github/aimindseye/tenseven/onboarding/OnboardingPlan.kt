@@ -65,7 +65,8 @@ object OnboardingPlan {
     /** The same reviewable setup sequence on first launch and every later visit. */
     fun steps(state: SetupState): List<SetupStep> =
         SetupStep.entries.filterNot {
-            !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
+            it == SetupStep.EXTRAS ||
+                !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
         }
 
     /** Android 13 added "restricted settings" for apps that were not installed from a store. */

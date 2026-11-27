@@ -139,13 +139,14 @@ internal fun GridCell(
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
+    val unread = io.github.aimindseye.tenseven.platform.LockLayerState.counts[app.component.packageName] ?: 0
     Column(
         modifier =
             modifier
                 .padding(GRID_CELL_GAP)
                 .onFocusChanged { focused = it.isFocused }
                 .clip(shape)
-                .background(if (focused) Bb10Blue.copy(alpha = 0.32f) else Color.Transparent)
+                .background(if (focused) Bb10Blue else Color.Transparent)
                 .border(2.dp, if (focused) Bb10Blue else Color.Transparent, shape)
                 .onPreviewKeyEvent { event ->
                     val native = event.nativeKeyEvent
@@ -166,12 +167,14 @@ internal fun GridCell(
                     action != null
                 }.combinedClickable(onClick = onOpen, onLongClick = onActions)
                 .semantics {
-                    contentDescription = app.label + (app.profileLabel?.let { ", ${AppProfiles.badge(it)}" } ?: "")
+                    contentDescription =
+                        app.label + (app.profileLabel?.let { ", ${AppProfiles.badge(it)}" } ?: "") +
+                            (if (unread > 0) ", $unread new" else "")
                 }.padding(vertical = GRID_CELL_INNER_PADDING, horizontal = 1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        GridCellImage(app, iconDp)
+        GridCellImage(app, iconDp, unread > 0)
         if (showLabel) Spacer(Modifier.height(GRID_ICON_LABEL_GAP))
         if (showLabel) {
             Text(
@@ -187,13 +190,32 @@ internal fun GridCell(
     }
 }
 
+@Suppress("FunctionNaming") // Compose Unit renderers follow PascalCase for Android Lint.
 @Composable
 private fun GridCellImage(
     app: AppEntry,
     iconDp: Int,
+    splat: Boolean = false,
 ) {
     Box {
         AppMark(app = app, size = iconDp)
+        if (splat) {
+            val splatColor = Bb10Blue
+            androidx.compose.foundation.Canvas(modifier = Modifier.align(Alignment.TopEnd).size(14.dp)) {
+                val outer = size.minDimension / 2f
+                val star = androidx.compose.ui.graphics.Path()
+                for (i in 0 until 16) {
+                    val r = if (i % 2 == 0) outer else outer * 0.6f
+                    val a = Math.PI * i / 8.0 - Math.PI / 2.0
+                    val x = center.x + (r * Math.cos(a)).toFloat()
+                    val y = center.y + (r * Math.sin(a)).toFloat()
+                    if (i == 0) star.moveTo(x, y) else star.lineTo(x, y)
+                }
+                star.close()
+                drawPath(star, splatColor)
+                drawPath(star, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f))
+            }
+        }
         val badge = app.profileLabel
         if (badge != null) {
             Text(

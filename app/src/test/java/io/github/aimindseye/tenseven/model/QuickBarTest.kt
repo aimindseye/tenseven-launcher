@@ -114,15 +114,6 @@ class QuickBarTest {
     }
 
     @Test
-    fun digitsOnThePhoneSlotDial() {
-        assertEquals('1', QuickBar.dialChar('1'.code))
-        assertEquals('#', QuickBar.dialChar('#'.code))
-        assertEquals('+', QuickBar.dialChar('+'.code))
-        assertNull(QuickBar.dialChar('w'.code))
-        assertNull(QuickBar.dialChar(0))
-    }
-
-    @Test
     fun printableKeysOnStartSeedSearch() {
         assertEquals('m', StartTypeToSearch.seed('m'.code, 0, repeat = false))
         assertEquals('M', StartTypeToSearch.seed('M'.code, 0x1, repeat = false))

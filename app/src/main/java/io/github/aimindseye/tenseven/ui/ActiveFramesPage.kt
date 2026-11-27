@@ -72,42 +72,23 @@ internal fun ActiveFramesPage(
     val enabledApps = remember(refreshGeneration) { display.loadHubEnabledApps() }
 
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
-    val capture by io.github.aimindseye.tenseven.platform.ScreenCaptureState.state
-        .collectAsState()
     val owned = emptyList<FrameTileView>()
     Column(Modifier.fillMaxSize()) {
-        if (shown(HomeLayout.STATUS_RINGS) && dials.isNotEmpty()) StatusDialsRow(onOpenSettings, dials)
+        StatusDialsRow(onOpenSettings, dials)
         if (shown(HomeLayout.WEATHER)) {
             DateHeader(
                 refreshGeneration,
+                snapshot.hubApps.filter { it.packageName in enabledApps }.sumOf { it.count },
+                onShowHub,
+                !strip,
                 if (dials.isEmpty()) onOpenSettings else null,
             )
             if (strip) HomeNotificationStrip(snapshot.hubApps, enabledApps, expanded, onShowHub, onOpenApp = onOpenNotificationApp)
         }
+        HomeNowPlayingStrip(Modifier.padding(horizontal = 6.dp, vertical = 4.dp))
         if (shown(HomeLayout.SEARCH_ROW)) Box(Modifier.padding(horizontal = 6.dp)) { SearchLaunchButton(onClick = onSearch) }
         // Put the access offer outside the grid so it never displaces one of its two visible rows.
         if (!state.usageAllowed) UsageAccessHint(onAllowUsageAccess)
-        if (capture.running) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Shared screen · separate capture preview", color = Bb10Text, modifier = Modifier.weight(1f))
-                androidx.compose.material3.TextButton(onClick = {
-                    context.stopService(
-                        android.content.Intent(
-                            context,
-                            io.github.aimindseye.tenseven.platform.ScreenCaptureService::class.java,
-                        ),
-                    )
-                }) { Text("Stop sharing") }
-            }
-            capture.bitmap?.let { picture ->
-                Image(
-                    picture.asImageBitmap(),
-                    "Shared screen preview",
-                    Modifier.fillMaxWidth().height(96.dp),
-                    contentScale = ContentScale.Fit,
-                )
-            }
-        }
         ActiveFramesGrid(
             state,
             apps,
@@ -307,7 +288,7 @@ private fun RecentFrameCard(
                     .myUserHandle()
                     .hashCode(),
             )?.source
-            ?.label ?: "Live summary"
+            ?.label ?: if (FrameLiveSummary.playsMedia(item, snapshot)) "Now playing" else "Live summary"
     val renderedBadge =
         when {
             summary != null -> badge
@@ -391,7 +372,7 @@ internal fun FrameTile(
         Row(
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 36.dp)
+                .heightIn(min = 22.dp)
                 .background(Bb10Card)
                 .padding(start = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -401,13 +382,13 @@ internal fun FrameTile(
                 color = Bb10Text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.weight(1f),
             )
             if (closable) {
                 Box(
                     Modifier
-                        .size(48.dp)
+                        .size(width = 32.dp, height = 22.dp)
                         .testTag("close:$key")
                         .clickable(onClick = onClose)
                         .semantics { contentDescription = "Close $title card" },
@@ -428,13 +409,7 @@ private fun BoxScope.FrameContent(
     icon: @Composable () -> Unit,
 ) {
     if (picture != null) {
-        Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-        Text(
-            "Preview",
-            color = Bb10Text,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.align(Alignment.TopStart).background(Bb10Background).padding(4.dp),
-        )
+        Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
     } else {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
             icon()

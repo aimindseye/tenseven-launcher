@@ -1,8 +1,5 @@
 package io.github.aimindseye.tenseven.frames
 
-private const val MAX_ACTIVE_WINDOW_ENTRIES = 8
-private const val MAX_SEEN_WINDOW_ENTRIES = 96
-
 /** The opened-app window, not an inventory of notifications, documents or old Android recents. */
 data class FrameOpening(
     val app: FrameApp,
@@ -25,12 +22,12 @@ data class FrameWindow(
                         (next.active + (event.app.key to event.at))
                             .entries
                             .sortedByDescending { it.value }
-                            .take(MAX_ACTIVE_WINDOW_ENTRIES)
+                            .take(8)
                             .associate { it.toPair() },
                         (next.seen + (event.app.key to event.at))
                             .entries
                             .sortedByDescending { it.value }
-                            .take(MAX_SEEN_WINDOW_ENTRIES)
+                            .take(96)
                             .associate { it.toPair() },
                     )
             }
@@ -52,10 +49,7 @@ data class FrameWindow(
             .mapNotNull { (key, at) ->
                 val user = key.substringBefore(':').toIntOrNull() ?: return@mapNotNull null
                 val target = key.substringAfter(':')
-                FrameOpening(
-                    FrameApp(target.substringBefore('/'), user, target.substringAfter('/', "").ifBlank { null }),
-                    at,
-                )
+                FrameOpening(FrameApp(target.substringBefore('/'), user, target.substringAfter('/', "").ifBlank { null }), at)
             }.sortedByDescending { it.at }
 }
 
@@ -63,9 +57,7 @@ object LocalFrameApps {
     private const val ROOT = "io.github.aimindseye.tenseven."
     val activities =
         mapOf(
-            "local:notes" to ROOT + "extras.notes.MainActivity",
             "local:tasks" to ROOT + "tasks.TasksActivity",
-            "local:calculator" to ROOT + "extras.calculator.MainActivity",
         )
 
     fun canonical(activity: String?): String? =
@@ -79,9 +71,7 @@ object LocalFrameApps {
 
     fun title(activity: String?): String? =
         when (key(activity)) {
-            "local:notes" -> "TenSeven Notes"
             "local:tasks" -> "Tasks / Remind"
-            "local:calculator" -> "TenSeven Calculator"
             else -> null
         }
 }

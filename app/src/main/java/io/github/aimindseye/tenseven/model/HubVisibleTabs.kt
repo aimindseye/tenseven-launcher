@@ -1,20 +1,9 @@
 package io.github.aimindseye.tenseven.model
 
-/** Only nonempty Hub sections become top-level tabs. Commands and apps belong in Views. */
+/**
+ * The Hub's top-level tabs, as on the approved board: All, Messages, Calls and Contacts (home UI proposal, Hub boards). Email, Unread,
+ * Snoozed, Remind and Calendar live in Views.
+ */
 internal object HubVisibleTabs {
-    fun items(
-        messages: Int,
-        email: Int,
-        unread: Int,
-        snoozed: Int,
-        reminders: Int,
-    ): List<String> =
-        buildList {
-            add("All")
-            if (unread > 0) add("Unread")
-            if (messages > 0) add("Messages")
-            if (email > 0) add("Email")
-            if (snoozed > 0) add("Snoozed")
-            if (reminders > 0) add("Remind")
-        }
+    fun items(): List<String> = listOf("All", "Messages", "Calls", "Contacts")
 }

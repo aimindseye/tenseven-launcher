@@ -19,6 +19,9 @@ object LockLayerLauncher {
     fun showIfLocked(context: Context) {
         if (!Capabilities.hasConversationService(context) ||
             !StartStateRepository(context).loadLockLayer() ||
+            // The system "media player on the lock screen" choice (also in Android Settings > Security) is the one
+            // lock-screen switch: turned off there, the Hub notices stay off the lock screen too.
+            !LockScreenMedia.isOn(context) ||
             !canDrawOverlays(context)
         ) {
             return

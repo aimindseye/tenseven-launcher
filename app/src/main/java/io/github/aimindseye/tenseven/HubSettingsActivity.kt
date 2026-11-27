@@ -85,6 +85,7 @@ class HubSettingsActivity : ComponentActivity() {
         }
     }
 
+    @Suppress("FunctionNaming")
     @Composable
     private fun HubSettingsContent(
         state: StartStateRepository,
@@ -280,6 +281,7 @@ private fun HubSettings(
                 hubComposeSection()
                 hubAccessSection(access, enabled, first, auditContext)
                 hubContentSection(content)
+                io.github.aimindseye.tenseven.ui.SableHubSettingsSection()
                 hubCalendarSection(calendar)
                 HubSourceOptions(rows, enabled, enabled::toggle)
             }
@@ -392,7 +394,7 @@ private val hubAccessSection: @Composable (
                     as? android.content.ClipboardManager
             clipboard?.setPrimaryClip(
                 android.content.ClipData.newPlainText(
-                    "TenSeven notification diagnostics",
+                    "Sable Launcher notification diagnostics",
                     io.github.aimindseye.tenseven.conversations.HubNotificationAudit
                         .report(),
                 ),

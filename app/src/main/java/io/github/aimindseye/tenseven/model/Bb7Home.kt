@@ -41,8 +41,10 @@ enum class Bb7Panel(
     private val fixedTitle: String? = null,
 ) {
     Favorites("favorites"),
+
+    /** SableOS: the apps opened last, newest first (SableRecents). */
+    Recent("recent", fixedTitle = "Recent"),
     All("all"),
-    Recent("recent_apps", fixedTitle = "Recent"),
     Downloads("downloads"),
 
     /** The apps opened most from Tenseven (English title: it is Tenseven's own, not an imported Sable panel). */
@@ -54,49 +56,27 @@ enum class Bb7Panel(
 
 /** Which panels the tray cycles through, in order; kept as their names. Frequent is off until the user adds it. */
 object Bb7Panels {
-    private const val RECENT_VERSION = "@bb7_recent_v1"
-    val DEFAULT: List<Bb7Panel> = listOf(Bb7Panel.Favorites, Bb7Panel.All, Bb7Panel.Recent, Bb7Panel.Downloads)
+    val DEFAULT: List<Bb7Panel> = listOf(Bb7Panel.Favorites, Bb7Panel.Recent, Bb7Panel.All, Bb7Panel.Downloads)
 
-    /** Preserve explicitly saved order and disabled panels; discard only unknown/duplicate names. */
+    /** Reads the saved names; unknown names drop, the order is the panels' own, and none left means the default. */
     fun normalize(names: Collection<String>?): List<Bb7Panel> {
         if (names == null) return DEFAULT
-        val byName = Bb7Panel.entries.associateBy { it.name }
-        return names.mapNotNull { byName[it] }.distinct().ifEmpty { DEFAULT }
+        val chosen = Bb7Panel.entries.filter { panel -> names.any { it == panel.name } }
+        return chosen.ifEmpty { DEFAULT }
     }
 
-    /** The last visible panel cannot be hidden. Adding Recent never re-enables another panel. */
+    /** [panel] shown or hidden; the last panel cannot be hidden. */
     fun toggle(
         current: List<Bb7Panel>,
         panel: Bb7Panel,
-    ): List<Bb7Panel> =
-        when {
-            panel in current -> (current - panel).ifEmpty { current }
-            panel == Bb7Panel.Recent -> withRecent(current)
-            else -> current + panel
-        }
-
-    /** An unknown trailing marker remains harmless when an older Launcher reads the saved list. */
-    fun encode(panels: List<Bb7Panel>): String = (panels.map { it.name } + RECENT_VERSION).joinToString(",")
-
-    fun decode(text: String?): List<Bb7Panel> {
-        if (text == null) return DEFAULT
-        val names = text.split(',').map(String::trim)
-        val panels = normalize(names)
-        return if (RECENT_VERSION in names) panels else withRecent(panels)
+    ): List<Bb7Panel> {
+        val next = if (panel in current) current - panel else (current + panel)
+        return if (next.isEmpty()) current else Bb7Panel.entries.filter { it in next }
     }
 
-    private fun withRecent(panels: List<Bb7Panel>): List<Bb7Panel> {
-        if (Bb7Panel.Recent in panels) return panels
-        val downloads = panels.indexOf(Bb7Panel.Downloads)
-        val all = panels.indexOf(Bb7Panel.All)
-        val position =
-            when {
-                downloads >= 0 -> downloads
-                all >= 0 -> all + 1
-                else -> panels.size
-            }
-        return panels.toMutableList().apply { add(position, Bb7Panel.Recent) }
-    }
+    fun encode(panels: List<Bb7Panel>): String = panels.joinToString(",") { it.name }
+
+    fun decode(text: String?): List<Bb7Panel> = normalize(text?.split(',')?.map(String::trim))
 }
 
 /** How see-through the BlackBerry 7 banner and tray are over the wallpaper: 0 (clear) to 3 (dark). */
@@ -170,12 +150,13 @@ object Bb7Home {
     ): List<AppEntry> {
         val byName = apps.sortedBy { it.label.lowercase() }
         return when (panel) {
-            Bb7Panel.All -> {
-                byName
+            Bb7Panel.Recent -> {
+                val byKey = apps.associateBy { it.stableKey() }
+                SableRecents.keys.mapNotNull { byKey[it] }
             }
 
-            Bb7Panel.Recent -> {
-                emptyList()
+            Bb7Panel.All -> {
+                byName
             }
 
             Bb7Panel.Frequent -> {

@@ -46,6 +46,8 @@ data class LiveSurfaceSnapshot(
     val hubApps: List<AppUnreadCount> = emptyList(),
     val calendarPackages: Set<String> = emptySet(),
     val appSummaries: List<io.github.aimindseye.tenseven.frames.AppSummary> = emptyList(),
+    /** Every media session with a title, playing ones first; the frames show each app's own track. */
+    val mediaSessions: List<LiveDatum> = emptyList(),
 ) {
     init {
         require(dateText.isNotBlank())
@@ -53,13 +55,4 @@ data class LiveSurfaceSnapshot(
         require(observedAtEpochMs >= 0L)
     }
 
-    fun isFresh(
-        nowEpochMs: Long,
-        maxAgeMs: Long,
-    ): Boolean {
-        require(nowEpochMs >= 0L)
-        require(maxAgeMs >= 0L)
-        if (observedAtEpochMs > nowEpochMs) return false
-        return nowEpochMs - observedAtEpochMs <= maxAgeMs
-    }
 }

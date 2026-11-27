@@ -210,7 +210,6 @@ class ActiveFramesUiTest {
                     FramesState(usageAllowed = true, calendarAllowed = true, notificationsAllowed = true),
                     emptyList(),
                     setOf(
-                        io.github.aimindseye.tenseven.model.HomeLayout.STATUS_RINGS,
                         io.github.aimindseye.tenseven.model.HomeLayout.WEATHER,
                         io.github.aimindseye.tenseven.model.HomeLayout.SEARCH_ROW,
                     ),

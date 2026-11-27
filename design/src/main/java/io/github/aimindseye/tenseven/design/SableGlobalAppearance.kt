@@ -15,7 +15,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
 
 object SableGlobalAppearanceContract {
     const val AUTHORITY = "org.sableos.appearance"
@@ -30,7 +29,7 @@ object SableGlobalAppearanceContract {
     const val COLUMN_CORNER_STYLE = "corner_style"
 
     val CONTENT_URI: Uri =
-        "content://$AUTHORITY/$PATH_APPEARANCE".toUri()
+        Uri.parse("content://$AUTHORITY/$PATH_APPEARANCE")
 }
 
 fun readGlobalSableAppearance(context: Context): SableAppearance =
@@ -94,32 +93,6 @@ fun writeGlobalSableAppearance(
                 put(
                     SableGlobalAppearanceContract.COLUMN_ACCENT,
                     appearance.accent.stableValue,
-                )
-            }
-
-        context.contentResolver.update(
-            SableGlobalAppearanceContract.CONTENT_URI,
-            values,
-            null,
-            null,
-        ) == 1
-    }.getOrDefault(false)
-
-/**
- * Stores the Sable app corner style. Only Settings and App display compatibility may write
- * it; any other caller gets false. [writeGlobalSableAppearance] never writes this column, so
- * an appearance reset from Sable Start leaves the user's corner style alone.
- */
-fun writeGlobalSableCornerStyle(
-    context: Context,
-    style: SableCornerStyle,
-): Boolean =
-    runCatching {
-        val values =
-            ContentValues().apply {
-                put(
-                    SableGlobalAppearanceContract.COLUMN_CORNER_STYLE,
-                    style.stableValue,
                 )
             }
 

@@ -13,7 +13,6 @@ internal enum class SableStartDestination {
     Appearance,
     Peek,
     EditHome,
-    SlotOptions,
 
     /** All Apps "Choose base bar slot" for an app when the bar is full. */
     SlotPicker,

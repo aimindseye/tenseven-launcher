@@ -129,9 +129,7 @@ class P3ResponsiveUiTest {
                     onMovePage = {},
                     onShowPage = {},
                     onQuickSlot = {},
-                    onSlotOptions = {},
                     onHubPeek = {},
-                    onDial = {},
                     onTypeToSearch = {},
                     speedDialLetters = emptySet(),
                     onSpeedDial = {},
@@ -170,7 +168,7 @@ class P3ResponsiveUiTest {
 
     @Test fun settingsDeviceEntryRemainsReachableOnSmallOrLargeTextWindows() {
         ActivityScenario.launch(LauncherSettingsActivity::class.java).use {
-            compose.onNodeWithText("1. Permissions").performScrollTo().performClick()
+            compose.onNodeWithText("6. Apps & Features").performScrollTo().performClick()
             compose.onNodeWithText("Device compatibility").performScrollTo().assertIsDisplayed()
         }
     }
