@@ -7,6 +7,7 @@ import org.junit.Test
 class GamesDecouplingTest {
     private val legacy = "io.github.aimindseye.tenseven/io.github.aimindseye.tenseven.extras.games.SnakeActivity"
     private val external = "org.example.game/org.example.game.MainActivity"
+
     @Test
     fun fullAndLiteSetupOfferNoGamesAndNormalizeDropsRemovedOnes() {
         val tools = setOf("phone", "calendar", "tasks", "notes", "calculator", "profiles", "watch")
