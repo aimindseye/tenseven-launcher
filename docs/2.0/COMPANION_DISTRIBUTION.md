@@ -34,7 +34,7 @@ Also publish the standalone Launcher APK and each companion APK for independent 
 ## Installer location and user flow
 
 1. Install the standalone Launcher APK through Android's package installer; choose TenSeven as the default Home app if desired.
-2. During initial Setup, offer **Minimum Apps** and **Full Apps** as selection presets; preserve the existing setup choice wording and provide per-app toggle/Skip.
+2. During initial Setup, offer **Base** (launcher only), **Lite** (recommended apps) and **Full** (all apps) as selection presets; preserve the existing setup choice wording and provide per-app toggle/Skip.
 3. In Launcher Settings > Apps & Features > TenSeven Companion Apps, show each expected package as **Not installed**, **Installed**, **Update available**, **Unsupported**, or **Install failed**. Do not infer an installation succeeded until Android confirms package/version/signature.
 4. Allow selecting an official release ZIP via Storage Access Framework (document picker) or official trusted download if enabled. Extract to app-private temporary storage using bounded, traversal-safe extraction; reject duplicates, symlink entries, excessive sizes and unexpected paths.
 5. Display chosen components with size, purpose, permissions, existing version and what the install will change. Ask separately for Android's applicable permission to install apps from this source.

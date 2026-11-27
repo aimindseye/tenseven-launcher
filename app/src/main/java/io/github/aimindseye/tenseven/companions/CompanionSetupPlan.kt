@@ -2,7 +2,13 @@ package io.github.aimindseye.tenseven.companions
 
 /** User choice only: a selection never changes installed packages or bundled extras. */
 enum class CompanionPreset {
-    MINIMUM,
+    /** Launcher only: no companion apps. */
+    BASE,
+
+    /** Recommended apps: Tasks / Remind, Notes and Calc Plus. */
+    LITE,
+
+    /** Every optional companion. */
     FULL,
     CUSTOM,
 }
@@ -13,7 +19,8 @@ object CompanionSetupPlan {
         current: Set<String>,
     ): Set<String> =
         when (preset) {
-            CompanionPreset.MINIMUM -> CompanionCatalog.minimumPreset
+            CompanionPreset.BASE -> CompanionCatalog.basePreset
+            CompanionPreset.LITE -> CompanionCatalog.litePreset
             CompanionPreset.FULL -> CompanionCatalog.fullPreset
             CompanionPreset.CUSTOM -> CompanionCatalog.normalize(current)
         }
@@ -21,7 +28,8 @@ object CompanionSetupPlan {
     fun selectedPreset(selected: Collection<String>): CompanionPreset {
         val normalized = CompanionCatalog.normalize(selected)
         return when (normalized) {
-            CompanionCatalog.minimumPreset -> CompanionPreset.MINIMUM
+            CompanionCatalog.basePreset -> CompanionPreset.BASE
+            CompanionCatalog.litePreset -> CompanionPreset.LITE
             CompanionCatalog.fullPreset -> CompanionPreset.FULL
             else -> CompanionPreset.CUSTOM
         }

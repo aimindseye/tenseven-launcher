@@ -22,7 +22,12 @@ object CompanionCatalog {
             CompanionSpec("profiles", "Sound Profiles", "io.github.aimindseye.tenseven.profiles", false),
         )
 
-    val minimumPreset: Set<String> = all.filter { it.minimumPreset }.map { it.id }.toSet()
+    /** Base: the launcher alone, no companion apps. */
+    val basePreset: Set<String> = emptySet()
+
+    /** Lite: the recommended apps. */
+    val litePreset: Set<String> = all.filter { it.minimumPreset }.map { it.id }.toSet()
+
     val fullPreset: Set<String> = all.map { it.id }.toSet()
 
     /** Ignores obsolete or unrecognized input without toggling bundled component settings. */

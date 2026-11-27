@@ -23,10 +23,11 @@ class CompanionCatalogTest {
     }
 
     @Test
-    fun minimumAndFullAreIndependentCompanionPresets() {
-        assertEquals(setOf("tasks", "notes", "calculator"), CompanionCatalog.minimumPreset)
+    fun baseLiteAndFullArePresets() {
+        assertEquals(setOf("tasks", "notes", "calculator"), CompanionCatalog.litePreset)
+        assertEquals(emptySet<String>(), CompanionCatalog.basePreset)
         assertEquals(6, CompanionCatalog.fullPreset.size)
-        assertTrue(CompanionCatalog.fullPreset.containsAll(CompanionCatalog.minimumPreset))
+        assertTrue(CompanionCatalog.fullPreset.containsAll(CompanionCatalog.litePreset))
         assertEquals(setOf("phone"), CompanionCatalog.normalize(listOf("phone", "unknown", "phone")))
     }
 

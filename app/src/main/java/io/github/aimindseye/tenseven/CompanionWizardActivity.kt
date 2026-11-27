@@ -115,14 +115,21 @@ private fun CompanionPresetPage(
 ) {
     Section("Choose a preset")
     Card(
-        "Minimum apps",
-        "Tasks / Remind, Notes, Calc Plus",
-        CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.MINIMUM,
+        "Base",
+        "Only the launcher, no companion apps",
+        CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.BASE,
     ) {
-        onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.MINIMUM, selected))
+        onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.BASE, selected))
     }
     Card(
-        "Full apps",
+        "Lite · recommended apps",
+        "Tasks / Remind, Notes, Calc Plus",
+        CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.LITE,
+    ) {
+        onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.LITE, selected))
+    }
+    Card(
+        "Full · all apps",
         "All six optional tool companions",
         CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.FULL,
     ) {
