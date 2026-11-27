@@ -20,7 +20,6 @@ import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
 
-
 /** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
 private const val WEATHER_CURRENT_NEAR_DEVIC_TIME_1000_L = 1000L
 private const val WEATHER_CURRENT_NEAR_DEVIC_TIME_8_000_L = 8_000L
