@@ -139,7 +139,6 @@ class OnboardingActivity : ComponentActivity() {
         }
     }
 
-    @Suppress("FunctionNaming")
     @Composable
     private fun FullSetupContent(
         state: SetupState,
@@ -168,7 +167,6 @@ class OnboardingActivity : ComponentActivity() {
         )
     }
 
-    @Suppress("FunctionNaming")
     @Composable
     private fun SingleStepSetupContent(
         state: SetupState,
@@ -375,7 +373,6 @@ private class SetupWizardRouteNavigation(
     val onNext: () -> Unit,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardRouter(
     model: SetupWizardRouteModel,
@@ -509,7 +506,6 @@ private class SetupWizardEvents(
     val onOpenAppInfo: () -> Unit,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardStep(
     display: SetupWizardDisplay,
@@ -556,7 +552,6 @@ private fun SetupWizardStep(
     SetupWizardNext(display, events.onNext)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardPrimaryAction(
     display: SetupWizardDisplay,
@@ -569,7 +564,6 @@ private fun SetupWizardPrimaryAction(
     ) { Text(if (display.done) stringResource(R.string.setup_change) else stepAction(display.step)) }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardNext(
     display: SetupWizardDisplay,
@@ -610,7 +604,6 @@ private class SetupOverviewRowEvents(
     val firstButton: FocusRequester,
 )
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupOverviewRowItem(
     row: SetupOverviewRow,
@@ -638,7 +631,6 @@ private fun SetupOverviewRowItem(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupOverviewRowStatus(row: SetupOverviewRow) {
     Text(
@@ -665,7 +657,6 @@ private fun SetupOverviewRowStatus(row: SetupOverviewRow) {
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupOverviewRowAction(
     row: SetupOverviewRow,
@@ -885,7 +876,6 @@ private fun ExtrasPicker(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageWelcome(
     state: SetupState,
@@ -899,7 +889,6 @@ private fun SetupStageWelcome(
     ) { Text(if (state.homeRoleHeld) "Change default Home app" else "Set Sable Launcher as Home") }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageHome(settings: StartStateRepository) {
     Text("Select the BB10 or BB7 home. Their saved layout settings remain separate.")
@@ -908,7 +897,6 @@ private fun SetupStageHome(settings: StartStateRepository) {
     ChoiceSection(SetupStep.WIDGETS, settings)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageAppearance(settings: StartStateRepository) {
     Text(
@@ -918,7 +906,6 @@ private fun SetupStageAppearance(settings: StartStateRepository) {
     Settings2AppearanceChoices(settings)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageApps(
     picked: Set<String>,
@@ -947,7 +934,6 @@ private fun SetupStageApps(
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageHubLock(settings: StartStateRepository) {
     Text(
@@ -964,7 +950,6 @@ private fun SetupStageHubLock(settings: StartStateRepository) {
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStagePermissions(
     state: SetupState,
@@ -996,7 +981,6 @@ private fun SetupStagePermissions(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupStageReview(
     state: SetupState,
@@ -1043,7 +1027,6 @@ private class SetupWizardExtras(
 )
 
 /** The setup stage retains callbacks without widening its Compose signature. */
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizard2(
     state: SetupState,
@@ -1101,7 +1084,6 @@ private fun SetupWizard2(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardHeader(
     index: Int,
@@ -1116,7 +1098,6 @@ private fun SetupWizardHeader(
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun SetupWizardNavigation(
     index: Int,

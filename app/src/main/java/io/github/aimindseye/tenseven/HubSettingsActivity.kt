@@ -85,7 +85,6 @@ class HubSettingsActivity : ComponentActivity() {
         }
     }
 
-    @Suppress("FunctionNaming")
     @Composable
     private fun HubSettingsContent(
         state: StartStateRepository,
@@ -236,7 +235,6 @@ private data class HubContentSettings(
     val navigation: HubSettingsNavigation,
 )
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubSettings(
     access: HubAccessSettings,
@@ -478,7 +476,6 @@ private fun HubSwitch(
     SwitchRow(title, detail, checked, onChange)
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubSourceOptions(rows: List<Pair<String, String>>, sources: HubSourceSettings, onToggle: (String) -> Unit) {
     var filters by remember { mutableStateOf(false) }
@@ -505,7 +502,6 @@ private fun HubSourceOptions(rows: List<Pair<String, String>>, sources: HubSourc
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubListenerDiagnostics(access: HubAccessSettings, enabled: HubSourceSettings) {
     val connected = io.github.aimindseye.tenseven.conversations.NotificationConnection.connected

@@ -57,7 +57,6 @@ private const val CHAT_BUBBLE_MAX_DP = 420
  * app that received the message; when that app has no reply action, Open app is offered instead.
  */
 @Composable
-@Suppress("FunctionNaming")
 internal fun HubChatScreen(
     conversation: HubConversation,
     ui: HubConversationsUi,
@@ -94,7 +93,6 @@ internal fun HubChatScreen(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubChatHeader(
     conversation: HubConversation,
     onClose: () -> Unit,
@@ -148,7 +146,6 @@ private fun HubChatHeader(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubChatBubble(message: ConversationMessage) {
     val context = LocalContext.current
     val outgoing = message.isOutgoing
@@ -183,7 +180,7 @@ private fun HubChatBubble(message: ConversationMessage) {
 }
 
 @Composable
-@Suppress("FunctionNaming", "LongMethod")
+@Suppress("LongMethod")
 private fun HubChatReply(
     conversation: HubConversation,
     ui: HubConversationsUi,

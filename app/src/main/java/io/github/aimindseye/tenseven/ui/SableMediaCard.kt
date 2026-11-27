@@ -88,7 +88,7 @@ private fun appLabel(
  * Previous, Play or Pause and Next as line-icon buttons (Rewind and Fast forward too for audiobooks). [compact] is
  * the slim strip for the Home screens; tapping its title opens the app that is playing.
  */
-@Suppress("FunctionNaming", "LongMethod") // Compose UI entry points use PascalCase.
+@Suppress("LongMethod")
 @Composable
 internal fun SableMediaCard(
     media: LockMediaNow,
@@ -176,7 +176,6 @@ internal fun SableMediaCard(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun SableMediaCover(
     media: LockMediaNow,
@@ -204,7 +203,6 @@ private fun SableMediaCover(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun MediaControls(
     media: LockMediaNow,
@@ -239,7 +237,7 @@ private fun MediaControls(
     }
 }
 
-@Suppress("FunctionNaming", "LongParameterList") // Compose UI entry points use PascalCase.
+@Suppress("LongParameterList")
 @Composable
 private fun MediaControlButton(
     icon: ImageVector,

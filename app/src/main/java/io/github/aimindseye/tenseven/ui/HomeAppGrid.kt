@@ -190,7 +190,6 @@ internal fun GridCell(
     }
 }
 
-@Suppress("FunctionNaming") // Compose Unit renderers follow PascalCase for Android Lint.
 @Composable
 private fun GridCellImage(
     app: AppEntry,

@@ -63,7 +63,6 @@ import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
 
 /** Per-source discovery does not open, dismiss or mark any notification read. */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun LockNotificationScreen(
     enabled: Set<String>,
@@ -146,7 +145,6 @@ private fun rememberLockContent(
     return LockContent(source, entries, details, capabilities.deviceLocked, showText)
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockNotificationBody(content: LockContent, actions: LockScreenActions, modifier: Modifier) {
     var marker by remember { mutableFloatStateOf(INITIAL_MARKER_PX) }
@@ -192,7 +190,6 @@ private fun LockNotificationBody(content: LockContent, actions: LockScreenAction
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockFooterAction(label: String, description: String, onClick: () -> Unit) {
     Text(
@@ -207,7 +204,6 @@ private fun LockFooterAction(label: String, description: String, onClick: () -> 
     )
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockClock(
     showClock: Boolean,
@@ -243,7 +239,6 @@ private fun LockClock(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockSourceIcon(
     packageName: String,
@@ -309,7 +304,6 @@ private fun LockSourceIcon(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockSourceDetails(
     content: LockContent,

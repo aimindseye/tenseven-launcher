@@ -108,7 +108,6 @@ internal fun HubCalendarPeek(
 }
 
 // Expanded calendar content is independent of Peek's remembered state.
-@Suppress("FunctionNaming")
 @Composable
 private fun CalendarPeekExpandedContent(
     deviceLocked: Boolean,
@@ -144,7 +143,6 @@ private fun CalendarPeekExpandedContent(
 }
 
 // Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
-@Suppress("FunctionNaming")
 @Composable
 private fun CalendarPeekEvent(
     event: HubCalendarEvent,

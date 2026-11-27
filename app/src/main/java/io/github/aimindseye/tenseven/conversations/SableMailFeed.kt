@@ -70,7 +70,7 @@ object SableMailFeed {
     }
 
     /** Null when Sable Mail is not installed or refuses; then the Hub shows its notifications as before. */
-    private fun read(context: Context): List<HubNotification>? =
+    internal fun read(context: Context): List<HubNotification>? =
         runCatching {
             context.contentResolver.query(URI, null, null, null, null)?.use { cursor ->
                 buildList { while (cursor.moveToNext()) add(row(context, cursor)) }

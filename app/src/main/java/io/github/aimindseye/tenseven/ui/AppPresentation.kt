@@ -120,7 +120,6 @@ internal fun AppRow(
 }
 
 // All app-row actions are reachable with Menu / Fn+Enter; not touch-only.
-@Suppress("FunctionNaming")
 @Composable
 private fun AppRowAction(
     app: AppEntry,
@@ -301,7 +300,6 @@ internal fun AppMark(
 }
 
 // Icon rendering is independent of the asynchronous loading state.
-@Suppress("FunctionNaming")
 @Composable
 private fun AppMarkLoadedIcon(
     loadedIcon: LauncherIcon?,

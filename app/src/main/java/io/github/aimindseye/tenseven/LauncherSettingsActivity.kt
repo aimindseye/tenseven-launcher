@@ -455,7 +455,6 @@ private val launcherSettingsFooter: @Composable (
 }
 
 /** Consistent, sticky Settings navigation, including Hub's standalone settings activity. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2FlowFooter(
     backText: String,
@@ -482,7 +481,6 @@ internal fun Settings2FlowFooter(
 }
 
 /** Same return link for the seven internal pages and the standalone Hub Settings activity. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2BackLink(onBack: () -> Unit) {
     androidx.compose.material3.TextButton(onClick = onBack) {
@@ -490,7 +488,6 @@ internal fun Settings2BackLink(onBack: () -> Unit) {
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2Permissions(context: android.content.Context) {
     var permissionRefresh by remember { androidx.compose.runtime.mutableIntStateOf(0) }
@@ -516,7 +513,6 @@ private fun Settings2Permissions(context: android.content.Context) {
 }
 
 /** Weather is off until a city is provided. No GPS, location or personal history. */
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2HomeRolePermission(
     context: android.content.Context,
@@ -533,7 +529,6 @@ private fun Settings2HomeRolePermission(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2PeoplePermissions(
     context: android.content.Context,
@@ -584,7 +579,6 @@ private fun Settings2PeoplePermissions(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2SpecialPermissions(
     context: android.content.Context,
@@ -631,7 +625,6 @@ private fun Settings2SpecialPermissions(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2LocationPermission(context: android.content.Context) {
     val locationPermission = android.Manifest.permission.ACCESS_COARSE_LOCATION
@@ -663,7 +656,6 @@ private fun Settings2LocationPermission(context: android.content.Context) {
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2ReadabilityOptions(state: StartStateRepository) {
     var size by remember { mutableStateOf(state.loadLauncherTextSize()) }
@@ -684,7 +676,6 @@ private fun Settings2ReadabilityOptions(state: StartStateRepository) {
     Settings2WeatherOptions(state)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2WeatherOptions(state: StartStateRepository) {
     var weather by remember { mutableStateOf(state.loadHomeWeatherEnabled()) }
@@ -706,7 +697,6 @@ private fun Settings2WeatherOptions(state: StartStateRepository) {
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2WeatherCityEditor(state: StartStateRepository) {
     var city by remember { mutableStateOf(state.loadHomeWeatherCity()) }
@@ -729,7 +719,6 @@ private fun Settings2WeatherCityEditor(state: StartStateRepository) {
     Settings2WeatherCheck(city)
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2WeatherCheck(city: String) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -773,7 +762,6 @@ private fun Settings2WeatherCheck(city: String) {
     )
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2Bb7Options(state: StartStateRepository) {
     Text(
@@ -794,7 +782,6 @@ private fun Settings2Bb7Options(state: StartStateRepository) {
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun Settings2Category(
     id: String,
@@ -872,7 +859,6 @@ private fun settings2CategoryIconPaths(id: String): List<String> =
         }
     }
 
-@Suppress("FunctionNaming")
 @Composable
 internal fun Settings2AppearanceChoices(
     state: StartStateRepository,
@@ -935,7 +921,6 @@ internal fun Settings2AppearanceChoices(
 }
 
 // Unit composables follow the naming required by Compose lint.
-@Suppress("FunctionNaming")
 @Composable
 private fun DeviceCompatibilityLink() {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -945,7 +930,6 @@ private fun DeviceCompatibilityLink() {
 }
 
 // Compose Unit renderers require PascalCase; this exception is limited to this renderer.
-@Suppress("FunctionNaming")
 @Composable
 private fun DeviceSettingsLinks(
     onLanguage: () -> Unit,

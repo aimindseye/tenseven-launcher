@@ -146,7 +146,6 @@ private data class PeekPanelActions(
 )
 
 // Keep Peek's content hierarchy independent of animation and scrim state.
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekPanelContents(
     conversations: List<HubConversation>,
@@ -333,7 +332,6 @@ private fun PeekRow(
 }
 
 // Icon pack and system icon selection are shared by every Peek row.
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekRowSourceIcon(packageName: String?) {
     val context = LocalContext.current
@@ -399,7 +397,6 @@ private const val MAX_ROWS = 8
 // How opaque the peek panel is; the rest lets Home show through.
 
 // Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekConversations(
     conversations: List<HubConversation>,

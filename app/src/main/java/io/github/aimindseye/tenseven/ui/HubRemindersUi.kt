@@ -75,7 +75,6 @@ internal fun HubRemindersPanel(records: List<TaskRecord>) {
 }
 
 // Keep the editing dialog in the Hub while isolating save/delete callbacks.
-@Suppress("FunctionNaming")
 @Composable
 private fun HubReminderEditor(
     task: TaskRecord,

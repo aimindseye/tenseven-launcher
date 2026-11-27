@@ -89,7 +89,6 @@ internal fun readLockMedia(context: android.content.Context): LockMediaNow? =
  * Radio or any other player), drawn by [SableMediaCard]. Shown only while the system
  * "media player on the lock screen" choice is on. Needs the notification access Hub already holds.
  */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun LockMediaCard(modifier: Modifier = Modifier) {
     val context = LocalContext.current

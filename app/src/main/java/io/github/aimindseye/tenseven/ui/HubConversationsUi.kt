@@ -456,7 +456,6 @@ private fun hubNavActivate(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun HubNavigationTabStrip(
     tabs: List<String>,
@@ -857,7 +856,6 @@ private fun hubSourceCount(context: android.content.Context): Int {
  * messages nested under it, each tagged with the app it came from (SMS, WhatsApp, Email).
  */
 @Composable
-@Suppress("FunctionNaming")
 private fun HubNestedMessages(
     conversation: HubConversation,
     locked: Boolean,
@@ -920,7 +918,6 @@ private val HUB_AVATAR_COLORS = listOf(0xFF2E9BD6, 0xFF6B4FA0, 0xFF2E6F5E, 0xFF7
 
 /** The approved board's round initials avatar; the colour comes from the name so a person keeps theirs. */
 @Composable
-@Suppress("FunctionNaming")
 internal fun HubAvatar(
     name: String,
     size: androidx.compose.ui.unit.Dp,

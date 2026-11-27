@@ -17,7 +17,6 @@ private const val NOW_PLAYING_POLL_MS = 1_500L
  * media session is active (Sable Media, FM Radio, the Reader's audiobook or any other player). It reads the same
  * session as the lock screen card, so it behaves the same for every media app. Tapping the title opens the playing app.
  */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun HomeNowPlayingStrip(modifier: Modifier = Modifier) {
     val context = LocalContext.current

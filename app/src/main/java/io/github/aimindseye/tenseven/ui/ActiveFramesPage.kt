@@ -215,7 +215,6 @@ internal fun ActiveFramesGrid(
 }
 
 // Compose Unit renderers require PascalCase; the naming exception is local.
-@Suppress("FunctionNaming")
 @Composable
 private fun OwnedFrameCard(
     tile: FrameTileView,

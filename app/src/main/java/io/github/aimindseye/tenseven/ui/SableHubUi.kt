@@ -43,7 +43,6 @@ private const val SABLE_MAIL = "org.sableos.mail"
 private const val DAVX5 = "at.bitfire.davdroid"
 
 /** A section title in the Hub list: "Unread", "Today", "Thursday, November 12". */
-@Suppress("FunctionNaming")
 @Composable
 internal fun SableHubSectionHeader(label: String) {
     Text(
@@ -55,7 +54,6 @@ internal fun SableHubSectionHeader(label: String) {
 }
 
 /** "All accounts · 2 unread" under the Hub title, or the app or Priority Hub being shown. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun SableHubSubtitle(
     ui: HubConversationsUi,
@@ -92,7 +90,6 @@ internal fun SableHubSubtitle(
 }
 
 /** Views, after the fixed views: Priority Hub, each app with its unread count, and Email accounts. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun SableHubViewsExtras(
     ui: HubConversationsUi,
@@ -120,7 +117,6 @@ internal fun SableHubViewsExtras(
     }
 }
 
-@Suppress("FunctionNaming")
 @Composable
 private fun ViewsRow(
     label: String,
@@ -144,7 +140,6 @@ private fun ViewsRow(
 }
 
 /** The ⋮ at the right of the Hub bar: Hub settings, Email accounts, Calendar accounts, Connected apps. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun RowScope.SableHubMoreControl() {
     val context = LocalContext.current
@@ -187,7 +182,6 @@ internal fun RowScope.SableHubMoreControl() {
 }
 
 /** Row menu additions: Mark Unread, Priority Hub for the person and for the app, and Delete. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun SableHubRowActions(
     conversation: HubConversation,
@@ -221,7 +215,6 @@ internal fun SableHubRowActions(
 }
 
 /** Hub settings rows SableOS adds: what the Hub keeps, how it lists chats, and the account apps. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun SableHubSettingsSection() {
     val context = LocalContext.current

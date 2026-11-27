@@ -231,7 +231,6 @@ private fun hubPageJumpKey(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageContent(
     session: HubPageSession,
     onReturnHome: () -> Unit,
@@ -276,7 +275,6 @@ private fun hubCalendarIntent(): Intent =
     )
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPagePanel(
     session: HubPageSession,
     chrome: HubPageChromeState,
@@ -316,7 +314,6 @@ private fun HubPagePanel(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageHeader(
     session: HubPageSession,
     chrome: HubPageChromeState,
@@ -364,7 +361,6 @@ private fun HubPageHeader(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageNavigation(
     session: HubPageSession,
     chrome: HubPageChromeState,
@@ -387,7 +383,6 @@ private fun HubPageNavigation(
 
 /** BlackBerry 7: the accent-blue title bar with the Hub icon, the title and the unread line in white. */
 @Composable
-@Suppress("FunctionNaming")
 private fun HubBb7TitleBar(ui: HubConversationsUi) {
     Row(
         modifier =
@@ -422,7 +417,6 @@ private fun sableBottomTabs(): Boolean {
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageControls(
     session: HubPageSession,
     chrome: HubPageChromeState,
@@ -457,7 +451,6 @@ private fun HubPageControls(
 }
 
 @Composable
-@Suppress("FunctionNaming")
 private fun HubPageComposePrompt(
     session: HubPageSession,
     chrome: HubPageChromeState,

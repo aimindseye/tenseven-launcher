@@ -484,7 +484,6 @@ private fun rememberSearchModel(
     )
 }
 
-@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
 @Composable
 private fun SearchScreenLayout(
     ui: SearchUiState,
@@ -665,7 +664,6 @@ private fun searchAppActions(
         add(t("more_actions") to { actions.peek(app) })
     }
 
-@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
 @Composable
 private fun SearchAppResult(app: AppEntry, ui: SearchUiState, actions: SearchResultActions) {
     val key = "app:" + app.stableKey()
@@ -698,7 +696,6 @@ private fun SearchAppResult(app: AppEntry, ui: SearchUiState, actions: SearchRes
     if (ui.actionsFor == key) EditOptions(searchAppActions(app, actions))
 }
 
-@Suppress("FunctionNaming") // Compose UI declarations are intentionally PascalCase.
 @Composable
 private fun SearchCommandResult(command: SearchCommand, ui: SearchUiState) {
     val key = "cmd:" + command.source + ":" + command.title
@@ -1209,7 +1206,6 @@ internal fun assignRows(
 }
 
 // Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
-@Suppress("FunctionNaming")
 @Composable
 private fun SearchBestMatch(content: @Composable () -> Unit) {
     SectionLabel(t("best_match"))

@@ -72,7 +72,7 @@ import kotlin.math.abs
 internal val LocalHubRowSelection = staticCompositionLocalOf<(String, FocusRequester) -> Unit> { { _, _ -> } }
 
 /** Owns the one selected row and both side panels, independent of notification read state. */
-@Suppress("FunctionNaming", "LongMethod") // Compose UI entry points use PascalCase.
+@Suppress("LongMethod")
 @Composable
 internal fun HubPanelsHost(
     ui: HubConversationsUi,
@@ -152,7 +152,6 @@ internal fun HubPanelsHost(
 }
 
 // Panel content is kept inside the parent's BoxScope for alignment semantics.
-@Suppress("FunctionNaming")
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.HubSidePanel(
     settings: Boolean,
@@ -265,7 +264,6 @@ private fun Modifier.hubSettingsSwipe(
         }
     }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubSettingsPanel(onAllSettings: () -> Unit) {
     val context = LocalContext.current
@@ -290,7 +288,6 @@ private fun HubSettingsPanel(onAllSettings: () -> Unit) {
     PanelAction("Calendars and permissions", onClick = onAllSettings)
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun PanelToggle(
     label: String,
@@ -303,7 +300,6 @@ private fun PanelToggle(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubMessagePanel(
     conversation: HubConversation,
@@ -350,7 +346,6 @@ private data class RemindOptionsActions(
 )
 
 // Remind action choices are separated from their remembered expanded state.
-@Suppress("FunctionNaming")
 @Composable
 private fun HubMessageRemindOptions(
     remind: Boolean,
@@ -389,7 +384,6 @@ private fun HubMessageRemindOptions(
 }
 
 // The message-context highlight is privacy-gated and has no mutable action state.
-@Suppress("FunctionNaming")
 @Composable
 private fun HubSelectedMessageContext(
     conversation: HubConversation,
@@ -434,7 +428,6 @@ private fun HubSelectedMessageContext(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) {
     var draft by remember { mutableStateOf("") }
@@ -473,7 +466,6 @@ private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) 
     if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun PanelAction(
     label: String,
@@ -513,7 +505,6 @@ internal fun PanelAction(
 
 private const val HUB_PANEL_FRACTION = 0.78f
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubPanelBody(
     settings: Boolean,
@@ -568,7 +559,7 @@ private fun Modifier.hubPanelDismiss(
     }
 
 /** Capabilities come from the latest selected source, not older notifications grouped with the same person. */
-@Suppress("FunctionNaming", "CyclomaticComplexMethod", "LongMethod") // Compose UI entry points use PascalCase.
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConversationsUi, onClose: () -> Unit) {
     val source = conversation.latestNotification

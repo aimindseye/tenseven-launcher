@@ -89,7 +89,6 @@ internal fun HomeNotificationStrip(
 }
 
 // Isolate app icon loading and click handling from the Home strip layout.
-@Suppress("FunctionNaming")
 @Composable
 private fun HomeNotificationAppChip(
     item: HubBar.Item,

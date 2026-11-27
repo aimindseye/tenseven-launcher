@@ -56,7 +56,6 @@ private fun rememberReferenceUnread(): Int {
 }
 
 /** The BBOS 10 home bar: Hub, the page dots and Camera. */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun ReferenceHomeBar(
     slots: List<QuickSlot>,
@@ -73,7 +72,6 @@ internal data class HomeBarControlSpec(
     val unread: Int = 0,
 )
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun HomeBarControl(
     spec: HomeBarControlSpec,
@@ -141,7 +139,6 @@ private fun homeControlPaths(glyph: String): List<String> =
         else -> TablerGlyphPaths.BY_NAME[glyph] ?: LineIconPaths.SEARCH
     }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubBarTarget(pages: HomeBarPages, unread: Int, actions: HomeBarActions, star: Boolean = false) {
     Box(
@@ -181,7 +178,6 @@ private fun HubBarTarget(pages: HomeBarPages, unread: Int, actions: HomeBarActio
  * The BBOS 10 bottom bar from the Sable home UI proposal: Hub with a blue star when something is
  * unread, the page dots in the middle (the current page a blue pill) and Camera. Nothing else.
  */
-@Suppress("FunctionNaming")
 @Composable
 private fun Bb10BottomBar(
     slots: List<QuickSlot>,
@@ -245,7 +241,6 @@ private fun Bb10BottomBar(
 }
 
 /** The blue star BlackBerry 10 puts on an icon with something new. */
-@Suppress("FunctionNaming")
 @Composable
 internal fun BbUnreadStar(modifier: Modifier = Modifier) {
     val blue = Bb10Blue

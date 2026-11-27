@@ -297,7 +297,6 @@ internal fun SableThemeWithWidgets(
 }
 
 // Compose Unit renderers require PascalCase; exception is local to this renderer.
-@Suppress("FunctionNaming")
 @Composable
 private fun WidgetEditControls(
     controller: WidgetHostController,

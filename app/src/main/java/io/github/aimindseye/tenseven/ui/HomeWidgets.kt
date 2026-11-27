@@ -132,7 +132,6 @@ internal fun BuiltInWidgets(
 }
 
 // Alarm frame is independent of live messages and widget grid composition.
-@Suppress("FunctionNaming")
 @Composable
 private fun AlarmGlanceFrame(modifier: Modifier) {
     val context = LocalContext.current

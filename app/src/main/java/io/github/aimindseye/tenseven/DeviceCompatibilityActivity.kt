@@ -68,7 +68,6 @@ private class KeyCaptureSession {
 }
 
 // Compose Unit renderers require PascalCase; this exception is local to the renderer.
-@Suppress("FunctionNaming")
 @Composable
 private fun DeviceProbeContent(
     report: String,
