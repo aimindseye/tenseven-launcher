@@ -63,4 +63,13 @@ object D5CalendarBusy {
         }
         return (millis / MILLIS_PER_MINUTE).toInt().coerceIn(0, MINUTES_PER_DAY)
     }
+
+    fun sweep(
+        date: LocalDate,
+        spans: List<D5TimeSpan>,
+        zone: ZoneId,
+    ): Float {
+        val minutes = bookedMinutes(date, spans, zone)
+        return if (minutes == 0) 0f else maxOf(MIN_SWEEP_DEGREES, FULL_SWEEP_DEGREES * minutes / MINUTES_PER_DAY)
+    }
 }

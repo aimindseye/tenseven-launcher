@@ -16,7 +16,7 @@ private object FitLimits {
 }
 
 /** Screen profile is measured in available display dp, not a guessed device model or scan code. */
-internal object D5ScreenFitPolicy {
+object D5ScreenFitPolicy {
     data class Fit(
         val compact: Boolean,
         val dialMatchRows: Int,

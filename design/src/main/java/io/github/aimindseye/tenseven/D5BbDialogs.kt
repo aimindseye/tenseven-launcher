@@ -2,12 +2,14 @@ package io.github.aimindseye.tenseven
 
 import android.app.Activity
 import android.app.Dialog
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -222,6 +224,60 @@ object D5BbDialogs {
                     }
                 }
             body.addView(action, LinearLayout.LayoutParams(-1, dp(activity, ACTION_ROW_HEIGHT_DP)))
+        }
+    }
+
+    fun multiChoice(
+        activity: Activity,
+        title: String,
+        labels: List<String>,
+        checked: BooleanArray,
+        onSave: () -> Unit,
+    ) {
+        custom(activity, title) { body, dialog ->
+            val choices = android.widget.ScrollView(activity)
+            val rows = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+            choices.addView(rows)
+            body.addView(choices, LinearLayout.LayoutParams(-1, dp(activity, MULTICHOICE_LIST_HEIGHT_DP)))
+            labels.forEachIndexed { index, value ->
+                val checkbox =
+                    CheckBox(activity).apply {
+                        text = value
+                        textSize = CHOICE_TEXT_SIZE_SP
+                        setTextColor(textColor)
+                        buttonTintList = ColorStateList.valueOf(accent)
+                        isChecked = checked[index]
+                        setPadding(
+                            dp(activity, COMPACT_PADDING_DP),
+                            dp(activity, CHECKBOX_PADDING_VERTICAL_DP),
+                            dp(activity, COMPACT_PADDING_DP),
+                            dp(activity, CHECKBOX_PADDING_VERTICAL_DP),
+                        )
+                        setOnCheckedChangeListener { _, state -> checked[index] = state }
+                    }
+                rows.addView(
+                    checkbox,
+                    LinearLayout.LayoutParams(
+                        -BB_DIALOGS_MULTI_CHOICE_DP_1,
+                        -BB_DIALOGS_MULTI_CHOICE_DP_2,
+                    ),
+                )
+            }
+            val actions = LinearLayout(activity)
+            body.addView(actions)
+            listOf("Cancel", "Save").forEachIndexed { index, name ->
+                actions.addView(
+                    label(activity, name).apply {
+                        gravity = Gravity.CENTER
+                        setTextColor(if (index == 1) accent else secondary)
+                        setOnClickListener {
+                            dialog.dismiss()
+                            if (index == 1) onSave()
+                        }
+                    },
+                    LinearLayout.LayoutParams(0, dp(activity, ACTION_ROW_HEIGHT_DP), 1f),
+                )
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ import io.github.aimindseye.tenseven.model.D5ScreenFitPolicy
  * and fixed bottom controls sit above Android gesture/three-button navigation.
  * Root background still paints behind transparent bars for BB10 dark appearance.
  */
-internal object TenSevenSafeViewport {
+object TenSevenSafeViewport {
     fun darkSystemBars(activity: Activity) {
         activity.window.decorView.setBackgroundColor(Color.BLACK)
         WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
