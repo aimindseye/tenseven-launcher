@@ -39,7 +39,7 @@ enum class AccentPreset(
     val color: Color,
     val onColor: Color,
 ) {
-    Blue("blue", "Sable Blue", Color(0xFF2E9BD6), Color(0xFF000000)),
+    Blue("blue", "Sable Blue", Color(0xFF4D9CFF), Color(0xFF06111F)),
     Green("green", "Green", Color(0xFF35C66B), Color(0xFF04140A)),
     Purple("purple", "Purple", Color(0xFF7A42E8), Color.White),
     Orange("orange", "Orange", Color(0xFFF28C45), Color(0xFF1D0C02)),

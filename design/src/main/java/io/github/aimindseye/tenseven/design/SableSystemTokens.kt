@@ -1,6 +1,7 @@
 package io.github.aimindseye.tenseven.design
 
 /** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val MINIMUM_TOUCH_TARGET_DP = 48
 private const val SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_2 = 2
 private const val SABLE_SYSTEM_TOKENS_FOR_DISPLAY_CLASS_VALUE_4 = 4
 
@@ -53,7 +54,7 @@ enum class SableAccentTokens(
     val light: Long,
     val onLight: Long,
 ) {
-    Blue("blue", 0xFF2E9BD6, 0xFF2E9BD6, 0xFF000000, 0xFF1F6FD1, 0xFFFFFFFF),
+    Blue("blue", 0xFF4D9CFF, 0xFF4D9CFF, 0xFF06111F, 0xFF1F6FD1, 0xFFFFFFFF),
     Green("green", 0xFF35C66B, 0xFF35C66B, 0xFF04140A, 0xFF1A7F45, 0xFFFFFFFF),
     Purple("purple", 0xFF7A42E8, 0xFFA47CFF, 0xFF0F0526, 0xFF7A42E8, 0xFFFFFFFF),
     Orange("orange", 0xFFF28C45, 0xFFF28C45, 0xFF1D0C02, 0xFFB35410, 0xFFFFFFFF),
@@ -124,9 +125,12 @@ object SableGeometryTokens {
     const val SPACE_8_DP = 32
 
     const val ROW_MIN_HEIGHT_DP = 48
+    const val COMPACT_ROW_MIN_DP = 48
+    const val COMPACT_ROW_MAX_DP = 56
 
     const val SHAPE_SMALL_DP = 8
     const val SHAPE_MEDIUM_DP = 12
+    const val SHAPE_LARGE_DP = 16
     const val CARD_RADIUS_DP = SHAPE_MEDIUM_DP
     const val SMALL_CONTROL_RADIUS_DP = SHAPE_SMALL_DP
 
@@ -153,6 +157,8 @@ enum class SableTypeRole(
 object SableMotionTokens {
     const val DEFAULT_TRANSITION_MIN_MS = 120
     const val DEFAULT_TRANSITION_MAX_MS = 180
+    const val FAST_MS = 120
+    const val STANDARD_MS = 180
 
     /** Reduce-motion (animator scale 0) removes the transition rather than shortening it. */
     fun transitionMs(
@@ -353,7 +359,10 @@ object SableTokenRules {
     }
 
     /** Human-readable violations; empty when the palette satisfies the contract. */
-    fun violations(): List<String> {
+    fun violations(
+        rowMinimumDp: Int = SableGeometryTokens.ROW_MIN_HEIGHT_DP,
+        focusStrokeDp: Int = SableGeometryTokens.FOCUS_STROKE_DP,
+    ): List<String> {
         val out = mutableListOf<String>()
         for (rule in contrastRules()) {
             if (!rule.passes) {
@@ -366,8 +375,8 @@ object SableTokenRules {
         }
         val g = SableGeometryTokens
         if (g.spaces.any { it % g.SPACE_GRID_DP != 0 }) out += "space token off the 4dp grid"
-        if (g.ROW_MIN_HEIGHT_DP < 48) out += "row minimum below 48dp"
-        if (g.FOCUS_STROKE_DP < 2) out += "focus stroke below 2dp"
+        if (rowMinimumDp < MINIMUM_TOUCH_TARGET_DP) out += "row minimum below 48dp"
+        if (focusStrokeDp < 2) out += "focus stroke below 2dp"
         return out
     }
 }
