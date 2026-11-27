@@ -1,19 +1,19 @@
 package io.github.aimindseye.tenseven.model
 
-import io.github.aimindseye.tenseven.onboarding.Setup2Plan
+import io.github.aimindseye.tenseven.companions.CompanionCatalog
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class GamesDecouplingTest {
     private val legacy = "io.github.aimindseye.tenseven/io.github.aimindseye.tenseven.extras.games.SnakeActivity"
     private val external = "org.example.game/org.example.game.MainActivity"
-    private val tools = setOf("tenseven_phone", "tenseven_calendar", "tasks", "notes", "calculator", "profiles")
-
     @Test
-    fun fullAndCustomSetupRetainAllSixNonGameTools() {
-        assertEquals(tools, Setup2Plan.full())
-        assertEquals(setOf("tasks", "notes", "calculator"), Setup2Plan.essentials)
-        assertEquals(tools, Setup2Plan.normalizedCustom(tools + setOf("snake", "sudoku")))
+    fun fullAndLiteSetupOfferNoGamesAndNormalizeDropsRemovedOnes() {
+        val tools = setOf("phone", "calendar", "tasks", "notes", "calculator", "profiles", "watch")
+        assertEquals(tools, CompanionCatalog.fullPreset)
+        assertEquals(setOf("tasks", "notes", "calculator"), CompanionCatalog.litePreset)
+        assertEquals(emptySet<String>(), CompanionCatalog.basePreset)
+        assertEquals(setOf("tasks", "notes"), CompanionCatalog.normalize(listOf("tasks", "notes", "snake", "sudoku")))
     }
 
     @Test
