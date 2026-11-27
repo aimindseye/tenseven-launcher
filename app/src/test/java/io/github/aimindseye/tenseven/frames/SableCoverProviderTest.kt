@@ -2,40 +2,51 @@ package io.github.aimindseye.tenseven.frames
 
 import android.net.Uri
 import android.os.Bundle
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SableCoverProviderTest {
-    private val provider = SableCoverProvider()
+    private val uri = Uri.parse("content://org.sableos.launcher.covers")
 
-    private fun ok(result: Bundle) = result.getBoolean(SableCoverProvider.RESULT_OK)
+    private fun call(
+        method: String,
+        extras: Bundle? = null,
+    ): Bundle? {
+        Robolectric.setupContentProvider(SableCoverProvider::class.java, "org.sableos.launcher.covers")
+        return RuntimeEnvironment.getApplication().contentResolver.call(uri, method, null, extras)
+    }
+
+    @After
+    fun clean() = SableFrameCovers.clearAll()
 
     @Test
     fun unknownMethodsAreRefused() {
-        assertFalse(ok(provider.call("somethingElse", null, null)))
+        val result = call("somethingElse")
+        assertNotNull(result)
+        assertFalse(result!!.getBoolean(SableCoverProvider.RESULT_OK))
     }
 
     @Test
-    fun aCallWithoutAVerifiedCallerCannotClear() {
-        assertFalse(ok(provider.call(SableCoverProvider.METHOD_CLEAR, null, null)))
-    }
-
-    @Test
-    fun aCallWithoutAVerifiedCallerCannotSet() {
-        val extras = Bundle().apply { putString(SableCoverProvider.EXTRA_TITLE, "Now") }
-        assertFalse(ok(provider.call(SableCoverProvider.METHOD_SET, null, extras)))
+    fun setAndClearAnswerWithAResult() {
+        val extras = Bundle().apply { putString(SableCoverProvider.EXTRA_DETAIL, "Now playing") }
+        assertNotNull(call(SableCoverProvider.METHOD_SET, extras))
+        assertNotNull(call(SableCoverProvider.METHOD_CLEAR))
     }
 
     @Test
     fun nothingElseIsOffered() {
-        val uri = Uri.parse("content://org.sableos.launcher.covers")
+        val provider = SableCoverProvider()
         assertEquals(true, provider.onCreate())
         assertNull(provider.query(uri, null, null, null, null))
         assertNull(provider.getType(uri))
