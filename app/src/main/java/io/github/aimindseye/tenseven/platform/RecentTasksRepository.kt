@@ -87,6 +87,7 @@ class RecentTasksRepository(
             method.invoke(service, taskId) as? Boolean ?: true
         }.getOrDefault(false)
 
+    @Suppress("CyclomaticComplexMethod")
     private fun snapshot(
         taskId: Int,
         lowResolution: Boolean,

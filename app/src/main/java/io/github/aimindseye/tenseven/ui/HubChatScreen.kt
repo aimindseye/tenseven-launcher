@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package io.github.aimindseye.tenseven.ui
 
 import android.text.format.DateUtils
@@ -42,7 +44,6 @@ import io.github.aimindseye.tenseven.conversations.SableReplyChoice
 import io.github.aimindseye.tenseven.design.sableFocusRing
 
 /** Which Hub conversation is open as a chat, if any. Held here so the list and the chat share it. */
-@Suppress("MatchingDeclarationName")
 internal object HubChatState {
     var openId by mutableStateOf<String?>(null)
 }

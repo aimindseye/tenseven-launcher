@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -35,13 +34,9 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.design.DesignText.t
 
@@ -92,62 +87,6 @@ fun Modifier.sableFocusRing(): Modifier =
                 },
             )
     }
-
-@Composable
-private fun SableNavTab(
-    label: String,
-    selected: Boolean,
-    accent: Color,
-    onClick: () -> Unit,
-    modifier: Modifier,
-    description: String? = null,
-) {
-    val content =
-        @Composable {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = SableSize.TouchTarget)
-                        .padding(horizontal = SableSpacing.Sm, vertical = SableSpacing.Xs),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
-                    color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .padding(top = SableSpacing.Xs)
-                            .fillMaxWidth(if (selected) 0.6f else 0.2f)
-                            .height(if (selected) 3.dp else 1.dp)
-                            .background(if (selected) accent else MaterialTheme.colorScheme.outlineVariant),
-                )
-            }
-        }
-    val tabModifier =
-        modifier
-            .sableFocusRing()
-            .semantics {
-                role = Role.Tab
-                this.selected = selected
-                this.contentDescription = description ?: label
-            }
-    Surface(
-        onClick = onClick,
-        modifier = tabModifier,
-        color = Color.Transparent,
-    ) {
-        content()
-    }
-}
 
 /** 48 dp square action with an accessible label. */
 @Composable

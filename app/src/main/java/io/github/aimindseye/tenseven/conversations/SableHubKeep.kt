@@ -218,7 +218,11 @@ object SableHubKeep {
             .mapNotNull { line ->
                 runCatching {
                     val f = line.split('\t').map(::unb64)
-                    val messages = f[FIELD_MESSAGES].split(',').filter(String::isNotEmpty).map { decodeMessage(unb64(it)) }
+                    val messages =
+                        f[FIELD_MESSAGES]
+                            .split(',')
+                            .filter(String::isNotEmpty)
+                            .map { decodeMessage(unb64(it)) }
                     HubNotification(
                         key = f[0],
                         conversationId = f[1],

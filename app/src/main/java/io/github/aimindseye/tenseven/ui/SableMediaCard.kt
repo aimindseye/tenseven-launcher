@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package io.github.aimindseye.tenseven.ui
 
 import android.content.Context
@@ -41,7 +43,6 @@ import androidx.compose.ui.unit.sp
 import io.github.aimindseye.tenseven.design.sableFocusRing
 
 /** Transport icons on a 24-unit grid, the same shapes Sable Media draws, so every player card looks alike. */
-@Suppress("MatchingDeclarationName")
 internal object SableMediaIcons {
     val Play = filled("M7 5v14l12-7z")
     val Pause = filled("M6 5h4v14H6zM14 5h4v14h-4z")
