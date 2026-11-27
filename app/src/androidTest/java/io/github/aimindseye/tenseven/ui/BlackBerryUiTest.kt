@@ -36,14 +36,19 @@ import io.github.aimindseye.tenseven.platform.performHubSourceAction
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class BlackBerryUiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Before fun startWithoutRememberedHubHistory() {
+        ConversationHub.clearNow()
+    }
+
     @After fun clearFixtures() {
-        ConversationHub.replace(emptyList())
+        ConversationHub.clearNow()
         LockLayerState.update(emptyMap())
     }
 

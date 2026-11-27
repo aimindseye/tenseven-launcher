@@ -129,7 +129,7 @@ class ActiveFramesUiTest {
             }
         }
         compose.onNodeWithText("Song by Artist", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("Live summary", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Now playing", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test fun sharedCaptureRetainsSlotAndCloseInvokesStop() {

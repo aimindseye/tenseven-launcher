@@ -48,7 +48,7 @@ class StartStateRepository(
             .FrameSettings(
                 liveSummaries = preferences.getBoolean("frames_live", true),
                 newMessages = preferences.getBoolean("frames_messages", true),
-                snapshots = true,
+                snapshots = preferences.getBoolean("frames_snapshots", true),
                 openApps = preferences.getBoolean("frames_open", true),
                 rememberReturnedApps = preferences.getBoolean("frames_recents", true),
                 maximum = preferences.getInt("frames_maximum", 8),
