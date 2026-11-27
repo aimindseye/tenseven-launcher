@@ -135,9 +135,9 @@ class NotificationDisplayUiTest {
                 }
             }
         }
-        // With no notifications the approved dynamic top tabs show All only.
+        // The Sable Hub keeps its fixed top tabs even when no notifications are waiting.
         compose.onNodeWithText("All").assertIsDisplayed()
-        compose.onNodeWithText("Messages").assertDoesNotExist()
+        compose.onNodeWithText("Messages").assertExists()
         // At 2x font scale, individual labels can have different heights. Prove the three
         // controls remain left-to-right in ONE overlapping row, without requiring equal top edges.
         val bounds =
