@@ -59,7 +59,9 @@ internal fun HubCalendarPeek(
                 Modifier
                     .fillMaxWidth()
                     .then(
-                        if (io.github.aimindseye.tenseven.design.isSableShortWindow()) {
+                        if (io.github.aimindseye.tenseven.design
+                                .isSableShortWindow()
+                        ) {
                             Modifier.padding(horizontal = 4.dp)
                         } else {
                             Modifier
@@ -68,13 +70,29 @@ internal fun HubCalendarPeek(
                                 .padding(horizontal = 9.dp, vertical = 6.dp)
                         },
                     ),
-            verticalArrangement = Arrangement.spacedBy(if (io.github.aimindseye.tenseven.design.isSableShortWindow()) 2.dp else 8.dp),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    if (io.github.aimindseye.tenseven.design
+                            .isSableShortWindow()
+                    ) {
+                        2.dp
+                    } else {
+                        8.dp
+                    },
+                ),
         ) {
             Text(
                 text = if (expanded) "▴ Upcoming calendar" else "▾ Upcoming calendar",
                 modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 6.dp),
                 color = MaterialTheme.colorScheme.primary,
-                style = if (io.github.aimindseye.tenseven.design.isSableShortWindow()) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleSmall,
+                style =
+                    if (io.github.aimindseye.tenseven.design
+                            .isSableShortWindow()
+                    ) {
+                        MaterialTheme.typography.labelLarge
+                    } else {
+                        MaterialTheme.typography.titleSmall
+                    },
             )
             if (expanded) {
                 CalendarPeekExpandedContent(

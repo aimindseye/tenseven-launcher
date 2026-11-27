@@ -117,7 +117,8 @@ internal fun SableMediaCard(
                     .then(
                         if (compact) {
                             Modifier.sableFocusRing().clickable {
-                                context.packageManager.getLaunchIntentForPackage(media.controller.packageName)
+                                context.packageManager
+                                    .getLaunchIntentForPackage(media.controller.packageName)
                                     ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     ?.let { context.startActivity(it) }
                             }

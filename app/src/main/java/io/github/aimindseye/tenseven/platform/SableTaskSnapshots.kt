@@ -45,10 +45,11 @@ internal object SableTaskSnapshots {
     private val method: java.lang.reflect.Method? by lazy {
         val type = managerClass ?: return@lazy null
         val found =
-            type.methods.filter {
-                it.name == "getTaskSnapshot" && it.parameterTypes.firstOrNull() == Int::class.javaPrimitiveType &&
-                    it.parameterTypes.drop(1).all { p -> p == Int::class.javaPrimitiveType || p == Boolean::class.javaPrimitiveType }
-            }.minByOrNull { it.parameterCount }
+            type.methods
+                .filter {
+                    it.name == "getTaskSnapshot" && it.parameterTypes.firstOrNull() == Int::class.javaPrimitiveType &&
+                        it.parameterTypes.drop(1).all { p -> p == Int::class.javaPrimitiveType || p == Boolean::class.javaPrimitiveType }
+                }.minByOrNull { it.parameterCount }
         if (found == null) {
             val names = type.methods.filter { it.name.contains("Snapshot") }.joinToString { it.toGenericString() }
             Log.w(TAG, "no usable TaskSnapshotManager.getTaskSnapshot; has: $names")
@@ -97,7 +98,13 @@ internal object SableTaskSnapshots {
             val args =
                 listOf<Any>(taskId) +
                     call.parameterTypes.drop(1).mapIndexed { i, type ->
-                        if (type == Boolean::class.javaPrimitiveType) false else if (i == 0) resolution else 0
+                        if (type == Boolean::class.javaPrimitiveType) {
+                            false
+                        } else if (i == 0) {
+                            resolution
+                        } else {
+                            0
+                        }
                     }
             val snapshot = call.invoke(manager, *args.toTypedArray())
             if (snapshot == null) {

@@ -193,8 +193,6 @@ class ActiveFramesUiTest {
     }
 
     @Test fun notificationsCalendarAndLocalDataNeverCreateFrames() {
-        io.github.aimindseye.tenseven.platform.ScreenCaptureState
-            .stopped()
         val live =
             snapshot.copy(
                 calendar = LiveDatum("Calendar", "Old calendar event", LiveAvailability.LIVE),

@@ -341,7 +341,17 @@ private fun HubPageHeader(
     }
     // BBOS 7 shows its tabs right under the title bar; BBOS 10 has them at the bottom.
     if (!sableBottomTabs()) HubPageNavigation(session, chrome)
-    Spacer(Modifier.height(if (io.github.aimindseye.tenseven.design.isSableShortWindow()) 2.dp else 6.dp))
+    Spacer(
+        Modifier.height(
+            if (io.github.aimindseye.tenseven.design
+                    .isSableShortWindow()
+            ) {
+                2.dp
+            } else {
+                6.dp
+            },
+        ),
+    )
     if (session.model.filter == HubFilter.All && calendarPeekEnabled && !session.data.conversations.remindersSelected) {
         HubCalendarPeek(
             refreshGeneration = session.model.refreshGeneration,
@@ -405,7 +415,8 @@ private fun sableBottomTabs(): Boolean {
     val context = androidx.compose.ui.platform.LocalContext.current
     return androidx.compose.runtime.remember(context) {
         runCatching {
-            android.provider.Settings.Secure.getString(context.contentResolver, "sable_profile")
+            android.provider.Settings.Secure
+                .getString(context.contentResolver, "sable_profile")
         }.getOrNull() != "bb7"
     }
 }

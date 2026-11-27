@@ -180,13 +180,19 @@ class StartStateRepository(
     /** BlackBerry 10 or BlackBerry 7 home (HomeStyle); the BB10 layout until the user picks. */
     fun loadHomeStyle(): HomeStyle =
         HomeStyle.fromStableValue(
-            runCatching { android.provider.Settings.Secure.getString(profileResolver, "sable_profile") }.getOrNull()
+            runCatching {
+                android.provider.Settings.Secure
+                    .getString(profileResolver, "sable_profile")
+            }.getOrNull()
                 ?: preferences.getString(KEY_HOME_STYLE, null),
         )
 
     fun saveHomeStyle(style: HomeStyle) {
         preferences.edit().putString(KEY_HOME_STYLE, style.stableValue).apply()
-        runCatching { android.provider.Settings.Secure.putString(profileResolver, "sable_profile", style.stableValue) }
+        runCatching {
+            android.provider.Settings.Secure
+                .putString(profileResolver, "sable_profile", style.stableValue)
+        }
     }
 
     /** Safe launcher-owned font preset: do not alter Android system font scale. */
@@ -382,7 +388,8 @@ class StartStateRepository(
                     null,
                 )
         if (saved == null && statusDefaultOff) return io.github.aimindseye.tenseven.model.HomeStatusMode.Hidden
-        return io.github.aimindseye.tenseven.model.HomeStatusMode.decode(saved, loadHomeDials().size)
+        return io.github.aimindseye.tenseven.model.HomeStatusMode
+            .decode(saved, loadHomeDials().size)
     }
 
     fun saveHomeStatusMode(mode: io.github.aimindseye.tenseven.model.HomeStatusMode) {

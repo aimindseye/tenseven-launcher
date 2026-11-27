@@ -169,7 +169,7 @@ internal fun GridCell(
                 .semantics {
                     contentDescription =
                         app.label + (app.profileLabel?.let { ", ${AppProfiles.badge(it)}" } ?: "") +
-                            (if (unread > 0) ", $unread new" else "")
+                        (if (unread > 0) ", $unread new" else "")
                 }.padding(vertical = GRID_CELL_INNER_PADDING, horizontal = 1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -203,7 +203,9 @@ private fun GridCellImage(
             val splatColor = Bb10Blue
             androidx.compose.foundation.Canvas(modifier = Modifier.align(Alignment.TopEnd).size(14.dp)) {
                 val outer = size.minDimension / 2f
-                val star = androidx.compose.ui.graphics.Path()
+                val star =
+                    androidx.compose.ui.graphics
+                        .Path()
                 for (i in 0 until 16) {
                     val r = if (i % 2 == 0) outer else outer * 0.6f
                     val a = Math.PI * i / 8.0 - Math.PI / 2.0
@@ -213,7 +215,13 @@ private fun GridCellImage(
                 }
                 star.close()
                 drawPath(star, splatColor)
-                drawPath(star, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f))
+                drawPath(
+                    star,
+                    Color.White,
+                    style =
+                        androidx.compose.ui.graphics.drawscope
+                            .Stroke(width = 1.5f),
+                )
             }
         }
         val badge = app.profileLabel

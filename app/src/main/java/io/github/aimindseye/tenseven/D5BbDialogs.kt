@@ -224,5 +224,4 @@ object D5BbDialogs {
             body.addView(action, LinearLayout.LayoutParams(-1, dp(activity, ACTION_ROW_HEIGHT_DP)))
         }
     }
-
 }

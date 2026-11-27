@@ -58,6 +58,7 @@ data class HubConversation(
     val openTarget: HubNotification get() = notifications.firstOrNull { it.contentIntent != null } ?: latestNotification
     val isEmail: Boolean get() = notifications.any(HubNotification::isEmail)
     val latestMessage: ConversationMessage? get() = messages.maxByOrNull(ConversationMessage::timestamp)
+
     /** The newest replyable notification of each source app, newest first: the reply selector's choices. */
     val replyTargets: List<HubNotification>
         get() =

@@ -111,7 +111,11 @@ private fun HubChatHeader(
                 maxLines = 1,
                 modifier = Modifier.semantics { heading() },
             )
-            val sources = conversation.notifications.sortedBy { it.postedAt }.map { it.appName }.distinct()
+            val sources =
+                conversation.notifications
+                    .sortedBy { it.postedAt }
+                    .map { it.appName }
+                    .distinct()
             Text(
                 if (sources.size > 1) sources.joinToString(", ") + " in one conversation" else sources.firstOrNull().orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
@@ -175,6 +179,7 @@ private fun HubChatReply(
     val targets = conversation.replyTargets
     val chosen = remember(conversation, choiceTick) { conversation.replyTarget }
     val accent = MaterialTheme.colorScheme.primary
+
     fun send() {
         if (draft.isBlank()) return
         failed = !ui.onReply(conversation, draft)
@@ -238,7 +243,9 @@ private fun HubChatReply(
                         androidx.compose.foundation.text.KeyboardOptions(
                             imeAction = androidx.compose.ui.text.input.ImeAction.Send,
                         ),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
+                    keyboardActions =
+                        androidx.compose.foundation.text
+                            .KeyboardActions(onSend = { send() }),
                 )
                 Box(
                     modifier =

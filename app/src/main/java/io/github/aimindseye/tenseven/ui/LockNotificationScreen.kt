@@ -92,7 +92,8 @@ internal fun LockNotificationScreen(
         if (shown.loadLockShow("notifications")) {
             LockNotificationBody(content, actions, Modifier.weight(1f))
         } else {
-            androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+            androidx.compose.foundation.layout
+                .Spacer(Modifier.weight(1f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             LockFooterAction(

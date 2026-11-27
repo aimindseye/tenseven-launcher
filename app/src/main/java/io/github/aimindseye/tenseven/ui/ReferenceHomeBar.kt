@@ -221,7 +221,8 @@ private fun Bb10BottomBar(
                             .size(width = if (here) 16.dp else 6.dp, height = 6.dp)
                             .background(
                                 if (here) Bb10Blue else Bb10Muted,
-                                androidx.compose.foundation.shape.RoundedCornerShape(3.dp),
+                                androidx.compose.foundation.shape
+                                    .RoundedCornerShape(3.dp),
                             ),
                     )
                 }
@@ -250,7 +251,9 @@ internal fun BbUnreadStar(modifier: Modifier = Modifier) {
     val blue = Bb10Blue
     androidx.compose.foundation.Canvas(modifier.size(13.dp)) {
         val outer = size.minDimension / 2f
-        val star = androidx.compose.ui.graphics.Path()
+        val star =
+            androidx.compose.ui.graphics
+                .Path()
         for (i in 0 until 16) {
             val r = if (i % 2 == 0) outer else outer * 0.6f
             val a = Math.PI * i / 8.0 - Math.PI / 2.0
@@ -260,6 +263,12 @@ internal fun BbUnreadStar(modifier: Modifier = Modifier) {
         }
         star.close()
         drawPath(star, blue)
-        drawPath(star, androidx.compose.ui.graphics.Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f))
+        drawPath(
+            star,
+            androidx.compose.ui.graphics.Color.White,
+            style =
+                androidx.compose.ui.graphics.drawscope
+                    .Stroke(width = 1.5f),
+        )
     }
 }

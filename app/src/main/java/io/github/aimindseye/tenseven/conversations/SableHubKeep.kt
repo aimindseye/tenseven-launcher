@@ -150,12 +150,19 @@ object SableHubKeep {
         locale: Locale = Locale.getDefault(),
     ): String =
         when (day) {
-            today -> "Today"
-            today.minusDays(1) -> "Yesterday"
-            else ->
+            today -> {
+                "Today"
+            }
+
+            today.minusDays(1) -> {
+                "Yesterday"
+            }
+
+            else -> {
                 day.format(
                     DateTimeFormatter.ofPattern(if (day.year == today.year) "EEEE, MMMM d" else "EEEE, MMMM d, yyyy", locale),
                 )
+            }
         }
 
     private fun timeOf(c: HubConversation): Long = c.latestMessage?.timestamp ?: c.latestNotification.postedAt
@@ -198,25 +205,28 @@ object SableHubKeep {
         }
 
     fun decode(text: String): List<HubNotification> =
-        text.lineSequence().filter(String::isNotBlank).mapNotNull { line ->
-            runCatching {
-                val f = line.split('\t').map(::unb64)
-                val messages = f[7].split(',').filter(String::isNotEmpty).map { decodeMessage(unb64(it)) }
-                HubNotification(
-                    key = f[0],
-                    conversationId = f[1],
-                    conversationName = f[2],
-                    packageName = f[3],
-                    appName = f[4],
-                    postedAt = f[5].toLong(),
-                    isOngoing = false,
-                    messages = messages,
-                    contentIntent = null,
-                    replyAction = null,
-                    kind = HubMessageKind.valueOf(f[6]),
-                )
-            }.getOrNull()
-        }.toList()
+        text
+            .lineSequence()
+            .filter(String::isNotBlank)
+            .mapNotNull { line ->
+                runCatching {
+                    val f = line.split('\t').map(::unb64)
+                    val messages = f[7].split(',').filter(String::isNotEmpty).map { decodeMessage(unb64(it)) }
+                    HubNotification(
+                        key = f[0],
+                        conversationId = f[1],
+                        conversationName = f[2],
+                        packageName = f[3],
+                        appName = f[4],
+                        postedAt = f[5].toLong(),
+                        isOngoing = false,
+                        messages = messages,
+                        contentIntent = null,
+                        replyAction = null,
+                        kind = HubMessageKind.valueOf(f[6]),
+                    )
+                }.getOrNull()
+            }.toList()
 
     private fun encodeMessage(m: ConversationMessage): String =
         listOf(
@@ -393,10 +403,12 @@ object SableHubHistory {
         val (k, d) =
             synchronized(lock) {
                 kept = kept.filterNot { it.key in keys }
-                deleted = (deleted + keys.associateWith { maxOf(now, items.maxOf(HubNotification::postedAt)) }).entries
-                    .sortedByDescending { it.value }
-                    .take(SableHubKeep.MAX_KEPT)
-                    .associate { it.toPair() }
+                deleted =
+                    (deleted + keys.associateWith { maxOf(now, items.maxOf(HubNotification::postedAt)) })
+                        .entries
+                        .sortedByDescending { it.value }
+                        .take(SableHubKeep.MAX_KEPT)
+                        .associate { it.toPair() }
                 kept to deleted
             }
         save(k, d)

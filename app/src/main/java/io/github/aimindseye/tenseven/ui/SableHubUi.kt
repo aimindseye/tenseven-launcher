@@ -63,13 +63,20 @@ internal fun SableHubSubtitle(
 ) {
     val source =
         when {
-            ui.filter.priority -> "Priority Hub"
-            ui.sourcePackage != null ->
+            ui.filter.priority -> {
+                "Priority Hub"
+            }
+
+            ui.sourcePackage != null -> {
                 ui.conversations
                     .firstOrNull { ui.sourcePackage in it.sourcePackages }
                     ?.latestNotification
                     ?.appName
-            else -> null
+            }
+
+            else -> {
+                null
+            }
         }
     val unread =
         ui.conversations

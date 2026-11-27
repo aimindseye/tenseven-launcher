@@ -100,7 +100,8 @@ object FramePolicy {
             items
                 .filter { item ->
                     val closed = dismissals[item.key] ?: dismissals[item.app.key]
-                    item.app.packageName !in EXCLUDED_PACKAGES && item.app in input.availableApps && (closed == null || opened.getOrDefault(item.app.key, 0L) > closed)
+                    item.app.packageName !in EXCLUDED_PACKAGES && item.app in input.availableApps &&
+                        (closed == null || opened.getOrDefault(item.app.key, 0L) > closed)
                 }.distinctBy { it.key }
                 .take(settings.maximum)
         return FramesState(

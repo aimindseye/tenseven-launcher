@@ -1,8 +1,8 @@
 package io.github.aimindseye.tenseven.platform
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Process
 import io.github.aimindseye.tenseven.model.AppEntry

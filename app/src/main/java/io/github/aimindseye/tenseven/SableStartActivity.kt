@@ -71,7 +71,10 @@ class SableStartActivity : ComponentActivity() {
             onInventory = { inventory ->
                 screen.appsState.value =
                     inventory.apps +
-                    listOfNotNull(io.github.aimindseye.tenseven.platform.MediaFavourites.tile(this))
+                    listOfNotNull(
+                        io.github.aimindseye.tenseven.platform.MediaFavourites
+                            .tile(this),
+                    )
                 screen.privateSpaceLockedState.value = inventory.privateSpaceLocked
                 screen.workPausedState.value = inventory.workPaused
             },
@@ -409,7 +412,8 @@ class SableStartActivity : ComponentActivity() {
         leftForAnotherApp =
             io.github.aimindseye.tenseven.frames.SableBackToFrames.leftForAnotherApp(
                 packageName,
-                io.github.aimindseye.tenseven.frames.SableBackToFrames.topPackage(this),
+                io.github.aimindseye.tenseven.frames.SableBackToFrames
+                    .topPackage(this),
                 isChangingConfigurations,
             )
         activeFrames.coordinator.onStop()
@@ -461,6 +465,7 @@ class SableStartActivity : ComponentActivity() {
      * Menu on the BlackBerry 7 home, a full menu as BlackBerry 7 asks: the highlighted icon's
      * items ([contextual]) first, then the home's own, then Close.
      */
+
     /** The BBOS 7 short menu: nine cells in a 3 x 3 grid, the focused cell filled blue. */
     private fun showBb7ShortMenu(items: List<Pair<String, () -> Unit>>) {
         val density = resources.displayMetrics.density
@@ -510,10 +515,11 @@ class SableStartActivity : ComponentActivity() {
                 }
             grid.addView(
                 cell,
-                android.widget.GridLayout.LayoutParams(
-                    android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED),
-                    android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f),
-                ).apply { width = 0 },
+                android.widget.GridLayout
+                    .LayoutParams(
+                        android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED),
+                        android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f),
+                    ).apply { width = 0 },
             )
         }
         val shortDialog = AlertDialog.Builder(this).setView(grid).create()

@@ -205,7 +205,8 @@ private fun androidx.compose.foundation.lazy.LazyItemScope.sableRowMotion(tabKey
     val bb7 =
         remember(context) {
             runCatching {
-                android.provider.Settings.Secure.getString(context.contentResolver, "sable_profile")
+                android.provider.Settings.Secure
+                    .getString(context.contentResolver, "sable_profile")
             }.getOrNull() == "bb7"
         }
     val millis = if (bb7) 150 else 250
@@ -221,15 +222,35 @@ private fun androidx.compose.foundation.lazy.LazyItemScope.sableRowMotion(tabKey
             }
             now - SableTabMotion.at < 300L
         }
-    val progress = remember(tabKey) { androidx.compose.animation.core.Animatable(if (fresh) 0f else 1f) }
+    val progress =
+        remember(tabKey) {
+            androidx.compose.animation.core
+                .Animatable(if (fresh) 0f else 1f)
+        }
     LaunchedEffect(tabKey) {
-        if (fresh) progress.animateTo(1f, androidx.compose.animation.core.tween(millis, easing = easing))
+        if (fresh) {
+            progress.animateTo(
+                1f,
+                androidx.compose.animation.core
+                    .tween(millis, easing = easing),
+            )
+        }
     }
     return Modifier
         .animateItem(
-            fadeInSpec = androidx.compose.animation.core.tween(millis, easing = easing),
-            placementSpec = if (bb7) null else androidx.compose.animation.core.tween(millis, easing = easing),
-            fadeOutSpec = androidx.compose.animation.core.tween(millis, easing = easing),
+            fadeInSpec =
+                androidx.compose.animation.core
+                    .tween(millis, easing = easing),
+            placementSpec =
+                if (bb7) {
+                    null
+                } else {
+                    androidx.compose.animation.core
+                        .tween(millis, easing = easing)
+                },
+            fadeOutSpec =
+                androidx.compose.animation.core
+                    .tween(millis, easing = easing),
         ).graphicsLayer {
             alpha = progress.value
             if (!bb7) translationX = (1f - progress.value) * 24.dp.toPx()
@@ -244,7 +265,8 @@ private fun LazyListScope.conversationItems(
 ) {
     list.forEach { conversation ->
         item(key = key(conversation)) {
-            androidx.compose.foundation.layout.Box(sableRowMotion(tabKey)) { content(conversation) }
+            androidx.compose.foundation.layout
+                .Box(sableRowMotion(tabKey)) { content(conversation) }
         }
     }
 }
@@ -315,7 +337,9 @@ internal fun HubUnifiedNavigation(
         searchOpen = false
         ui.onFilterChange(ui.filter.copy(person = ""))
     }
-    val tabs = io.github.aimindseye.tenseven.model.HubVisibleTabs.items()
+    val tabs =
+        io.github.aimindseye.tenseven.model.HubVisibleTabs
+            .items()
 
     BackHandler(enabled = ui.remindersSelected || ui.filter.snoozed) {
         hubNavSelect(HubFilter.All, ui = ui, onTabChange = onTabChange)
@@ -491,7 +515,8 @@ private fun ConversationRow(
     val bb7 =
         remember(profileContext) {
             runCatching {
-                android.provider.Settings.Secure.getString(profileContext.contentResolver, "sable_profile")
+                android.provider.Settings.Secure
+                    .getString(profileContext.contentResolver, "sable_profile")
             }.getOrNull() == "bb7"
         }
     var rowFocused by remember { mutableStateOf(false) }
@@ -502,7 +527,14 @@ private fun ConversationRow(
     val latestAt = conversation.latestMessage?.timestamp ?: conversation.latestNotification.postedAt
     val whenText = DateUtils.getRelativeTimeSpanString(latestAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
     val source = conversation.latestNotification.appName
-    val avatarSize = if (io.github.aimindseye.tenseven.design.isSableShortWindow()) 32.dp else 44.dp
+    val avatarSize =
+        if (io.github.aimindseye.tenseven.design
+                .isSableShortWindow()
+        ) {
+            32.dp
+        } else {
+            44.dp
+        }
 
     HubContrastTheme {
         Column(
@@ -552,11 +584,26 @@ private fun ConversationRow(
                         .sableFocusRing()
                         .combinedClickable(
                             onClick = {
-                                if (locked || conversation.messages.isEmpty()) ui.onOpen(conversation) else HubChatState.openId = conversation.id
+                                if (locked ||
+                                    conversation.messages.isEmpty()
+                                ) {
+                                    ui.onOpen(conversation)
+                                } else {
+                                    HubChatState.openId = conversation.id
+                                }
                             },
                             onLongClick = { selectRow(conversation.id, rowFocus) },
-                        )
-                        .padding(horizontal = 4.dp, vertical = if (io.github.aimindseye.tenseven.design.isSableShortWindow()) 7.dp else 10.dp),
+                        ).padding(
+                            horizontal = 4.dp,
+                            vertical =
+                                if (io.github.aimindseye.tenseven.design
+                                        .isSableShortWindow()
+                                ) {
+                                    7.dp
+                                } else {
+                                    10.dp
+                                },
+                        ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -585,7 +632,12 @@ private fun ConversationRow(
                                 source,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (filled) Color.White else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(end = 6.dp).border(1.dp, if (filled) Color.White else MaterialTheme.colorScheme.primary).padding(horizontal = 5.dp),
+                                modifier =
+                                    Modifier
+                                        .padding(
+                                            end = 6.dp,
+                                        ).border(1.dp, if (filled) Color.White else MaterialTheme.colorScheme.primary)
+                                        .padding(horizontal = 5.dp),
                                 maxLines = 1,
                             )
                         }
@@ -829,8 +881,14 @@ private fun HubNestedMessages(
         modifier =
             Modifier
                 .padding(start = 28.dp)
-                .drawBehind { drawRect(accent, size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height)) }
-                .padding(start = 14.dp),
+                .drawBehind {
+                    drawRect(
+                        accent,
+                        size =
+                            androidx.compose.ui.geometry
+                                .Size(2.dp.toPx(), size.height),
+                    )
+                }.padding(start = 14.dp),
     ) {
         recent.forEach { message ->
             Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
@@ -896,7 +954,8 @@ internal fun rememberHubBb7(): Boolean {
     val context = LocalContext.current
     return remember(context) {
         runCatching {
-            android.provider.Settings.Secure.getString(context.contentResolver, "sable_profile")
+            android.provider.Settings.Secure
+                .getString(context.contentResolver, "sable_profile")
         }.getOrNull() == "bb7"
     }
 }

@@ -25,5 +25,10 @@ object SableRecents {
 
     /** Reads what [encode] wrote; blank lines and repeats are dropped, never thrown. */
     fun decode(text: String?): List<String> =
-        text.orEmpty().split(SEPARATOR).filter { it.isNotBlank() }.distinct().take(MAX)
+        text
+            .orEmpty()
+            .split(SEPARATOR)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .take(MAX)
 }

@@ -86,7 +86,8 @@ object ConversationHub {
 
     fun notifications(): List<HubNotification> = synchronized(lock) { SableHubHistory.view(SableMailFeed.merge(items)) }
 
-    fun conversations(): List<HubConversation> = synchronized(lock) {
+    fun conversations(): List<HubConversation> =
+        synchronized(lock) {
             SableHubHistory.rows(buildConversations(SableHubHistory.view(SableMailFeed.merge(items)), sentReplies))
         }
 

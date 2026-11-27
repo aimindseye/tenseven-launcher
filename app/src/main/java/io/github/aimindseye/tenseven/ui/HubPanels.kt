@@ -186,8 +186,7 @@ private fun androidx.compose.foundation.layout.BoxScope.HubSidePanel(
                     } else {
                         Modifier.widthIn(max = 340.dp).fillMaxWidth(HUB_PANEL_FRACTION).fillMaxHeight()
                     },
-                )
-                .hubPanelDismiss(settings) { onClose() }
+                ).hubPanelDismiss(settings) { onClose() }
                 .background(MaterialTheme.colorScheme.background)
                 .testTag(if (settings) "hub-settings-panel" else "hub-message-panel")
                 .semantics {
@@ -210,7 +209,8 @@ private fun sableSwipeDownMenu(): Boolean {
     val context = LocalContext.current
     return remember(context) {
         runCatching {
-            android.provider.Settings.Secure.getString(context.contentResolver, "sable_profile")
+            android.provider.Settings.Secure
+                .getString(context.contentResolver, "sable_profile")
         }.getOrNull() != "bb7"
     }
 }
@@ -410,7 +410,9 @@ private fun HubSelectedMessageContext(
             color = MaterialTheme.colorScheme.background,
             border = BorderStroke(2.dp, Bb10Blue),
         ) {
-            val short = io.github.aimindseye.tenseven.design.isSableShortWindow()
+            val short =
+                io.github.aimindseye.tenseven.design
+                    .isSableShortWindow()
             Column(Modifier.padding(if (short) 7.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(if (short) 2.dp else 5.dp)) {
                 Text("SELECTED MESSAGE", color = Bb10Muted, style = MaterialTheme.typography.labelSmall)
                 Text(conversation.name, color = Bb10Text, style = MaterialTheme.typography.titleMedium)
@@ -433,7 +435,11 @@ private fun HubSelectedMessageContext(
 private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) {
     var draft by remember { mutableStateOf("") }
     var failed by remember { mutableStateOf(false) }
-    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val focus =
+        remember {
+            androidx.compose.ui.focus
+                .FocusRequester()
+        }
     androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     val send = {
         if (draft.isNotBlank()) {
@@ -453,8 +459,11 @@ private fun HubPanelReply(label: String = "Reply", onSend: (String) -> Boolean) 
         isError = failed,
         singleLine = true,
         keyboardOptions =
-            androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
-        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
+            androidx.compose.foundation.text
+                .KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
+        keyboardActions =
+            androidx.compose.foundation.text
+                .KeyboardActions(onSend = { send() }),
     )
     PanelAction(stringResource(R.string.hub_send)) { send() }
     if (failed) Text(stringResource(R.string.hub_reply_failed), color = MaterialTheme.colorScheme.error)

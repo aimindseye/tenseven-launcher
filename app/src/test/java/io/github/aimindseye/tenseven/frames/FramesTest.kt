@@ -59,7 +59,11 @@ class FramesTest {
             FramePolicy.state(
                 input(
                     emptyList(),
-                    listOf(ForegroundEvent("com.aurora.store", 300), ForegroundEvent("com.google.android.gms", 200), ForegroundEvent("mail", 100)),
+                    listOf(
+                        ForegroundEvent("com.aurora.store", 300),
+                        ForegroundEvent("com.google.android.gms", 200),
+                        ForegroundEvent("mail", 100),
+                    ),
                     setOf(store, gms, personal),
                 ),
                 emptyMap(),
@@ -212,11 +216,20 @@ class FramesTest {
         assertTrue(h.published.isEmpty())
         assertEquals(shown, c.state)
         assertTrue(c.acceptsSnapshot(shown.items.single(), shown.generation))
-        h.data = h.data.copy(recent = listOf(ForegroundEvent("mail", 100), ForegroundEvent("other", 200)), availableApps = setOf(personal, FrameApp("other", 0)))
+        h.data =
+            h.data.copy(
+                recent = listOf(ForegroundEvent("mail", 100), ForegroundEvent("other", 200)),
+                availableApps = setOf(personal, FrameApp("other", 0)),
+            )
         c.refresh()
         h.drain()
         assertEquals(1, h.published.size)
-        assertTrue(h.published.single().items.isNotEmpty())
+        assertTrue(
+            h.published
+                .single()
+                .items
+                .isNotEmpty(),
+        )
     }
 
     @Test fun closeIsImmediatePersistsAcrossRecreationAndNeverRemovesNativeTask() {

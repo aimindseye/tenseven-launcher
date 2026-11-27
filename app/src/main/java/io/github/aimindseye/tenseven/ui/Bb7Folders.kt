@@ -105,7 +105,11 @@ internal object Bb7Folders {
         val name = generateSequence(1) { it + 1 }.map { if (it == 1) wanted else "$wanted $it" }.first { it !in used }
         if (name == from) return null
         val held = contents(context, from)
-        prefs(context).edit().remove(from).putString(name, held.joinToString(SEPARATOR)).apply()
+        prefs(context)
+            .edit()
+            .remove(from)
+            .putString(name, held.joinToString(SEPARATOR))
+            .apply()
         version++
         return name
     }

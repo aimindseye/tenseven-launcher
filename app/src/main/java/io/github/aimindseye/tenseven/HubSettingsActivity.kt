@@ -281,7 +281,8 @@ private fun HubSettings(
                 hubComposeSection()
                 hubAccessSection(access, enabled, first, auditContext)
                 hubContentSection(content)
-                io.github.aimindseye.tenseven.ui.SableHubSettingsSection()
+                io.github.aimindseye.tenseven.ui
+                    .SableHubSettingsSection()
                 hubCalendarSection(calendar)
                 HubSourceOptions(rows, enabled, enabled::toggle)
             }

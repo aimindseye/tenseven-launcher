@@ -52,7 +52,9 @@ import java.util.Date
 private val PanelBlue = Color(0xFF2E9BD6)
 
 /** What the Menu key offers on the highlighted row (BlackBerry 7 notification list). */
-internal enum class NotificationMenuItem(val label: String) {
+internal enum class NotificationMenuItem(
+    val label: String,
+) {
     Open("Open"),
     MarkOpened("Mark Opened"),
     MarkUnopened("Mark Unopened"),
@@ -64,11 +66,28 @@ internal enum class NotificationMenuItem(val label: String) {
 /** The one-letter tag standing in for the envelope, bubble and handset of the BlackBerry 7 rows. */
 internal fun notificationTag(item: HubNotification): String =
     when {
-        item.kind == HubMessageKind.Email -> "@"
-        item.packageName.contains("dialer") || item.packageName.contains("telecom") -> "T"
-        item.packageName.contains("calendar") -> "C"
-        item.packageName.contains("messag") || item.packageName.contains("sms") -> "M"
-        else -> item.appName.firstOrNull()?.uppercaseChar()?.toString() ?: "N"
+        item.kind == HubMessageKind.Email -> {
+            "@"
+        }
+
+        item.packageName.contains("dialer") || item.packageName.contains("telecom") -> {
+            "T"
+        }
+
+        item.packageName.contains("calendar") -> {
+            "C"
+        }
+
+        item.packageName.contains("messag") || item.packageName.contains("sms") -> {
+            "M"
+        }
+
+        else -> {
+            item.appName
+                .firstOrNull()
+                ?.uppercaseChar()
+                ?.toString() ?: "N"
+        }
     }
 
 /**
@@ -134,15 +153,30 @@ internal fun Bb7NotificationPanel(onClose: () -> Unit) {
         val item = items.getOrNull(selected)
         menuOpen = false
         when (action) {
-            NotificationMenuItem.Open -> item?.let(::open)
-            NotificationMenuItem.MarkOpened -> item?.let { conversationOf(it)?.let { c -> ConversationHub.markRead(context, c) } }
-            NotificationMenuItem.MarkUnopened -> item?.let { conversationOf(it)?.let { c -> ConversationHub.markUnread(context, c) } }
-            NotificationMenuItem.Delete -> item?.let(::delete)
+            NotificationMenuItem.Open -> {
+                item?.let(::open)
+            }
+
+            NotificationMenuItem.MarkOpened -> {
+                item?.let { conversationOf(it)?.let { c -> ConversationHub.markRead(context, c) } }
+            }
+
+            NotificationMenuItem.MarkUnopened -> {
+                item?.let { conversationOf(it)?.let { c -> ConversationHub.markUnread(context, c) } }
+            }
+
+            NotificationMenuItem.Delete -> {
+                item?.let(::delete)
+            }
+
             NotificationMenuItem.ClearAll -> {
                 ConversationListenerService.cancelKeys(items.map(HubNotification::key))
                 items.forEach { ConversationHub.remove(it.key) }
             }
-            NotificationMenuItem.Close -> onClose()
+
+            NotificationMenuItem.Close -> {
+                onClose()
+            }
         }
     }
 
@@ -170,31 +204,55 @@ internal fun Bb7NotificationPanel(onClose: () -> Unit) {
                             val code = event.key.nativeKeyCode
                             if (menuOpen) {
                                 when (code) {
-                                    KeyEvent.KEYCODE_DPAD_DOWN ->
+                                    KeyEvent.KEYCODE_DPAD_DOWN -> {
                                         menuIndex = (menuIndex + 1) % menuItems.size
-                                    KeyEvent.KEYCODE_DPAD_UP ->
+                                    }
+
+                                    KeyEvent.KEYCODE_DPAD_UP -> {
                                         menuIndex =
                                             (menuIndex - 1 + menuItems.size) %
-                                                menuItems.size
-                                    KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER ->
+                                            menuItems.size
+                                    }
+
+                                    KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> {
                                         menuItems.getOrNull(menuIndex)?.let(::run)
-                                    KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_BACK -> menuOpen = false
-                                    else -> return@onPreviewKeyEvent false
+                                    }
+
+                                    KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_BACK -> {
+                                        menuOpen = false
+                                    }
+
+                                    else -> {
+                                        return@onPreviewKeyEvent false
+                                    }
                                 }
                                 return@onPreviewKeyEvent true
                             }
                             when (code) {
-                                KeyEvent.KEYCODE_DPAD_DOWN -> selected = (selected + 1).coerceAtMost(items.lastIndex.coerceAtLeast(0))
-                                KeyEvent.KEYCODE_DPAD_UP -> selected = (selected - 1).coerceAtLeast(0)
-                                KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER ->
+                                KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                    selected = (selected + 1).coerceAtMost(items.lastIndex.coerceAtLeast(0))
+                                }
+
+                                KeyEvent.KEYCODE_DPAD_UP -> {
+                                    selected = (selected - 1).coerceAtLeast(0)
+                                }
+
+                                KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> {
                                     items.getOrNull(selected)?.let(::open)
-                                KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_FORWARD_DEL ->
+                                }
+
+                                KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_FORWARD_DEL -> {
                                     items.getOrNull(selected)?.let(::delete)
+                                }
+
                                 KeyEvent.KEYCODE_MENU -> {
                                     menuIndex = 0
                                     menuOpen = true
                                 }
-                                else -> return@onPreviewKeyEvent false
+
+                                else -> {
+                                    return@onPreviewKeyEvent false
+                                }
                             }
                             true
                         },
@@ -250,7 +308,11 @@ private fun NotificationRow(
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val preview = item.messages.lastOrNull()?.text.orEmpty()
+    val preview =
+        item.messages
+            .lastOrNull()
+            ?.text
+            .orEmpty()
     val time = DateFormat.getTimeFormat(context).format(Date(item.postedAt))
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -321,6 +383,7 @@ private fun dayLabel(
 ): String {
     val day = 24L * 60 * 60 * 1000
     val zone = java.util.TimeZone.getDefault()
+
     fun dayNumber(t: Long) = (t + zone.getOffset(t)) / day
     return when (dayNumber(System.currentTimeMillis()) - dayNumber(at)) {
         0L -> "Today"

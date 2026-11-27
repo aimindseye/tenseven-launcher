@@ -234,6 +234,7 @@ internal class LauncherRuntime(
 
     private companion object {
         const val REFRESH_DEBOUNCE_MS = 400L
+
         fun profileActions(): List<String> =
             buildList {
                 add(Intent.ACTION_MANAGED_PROFILE_ADDED)

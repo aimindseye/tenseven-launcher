@@ -217,7 +217,8 @@ private fun HubPeekPanel(
     val sableFade =
         remember(context) {
             runCatching {
-                android.provider.Settings.Secure.getString(context.contentResolver, "sable_profile")
+                android.provider.Settings.Secure
+                    .getString(context.contentResolver, "sable_profile")
             }.getOrNull() == "bb7"
         }
     LaunchedEffect(Unit) {

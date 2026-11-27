@@ -54,5 +54,4 @@ data class LiveSurfaceSnapshot(
         require(timeText.isNotBlank())
         require(observedAtEpochMs >= 0L)
     }
-
 }

@@ -7,7 +7,9 @@ import android.view.KeyEvent
  * opens a 3 x 3 grid of the actions used most; the Menu key still opens the full menu. The list carries its
  * own type so the activity can show it as a grid and the Menu key's list stays a list.
  */
-internal class SableShortMenu(items: List<Pair<String, () -> Unit>>) : ArrayList<Pair<String, () -> Unit>>(items) {
+internal class SableShortMenu(
+    items: List<Pair<String, () -> Unit>>,
+) : ArrayList<Pair<String, () -> Unit>>(items) {
     companion object {
         const val COLUMNS = 3
         const val ROWS = 3

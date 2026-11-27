@@ -63,5 +63,4 @@ object D5CalendarBusy {
         }
         return (millis / MILLIS_PER_MINUTE).toInt().coerceIn(0, MINUTES_PER_DAY)
     }
-
 }

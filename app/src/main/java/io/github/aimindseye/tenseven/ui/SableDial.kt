@@ -7,6 +7,5 @@ package io.github.aimindseye.tenseven.ui
 internal object SableDial {
     private const val MIN_DIGITS = 3
 
-    fun isNumber(query: String): Boolean =
-        query.count { it.isDigit() } >= MIN_DIGITS && query.all { it.isDigit() || it in "+*#" }
+    fun isNumber(query: String): Boolean = query.count { it.isDigit() } >= MIN_DIGITS && query.all { it.isDigit() || it in "+*#" }
 }

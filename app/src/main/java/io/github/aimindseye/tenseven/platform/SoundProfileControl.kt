@@ -39,8 +39,7 @@ object SoundProfileControl {
     }
 
     /** Whether Sable Profiles, the SableOS sound profiles app, is installed. */
-    fun profilesEnabled(context: Context): Boolean =
-        context.packageManager.getLaunchIntentForPackage("org.sableos.titan2.profiles") != null
+    fun profilesEnabled(context: Context): Boolean = context.packageManager.getLaunchIntentForPackage("org.sableos.titan2.profiles") != null
 
     /** Opens Sable Profiles; false (and nothing opened) when it is missing. */
     fun openProfiles(context: Context): Boolean {

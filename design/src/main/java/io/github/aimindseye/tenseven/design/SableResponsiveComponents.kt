@@ -78,7 +78,8 @@ fun Modifier.sableFocusRing(): Modifier =
         val filled =
             remember(profileContext) {
                 runCatching {
-                    android.provider.Settings.Secure.getString(profileContext.contentResolver, "sable_profile")
+                    android.provider.Settings.Secure
+                        .getString(profileContext.contentResolver, "sable_profile")
                 }.getOrNull() == "bb7"
             }
         this

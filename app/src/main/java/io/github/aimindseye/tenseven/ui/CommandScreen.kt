@@ -494,7 +494,9 @@ private fun SearchScreenLayout(
     onTogglePrivateSpace: () -> Unit,
 ) {
     val moveChip: (Int) -> Unit = { delta -> ui.moveChip(model.parsed.scope, delta) }
-    val short = io.github.aimindseye.tenseven.design.isSableShortWindow()
+    val short =
+        io.github.aimindseye.tenseven.design
+            .isSableShortWindow()
     Column(
         modifier =
             Modifier.fillMaxSize().padding(
@@ -890,7 +892,16 @@ internal fun SableSearchField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = if (io.github.aimindseye.tenseven.design.isSableShortWindow()) 48.dp else 62.dp),
+                .heightIn(
+                    min =
+                        if (io.github.aimindseye.tenseven.design
+                                .isSableShortWindow()
+                        ) {
+                            48.dp
+                        } else {
+                            62.dp
+                        },
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.searchAccentModifier())

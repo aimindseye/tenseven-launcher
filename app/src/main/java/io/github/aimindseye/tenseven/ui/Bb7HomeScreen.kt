@@ -504,8 +504,7 @@ private class Bb7HomeActions(
     private fun removeFromFolderMenu(
         name: String,
         held: List<AppEntry>,
-    ): List<Pair<String, () -> Unit>> =
-        held.map { app -> app.label to { Bb7Folders.remove(context, name, app.stableKey()) } }
+    ): List<Pair<String, () -> Unit>> = held.map { app -> app.label to { Bb7Folders.remove(context, name, app.stableKey()) } }
 
     /** Move to Folder: one line per folder; the icon leaves the home screen and goes into the folder. */
     private fun moveToFolderMenu(app: AppEntry): List<Pair<String, () -> Unit>> =
@@ -606,8 +605,15 @@ private class Bb7HomeActions(
                     }
                 },
             )
-            if (io.github.aimindseye.tenseven.platform.MediaFavourites.available(context)) {
-                add("Favourites" to { io.github.aimindseye.tenseven.platform.MediaFavourites.open(context) })
+            if (io.github.aimindseye.tenseven.platform.MediaFavourites
+                    .available(context)
+            ) {
+                add(
+                    "Favourites" to {
+                        io.github.aimindseye.tenseven.platform.MediaFavourites
+                            .open(context)
+                    },
+                )
             }
             add(
                 "Options" to {
@@ -648,7 +654,10 @@ private class Bb7HomeKeyboard(
     }
 
     /** Trackpad press: acts on release; a hold (the second repeat of the down) opens the short menu. */
-    private fun centerKey(type: KeyEventType, key: KeyEvent): Boolean {
+    private fun centerKey(
+        type: KeyEventType,
+        key: KeyEvent,
+    ): Boolean {
         when (type) {
             KeyEventType.KeyDown -> {
                 if (key.repeatCount == 0) {
@@ -667,12 +676,14 @@ private class Bb7HomeKeyboard(
                 return handle(pressed)
             }
 
-            else -> return false
+            else -> {
+                return false
+            }
         }
     }
 
-    private fun handle(key: KeyEvent): Boolean {
-        return when {
+    private fun handle(key: KeyEvent): Boolean =
+        when {
             state.moving -> {
                 when (key.keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> actions.moveBy(-1)
@@ -692,7 +703,6 @@ private class Bb7HomeKeyboard(
                 trayKey(key)
             }
         }
-    }
 
     private fun desktopKey(key: KeyEvent): Boolean {
         if (key.isAltPressed) {
