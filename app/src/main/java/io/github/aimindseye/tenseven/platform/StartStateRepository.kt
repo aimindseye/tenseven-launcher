@@ -242,6 +242,10 @@ class StartStateRepository(
         io.github.aimindseye.tenseven.model.HomeStatusSize
             .decode(preferences.getString("home_status_size", null))
 
+    fun saveHomeStatusSize(size: io.github.aimindseye.tenseven.model.HomeStatusSize) {
+        preferences.edit { putString("home_status_size", size.stableValue) }
+    }
+
     /** Double-tap on empty Home space locks the screen (needs the accessibility service); off until chosen. */
     fun loadDoubleTapLock(): Boolean = preferences.getBoolean(KEY_DOUBLE_TAP_LOCK, false)
 

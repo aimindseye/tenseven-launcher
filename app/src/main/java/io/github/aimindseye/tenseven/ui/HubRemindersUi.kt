@@ -90,7 +90,6 @@ private fun HubReminderEditor(
         ) {
             TaskEditor(
                 task = task,
-                isNew = false,
                 onCancel = { onClose() },
                 onSave = {
                     repository.save(it)
