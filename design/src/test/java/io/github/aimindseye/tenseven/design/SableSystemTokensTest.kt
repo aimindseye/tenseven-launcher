@@ -16,8 +16,8 @@ class SableSystemTokensTest {
     fun contrastMatchesWcagReferenceValues() {
         assertEquals(21.0, SableContrast.ratio(0xFF000000, 0xFFFFFFFF), 0.01)
         assertEquals(1.0, SableContrast.ratio(0xFF777777, 0xFF777777), 0.0001)
-        // Sable Blue on white is why the light theme needs its own accent tone.
-        assertEquals(2.79, SableContrast.ratio(0xFF4D9CFF, 0xFFFFFFFF), 0.01)
+        // Sable Blue (#2E9BD6) on white just clears the 3:1 non-text rule; Green and Orange do not.
+        assertEquals(3.10, SableContrast.ratio(0xFF2E9BD6, 0xFFFFFFFF), 0.01)
     }
 
     @Test
@@ -28,7 +28,7 @@ class SableSystemTokensTest {
             SableAccentTokens.entries
                 .filter { SableContrast.ratio(it.seed, SableSystemTokens.Light.surfaceRaised) < 3.0 }
                 .map { it.stableValue }
-        assertEquals(listOf("blue", "green", "orange"), failing)
+        assertEquals(listOf("green", "orange"), failing)
     }
 
     @Test
@@ -44,7 +44,7 @@ class SableSystemTokensTest {
     fun accentSeedsMatchExistingSablePresets() {
         // AccentPreset (SableTheme.kt) and these seeds must stay identical; Sable apps and
         // the system palette are seeded from the same value.
-        assertEquals("4D9CFF", SableAccentTokens.Blue.seedHex)
+        assertEquals("2E9BD6", SableAccentTokens.Blue.seedHex)
         assertEquals("35C66B", SableAccentTokens.Green.seedHex)
         assertEquals("7A42E8", SableAccentTokens.Purple.seedHex)
         assertEquals("F28C45", SableAccentTokens.Orange.seedHex)

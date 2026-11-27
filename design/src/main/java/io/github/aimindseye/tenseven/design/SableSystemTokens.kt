@@ -54,7 +54,7 @@ enum class SableAccentTokens(
     val light: Long,
     val onLight: Long,
 ) {
-    Blue("blue", 0xFF4D9CFF, 0xFF4D9CFF, 0xFF06111F, 0xFF1F6FD1, 0xFFFFFFFF),
+    Blue("blue", 0xFF2E9BD6, 0xFF2E9BD6, 0xFF000000, 0xFF1F6FD1, 0xFFFFFFFF),
     Green("green", 0xFF35C66B, 0xFF35C66B, 0xFF04140A, 0xFF1A7F45, 0xFFFFFFFF),
     Purple("purple", 0xFF7A42E8, 0xFFA47CFF, 0xFF0F0526, 0xFF7A42E8, 0xFFFFFFFF),
     Orange("orange", 0xFFF28C45, 0xFFF28C45, 0xFF1D0C02, 0xFFB35410, 0xFFFFFFFF),
