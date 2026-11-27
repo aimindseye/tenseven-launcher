@@ -103,8 +103,10 @@ class LockLayerActivity : ComponentActivity() {
         val back = intent?.getStringExtra(EXTRA_RETURN_TO)
         if (back != null) {
             intent?.removeExtra(EXTRA_RETURN_TO)
-            runCatching {
-                startActivity(Intent().setClassName(this, back).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+            // Only a screen of this app can be returned to; the extra never names another app's component.
+            val target = Intent().setClassName(packageName, back).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            if (back.startsWith("${LockLayerActivity::class.java.`package`?.name}.")) {
+                if (packageManager.resolveActivity(target, 0) != null) runCatching { startActivity(target) }
             }
         }
         super.finish()
