@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import io.github.aimindseye.tenseven.model.AppEntry
@@ -130,7 +131,7 @@ internal fun FolderGlyph(sizeDp: Int) {
         Canvas(Modifier.size(sizeDp.dp)) {
             val w = this.size.width
             val h = this.size.height
-            val blue = Bb10Blue
+            val blue = FolderBlue
             drawRoundRect(
                 blue,
                 Offset(w * FOLDER_INSET, h * FOLDER_TAB_TOP),
@@ -147,6 +148,7 @@ internal fun FolderGlyph(sizeDp: Int) {
     }
 }
 
+private val FolderBlue = Color(0xFF2E9BD6)
 private const val FOLDER_INSET = 0.08f
 private const val FOLDER_TAB_TOP = 0.18f
 private const val FOLDER_TAB_WIDTH = 0.4f

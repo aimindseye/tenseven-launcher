@@ -27,12 +27,13 @@ internal object SableTaskSnapshots {
     private const val MAX_EDGE = 512
     private val logged = mutableSetOf<String>()
 
+    private val managerClass: Class<*>? by lazy { loadManagerClass() }
+
     @SuppressLint("PrivateApi")
-    private val managerClass: Class<*>? by lazy {
+    private fun loadManagerClass(): Class<*>? =
         runCatching { Class.forName("android.window.TaskSnapshotManager") }
             .onFailure { log("no TaskSnapshotManager", it) }
             .getOrNull()
-    }
 
     private fun manager(): Any? {
         val type = managerClass ?: return null
