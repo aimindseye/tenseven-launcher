@@ -284,6 +284,8 @@ private val launcherAppearancePage: @Composable (
     HomeStyleSection(state, first)
     Section("Home readability")
     Settings2ReadabilityOptions(state)
+    Section("Home status")
+    Settings2UnifiedHomeStatus(state)
     Section("Icons & layout")
     IconGridSection(state)
     IconPresentationSection(state)
@@ -389,6 +391,11 @@ private val launcherReviewPage: @Composable (
     ) {
         select("appearance_home")
     }
+    Card(
+        "Home status",
+        state.loadHomeStatusMode().name.let { if (it == "Text") "Icons" else it },
+        false,
+    ) { select("appearance_home") }
     Card("Hub", "Compose and notification source choices", false, onClick = openHubFlow)
     Card("Finish & Return Home", "Save choices and open Sable Launcher Home", true) {
         state.saveOnboardingDone()
@@ -956,4 +963,57 @@ private fun DeviceSettingsLinks(
         false,
         onClick = onAndroidSettings,
     )
+}
+
+@Composable
+private fun Settings2UnifiedHomeStatus(state: StartStateRepository) {
+    var mode by remember { mutableStateOf(state.loadHomeStatusMode()) }
+    var metrics by remember { mutableStateOf(state.loadHomeDials()) }
+    Text(
+        "One status configuration shared by BlackBerry 7 and BlackBerry 10.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        io.github.aimindseye.tenseven.model.HomeStatusMode.entries.forEach { choice ->
+            StyleCard(if (choice.name == "Text") "Icons" else choice.name, "", choice == mode, Modifier.weight(1f)) {
+                mode = choice
+                state.saveHomeStatusMode(choice)
+            }
+        }
+    }
+    if (mode != io.github.aimindseye.tenseven.model.HomeStatusMode.Hidden) {
+        Section("Status size")
+        var statusSize by remember { mutableStateOf(state.loadHomeStatusSize()) }
+        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            io.github.aimindseye.tenseven.model.HomeStatusSize.entries.forEach { choice ->
+                StyleCard(choice.title, choice.description, choice == statusSize, Modifier.weight(1f)) {
+                    statusSize = choice
+                    state.saveHomeStatusSize(choice)
+                }
+            }
+        }
+        Section("Status items")
+        val choices =
+            listOf(
+                "cpu" to "CPU",
+                "ram" to "RAM",
+                "battery" to "Battery",
+                "wifi" to "Wi-Fi",
+                "mobile" to "Mobile",
+                "cell" to "Cell",
+                "storage" to "Storage",
+            )
+        choices.forEach { (key, label) ->
+            SwitchRow(
+                label,
+                "Shown in ${
+                    if (mode.name == "Text") "icons" else mode.name.lowercase()
+                } mode when Android supplies a reading",
+                key in metrics,
+            ) { selected ->
+                metrics = if (selected) metrics + key else metrics - key
+                state.saveHomeDials(metrics)
+            }
+        }
+    }
 }

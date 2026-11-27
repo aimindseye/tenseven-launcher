@@ -35,6 +35,7 @@ class StartStateRepository(
     context: Context,
 ) {
     private val hubSources = HubSourceRepository(context)
+    private val statusDefaultOff = context.resources.getBoolean(io.github.aimindseye.tenseven.R.bool.launcher_status_default_off)
     private val profileResolver = context.applicationContext.contentResolver
     private val preferences =
         context.applicationContext.getSharedPreferences(
@@ -367,9 +368,18 @@ class StartStateRepository(
             }
     }
 
-    /** SableOS: the status dials and the status line are removed, so Home status is always Hidden. */
-    fun loadHomeStatusMode(): io.github.aimindseye.tenseven.model.HomeStatusMode =
-        io.github.aimindseye.tenseven.model.HomeStatusMode.Hidden
+    /** One Home status mode, shared across BB7/BB10. A build may default it off; the person can always change it. */
+    fun loadHomeStatusMode(): io.github.aimindseye.tenseven.model.HomeStatusMode {
+        val saved =
+            preferences.getString("home_status_mode_shared", null)
+                ?: preferences.getString(
+                    io.github.aimindseye.tenseven.model.HomeStatusMode
+                        .preference(loadHomeStyle()),
+                    null,
+                )
+        if (saved == null && statusDefaultOff) return io.github.aimindseye.tenseven.model.HomeStatusMode.Hidden
+        return io.github.aimindseye.tenseven.model.HomeStatusMode.decode(saved, loadHomeDials().size)
+    }
 
     fun saveHomeStatusMode(mode: io.github.aimindseye.tenseven.model.HomeStatusMode) {
         preferences.edit { putString("home_status_mode_shared", mode.key) }

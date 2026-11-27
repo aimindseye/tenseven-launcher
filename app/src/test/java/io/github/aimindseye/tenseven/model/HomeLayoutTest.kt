@@ -9,12 +9,13 @@ import org.junit.Test
 /** The Active Frames header (BB10 Home) and the Glance widgets shown as frames. */
 class HomeLayoutTest {
     @Test
-    fun neverCustomisedShowsWeather() {
+    fun neverCustomisedShowsStatusDialsAndWeather() {
         val hidden = HomeLayout.normalizeHidden(null)
+        assertTrue(HomeLayout.isShown(hidden, HomeLayout.STATUS_RINGS))
         assertTrue(HomeLayout.isShown(hidden, HomeLayout.WEATHER))
         assertFalse(HomeLayout.isShown(hidden, HomeLayout.SEARCH_ROW))
-        // Weather and date: no clock, no greeting, no status dials.
-        assertEquals(listOf("weather", "search"), HomeLayout.SECTIONS)
+        // Dials first, then weather and date: no clock, no greeting.
+        assertEquals(listOf("rings", "weather", "search"), HomeLayout.SECTIONS)
     }
 
     @Test
@@ -35,7 +36,7 @@ class HomeLayoutTest {
 
     @Test
     fun hiddenModulesToggleAndUnknownNamesDrop() {
-        assertEquals(setOf("search"), HomeLayout.normalizeHidden(setOf("rings", "search", "bogus")))
+        assertEquals(setOf("rings"), HomeLayout.normalizeHidden(setOf("rings", "bogus")))
         val noWeather = HomeLayout.toggle(emptySet(), HomeLayout.WEATHER)
         assertFalse(HomeLayout.isShown(noWeather, HomeLayout.WEATHER))
         assertEquals(emptySet<String>(), HomeLayout.toggle(noWeather, HomeLayout.WEATHER))

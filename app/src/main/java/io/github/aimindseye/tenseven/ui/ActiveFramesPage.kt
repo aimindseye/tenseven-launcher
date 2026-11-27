@@ -74,7 +74,7 @@ internal fun ActiveFramesPage(
     fun shown(section: String) = HomeLayout.isShown(hiddenSections, section)
     val owned = emptyList<FrameTileView>()
     Column(Modifier.fillMaxSize()) {
-        StatusDialsRow(onOpenSettings, dials)
+        if (shown(HomeLayout.STATUS_RINGS) && dials.isNotEmpty()) StatusDialsRow(onOpenSettings, dials)
         if (shown(HomeLayout.WEATHER)) {
             DateHeader(
                 refreshGeneration,
