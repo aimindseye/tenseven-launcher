@@ -20,6 +20,8 @@ object CompanionCatalog {
             CompanionSpec("notes", "Notes", "io.github.aimindseye.tenseven.notes", true),
             CompanionSpec("calculator", "Calc Plus", "io.github.aimindseye.tenseven.calculator", true),
             CompanionSpec("profiles", "Sound Profiles", "io.github.aimindseye.tenseven.profiles", false),
+            // Sable Watch (separate repository) reads the Hub counts provider; in Full only, discovery only.
+            CompanionSpec("watch", "Sable Watch", "io.github.aimindseye.sablewatch", false),
         )
 
     /** Base: the launcher alone, no companion apps. */

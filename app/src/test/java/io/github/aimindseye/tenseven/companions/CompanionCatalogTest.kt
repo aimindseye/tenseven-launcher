@@ -7,8 +7,8 @@ import org.junit.Test
 
 class CompanionCatalogTest {
     @Test
-    fun sixUniqueToolCompanionPackagesAndIds() {
-        assertEquals(6, CompanionCatalog.all.size)
+    fun uniqueCompanionPackagesAndIds() {
+        assertEquals(7, CompanionCatalog.all.size)
         val uniqueIds =
             CompanionCatalog.all
                 .map { it.id }
@@ -17,8 +17,8 @@ class CompanionCatalogTest {
             CompanionCatalog.all
                 .map { it.packageName }
                 .toSet()
-        assertEquals(6, uniqueIds.size)
-        assertEquals(6, uniquePackages.size)
+        assertEquals(7, uniqueIds.size)
+        assertEquals(7, uniquePackages.size)
         assertFalse(CompanionCatalog.all.any { it.packageName == "io.github.aimindseye.tenseven" })
     }
 
@@ -26,7 +26,9 @@ class CompanionCatalogTest {
     fun baseLiteAndFullArePresets() {
         assertEquals(setOf("tasks", "notes", "calculator"), CompanionCatalog.litePreset)
         assertEquals(emptySet<String>(), CompanionCatalog.basePreset)
-        assertEquals(6, CompanionCatalog.fullPreset.size)
+        assertEquals(7, CompanionCatalog.fullPreset.size)
+        assertTrue("watch" in CompanionCatalog.fullPreset)
+        assertFalse("watch" in CompanionCatalog.litePreset)
         assertTrue(CompanionCatalog.fullPreset.containsAll(CompanionCatalog.litePreset))
         assertEquals(setOf("phone"), CompanionCatalog.normalize(listOf("phone", "unknown", "phone")))
     }

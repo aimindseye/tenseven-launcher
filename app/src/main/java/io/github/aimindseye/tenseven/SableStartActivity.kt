@@ -85,8 +85,6 @@ class SableStartActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         StartText.t.bindTo(this)
-        io.github.aimindseye.tenseven.platform.SableExtraDim.start(this)
-        io.github.aimindseye.tenseven.platform.SableHomeAccess.ensure(this)
         DesignText.t.bindTo(this)
         // The BlackBerry 7 home is see-through over the wallpaper. A window that starts opaque keeps its pixels
         // when it later turns transparent, so old BlackBerry 10 screens showed through: always ask for alpha.

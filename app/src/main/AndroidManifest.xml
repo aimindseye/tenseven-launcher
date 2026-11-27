@@ -20,30 +20,9 @@
     <!-- Only for the optional lock layer: lets it start over the lock screen when the screen wakes. Off until the user turns it on. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
-    <!-- SableOS: the platform-signed home's permissions, as Sable Start held them: Active Frames'
-         live pictures from the system task snapshot, and Private Space and work-profile rows. -->
-    <uses-permission android:name="android.permission.REAL_GET_TASKS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.REORDER_TASKS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.REMOVE_TASKS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.START_TASKS_FROM_RECENTS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.READ_FRAME_BUFFER" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_TASKS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.OBSERVE_GRANT_REVOKE_PERMISSIONS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.MODIFY_QUIET_MODE" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="org.sableos.permission.SPEED_DIAL" />
-    <!-- SableOS system menu: the app's Menu key, and the shade. -->
-    <uses-permission android:name="android.permission.INJECT_EVENTS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
     <!-- POST_NOTIFICATIONS is optional; overdue tasks remain in-app without it. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- SableOS: the home grants itself its permissions once (SableHomeAccess, platform certificate). -->
-    <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.MANAGE_APP_OPS_MODES" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.MANAGE_NOTIFICATION_LISTENERS" tools:ignore="ProtectedPermissions" />
-    <!-- SableOS: Extra dim at the bottom of the brightness slider (platform certificate). -->
-    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
          Tenseven under Settings, Usage access, and "appops set" is ignored. The user still grants it there. -->
@@ -84,6 +63,7 @@
         <package android:name="io.github.aimindseye.tenseven.notes" />
         <package android:name="io.github.aimindseye.tenseven.calculator" />
         <package android:name="io.github.aimindseye.tenseven.profiles" />
+        <package android:name="io.github.aimindseye.sablewatch" />
         <package android:name="io.github.aimindseye.tenseven.phone.debug" />
         <package android:name="io.github.aimindseye.tenseven.calendar.debug" />
         <package android:name="io.github.aimindseye.tenseven.tasks.debug" />
@@ -165,17 +145,13 @@
         <!-- Companion setup planner: user-initiated selection only; no installer capability. -->
         <activity android:name=".CompanionWizardActivity" android:exported="false" />
 
-        <!-- Remind scheduler is independent of the optional Notes and Tasks launcher icons. -->
-        <receiver android:name=".tasks.TaskAlarmReceiver" android:enabled="true" android:exported="false">
+        <receiver android:name=".platform.HubReminderAlarmReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
-        <activity android:name=".tasks.TasksActivity" android:exported="false"
-            android:taskAffinity="io.github.aimindseye.tenseven.tasks"
-            android:label="TenSeven Tasks" android:theme="@android:style/Theme.Material.NoActionBar" />
         <activity
             android:name="io.github.aimindseye.tenseven.SableStartActivity"
             android:clearTaskOnLaunch="true"
@@ -228,18 +204,6 @@
             android:label="@string/home_screen_style">
             <intent-filter>
                 <action android:name="org.sableos.start.action.CHOOSE_HOME_STYLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-
-        <!-- The lock-screen choice (media player with FM, and Hub notices), opened from Sable Setup. -->
-        <activity
-            android:name=".LockScreenChoiceActivity"
-            android:excludeFromRecents="true"
-            android:exported="true"
-            android:label="@string/ls_lock_media">
-            <intent-filter>
-                <action android:name="org.sableos.start.action.CHOOSE_LOCK_SCREEN" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -330,14 +294,6 @@
 
 
 
-        <!-- SableOS: the system menu, from Alt+BlackBerry key in any app (frameworks/base 0324). -->
-        <activity
-            android:name=".SableSystemMenuActivity"
-            android:exported="false"
-            android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:taskAffinity=""
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <!-- SableOS: Hub over any app (hold the Recents key; frameworks/base 0326). -->
         <activity
             android:name=".SableHubPeekActivity"
@@ -351,15 +307,6 @@
             android:name=".frames.SableCoverProvider"
             android:authorities="${applicationId}.covers"
             android:exported="true" />
-        <!-- SableOS: first-boot setup's Look step saves the home style. -->
-        <receiver
-            android:name=".SableLookReceiver"
-            android:exported="true"
-            android:permission="android.permission.WRITE_SECURE_SETTINGS">
-            <intent-filter>
-                <action android:name="org.sableos.start.action.SET_LOOK" />
-            </intent-filter>
-        </receiver>
         <provider
             android:name=".platform.HubCountsProvider"
             android:authorities="${applicationId}.hubcounts"

@@ -130,7 +130,7 @@ private fun CompanionPresetPage(
     }
     Card(
         "Full · all apps",
-        "All six optional tool companions",
+        "All optional companions, including Sable Watch",
         CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.FULL,
     ) {
         onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.FULL, selected))

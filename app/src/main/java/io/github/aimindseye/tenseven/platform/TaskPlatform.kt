@@ -11,12 +11,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import io.github.aimindseye.tenseven.tasks.TaskAlarmReceiver
 import io.github.aimindseye.tenseven.tasks.TaskRecord
 import io.github.aimindseye.tenseven.tasks.TaskRepository
 import io.github.aimindseye.tenseven.tasks.TaskScheduler
 import io.github.aimindseye.tenseven.tasks.TaskStore
-import io.github.aimindseye.tenseven.tasks.TasksActivity
 
 /** Android wiring only; task persistence, deduplication and completion stay in the tested domain. */
 fun taskRepository(context: Context): TaskRepository {
@@ -38,7 +36,7 @@ object TaskAlarms {
         id: String,
     ): PendingIntent {
         val i =
-            Intent(context, TaskAlarmReceiver::class.java).apply {
+            Intent(context, HubReminderAlarmReceiver::class.java).apply {
                 action = "io.github.aimindseye.tenseven.TASK_DUE"
                 data = Uri.parse("tenseven-task://remind/" + id)
                 putExtra("id", id)
@@ -65,7 +63,7 @@ object TaskAlarms {
     }
 }
 
-open class TaskAlarmReceiverBase : BroadcastReceiver() {
+class HubReminderAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(
         context: Context,
         intent: Intent,
@@ -90,14 +88,14 @@ open class TaskAlarmReceiverBase : BroadcastReceiver() {
                 manager.createNotificationChannel(
                     NotificationChannel(
                         "tenseven_tasks",
-                        "Sable Launcher Remind",
+                        "TenSeven Remind",
                         NotificationManager.IMPORTANCE_DEFAULT,
                     ),
                 )
                 val open =
-                    Intent(context, TasksActivity::class.java).apply {
+                    Intent(context, io.github.aimindseye.tenseven.SableStartActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        putExtra(TasksActivity.EXTRA_MODE, "remind")
+                        action = "org.sableos.start.action.SHOW_HUB"
                     }
                 val pending =
                     PendingIntent.getActivity(
@@ -110,7 +108,7 @@ open class TaskAlarmReceiverBase : BroadcastReceiver() {
                     Notification
                         .Builder(context, "tenseven_tasks")
                         .setSmallIcon(io.github.aimindseye.tenseven.R.mipmap.ic_tenseven)
-                        .setContentTitle("Sable Launcher Remind")
+                        .setContentTitle("TenSeven Remind")
                         // No user-entered or source-app text on a lock screen.
                         .setContentText("You have a follow-up to review")
                         .setVisibility(Notification.VISIBILITY_PRIVATE)

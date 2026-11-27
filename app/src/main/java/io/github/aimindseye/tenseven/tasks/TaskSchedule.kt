@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 /** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
+private const val MAX_REPEAT_ADVANCES = 4000
 private const val TASK_SCHEDULE_PRESET_TIME_9 = 9
 private const val TASK_SCHEDULE_PRESET_VALUE_9 = 9
 
@@ -32,14 +33,16 @@ object TaskSchedule {
         zoneName: String,
         nowMs: Long,
     ): Long? {
-        val previous = epochMs ?: return null
-        if (repeat == TaskRepeat.Never) return previous
-        // Completing a future occurrence still advances to the NEXT one.
-        var next = nextOccurrence(previous, repeat, zoneName) ?: return null
-        // Bounded to resist corrupt/imported years-old records and avoid infinite loops.
-        kotlin.repeat(4000) {
-            if (next > nowMs) return next
-            next = nextOccurrence(next, repeat, zoneName) ?: return null
+        var next = epochMs
+        if (epochMs != null && repeat != TaskRepeat.Never) {
+            // Completing a future occurrence still advances to the NEXT one.
+            next = nextOccurrence(epochMs, repeat, zoneName)
+            var attempts = 0
+            // Bounded to resist corrupt/imported years-old records and avoid infinite loops.
+            while (attempts < MAX_REPEAT_ADVANCES && next != null && next <= nowMs) {
+                next = nextOccurrence(next, repeat, zoneName)
+                attempts++
+            }
         }
         return next
     }
@@ -88,9 +91,18 @@ object TaskSchedule {
         task: TaskRecord,
         now: Instant = Instant.now(),
         zone: ZoneId = ZoneId.systemDefault(),
+    ): String =
+        when {
+            task.completed -> "Completed"
+            task.dueAtEpochMs == null -> "No due date"
+            else -> dueGroup(task.dueAtEpochMs, now, zone)
+        }
+
+    private fun dueGroup(
+        due: Long,
+        now: Instant,
+        zone: ZoneId,
     ): String {
-        if (task.completed) return "Completed"
-        val due = task.dueAtEpochMs ?: return "No due date"
         val date = Instant.ofEpochMilli(due).atZone(zone).toLocalDate()
         val today = now.atZone(zone).toLocalDate()
         return when {

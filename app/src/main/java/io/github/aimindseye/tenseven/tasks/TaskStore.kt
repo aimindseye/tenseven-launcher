@@ -25,7 +25,7 @@ class TaskStore(
         directory.mkdirs()
         val destination = file(task.id)
         val temporary = File(directory, task.id + ".tmp-" + java.util.UUID.randomUUID())
-        temporary.outputStream().use { properties(task).store(it, "Sable Launcher Tasks v1") }
+        temporary.outputStream().use { properties(task).store(it, "TenSeven Tasks v1") }
         try {
             try {
                 Files.move(

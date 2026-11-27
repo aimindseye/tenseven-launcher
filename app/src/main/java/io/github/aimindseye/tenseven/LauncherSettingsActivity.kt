@@ -284,18 +284,6 @@ private val launcherAppearancePage: @Composable (
     HomeStyleSection(state, first)
     Section("Home readability")
     Settings2ReadabilityOptions(state)
-    run {
-        val dimContext = androidx.compose.ui.platform.LocalContext.current
-        var extraDim by remember { mutableStateOf(io.github.aimindseye.tenseven.platform.SableExtraDim.isEnabled(dimContext)) }
-        SwitchRow(
-            "Extra dim at lowest brightness",
-            "With the brightness slider at the bottom, Android's Extra dim makes the screen dimmer than the panel goes",
-            extraDim,
-        ) {
-            extraDim = it
-            io.github.aimindseye.tenseven.platform.SableExtraDim.setEnabled(dimContext, it)
-        }
-    }
     Section("Icons & layout")
     IconGridSection(state)
     IconPresentationSection(state)

@@ -9,6 +9,7 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import io.github.aimindseye.tenseven.conversations.*
 import io.github.aimindseye.tenseven.frames.*
+import java.io.File
 
 /** Read-only adapters, refreshed off the UI thread. All third-party content stays in memory. */
 class AppFrameSummaryRepository(
@@ -22,8 +23,6 @@ class AppFrameSummaryRepository(
         val allowed = ConversationAccess.isGranted(context)
         return AppSummaryPolicy.select(
             buildList {
-                // SableOS cover API: an app's own words for its frame come first.
-                addAll(SableFrameCovers.snapshot(now))
                 if (allowed) {
                     addAll(media(now))
                     val mediaPackages = mapNotNull { it.packageName }.toSet()
@@ -56,7 +55,9 @@ class AppFrameSummaryRepository(
                     AppSummary(
                         "media:" + controller.packageName,
                         appName(controller.packageName),
-                        AppSummaryPolicy.text(prefix + listOf(title, artist).filter(String::isNotBlank).joinToString(" · ")),
+                        AppSummaryPolicy.text(
+                            prefix + listOf(title, artist).filter(String::isNotBlank).joinToString(" · "),
+                        ),
                         SummarySource.Media,
                         controller.packageName,
                         now,
@@ -71,7 +72,8 @@ class AppFrameSummaryRepository(
         return ConversationHub
             .notifications()
             .filter {
-                it.packageName in enabled && !it.isOngoing && !state.isSnoozed(it.conversationId, now) && state.unreadCount(it) > 0
+                it.packageName in enabled && !it.isOngoing &&
+                    !state.isSnoozed(it.conversationId, now) && state.unreadCount(it) > 0
             }.groupBy { it.packageName }
             .map { (pkg, items) ->
                 val latest = items.maxBy { it.postedAt }
@@ -91,7 +93,37 @@ class AppFrameSummaryRepository(
             }
     }
 
-    private fun local(now: Long): List<AppSummary> = listOfNotNull(taskSummary(now))
+    private fun local(now: Long): List<AppSummary> =
+        buildList {
+            LegacyNoteSummaries.latest(File(context.filesDir, "notes"))?.let { note ->
+                add(
+                    AppSummary(
+                        "local:notes",
+                        "TenSeven Notes",
+                        AppSummaryPolicy.text(note.title + " · " + note.preview),
+                        SummarySource.Local,
+                        updatedAt = note.updatedAt,
+                    ),
+                )
+            }
+            taskSummary(now)?.let { add(it) }
+            val last =
+                context.getSharedPreferences("calculator_frame", Context.MODE_PRIVATE).getString(
+                    "last_result",
+                    null,
+                )
+            if (!last.isNullOrBlank()) {
+                add(
+                    AppSummary(
+                        "local:calculator",
+                        "TenSeven Calculator",
+                        AppSummaryPolicy.text(last),
+                        SummarySource.Local,
+                        updatedAt = now,
+                    ),
+                )
+            }
+        }
 
     private fun taskSummary(now: Long): AppSummary? {
         val tasks = taskRepository(context).list().filterNot { it.completed }
@@ -130,19 +162,14 @@ class AppFrameSummaryRepository(
         }.getOrDefault(pkg)
 
     fun open(key: String) {
-        val activity =
-            when (key) {
-                "local:tasks" -> io.github.aimindseye.tenseven.tasks.TasksActivity::class.java
-                else -> null
+        val intent =
+            if (key.startsWith("local:")) {
+                CompanionLaunches.intent(context, key)
+            } else {
+                context.packageManager.getLaunchIntentForPackage(key.substringAfter(':', ""))
             }
-        if (activity !=
-            null
-        ) {
-            runCatching { context.startActivity(Intent(context, activity).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            return
+        intent?.let { target ->
+            runCatching { context.startActivity(target.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
         }
-        val pkg = key.substringAfter(':', "")
-        val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return
-        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
 }
