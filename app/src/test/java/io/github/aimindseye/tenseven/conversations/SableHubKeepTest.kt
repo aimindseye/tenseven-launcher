@@ -13,6 +13,7 @@ import java.util.Locale
 private const val CHAT_APP = "app.chat"
 
 class SableHubKeepTest {
+    @Suppress("LongParameterList")
     private fun msg(
         id: String,
         at: Long,
@@ -22,6 +23,7 @@ class SableHubKeepTest {
         out: Boolean = false,
     ) = ConversationMessage(id, conv, key, CHAT_APP, "Chat", text, at, "Ann", out)
 
+    @Suppress("LongParameterList")
     private fun note(
         key: String,
         at: Long,
@@ -57,7 +59,11 @@ class SableHubKeepTest {
         val kept =
             SableHubKeep.remember(
                 emptyList(),
-                listOf(note("music", 1, ongoing = true), note("mail", 2, pkg = SableMailFeed.MAIL_PACKAGE), note("chat", 3)),
+                listOf(
+                    note("music", 1, ongoing = true),
+                    note("mail", 2, pkg = SableMailFeed.MAIL_PACKAGE),
+                    note("chat", 3),
+                ),
             )
         assertEquals(listOf("chat"), kept.map { it.key })
     }
@@ -79,7 +85,8 @@ class SableHubKeepTest {
     @Test
     fun systemNotificationsCanBeLeftOut() {
         val live = listOf(note("usb", 1, pkg = "android"), note("chat", 2))
-        assertEquals(listOf("chat"), SableHubKeep.view(live, emptyList(), emptyMap(), keep = true, system = false).map { it.key })
+        val kept = SableHubKeep.view(live, emptyList(), emptyMap(), keep = true, system = false)
+        assertEquals(listOf("chat"), kept.map { it.key })
     }
 
     @Test

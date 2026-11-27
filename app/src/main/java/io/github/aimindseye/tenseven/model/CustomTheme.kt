@@ -97,9 +97,13 @@ object CustomThemes {
         val root =
             MiniJson.parse(text.removePrefix("")) as? Map<*, *>
                 ?: return refused("The file is not valid theme JSON.")
-        if (root["format"] != FORMAT) return refused("This is not a Sable Launcher theme file (format must be \"$FORMAT\").")
+        if (root["format"] != FORMAT) {
+            return refused("This is not a Sable Launcher theme file (format must be \"$FORMAT\").")
+        }
         val version = (root["version"] as? Double)?.toInt()
-        if (version == null || version > VERSION) return refused("This theme file needs a newer Sable Launcher (version $version).")
+        if (version == null || version > VERSION) {
+            return refused("This theme file needs a newer Sable Launcher (version $version).")
+        }
         val name = (root["name"] as? String)?.trim().orEmpty()
         if (name.isEmpty() || name.length > MAX_NAME) return refused("The theme needs a name of 1 to $MAX_NAME characters.")
         val mode = (root["mode"] as? String)?.takeIf { it in MODES } ?: return refused("mode must be dark, light or follow-system.")

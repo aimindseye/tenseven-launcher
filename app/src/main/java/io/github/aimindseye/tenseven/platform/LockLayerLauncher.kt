@@ -17,15 +17,7 @@ object LockLayerLauncher {
 
     /** Called on screen on. Does nothing unless the setting is on, the overlay permission is granted and the keyguard is up. */
     fun showIfLocked(context: Context) {
-        if (!Capabilities.hasConversationService(context) ||
-            !StartStateRepository(context).loadLockLayer() ||
-            // The system "media player on the lock screen" choice (also in Android Settings > Security) is the one
-            // lock-screen switch: turned off there, the Hub notices stay off the lock screen too.
-            !LockScreenMedia.isOn(context) ||
-            !canDrawOverlays(context)
-        ) {
-            return
-        }
+        if (!allowed(context)) return
         val keyguard = context.getSystemService(KeyguardManager::class.java) ?: return
         if (!keyguard.isKeyguardLocked) return
         // Android 14 and later only let an app start a screen from the background while it has a visible window, so a
@@ -40,6 +32,13 @@ object LockLayerLauncher {
         overlay?.let { (manager, view) ->
             Handler(Looper.getMainLooper()).postDelayed({ runCatching { manager.removeView(view) } }, ANCHOR_MS)
         }
+    }
+
+    private fun allowed(context: Context): Boolean {
+        val ready = Capabilities.hasConversationService(context) && canDrawOverlays(context)
+        // The system "media player on the lock screen" choice (also in Android Settings > Security) is the one
+        // lock-screen switch: turned off there, the Hub notices stay off the lock screen too.
+        return ready && StartStateRepository(context).loadLockLayer() && LockScreenMedia.isOn(context)
     }
 
     private fun showAnchorWindow(context: Context): Pair<WindowManager, View>? =

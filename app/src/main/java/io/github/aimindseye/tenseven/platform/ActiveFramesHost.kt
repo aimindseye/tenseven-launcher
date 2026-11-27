@@ -130,6 +130,7 @@ class ActiveFramesHost(
                 users.isUserUnlocked(entry.user) && !users.isQuietModeEnabled(entry.user)
             }.getOrDefault(false)
 
+    @Suppress("CyclomaticComplexMethod")
     fun snapshot(
         item: FrameItem,
         generation: Long,
@@ -137,11 +138,15 @@ class ActiveFramesHost(
         if (!coordinator.acceptsSnapshot(item, generation)) return null
         val entry = entries.firstOrNull { it.component.packageName == item.app.packageName && it.user.hashCode() == item.app.userId }
         if (entry == null || !available(entry)) {
-            SableTaskSnapshots.note("no-app:${item.app.packageName}", "${item.app.packageName}: no unlocked launcher entry")
+            val name = item.app.packageName
+            SableTaskSnapshots.note("no-app:$name", "$name: no unlocked launcher entry")
             return null
         }
         val task = item.task
-        if (task == null) SableTaskSnapshots.note("no-task:${item.app.packageName}", "${item.app.packageName}: frame has no running task")
+        if (task == null) {
+            val name = item.app.packageName
+            SableTaskSnapshots.note("no-task:$name", "$name: frame has no running task")
+        }
         val bitmap = task?.let { native.snapshot(it.taskId) }
         if (!coordinator.acceptsSnapshot(item, generation)) {
             bitmap?.recycle()

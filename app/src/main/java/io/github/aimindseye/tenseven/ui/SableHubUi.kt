@@ -137,7 +137,9 @@ private fun ViewsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, Modifier.weight(1f), color = Bb10Text, style = MaterialTheme.typography.bodyMedium)
-        if (count.isNotEmpty()) Text(count, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+        if (count.isNotEmpty()) {
+            Text(count, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+        }
     }
 }
 
@@ -206,7 +208,9 @@ internal fun SableHubRowActions(
     }
     val app = conversation.latestNotification
     val appIn = app.packageName in SableHubOptions.priorityApps
-    PanelAction(if (appIn) "Remove all of ${app.appName} from Priority Hub" else "Add all of ${app.appName} to Priority Hub") {
+    val verb = if (appIn) "Remove all of" else "Add all of"
+    val target = if (appIn) "from" else "to"
+    PanelAction("$verb ${app.appName} $target Priority Hub") {
         SableHubOptions.toggleApp(context, app.packageName)
         onClose()
     }
@@ -221,7 +225,10 @@ internal fun SableHubRowActions(
 @Composable
 internal fun SableHubSettingsSection() {
     val context = LocalContext.current
-    remember(context) { SableHubOptions.init(context) }
+    remember(context) {
+        SableHubOptions.init(context)
+        true
+    }
     var keep by remember { mutableStateOf(SableHubOptions.keep) }
     var perMessage by remember { mutableStateOf(SableHubOptions.perMessage) }
     var system by remember { mutableStateOf(SableHubOptions.system) }
@@ -266,7 +273,9 @@ internal fun openSableMail(context: Context) {
 private fun openCalendarAccounts(context: Context) {
     if (!launch(context, DAVX5)) {
         runCatching {
-            context.startActivity(Intent(android.provider.Settings.ACTION_SYNC_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            context.startActivity(
+                Intent(android.provider.Settings.ACTION_SYNC_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
         }
     }
 }

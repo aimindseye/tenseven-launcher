@@ -47,9 +47,6 @@
     <string name="setup_usage_action">Open usage access</string>
 
     <string name="bb7_add_home">Add to home screen</string>
-    <string name="bb7_remove_home">Remove from home screen</string>
-    <string name="bb7_add_favorites">Add to Favorites</string>
-    <string name="bb7_remove_favorites">Remove from Favorites</string>
     <string name="bb7_added_home">%1$s added to the home screen</string>
     <string name="bb7_wallpaper">Change wallpaper</string>
     <string name="assign_source">Hold a letter</string>
@@ -64,7 +61,6 @@
     <string name="setup_extras_reason">Sable Launcher can include a calculator with unit conversion, notes, and some classic games. Nothing is installed or downloaded and none is on by default: tick what you want and it appears in All Apps. You can change this any time from Extra apps in Command.</string>
     <string name="setup_extras_action">Save choices</string>
     <string name="setup_extras_tools">Tools</string>
-    <string name="extras_command_hint">Choose the bundled Calc Plus, Notes and games</string>
     <string name="setup_restricted_title">If Android blocked Notification or Usage access</string>
     <string name="setup_restricted_reason">If the first Notification or Usage access request was blocked, Android may now offer Allow restricted settings. Open App info, tap the three-dot menu, and select Allow restricted settings if it appears. Return to Sable Launcher and retry the access request. Only do this for an APK you trust; Sable Launcher cannot grant access itself.</string>
     <string name="setup_restricted_first_request">First try opening Notification or Usage access. If Android blocks it, return here. On some devices, Allow restricted settings appears in Sable Launcher App info only after that first blocked attempt.</string>
@@ -192,7 +188,6 @@
     <string name="widgets_empty">No widgets yet. Choose Add widget to place one from any installed app, such as a weather app.</string>
     <string name="widgets_picker_title">Choose a widget</string>
     <string name="widgets_none_installed">No installed app offers a widget.</string>
-    <string name="widgets_page">Widgets page</string>
     <string name="ls_widgets_page">Widgets page</string>
     <string name="ls_widgets_page_detail">A page left of Hub for widgets from other apps</string>
     <string name="ls_columns">Columns</string>
@@ -225,8 +220,6 @@
     <string name="ls_hub_detail">Clear the Hub, choose which apps feed it, and control message text.</string>
     <string name="edit_reset">Reset</string>
     <string name="edit_cancel">Cancel</string>
-    <string name="edit_widgets">Widgets on Home</string>
-    <string name="edit_widgets_detail">Widgets from other apps, shown below the frames. They apply at once; Cancel does not undo them.</string>
     <string name="ls_theme_default_detail">Black with BlackBerry blue</string>
     <string name="ls_theme_phone_detail">Your wallpaper colours, light or dark</string>
     <string name="ls_wallpaper_detail">Original wallpapers drawn by Sable Launcher. Pick one, then choose where it goes.</string>

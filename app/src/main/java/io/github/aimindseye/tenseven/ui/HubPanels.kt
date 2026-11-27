@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -71,7 +72,7 @@ import kotlin.math.abs
 internal val LocalHubRowSelection = staticCompositionLocalOf<(String, FocusRequester) -> Unit> { { _, _ -> } }
 
 /** Owns the one selected row and both side panels, independent of notification read state. */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
+@Suppress("FunctionNaming", "LongMethod") // Compose UI entry points use PascalCase.
 @Composable
 internal fun HubPanelsHost(
     ui: HubConversationsUi,
@@ -413,7 +414,10 @@ private fun HubSelectedMessageContext(
             val short =
                 io.github.aimindseye.tenseven.design
                     .isSableShortWindow()
-            Column(Modifier.padding(if (short) 7.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(if (short) 2.dp else 5.dp)) {
+            Column(
+                Modifier.padding(if (short) 7.dp else 10.dp),
+                verticalArrangement = Arrangement.spacedBy(if (short) 2.dp else 5.dp),
+            ) {
                 Text("SELECTED MESSAGE", color = Bb10Muted, style = MaterialTheme.typography.labelSmall)
                 Text(conversation.name, color = Bb10Text, style = MaterialTheme.typography.titleMedium)
                 if (!preview.isNullOrBlank()) {
@@ -564,7 +568,7 @@ private fun Modifier.hubPanelDismiss(
     }
 
 /** Capabilities come from the latest selected source, not older notifications grouped with the same person. */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
+@Suppress("FunctionNaming", "CyclomaticComplexMethod", "LongMethod") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConversationsUi, onClose: () -> Unit) {
     val source = conversation.latestNotification
@@ -574,7 +578,7 @@ private fun HubMessageReplyActions(conversation: HubConversation, ui: HubConvers
         mutableStateOf(conversation.replyTargets.size <= 1 && (conversation.replyTarget ?: source).canReply)
     }
     var failed by remember(source) { mutableStateOf(false) }
-    var choiceTick by remember(conversation.id) { mutableStateOf(0) }
+    var choiceTick by remember(conversation.id) { mutableIntStateOf(0) }
     if (ui.deviceLocked) return
     val replySource = remember(conversation, choiceTick) { conversation.replyTarget ?: source }
     val primaryLabel =

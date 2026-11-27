@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 private const val LOCK_MEDIA_POLL_MS = 1_000L
 
 /** What the lock screen shows for the active media session: a title line and the controller that drives it. */
+@Suppress("LongParameterList")
 internal class LockMediaNow(
     val title: String,
     val artist: String,
@@ -45,10 +46,10 @@ private fun currentPosition(state: PlaybackState?): Long {
 }
 
 internal fun clock(ms: Long): String {
-    val total = ms / 1_000
-    val h = total / 3_600
-    val m = total % 3_600 / 60
-    val s = total % 60
+    val total = ms / MS_PER_SECOND
+    val h = total / SECONDS_PER_HOUR
+    val m = total % SECONDS_PER_HOUR / SECONDS_PER_MINUTE
+    val s = total % SECONDS_PER_MINUTE
     return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
 }
 
@@ -58,7 +59,8 @@ internal fun readLockMedia(context: android.content.Context): LockMediaNow? =
         val listener = ComponentName(context, ConversationListenerService::class.java)
         val controllers = manager.getActiveSessions(listener)
         val active =
-            controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: controllers.firstOrNull()
+            controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                ?: controllers.firstOrNull()
         val title = active?.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE).orEmpty()
         if (active == null || title.isBlank()) {
             null
@@ -102,3 +104,7 @@ internal fun LockMediaCard(modifier: Modifier = Modifier) {
     val media = now ?: return
     SableMediaCard(media, compact = false, modifier = modifier)
 }
+
+private const val MS_PER_SECOND = 1_000
+private const val SECONDS_PER_HOUR = 3_600
+private const val SECONDS_PER_MINUTE = 60

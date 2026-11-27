@@ -1,5 +1,6 @@
 package io.github.aimindseye.tenseven.platform
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -7,6 +8,7 @@ import android.graphics.ColorSpace
 import android.hardware.HardwareBuffer
 import android.os.Build
 import android.util.Log
+import androidx.core.graphics.scale
 
 /**
  * SableOS: Active Frames' live pictures straight from the system task snapshot, with no screen-capture
@@ -25,6 +27,7 @@ internal object SableTaskSnapshots {
     private const val MAX_EDGE = 512
     private val logged = mutableSetOf<String>()
 
+    @SuppressLint("PrivateApi")
     private val managerClass: Class<*>? by lazy {
         runCatching { Class.forName("android.window.TaskSnapshotManager") }
             .onFailure { log("no TaskSnapshotManager", it) }
@@ -48,7 +51,9 @@ internal object SableTaskSnapshots {
             type.methods
                 .filter {
                     it.name == "getTaskSnapshot" && it.parameterTypes.firstOrNull() == Int::class.javaPrimitiveType &&
-                        it.parameterTypes.drop(1).all { p -> p == Int::class.javaPrimitiveType || p == Boolean::class.javaPrimitiveType }
+                        it.parameterTypes.drop(1).all { p ->
+                            p == Int::class.javaPrimitiveType || p == Boolean::class.javaPrimitiveType
+                        }
                 }.minByOrNull { it.parameterCount }
         if (found == null) {
             val names = type.methods.filter { it.name.contains("Snapshot") }.joinToString { it.toGenericString() }
@@ -76,7 +81,8 @@ internal object SableTaskSnapshots {
                 val ok = context.checkSelfPermission("android.permission.$name") == PackageManager.PERMISSION_GRANTED
                 "$name=" + if (ok) "granted" else "MISSING"
             }
-        Log.i(TAG, "snapshots: $held, TaskSnapshotManager=${if (available()) "ok" else "missing"}, sdk=${Build.VERSION.SDK_INT}")
+        val manager = if (available()) "ok" else "missing"
+        Log.i(TAG, "snapshots: $held, TaskSnapshotManager=$manager, sdk=${Build.VERSION.SDK_INT}")
     }
 
     fun snapshot(
@@ -106,13 +112,17 @@ internal object SableTaskSnapshots {
                             0
                         }
                     }
+            @Suppress("SpreadOperator")
             val snapshot = call.invoke(manager, *args.toTypedArray())
             if (snapshot == null) {
                 note("null:$resolution", "${call.name}(task $taskId, resolution $resolution) returned no snapshot")
                 return@runCatching null
             }
             bitmapOf(snapshot) ?: null.also {
-                note("nobuffer:$resolution", "snapshot of task $taskId (resolution $resolution) has no picture: ${describe(snapshot)}")
+                note(
+                    "nobuffer:$resolution",
+                    "snapshot of task $taskId (resolution $resolution) has no picture: ${describe(snapshot)}",
+                )
             }
         }.onFailure { log("TaskSnapshotManager.getTaskSnapshot", it) }
             .getOrNull()
@@ -130,14 +140,20 @@ internal object SableTaskSnapshots {
      * closeBuffer(), which lets the cache drop it properly.
      */
     private fun bitmapOf(snapshot: Any): Bitmap? {
+        val valid =
+            runCatching { snapshot.javaClass.getMethod("isBufferValid").invoke(snapshot) as? Boolean }.getOrNull()
+        return if (valid == false) null else softwareCopy(snapshot)?.let(::fitted)
+    }
+
+    private fun softwareCopy(snapshot: Any): Bitmap? {
         val type = snapshot.javaClass
-        val valid = runCatching { type.getMethod("isBufferValid").invoke(snapshot) as? Boolean }.getOrNull()
-        if (valid == false) return null
         val colorSpace =
             runCatching { type.getMethod("getColorSpace").invoke(snapshot) as? ColorSpace }.getOrNull()
                 ?: ColorSpace.get(ColorSpace.Named.SRGB)
         val hardware =
-            runCatching { type.getMethod("wrapToBitmap", ColorSpace::class.java).invoke(snapshot, colorSpace) as? Bitmap }
+            runCatching {
+                type.getMethod("wrapToBitmap", ColorSpace::class.java).invoke(snapshot, colorSpace) as? Bitmap
+            }
                 .getOrNull()
                 ?: runCatching {
                     val buffer = type.getMethod("getHardwareBuffer").invoke(snapshot) as? HardwareBuffer
@@ -147,20 +163,21 @@ internal object SableTaskSnapshots {
         val software = hardware.copy(Bitmap.Config.ARGB_8888, false)
         hardware.recycle()
         runCatching { type.getMethod("closeBuffer").invoke(snapshot) }
-        if (software == null) return null
-        return if (software.width <= MAX_EDGE && software.height <= MAX_EDGE) {
+        return software
+    }
+
+    /** The picture, scaled down so neither edge passes [MAX_EDGE]. */
+    private fun fitted(software: Bitmap): Bitmap =
+        if (software.width <= MAX_EDGE && software.height <= MAX_EDGE) {
             software
         } else {
             val scale = MAX_EDGE.toFloat() / maxOf(software.width, software.height)
-            Bitmap
-                .createScaledBitmap(
-                    software,
+            software
+                .scale(
                     (software.width * scale).toInt().coerceAtLeast(1),
                     (software.height * scale).toInt().coerceAtLeast(1),
-                    true,
                 ).also { software.recycle() }
         }
-    }
 
     private fun log(
         what: String,

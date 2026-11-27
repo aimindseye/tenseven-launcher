@@ -20,14 +20,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,9 +45,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -60,7 +53,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.aimindseye.tenseven.OnboardingActivity
 import io.github.aimindseye.tenseven.R
-import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationFilter
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.ConversationKind
@@ -75,7 +67,6 @@ import io.github.aimindseye.tenseven.model.HubStreamSelection
 import io.github.aimindseye.tenseven.onboarding.SetupStep
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.PlatformCapabilities
-import io.github.aimindseye.tenseven.platform.StartStateRepository
 import io.github.aimindseye.tenseven.platform.openHubSource
 import io.github.aimindseye.tenseven.tasks.ReminderPolicy
 import io.github.aimindseye.tenseven.tasks.TaskRecord
@@ -199,6 +190,7 @@ private object SableTabMotion {
 }
 
 /** The profile's row motion: BlackBerry 7 fades (150 ms), BlackBerry 10 slides and fades (250 ms). */
+@Suppress("ModifierFactoryExtensionFunction")
 @Composable
 private fun androidx.compose.foundation.lazy.LazyItemScope.sableRowMotion(tabKey: Any): Modifier {
     val context = LocalContext.current
@@ -209,7 +201,7 @@ private fun androidx.compose.foundation.lazy.LazyItemScope.sableRowMotion(tabKey
                     .getString(context.contentResolver, "sable_profile")
             }.getOrNull() == "bb7"
         }
-    val millis = if (bb7) 150 else 250
+    val millis = if (bb7) BB7_TAB_MOTION_MS else SABLE_TAB_MOTION_MS
     val easing: androidx.compose.animation.core.Easing =
         if (bb7) androidx.compose.animation.core.LinearEasing else androidx.compose.animation.core.FastOutSlowInEasing
     // Rows composed right after a tab change animate; rows scrolled into view later do not.
@@ -220,7 +212,7 @@ private fun androidx.compose.foundation.lazy.LazyItemScope.sableRowMotion(tabKey
                 SableTabMotion.key = tabKey
                 SableTabMotion.at = now
             }
-            now - SableTabMotion.at < 300L
+            now - SableTabMotion.at < TAB_FRESH_MS
         }
     val progress =
         remember(tabKey) {
@@ -503,6 +495,7 @@ private fun HubNavigationTabStrip(
     }
 }
 
+@Suppress("CyclomaticComplexMethod")
 @Composable
 private fun ConversationRow(
     conversation: HubConversation,
@@ -892,7 +885,10 @@ private fun HubNestedMessages(
     ) {
         recent.forEach { message ->
             Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     Text(
                         DateUtils.formatDateTime(LocalContext.current, message.timestamp, DateUtils.FORMAT_SHOW_TIME),
                         style = MaterialTheme.typography.labelSmall,
@@ -941,10 +937,15 @@ internal fun HubAvatar(
             Modifier
                 .size(size)
                 .clip(androidx.compose.foundation.shape.CircleShape)
-                .background(Color(HUB_AVATAR_COLORS[(name.hashCode() and 0x7fffffff) % HUB_AVATAR_COLORS.size])),
+                .background(Color(HUB_AVATAR_COLORS[(name.hashCode() and NON_NEGATIVE_INT) % HUB_AVATAR_COLORS.size])),
         contentAlignment = Alignment.Center,
     ) {
-        Text(initials, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+        Text(
+            initials,
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 
@@ -959,3 +960,8 @@ internal fun rememberHubBb7(): Boolean {
         }.getOrNull() == "bb7"
     }
 }
+
+private const val BB7_TAB_MOTION_MS = 150
+private const val SABLE_TAB_MOTION_MS = 250
+private const val TAB_FRESH_MS = 300L
+private const val NON_NEGATIVE_INT = 0x7fffffff

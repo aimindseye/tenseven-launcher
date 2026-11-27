@@ -49,6 +49,10 @@ import io.github.aimindseye.tenseven.conversations.HubNotification
 import io.github.aimindseye.tenseven.model.HubMessageKind
 import java.util.Date
 
+private val PanelScrim = Color(0xE6101010)
+private val PanelMutedText = Color(0xFFB8B8B8)
+private val PanelMenuBackground = Color(0xFF1C1C1C)
+
 private val PanelBlue = Color(0xFF2E9BD6)
 
 /** What the Menu key offers on the highlighted row (BlackBerry 7 notification list). */
@@ -96,6 +100,7 @@ internal fun notificationTag(item: HubNotification): String =
  * the row menu, Delete clears the row, Back closes. It lists what the Hub already holds, so only
  * apps the user turned on in the Hub appear.
  */
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 internal fun Bb7NotificationPanel(onClose: () -> Unit) {
     val context = LocalContext.current
@@ -135,7 +140,8 @@ internal fun Bb7NotificationPanel(onClose: () -> Unit) {
 
     fun isUnopened(item: HubNotification): Boolean = ConversationHub.state().unreadCount(item) > 0
 
-    fun conversationOf(item: HubNotification) = ConversationHub.conversations().firstOrNull { it.id == item.conversationId }
+    fun conversationOf(item: HubNotification) =
+        ConversationHub.conversations().firstOrNull { it.id == item.conversationId }
 
     val menuItems =
         items.getOrNull(selected).let { current ->
@@ -196,7 +202,7 @@ internal fun Bb7NotificationPanel(onClose: () -> Unit) {
                     Modifier
                         .fillMaxWidth()
                         .heightIn(max = 420.dp)
-                        .background(Color(0xE6101010))
+                        .background(PanelScrim)
                         .focusRequester(focus)
                         .focusable()
                         .onPreviewKeyEvent { event ->
@@ -340,13 +346,13 @@ private fun NotificationRow(
             )
             Text(
                 text = preview,
-                color = if (selected) Color.White else Color(0xFFB8B8B8),
+                color = if (selected) Color.White else PanelMutedText,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(text = time, color = if (selected) Color.White else Color(0xFFB8B8B8), fontSize = 11.sp)
+        Text(text = time, color = if (selected) Color.White else PanelMutedText, fontSize = 11.sp)
     }
 }
 
@@ -358,7 +364,7 @@ private fun NotificationMenu(
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(0.dp),
-        modifier = Modifier.fillMaxWidth().background(Color(0xFF1C1C1C)),
+        modifier = Modifier.fillMaxWidth().background(PanelMenuBackground),
     ) {
         entries.forEachIndexed { i, entry ->
             Text(
@@ -381,7 +387,7 @@ private fun dayLabel(
     context: android.content.Context,
     at: Long,
 ): String {
-    val day = 24L * 60 * 60 * 1000
+    val day = java.util.concurrent.TimeUnit.DAYS.toMillis(1)
     val zone = java.util.TimeZone.getDefault()
 
     fun dayNumber(t: Long) = (t + zone.getOffset(t)) / day

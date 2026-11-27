@@ -16,6 +16,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
+import androidx.core.graphics.drawable.toDrawable
 import io.github.aimindseye.tenseven.design.DesignText
 import io.github.aimindseye.tenseven.design.applySableSystemBars
 import io.github.aimindseye.tenseven.design.resolveSableDarkAppearance
@@ -200,7 +201,10 @@ class SableStartActivity : ComponentActivity() {
                     onOpenWallpaper = {
                         runCatching {
                             startActivity(
-                                Intent.createChooser(Intent(Intent.ACTION_SET_WALLPAPER), getString(R.string.bb7_wallpaper)),
+                                Intent.createChooser(
+                                    Intent(Intent.ACTION_SET_WALLPAPER),
+                                    getString(R.string.bb7_wallpaper),
+                                ),
                             )
                         }
                     },
@@ -263,7 +267,10 @@ class SableStartActivity : ComponentActivity() {
                     onOpenWallpaper = {
                         runCatching {
                             startActivity(
-                                Intent.createChooser(Intent(Intent.ACTION_SET_WALLPAPER), getString(R.string.bb7_wallpaper)),
+                                Intent.createChooser(
+                                    Intent(Intent.ACTION_SET_WALLPAPER),
+                                    getString(R.string.bb7_wallpaper),
+                                ),
                             )
                         }
                     },
@@ -461,11 +468,6 @@ class SableStartActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Menu on the BlackBerry 7 home, a full menu as BlackBerry 7 asks: the highlighted icon's
-     * items ([contextual]) first, then the home's own, then Close.
-     */
-
     /** The BBOS 7 short menu: nine cells in a 3 x 3 grid, the focused cell filled blue. */
     private fun showBb7ShortMenu(items: List<Pair<String, () -> Unit>>) {
         val density = resources.displayMetrics.density
@@ -475,43 +477,13 @@ class SableStartActivity : ComponentActivity() {
         val grid =
             android.widget.GridLayout(this).apply {
                 columnCount = io.github.aimindseye.tenseven.ui.SableShortMenu.COLUMNS
-                setPadding(dp(8), dp(8), dp(8), dp(8))
+                dp(SHORT_MENU_PADDING_DP).let { setPadding(it, it, it, it) }
             }
         items.forEach { (title, action) ->
-            val blank = title.isEmpty()
             val cell =
-                android.widget.TextView(this).apply {
-                    text = title
-                    setTextColor(Color.WHITE)
-                    textSize = 13f
-                    gravity = android.view.Gravity.CENTER
-                    setPadding(dp(4), dp(16), dp(4), dp(16))
-                    isFocusable = !blank
-                    isClickable = !blank
-                    background =
-                        android.graphics.drawable.StateListDrawable().apply {
-                            addState(intArrayOf(android.R.attr.state_focused), ColorDrawable(Color.rgb(0x2E, 0x9B, 0xD6)))
-                            addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
-                        }
-                    setOnClickListener {
-                        dialog?.dismiss()
-                        action()
-                    }
-                    // The held trackpad key keeps repeating into this dialog: only a fresh press acts.
-                    setOnKeyListener { _, keyCode, event ->
-                        if (event.action == android.view.KeyEvent.ACTION_DOWN &&
-                            event.repeatCount == 0 &&
-                            (
-                                keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
-                                    keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER
-                            )
-                        ) {
-                            performClick()
-                            true
-                        } else {
-                            false
-                        }
-                    }
+                shortMenuCell(title, ::dp) {
+                    dialog?.dismiss()
+                    action()
                 }
             grid.addView(
                 cell,
@@ -524,9 +496,9 @@ class SableStartActivity : ComponentActivity() {
         }
         val shortDialog = AlertDialog.Builder(this).setView(grid).create()
         dialog = shortDialog
-        shortDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        shortDialog.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
         shortDialog.show()
-        shortDialog.window?.setBackgroundDrawable(ColorDrawable(Color.argb(225, 22, 31, 47)))
+        shortDialog.window?.setBackgroundDrawable(SHORT_MENU_SCRIM.toDrawable())
         shortDialog.window?.setLayout(
             (resources.displayMetrics.widthPixels * MENU_WIDTH_FRACTION).toInt(),
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -536,6 +508,48 @@ class SableStartActivity : ComponentActivity() {
         grid.getChildAt(if (launchIndex >= 0) launchIndex else 0)?.requestFocus()
     }
 
+    /** One cell of the short menu: blank cells are inert, the focused cell is filled Sable Blue. */
+    private fun shortMenuCell(
+        title: String,
+        dp: (Int) -> Int,
+        onChoose: () -> Unit,
+    ): android.widget.TextView =
+        android.widget.TextView(this).apply {
+            val blank = title.isEmpty()
+            text = title
+            setTextColor(Color.WHITE)
+            textSize = SHORT_MENU_TEXT_SP
+            gravity = android.view.Gravity.CENTER
+            val side = dp(SHORT_MENU_CELL_SIDE_DP)
+            val vertical = dp(SHORT_MENU_CELL_VERTICAL_DP)
+            setPadding(side, vertical, side, vertical)
+            isFocusable = !blank
+            isClickable = !blank
+            background =
+                android.graphics.drawable.StateListDrawable().apply {
+                    addState(intArrayOf(android.R.attr.state_focused), SHORT_MENU_FOCUS.toDrawable())
+                    addState(intArrayOf(), Color.TRANSPARENT.toDrawable())
+                }
+            setOnClickListener { onChoose() }
+            // The held trackpad key keeps repeating into this dialog: only a fresh press acts.
+            setOnKeyListener { _, keyCode, event ->
+                val freshPress = event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0
+                val select =
+                    keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+                        keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER
+                if (freshPress && select) {
+                    performClick()
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+
+    /**
+     * Menu on the BlackBerry 7 home, a full menu as BlackBerry 7 asks: the highlighted icon's
+     * items ([contextual]) first, then the home's own, then Close.
+     */
     private fun showBb7Menu(contextual: List<Pair<String, () -> Unit>>) {
         if (contextual is io.github.aimindseye.tenseven.ui.SableShortMenu) {
             showBb7ShortMenu(contextual)
@@ -654,6 +668,12 @@ class SableStartActivity : ComponentActivity() {
 
     companion object {
         private const val MENU_WIDTH_FRACTION = 0.88f
+        private const val SHORT_MENU_PADDING_DP = 8
+        private const val SHORT_MENU_CELL_SIDE_DP = 4
+        private const val SHORT_MENU_CELL_VERTICAL_DP = 16
+        private const val SHORT_MENU_TEXT_SP = 13f
+        private const val SHORT_MENU_FOCUS = 0xFF2E9BD6.toInt()
+        private const val SHORT_MENU_SCRIM = 0xE1161F2F.toInt()
 
         /** Show the Hub page; [EXTRA_HUB_FILTER] picks the tab ("all", "messages", "calls", "contacts"). */
         const val ACTION_SHOW_HUB = "org.sableos.start.action.SHOW_HUB"

@@ -4,7 +4,6 @@
 // memory and sent through the notification's own reply action; unread counts for the Hub bar added.
 package io.github.aimindseye.tenseven.conversations
 
-import android.app.ActivityOptions
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
@@ -20,6 +19,7 @@ import kotlin.math.abs
  * The conversations currently in the notification shade, kept in memory only: nothing is written to disk,
  * and everything is dropped when notification access is revoked or the process ends.
  */
+@Suppress("TooManyFunctions")
 object ConversationHub {
     private val lock = Any()
     private var items: List<HubNotification> = emptyList()

@@ -132,6 +132,7 @@ class ConversationHubTest {
 }
 
 class ConversationPreviewAndReplyTest {
+    @Suppress("LongParameterList")
     private fun msg(
         id: String,
         text: String,

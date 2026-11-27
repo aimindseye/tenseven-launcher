@@ -39,7 +39,10 @@ class FrameLiveSummaryTest {
     }
 
     @Test fun fmRadioSessionShowsOnSableMediasFrame() {
-        val fm = snapshot.copy(music = snapshot.music.copy(detail = "Classic · Song", sourcePackage = "com.android.fmradio"))
+        val fm =
+            snapshot.copy(
+                music = snapshot.music.copy(detail = "Classic · Song", sourcePackage = "com.android.fmradio"),
+            )
         assertEquals("Classic · Song", detail("org.sableos.media", data = fm))
         assertNull(detail("yt.music", data = fm))
         assertTrue(FrameLiveSummary.playsMedia(FrameItem(FrameApp("org.sableos.media", 0)), fm))
@@ -50,7 +53,12 @@ class FrameLiveSummaryTest {
             snapshot.copy(
                 mediaSessions =
                     listOf(
-                        LiveDatum("Media", "Video A", LiveAvailability.LIVE, sourcePackage = "com.google.android.youtube"),
+                        LiveDatum(
+                            "Media",
+                            "Video A",
+                            LiveAvailability.LIVE,
+                            sourcePackage = "com.google.android.youtube",
+                        ),
                         LiveDatum("Media", "Paused: Song B", LiveAvailability.LIVE, sourcePackage = "com.tubi"),
                     ),
             )

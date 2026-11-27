@@ -31,11 +31,13 @@ private const val HOME_WEATHER_CITY_INPUT_LIMIT = 90
  * Recent activity intentionally stays in-memory so Sable Start does not build
  * a persistent app-usage history.
  */
+@Suppress("TooManyFunctions")
 class StartStateRepository(
     context: Context,
 ) {
     private val hubSources = HubSourceRepository(context)
-    private val statusDefaultOff = context.resources.getBoolean(io.github.aimindseye.tenseven.R.bool.launcher_status_default_off)
+    private val statusDefaultOff =
+        context.resources.getBoolean(io.github.aimindseye.tenseven.R.bool.launcher_status_default_off)
     private val profileResolver = context.applicationContext.contentResolver
     private val preferences =
         context.applicationContext.getSharedPreferences(
@@ -318,14 +320,14 @@ class StartStateRepository(
         preferences.edit().putInt(KEY_LOCK_LAYER, if (enabled) 1 else 0).apply()
     }
 
-    /** Which parts of the lock layer are shown (clock, date, weather, media, notifications); all on unless turned off. */
+    /** Which lock layer parts are shown (clock, date, weather, media, notifications); all on unless turned off. */
     fun loadLockShow(item: String): Boolean = preferences.getBoolean("lock_show_$item", true)
 
     fun saveLockShow(
         item: String,
         shown: Boolean,
     ) {
-        preferences.edit().putBoolean("lock_show_$item", shown).apply()
+        preferences.edit { putBoolean("lock_show_$item", shown) }
     }
 
     /** Explicit selection is separate from theme and Android WallpaperManager. */
@@ -409,7 +411,7 @@ class StartStateRepository(
     /** D4r3: the Home duplicate notification shelf is retired. Hub remains the entry point.
      * The old stored preference is deliberately not erased so upgrades and backups remain compatible.
      */
-    @Suppress("UnusedParameter", "UNUSED_PARAMETER")
+    @Suppress("UnusedParameter", "UNUSED_PARAMETER", "FunctionOnlyReturningConstant")
     fun loadHomeNotificationStrip(style: HomeStyle): Boolean = false
 
     fun loadHomeNotificationExpanded(style: HomeStyle): Boolean =

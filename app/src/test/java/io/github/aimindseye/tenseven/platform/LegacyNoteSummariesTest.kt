@@ -14,7 +14,10 @@ class LegacyNoteSummariesTest {
     fun summariesReadExistingNotesWithoutRewritingData() {
         folder.root
             .resolve("existing.note")
-            .writeText("sable-note 1\ncreated $CREATED\nupdated $UPDATED\n\n# Existing title\n- [ ] Keep this task\nUnicode café")
+            .writeText(
+                "sable-note 1\ncreated $CREATED\nupdated $UPDATED\n\n" +
+                    "# Existing title\n- [ ] Keep this task\nUnicode café",
+            )
         val before =
             folder.root
                 .listFiles()

@@ -20,6 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+private val SableBlue = Color(0xFF2E9BD6)
+private val SableGold = Color(0xFFD6A24A)
+private val SableTeal = Color(0xFF3BB3C9)
+private val OnLightAccent = Color(0xFF000000)
+
 enum class AppearanceMode(
     val stableValue: String,
 ) {
@@ -39,13 +44,13 @@ enum class AccentPreset(
     val color: Color,
     val onColor: Color,
 ) {
-    Blue("blue", "Sable Blue", Color(0xFF2E9BD6), Color(0xFF000000)),
+    Blue("blue", "Sable Blue", SableBlue, OnLightAccent),
     Green("green", "Green", Color(0xFF35C66B), Color(0xFF04140A)),
     Purple("purple", "Purple", Color(0xFF7A42E8), Color.White),
     Orange("orange", "Orange", Color(0xFFF28C45), Color(0xFF1D0C02)),
     Slate("slate", "Slate", Color(0xFF64748B), Color.White),
-    Gold("gold", "Sable Gold", Color(0xFFD6A24A), Color(0xFF000000)),
-    Teal("teal", "Sable Teal", Color(0xFF3BB3C9), Color(0xFF000000)),
+    Gold("gold", "Sable Gold", SableGold, OnLightAccent),
+    Teal("teal", "Sable Teal", SableTeal, OnLightAccent),
 
     /**
      * Not a colour of its own: the launcher takes its colours from the phone (Material You, from the wallpaper) on

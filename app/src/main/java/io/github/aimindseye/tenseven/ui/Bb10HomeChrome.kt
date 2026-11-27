@@ -31,12 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -70,7 +64,6 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import androidx.compose.foundation.Canvas as ComposeCanvas
 
 @Composable
 internal fun startGridWidthDp(): Int {
@@ -116,6 +109,7 @@ internal fun startGridHeightDp(): Int {
  * focused Phone slot dial, Menu that nothing took opens Edit Home, and any
  * other printable key opens Command/Search seeded with it.
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun StartStrip(
     state: PagerState,
@@ -295,56 +289,6 @@ private fun Modifier.startStripSearchEvents(
         }
 }
 
-// The three BB10 system-page marks share the same geometry and colors.
-@Suppress("FunctionNaming")
-@Composable
-private fun Bb10IndicatorMark(
-    page: Int,
-    color: Color,
-) {
-    ComposeCanvas(Modifier.size(if (page < StartPages.FIRST_GRID) 10.dp else 6.dp)) {
-        val unit = size.minDimension
-        when (page) {
-            StartPages.WIDGETS -> {
-                // Widgets: one wide outlined panel.
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(unit * 0.05f, unit * 0.2f),
-                    size = Size(unit * 0.9f, unit * 0.6f),
-                    cornerRadius = CornerRadius(unit * 0.12f),
-                    style = Stroke(width = unit * 0.14f),
-                )
-            }
-
-            StartPages.HUB -> {
-                // Hub: three short lines.
-                for (line in 0..2) {
-                    val y = unit * (0.2f + line * 0.3f)
-                    drawLine(color, Offset(0f, y), Offset(unit, y), strokeWidth = unit * 0.14f, cap = StrokeCap.Round)
-                }
-            }
-
-            StartPages.HOME -> {
-                // Active Frames: four small squares.
-                val cell = unit * 0.42f
-                for (row in 0..1) {
-                    for (col in 0..1) {
-                        drawRect(
-                            color = color,
-                            topLeft = Offset(col * (unit - cell), row * (unit - cell)),
-                            size = Size(cell, cell),
-                        )
-                    }
-                }
-            }
-
-            else -> {
-                drawCircle(color = color, radius = unit / 2f)
-            }
-        }
-    }
-}
-
 internal fun pageDescription(
     page: Int,
     widgetsLabel: String,
@@ -356,7 +300,7 @@ internal fun pageDescription(
         else -> t("app_grid_page", page - StartPages.FIRST_GRID + 1)
     }
 
-/** The status dials (Wi-Fi, Mobile, CPU, RAM, battery time left, Cell) (the Settings gear is gone; Settings opens from the long-press menu). */
+/** The status dials: Wi-Fi, Mobile, CPU, RAM, battery time left and Cell. Settings opens from the long-press menu. */
 @Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun StatusDialsRow(

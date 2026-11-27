@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -95,38 +93,6 @@ fun Modifier.sableFocusRing(): Modifier =
             )
     }
 
-private val sableOverflowNavigation:
-    @Composable (List<SableDestination>, String?, Color, (String) -> Unit, Modifier) -> Unit =
-    { destinations, selectedId, accent, onSelect, modifier ->
-        var moreOpen by remember { mutableStateOf(false) }
-        Box(modifier = modifier) {
-            SableNavTab(
-                label = SableNavigationPolicy.MORE_LABEL,
-                selected = destinations.any { it.id == selectedId },
-                accent = accent,
-                description = t("sable_more_destinations", destinations.joinToString(", ") { it.label }),
-                onClick = { moreOpen = true },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
-                destinations.forEach { destination ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = destination.label,
-                                color = if (destination.id == selectedId) accent else Color.Unspecified,
-                            )
-                        },
-                        onClick = {
-                            moreOpen = false
-                            onSelect(destination.id)
-                        },
-                    )
-                }
-            }
-        }
-    }
-
 @Composable
 private fun SableNavTab(
     label: String,
@@ -180,39 +146,6 @@ private fun SableNavTab(
         color = Color.Transparent,
     ) {
         content()
-    }
-}
-
-/** Short glyph for well-known row actions; the label is always the accessible name. */
-private fun actionGlyph(action: SableRowAction): String =
-    when (action.id) {
-        "play" -> "▶"
-        "pause" -> "❚❚"
-        else -> action.label
-    }
-
-@Composable
-private fun SableActionMenu(
-    expanded: Boolean,
-    actions: List<SableRowAction>,
-    onDismiss: () -> Unit,
-    onAction: (SableRowAction) -> Unit,
-) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        actions.forEach { action ->
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = action.label,
-                        color = if (action.destructive) MaterialTheme.colorScheme.error else Color.Unspecified,
-                    )
-                },
-                onClick = {
-                    onDismiss()
-                    onAction(action)
-                },
-            )
-        }
     }
 }
 

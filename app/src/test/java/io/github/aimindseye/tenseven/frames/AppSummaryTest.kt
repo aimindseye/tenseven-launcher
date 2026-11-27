@@ -14,7 +14,8 @@ class AppSummaryTest {
         for (source in SummarySource.entries) {
             val value = summary(source)
             assertTrue(AppSummaryPolicy.allowed(value, true))
-            assertEquals(source in setOf(SummarySource.Local, SummarySource.Cover), AppSummaryPolicy.allowed(value, false))
+            val local = source in setOf(SummarySource.Local, SummarySource.Cover)
+            assertEquals(local, AppSummaryPolicy.allowed(value, false))
             val datum = LiveDatum("", "", LiveAvailability.EMPTY)
             val snapshot = LiveSurfaceSnapshot("Day", "Time", datum, datum, datum, datum, datum, datum, 0, appSummaries = listOf(value))
             val item = FrameItem(FrameApp("app", 0))

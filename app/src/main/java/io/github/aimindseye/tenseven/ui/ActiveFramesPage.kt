@@ -33,7 +33,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.frames.*
-import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
 import io.github.aimindseye.tenseven.model.*
 import io.github.aimindseye.tenseven.model.HomeViewport
@@ -237,6 +236,7 @@ private fun OwnedFrameCard(
     )
 }
 
+@Suppress("CyclomaticComplexMethod")
 @Composable
 private fun RecentFrameCard(
     state: FramesState,
@@ -409,7 +409,13 @@ private fun BoxScope.FrameContent(
     icon: @Composable () -> Unit,
 ) {
     if (picture != null) {
-        Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+        Image(
+            picture.asImageBitmap(),
+            null,
+            Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alignment = Alignment.TopCenter,
+        )
     } else {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
             icon()

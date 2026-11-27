@@ -9,6 +9,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.model.HubMessageKind
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object SableMailFeed {
     const val MAIL_PACKAGE = "org.sableos.mail"
-    val URI: Uri by lazy { Uri.parse("content://org.sableos.mail.hub/messages") }
+    val URI: Uri by lazy { "content://org.sableos.mail.hub/messages".toUri() }
     private const val ACTION_OPEN = "org.sableos.mail.action.OPEN_MESSAGE"
     private const val APP_NAME = "Sable Mail"
     private const val KEY_PREFIX = "sablemail|"
@@ -170,6 +171,7 @@ object SableMailFeed {
         if (!feedActive) {
             notifications
         } else {
-            (notifications.filterNot { it.packageName == MAIL_PACKAGE } + feed).sortedByDescending(HubNotification::postedAt)
+            (notifications.filterNot { it.packageName == MAIL_PACKAGE } + feed)
+                .sortedByDescending(HubNotification::postedAt)
         }
 }

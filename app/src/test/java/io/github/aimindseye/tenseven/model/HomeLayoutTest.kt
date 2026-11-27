@@ -28,7 +28,7 @@ class HomeLayoutTest {
 
     @Test
     fun dateLineTurnsOverAtMidnight() {
-        val day = 24L * 60 * 60 * 1000
+        val day = java.util.concurrent.TimeUnit.DAYS.toMillis(1)
         assertEquals(day, HomeHeader.millisToMidnight(0))
         assertEquals(1000L, HomeHeader.millisToMidnight(day - 1000))
         assertTrue(HomeHeader.millisToMidnight(day - 1) >= 1)

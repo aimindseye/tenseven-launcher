@@ -34,7 +34,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import io.github.aimindseye.tenseven.HubSettingsActivity
 import io.github.aimindseye.tenseven.LauncherSettingsActivity
-import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.design.SableAppearance
 import io.github.aimindseye.tenseven.design.SableFocusMemory
 import io.github.aimindseye.tenseven.design.SableRefreshableSurface
@@ -57,9 +56,9 @@ import io.github.aimindseye.tenseven.platform.LetterShortcutRepository
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
 import io.github.aimindseye.tenseven.platform.SpeedDialRepository
 import io.github.aimindseye.tenseven.platform.WidgetHostController
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@Suppress("CyclomaticComplexMethod", "LongMethod", "LongParameterList")
 @Composable
 fun SableStartScreen(
     apps: List<AppEntry>,
@@ -395,11 +394,14 @@ fun SableStartScreen(
                                                 add("Wallpaper" to onOpenWallpaper)
                                                 add(
                                                     "Settings" to {
-                                                        onStartIntent(Intent(homeContext, LauncherSettingsActivity::class.java))
+                                                        onStartIntent(
+                                                            Intent(homeContext, LauncherSettingsActivity::class.java),
+                                                        )
                                                     },
                                                 )
                                                 if (currentPage == StartPages.HOME && framesState.items.isNotEmpty()) {
-                                                    add("Close All" to { framesState.items.toList().forEach(onCloseFrame) })
+                                                    val closeAll = { framesState.items.toList().forEach(onCloseFrame) }
+                                                    add("Close All" to closeAll)
                                                 }
                                             }
                                         onOpenMenu(items)

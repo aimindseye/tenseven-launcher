@@ -18,8 +18,6 @@ data class ExtraApp(
  * policy, unit tested.
  */
 object ExtraApps {
-    private const val ROOT = "io.github.aimindseye.tenseven.extras."
-
     // SableOS: none. Each extra duplicated a Sable app (Calculator, Notes, Profiles, Tasks, Games,
     // Phone, Calendar), so the SableOS home ships without them.
     val ALL: List<ExtraApp> = emptyList()

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import io.github.aimindseye.tenseven.design.sableFocusRing
 
 /** Transport icons on a 24-unit grid, the same shapes Sable Media draws, so every player card looks alike. */
+@Suppress("MatchingDeclarationName")
 internal object SableMediaIcons {
     val Play = filled("M7 5v14l12-7z")
     val Pause = filled("M6 5h4v14H6zM14 5h4v14h-4z")
@@ -86,7 +87,7 @@ private fun appLabel(
  * Previous, Play or Pause and Next as line-icon buttons (Rewind and Fast forward too for audiobooks). [compact] is
  * the slim strip for the Home screens; tapping its title opens the app that is playing.
  */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
+@Suppress("FunctionNaming", "LongMethod") // Compose UI entry points use PascalCase.
 @Composable
 internal fun SableMediaCard(
     media: LockMediaNow,
@@ -192,7 +193,12 @@ private fun SableMediaCover(
             Modifier.size(size).background(Bb10Text.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(SableMediaIcons.Note, contentDescription = null, tint = Bb10Text.copy(alpha = 0.7f), modifier = Modifier.size(size / 2))
+            Icon(
+                SableMediaIcons.Note,
+                contentDescription = null,
+                tint = Bb10Text.copy(alpha = 0.7f),
+                modifier = Modifier.size(size / 2),
+            )
         }
     }
 }
@@ -232,7 +238,7 @@ private fun MediaControls(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
+@Suppress("FunctionNaming", "LongParameterList") // Compose UI entry points use PascalCase.
 @Composable
 private fun MediaControlButton(
     icon: ImageVector,

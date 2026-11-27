@@ -304,10 +304,12 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <!-- SableOS cover API: apps say what their own Active Frame shows (in memory only). -->
+        <!-- Any app may set its own Active Frame cover: the caller's package comes from Android, nothing is readable. -->
         <provider
             android:name=".frames.SableCoverProvider"
             android:authorities="${applicationId}.covers"
-            android:exported="true" />
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
         <provider
             android:name=".platform.HubCountsProvider"
             android:authorities="${applicationId}.hubcounts"

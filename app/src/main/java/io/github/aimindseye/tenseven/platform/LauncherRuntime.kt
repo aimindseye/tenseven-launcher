@@ -184,7 +184,7 @@ internal class LauncherRuntime(
             }
         }
 
-    /** Bursts of changes (an app store updating many apps) collapse into one refresh so Active Frames doesn't flicker. */
+    /** Bursts of changes collapse into one refresh, so Active Frames doesn't flicker. */
     fun refresh() {
         main.removeCallbacks(refreshNow)
         main.postDelayed(refreshNow, REFRESH_DEBOUNCE_MS)

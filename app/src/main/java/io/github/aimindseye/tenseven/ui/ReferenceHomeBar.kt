@@ -250,18 +250,7 @@ private fun Bb10BottomBar(
 internal fun BbUnreadStar(modifier: Modifier = Modifier) {
     val blue = Bb10Blue
     androidx.compose.foundation.Canvas(modifier.size(13.dp)) {
-        val outer = size.minDimension / 2f
-        val star =
-            androidx.compose.ui.graphics
-                .Path()
-        for (i in 0 until 16) {
-            val r = if (i % 2 == 0) outer else outer * 0.6f
-            val a = Math.PI * i / 8.0 - Math.PI / 2.0
-            val x = center.x + (r * Math.cos(a)).toFloat()
-            val y = center.y + (r * Math.sin(a)).toFloat()
-            if (i == 0) star.moveTo(x, y) else star.lineTo(x, y)
-        }
-        star.close()
+        val star = burstPath(size.minDimension / 2f, center)
         drawPath(star, blue)
         drawPath(
             star,

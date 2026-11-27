@@ -42,6 +42,7 @@ import io.github.aimindseye.tenseven.conversations.SableReplyChoice
 import io.github.aimindseye.tenseven.design.sableFocusRing
 
 /** Which Hub conversation is open as a chat, if any. Held here so the list and the chat share it. */
+@Suppress("MatchingDeclarationName")
 internal object HubChatState {
     var openId by mutableStateOf<String?>(null)
 }
@@ -71,7 +72,12 @@ internal fun HubChatScreen(
     LaunchedEffect(messages.size) { if (messages.isNotEmpty()) listState.scrollToItem(messages.lastIndex) }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         HubChatHeader(conversation, onClose)
-        Box(Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))) {
+        Box(
+            Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)),
+        ) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -117,7 +123,11 @@ private fun HubChatHeader(
                     .map { it.appName }
                     .distinct()
             Text(
-                if (sources.size > 1) sources.joinToString(", ") + " in one conversation" else sources.firstOrNull().orEmpty(),
+                if (sources.size > 1) {
+                    sources.joinToString(", ") + " in one conversation"
+                } else {
+                    sources.firstOrNull().orEmpty()
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = soft,
                 maxLines = 1,
@@ -127,7 +137,11 @@ private fun HubChatHeader(
             "Back",
             style = MaterialTheme.typography.labelLarge,
             color = soft,
-            modifier = Modifier.sableFocusRing().clickable(onClick = onClose).padding(horizontal = 8.dp, vertical = 10.dp),
+            modifier =
+                Modifier
+                    .sableFocusRing()
+                    .clickable(onClick = onClose)
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
         )
     }
 }
@@ -168,7 +182,7 @@ private fun HubChatBubble(message: ConversationMessage) {
 }
 
 @Composable
-@Suppress("FunctionNaming")
+@Suppress("FunctionNaming", "LongMethod")
 private fun HubChatReply(
     conversation: HubConversation,
     ui: HubConversationsUi,
@@ -262,7 +276,8 @@ private fun HubChatReply(
                 if (failed) {
                     "That app could not send the reply. Open the app instead."
                 } else {
-                    "The reply is sent by the app that received the message. If that app cannot reply here, Open app is offered."
+                    "The reply is sent by the app that received the message. " +
+                        "If that app cannot reply here, Open app is offered."
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,

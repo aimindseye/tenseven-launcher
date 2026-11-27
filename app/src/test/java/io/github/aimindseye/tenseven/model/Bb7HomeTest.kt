@@ -91,7 +91,8 @@ class Bb7HomeTest {
         assertEquals(Bb7Panels.DEFAULT, Bb7Panels.normalize(emptyList()))
         assertEquals(listOf(Bb7Panel.All, Bb7Panel.Frequent), Bb7Panels.normalize(listOf("Frequent", "bogus", "All")))
         val withFrequent = Bb7Panels.toggle(Bb7Panels.DEFAULT, Bb7Panel.Frequent)
-        assertEquals(listOf(Bb7Panel.Favorites, Bb7Panel.Recent, Bb7Panel.All, Bb7Panel.Downloads, Bb7Panel.Frequent), withFrequent)
+        val expected = listOf(Bb7Panel.Favorites, Bb7Panel.Recent, Bb7Panel.All, Bb7Panel.Downloads, Bb7Panel.Frequent)
+        assertEquals(expected, withFrequent)
         assertEquals(Bb7Panels.DEFAULT, Bb7Panels.toggle(withFrequent, Bb7Panel.Frequent))
         // The last panel cannot be hidden.
         assertEquals(listOf(Bb7Panel.All), Bb7Panels.toggle(listOf(Bb7Panel.All), Bb7Panel.All))

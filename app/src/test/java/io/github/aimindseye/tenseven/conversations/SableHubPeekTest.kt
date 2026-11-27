@@ -16,7 +16,12 @@ class SableHubPeekTest {
     fun unreadFirstThenNewestWithoutSnoozed() {
         val rows =
             SableHubPeek.rows(
-                listOf(entry("old", 1), entry("new", 5), entry("unread", 2, unread = 1), entry("later", 9, snoozed = true)),
+                listOf(
+                    entry("old", 1),
+                    entry("new", 5),
+                    entry("unread", 2, unread = 1),
+                    entry("later", 9, snoozed = true),
+                ),
             )
         assertEquals(listOf("unread", "new", "old"), rows.map { it.id })
     }

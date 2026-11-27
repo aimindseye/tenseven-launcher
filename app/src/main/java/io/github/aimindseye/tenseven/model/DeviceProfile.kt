@@ -7,7 +7,8 @@ package io.github.aimindseye.tenseven.model
  * profiles in Sable Reader and Sable Games.
  *
  * - [Q25]: Zinwa Q25, 720 x 720. The trackpad gives arrow keys.
- * - [Q27]: Zinwa Q27, about 1080 x 1240 (press coverage, unconfirmed). Navigation row with a trackpad key, so arrows work.
+ * - [Q27]: Zinwa Q27, about 1080 x 1240 (press coverage, unconfirmed). Navigation row with a trackpad key,
+ *   so arrows work.
  * - [TITAN_2]: Unihertz Titan 2, 1440 x 1440. No arrows or trackpad, so I J K L move.
  * - [TITAN_2_ELITE]: Unihertz Titan 2 Elite, 1080 x 1200 (manual V1.0, unconfirmed). No arrow keys: I J K L move.
  * - [P26]: Zinwa P26, 1440 x 1440. No arrows or trackpad: I J K L move.

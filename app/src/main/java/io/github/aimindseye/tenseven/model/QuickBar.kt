@@ -15,6 +15,7 @@ import io.github.aimindseye.tenseven.model.StartText.t
  *                             pages hold every app, Alt+Right reaches them)
  *   "app:<stableKey>"         one app the user picked
  */
+@Suppress("TooManyFunctions")
 object QuickBar {
     const val PHONE = "phone"
     const val HUB = "hub"

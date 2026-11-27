@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import io.github.aimindseye.tenseven.model.AppEntry
 
 /**
@@ -23,6 +23,7 @@ import io.github.aimindseye.tenseven.model.AppEntry
  * in the home screen's shortcut list, and the apps it holds are kept here (stable keys, in order).
  * Opening one lists its apps; the apps themselves stay installed and in the app lists.
  */
+@Suppress("TooManyFunctions")
 internal object Bb7Folders {
     const val PREFIX = "folder:"
     const val PACKAGE = "org.sableos.folder"
@@ -63,7 +64,7 @@ internal object Bb7Folders {
         name: String,
         keys: List<String>,
     ) {
-        prefs(context).edit().putString(name, keys.joinToString(SEPARATOR)).apply()
+        prefs(context).edit { putString(name, keys.joinToString(SEPARATOR)) }
         version++
     }
 
@@ -100,16 +101,15 @@ internal object Bb7Folders {
         to: String,
     ): String? {
         val wanted = to.trim().replace(SEPARATOR, " ")
-        if (wanted.isEmpty() || wanted == from) return null
         val used = names(context).toSet() - from
         val name = generateSequence(1) { it + 1 }.map { if (it == 1) wanted else "$wanted $it" }.first { it !in used }
-        if (name == from) return null
+        // A blank or unchanged name resolves back to [from], so one check covers both.
+        if (wanted.isEmpty() || name == from) return null
         val held = contents(context, from)
-        prefs(context)
-            .edit()
-            .remove(from)
-            .putString(name, held.joinToString(SEPARATOR))
-            .apply()
+        prefs(context).edit {
+            remove(from)
+            putString(name, held.joinToString(SEPARATOR))
+        }
         version++
         return name
     }
@@ -118,7 +118,7 @@ internal object Bb7Folders {
         context: Context,
         name: String,
     ) {
-        prefs(context).edit().remove(name).apply()
+        prefs(context).edit { remove(name) }
         version++
     }
 }
@@ -130,14 +130,29 @@ internal fun FolderGlyph(sizeDp: Int) {
         Canvas(Modifier.size(sizeDp.dp)) {
             val w = this.size.width
             val h = this.size.height
-            val blue = Color(0xFF2E9BD6)
-            drawRoundRect(blue, Offset(w * 0.08f, h * 0.18f), Size(w * 0.4f, h * 0.2f), CornerRadius(w * 0.05f))
+            val blue = Bb10Blue
+            drawRoundRect(
+                blue,
+                Offset(w * FOLDER_INSET, h * FOLDER_TAB_TOP),
+                Size(w * FOLDER_TAB_WIDTH, h * FOLDER_TAB_HEIGHT),
+                CornerRadius(w * FOLDER_TAB_RADIUS),
+            )
             drawRoundRect(
                 blue.copy(alpha = 0.9f),
-                Offset(w * 0.08f, h * 0.3f),
-                Size(w * 0.84f, h * 0.52f),
-                CornerRadius(w * 0.07f),
+                Offset(w * FOLDER_INSET, h * FOLDER_BODY_TOP),
+                Size(w * FOLDER_BODY_WIDTH, h * FOLDER_BODY_HEIGHT),
+                CornerRadius(w * FOLDER_BODY_RADIUS),
             )
         }
     }
 }
+
+private const val FOLDER_INSET = 0.08f
+private const val FOLDER_TAB_TOP = 0.18f
+private const val FOLDER_TAB_WIDTH = 0.4f
+private const val FOLDER_TAB_HEIGHT = 0.2f
+private const val FOLDER_TAB_RADIUS = 0.05f
+private const val FOLDER_BODY_TOP = 0.3f
+private const val FOLDER_BODY_WIDTH = 0.84f
+private const val FOLDER_BODY_HEIGHT = 0.52f
+private const val FOLDER_BODY_RADIUS = 0.07f

@@ -206,7 +206,8 @@ class LiveSurfaceRepository(
             val listener = ComponentName(appContext, ConversationListenerService::class.java)
             val controllers = manager?.getActiveSessions(listener).orEmpty()
             val active =
-                controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: controllers.firstOrNull()
+                controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                    ?: controllers.firstOrNull()
             val metadata = active?.metadata
             val track = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE).orEmpty()
             val artist = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_ARTIST).orEmpty()

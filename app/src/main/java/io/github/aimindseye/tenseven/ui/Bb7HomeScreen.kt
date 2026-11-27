@@ -436,7 +436,8 @@ private class Bb7HomeActions(
                 "Launch",
                 "Delete",
             ).map { title -> lines[title]?.let { title to it } ?: blank }
-        return SableShortMenu(cells + listOf(blank, blank, "Full Menu" to { input.launch.onOpenMenu(menuFor(app, fromDesktop)) }))
+        val fullMenu = "Full Menu" to { input.launch.onOpenMenu(menuFor(app, fromDesktop)) }
+        return SableShortMenu(cells + listOf(blank, blank, fullMenu))
     }
 
     private fun homeShortMenu(): List<Pair<String, () -> Unit>> {
@@ -504,7 +505,8 @@ private class Bb7HomeActions(
     private fun removeFromFolderMenu(
         name: String,
         held: List<AppEntry>,
-    ): List<Pair<String, () -> Unit>> = held.map { app -> app.label to { Bb7Folders.remove(context, name, app.stableKey()) } }
+    ): List<Pair<String, () -> Unit>> =
+        held.map { app -> app.label to { Bb7Folders.remove(context, name, app.stableKey()) } }
 
     /** Move to Folder: one line per folder; the icon leaves the home screen and goes into the folder. */
     private fun moveToFolderMenu(app: AppEntry): List<Pair<String, () -> Unit>> =
@@ -573,8 +575,10 @@ private class Bb7HomeActions(
                     "Delete" to {
                         runCatching {
                             context.startActivity(
-                                Intent(Intent.ACTION_DELETE, android.net.Uri.fromParts("package", app.component.packageName, null))
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                Intent(
+                                    Intent.ACTION_DELETE,
+                                    android.net.Uri.fromParts("package", app.component.packageName, null),
+                                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         }
                     },
@@ -617,7 +621,9 @@ private class Bb7HomeActions(
             }
             add(
                 "Options" to {
-                    context.startActivity(Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java))
+                    context.startActivity(
+                        Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java),
+                    )
                 },
             )
         }
@@ -646,11 +652,11 @@ private class Bb7HomeKeyboard(
 
     fun onKey(event: androidx.compose.ui.input.key.KeyEvent): Boolean {
         val native = event.nativeKeyEvent
-        if (native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER && !state.moving) {
-            return centerKey(event.type, native)
+        return when {
+            native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER && !state.moving -> centerKey(event.type, native)
+            event.type != KeyEventType.KeyDown -> false
+            else -> handle(native)
         }
-        if (event.type != KeyEventType.KeyDown) return false
-        return handle(native)
     }
 
     /** Trackpad press: acts on release; a hold (the second repeat of the down) opens the short menu. */
@@ -658,26 +664,27 @@ private class Bb7HomeKeyboard(
         type: KeyEventType,
         key: KeyEvent,
     ): Boolean {
-        when (type) {
+        return when (type) {
             KeyEventType.KeyDown -> {
                 if (key.repeatCount == 0) {
                     SableCenterPress.pending = key
                 } else if (SableCenterPress.pending != null) {
                     SableCenterPress.pending = null
-                    val focused = if (model.inDesktop) desktopApps.getOrNull(model.deskIndex) else shown.getOrNull(state.selected)
+                    val focused =
+                        if (model.inDesktop) desktopApps.getOrNull(model.deskIndex) else shown.getOrNull(state.selected)
                     input.launch.onOpenMenu(actions.shortMenu(focused, model.inDesktop))
                 }
-                return true
+                true
             }
 
             KeyEventType.KeyUp -> {
-                val pressed = SableCenterPress.pending ?: return false
+                val pressed = SableCenterPress.pending
                 SableCenterPress.pending = null
-                return handle(pressed)
+                pressed?.let(::handle) ?: false
             }
 
             else -> {
-                return false
+                false
             }
         }
     }
@@ -872,11 +879,7 @@ private class Bb7HomeKeyboard(
                 }
 
                 key.keyCode == KeyEvent.KEYCODE_ENTER || key.keyCode == KeyEvent.KEYCODE_DPAD_CENTER -> {
-                    if (shown.isEmpty() && SableDial.isNumber(query)) {
-                        actions.dial(query)
-                    } else {
-                        shown.getOrNull(selected)?.let { input.launch.onLaunchApp(it) }
-                    }
+                    launchSelected()
                     true
                 }
 
@@ -890,6 +893,17 @@ private class Bb7HomeKeyboard(
                 }
             }
         }
+
+    /** Enter in the tray: dial a typed number when nothing matches, otherwise open the highlighted app. */
+    private fun launchSelected() {
+        with(state) {
+            if (shown.isEmpty() && SableDial.isNumber(query)) {
+                actions.dial(query)
+            } else {
+                shown.getOrNull(selected)?.let { input.launch.onLaunchApp(it) }
+            }
+        }
+    }
 
     private fun traySecondaryAction(key: KeyEvent): Boolean =
         with(state) {
@@ -1555,7 +1569,9 @@ private fun rememberBb7Apps(
     val desktop =
         Bb7Home.desktopShortcuts(selection.desktop).mapNotNull { key ->
             if (Bb7Folders.isFolderKey(key)) {
-                key.removePrefix(Bb7Folders.PREFIX).takeIf { folderVersion >= 0 && it in Bb7Folders.names(context) }?.let(Bb7Folders::entry)
+                key.removePrefix(Bb7Folders.PREFIX)
+                    .takeIf { folderVersion >= 0 && it in Bb7Folders.names(context) }
+                    ?.let(Bb7Folders::entry)
             } else {
                 byKey[key]
             }

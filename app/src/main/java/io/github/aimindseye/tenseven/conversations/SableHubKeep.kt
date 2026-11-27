@@ -4,6 +4,7 @@ package io.github.aimindseye.tenseven.conversations
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import io.github.aimindseye.tenseven.model.HubMessageKind
 import java.time.Instant
 import java.time.LocalDate
@@ -17,6 +18,7 @@ import java.util.concurrent.Executors
  * Pure policy for the kept Hub: what is kept, how kept items join the live ones, the "every message on
  * its own" rows, the system packages, Priority Hub, and the date sections. Unit tested.
  */
+@Suppress("TooManyFunctions")
 object SableHubKeep {
     const val MAX_KEPT = 1000
 
@@ -47,7 +49,8 @@ object SableHubKeep {
         kept.forEach { byKey[it.key] = it }
         fresh.forEach { item ->
             val old = byKey[item.key]
-            byKey[item.key] = if (old == null) item else item.copy(messages = mergeMessages(old.messages, item.messages))
+            byKey[item.key] =
+                if (old == null) item else item.copy(messages = mergeMessages(old.messages, item.messages))
         }
         return byKey.values.sortedByDescending(HubNotification::postedAt).take(max)
     }
@@ -92,7 +95,8 @@ object SableHubKeep {
                         HubConversation(
                             id = c.id + ROW_SEPARATOR + m.id,
                             name = c.name,
-                            notifications = c.notifications.filter { it.key == m.notificationKey }.ifEmpty { c.notifications },
+                            notifications =
+                                c.notifications.filter { it.key == m.notificationKey }.ifEmpty { c.notifications },
                             messages = listOf(m),
                         )
                     }
@@ -160,7 +164,10 @@ object SableHubKeep {
 
             else -> {
                 day.format(
-                    DateTimeFormatter.ofPattern(if (day.year == today.year) "EEEE, MMMM d" else "EEEE, MMMM d, yyyy", locale),
+                    DateTimeFormatter.ofPattern(
+                        if (day.year == today.year) "EEEE, MMMM d" else "EEEE, MMMM d, yyyy",
+                        locale,
+                    ),
                 )
             }
         }
@@ -211,7 +218,7 @@ object SableHubKeep {
             .mapNotNull { line ->
                 runCatching {
                     val f = line.split('\t').map(::unb64)
-                    val messages = f[7].split(',').filter(String::isNotEmpty).map { decodeMessage(unb64(it)) }
+                    val messages = f[FIELD_MESSAGES].split(',').filter(String::isNotEmpty).map { decodeMessage(unb64(it)) }
                     HubNotification(
                         key = f[0],
                         conversationId = f[1],
@@ -223,7 +230,7 @@ object SableHubKeep {
                         messages = messages,
                         contentIntent = null,
                         replyAction = null,
-                        kind = HubMessageKind.valueOf(f[6]),
+                        kind = HubMessageKind.valueOf(f[FIELD_KIND]),
                     )
                 }.getOrNull()
             }.toList()
@@ -315,12 +322,13 @@ object SableHubOptions {
             KEY_PER_MESSAGE -> perMessage = value
             KEY_SYSTEM -> system = value
         }
-        prefs?.edit()?.putBoolean(key, value)?.apply()
+        prefs?.edit { putBoolean(key, value) }
         if (key == KEY_KEEP && !value) SableHubHistory.clear()
         ConversationHub.notifyChanged()
     }
 
-    fun isPriority(conversation: HubConversation): Boolean = SableHubKeep.isPriority(conversation, priorityPeople, priorityApps)
+    fun isPriority(conversation: HubConversation): Boolean =
+        SableHubKeep.isPriority(conversation, priorityPeople, priorityApps)
 
     fun isPriorityPerson(conversation: HubConversation): Boolean =
         ConversationState.hash(SableHubKeep.baseId(conversation.id)) in priorityPeople
@@ -332,7 +340,7 @@ object SableHubOptions {
         init(context)
         val h = ConversationState.hash(SableHubKeep.baseId(conversation.id))
         priorityPeople = if (h in priorityPeople) priorityPeople - h else priorityPeople + h
-        prefs?.edit()?.putStringSet(KEY_PRIORITY_PEOPLE, priorityPeople)?.apply()
+        prefs?.edit { putStringSet(KEY_PRIORITY_PEOPLE, priorityPeople) }
         ConversationHub.notifyChanged()
     }
 
@@ -342,7 +350,7 @@ object SableHubOptions {
     ) {
         init(context)
         priorityApps = if (packageName in priorityApps) priorityApps - packageName else priorityApps + packageName
-        prefs?.edit()?.putStringSet(KEY_PRIORITY_APPS, priorityApps)?.apply()
+        prefs?.edit { putStringSet(KEY_PRIORITY_APPS, priorityApps) }
         ConversationHub.notifyChanged()
     }
 }
@@ -435,7 +443,8 @@ object SableHubHistory {
         writer.execute {
             runCatching {
                 writeAtomically(java.io.File(d, FILE), SableHubKeep.encode(items))
-                writeAtomically(java.io.File(d, DELETED_FILE), gone.entries.joinToString("\n") { "${it.value} ${it.key}" })
+                val lines = gone.entries.joinToString("\n") { "${it.value} ${it.key}" }
+                writeAtomically(java.io.File(d, DELETED_FILE), lines)
             }
         }
     }
@@ -453,3 +462,6 @@ object SableHubHistory {
         }
     }
 }
+
+private const val FIELD_KIND = 6
+private const val FIELD_MESSAGES = 7

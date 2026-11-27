@@ -66,7 +66,7 @@ object OnboardingPlan {
     fun steps(state: SetupState): List<SetupStep> =
         SetupStep.entries.filterNot {
             it == SetupStep.EXTRAS ||
-                !state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK)
+                (!state.notificationListenerAvailable && it in setOf(SetupStep.NOTIFICATIONS, SetupStep.LOCK))
         }
 
     /** Android 13 added "restricted settings" for apps that were not installed from a store. */

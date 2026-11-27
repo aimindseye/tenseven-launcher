@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SableMailFeedTest {
+    @Suppress("LongParameterList")
     private fun note(
         key: String,
         pkg: String,
