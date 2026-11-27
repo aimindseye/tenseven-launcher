@@ -19,13 +19,13 @@ object SableBackToFrames {
     ): Boolean = !changingConfigurations && !topPackage.isNullOrEmpty() && topPackage != ownPackage
 
     /** The package of the activity in front now, or null when it cannot be read. */
-    @Suppress("DEPRECATION")
     fun topPackage(context: Context): String? =
         runCatching {
             context
                 .getSystemService(ActivityManager::class.java)
-                ?.getRunningTasks(1)
+                ?.appTasks
                 ?.firstOrNull()
+                ?.taskInfo
                 ?.topActivity
                 ?.packageName
         }.getOrNull()

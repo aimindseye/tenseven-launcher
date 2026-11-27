@@ -139,6 +139,7 @@
         android:label="@string/tenseven_app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.SableLauncher"
+        android:networkSecurityConfig="@xml/weather_network_security_config"
         android:usesCleartextTraffic="false">
 
         <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />

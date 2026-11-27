@@ -269,7 +269,7 @@ object SableHubKeep {
 
 /** The Hub options SableOS adds (Hub settings > SableOS), kept in the home's own preferences. */
 object SableHubOptions {
-    private const val PREFS = "sable_hub"
+    private const val PREFS_FILE = "sable_hub"
     const val KEY_KEEP = "keep_messages"
     const val KEY_PER_MESSAGE = "every_message_on_its_own"
     const val KEY_SYSTEM = "system_notifications"
@@ -295,7 +295,7 @@ object SableHubOptions {
 
     fun init(context: Context) {
         if (prefs != null) return
-        val p = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val p = context.applicationContext.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
         keep = p.getBoolean(KEY_KEEP, true)
         perMessage = p.getBoolean(KEY_PER_MESSAGE, false)
         system = p.getBoolean(KEY_SYSTEM, true)

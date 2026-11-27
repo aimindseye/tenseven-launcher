@@ -10,6 +10,8 @@ import android.view.KeyEvent
 internal class SableShortMenu(
     items: List<Pair<String, () -> Unit>>,
 ) : ArrayList<Pair<String, () -> Unit>>(items) {
+    override fun clone(): Any = SableShortMenu(toList())
+
     companion object {
         const val COLUMNS = 3
         const val ROWS = 3

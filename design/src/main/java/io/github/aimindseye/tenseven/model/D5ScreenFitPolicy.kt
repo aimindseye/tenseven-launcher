@@ -1,19 +1,17 @@
 package io.github.aimindseye.tenseven.model
 
-private object FitLimits {
-    const val COMPACT_HEIGHT_DP = 500f
-    const val COMPACT_WIDTH_DP = 420f
-    const val MATCH_ROWS_COMPACT = 1
-    const val MATCH_ROWS_REGULAR = 2
-    const val MONTH_CELL_COMPACT_DP = 28
-    const val MONTH_CELL_REGULAR_DP = 34
-    const val CALENDAR_NAV_COMPACT_DP = 44
-    const val CALENDAR_NAV_REGULAR_DP = 49
-    const val CALL_COMPACT_DP = 48
-    const val CALL_REGULAR_DP = 54
-    const val WEEK_STRIP_COMPACT_DP = 46
-    const val WEEK_STRIP_REGULAR_DP = 57
-}
+private const val FIT_COMPACT_HEIGHT_DP = 500f
+private const val FIT_COMPACT_WIDTH_DP = 420f
+private const val FIT_MATCH_ROWS_COMPACT = 1
+private const val FIT_MATCH_ROWS_REGULAR = 2
+private const val FIT_MONTH_CELL_COMPACT_DP = 28
+private const val FIT_MONTH_CELL_REGULAR_DP = 34
+private const val FIT_CALENDAR_NAV_COMPACT_DP = 44
+private const val FIT_CALENDAR_NAV_REGULAR_DP = 49
+private const val FIT_CALL_COMPACT_DP = 48
+private const val FIT_CALL_REGULAR_DP = 54
+private const val FIT_WEEK_STRIP_COMPACT_DP = 46
+private const val FIT_WEEK_STRIP_REGULAR_DP = 57
 
 /** Screen profile is measured in available display dp, not a guessed device model or scan code. */
 object D5ScreenFitPolicy {
@@ -31,14 +29,14 @@ object D5ScreenFitPolicy {
         heightDp: Float,
     ): Fit {
         require(widthDp > 0f && heightDp > 0f)
-        val compact = heightDp < FitLimits.COMPACT_HEIGHT_DP || widthDp < FitLimits.COMPACT_WIDTH_DP
+        val compact = heightDp < FIT_COMPACT_HEIGHT_DP || widthDp < FIT_COMPACT_WIDTH_DP
         return Fit(
             compact,
-            if (compact) FitLimits.MATCH_ROWS_COMPACT else FitLimits.MATCH_ROWS_REGULAR,
-            if (compact) FitLimits.MONTH_CELL_COMPACT_DP else FitLimits.MONTH_CELL_REGULAR_DP,
-            if (compact) FitLimits.CALENDAR_NAV_COMPACT_DP else FitLimits.CALENDAR_NAV_REGULAR_DP,
-            if (compact) FitLimits.CALL_COMPACT_DP else FitLimits.CALL_REGULAR_DP,
-            if (compact) FitLimits.WEEK_STRIP_COMPACT_DP else FitLimits.WEEK_STRIP_REGULAR_DP,
+            if (compact) FIT_MATCH_ROWS_COMPACT else FIT_MATCH_ROWS_REGULAR,
+            if (compact) FIT_MONTH_CELL_COMPACT_DP else FIT_MONTH_CELL_REGULAR_DP,
+            if (compact) FIT_CALENDAR_NAV_COMPACT_DP else FIT_CALENDAR_NAV_REGULAR_DP,
+            if (compact) FIT_CALL_COMPACT_DP else FIT_CALL_REGULAR_DP,
+            if (compact) FIT_WEEK_STRIP_COMPACT_DP else FIT_WEEK_STRIP_REGULAR_DP,
         )
     }
 }
