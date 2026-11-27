@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import android.os.Build
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
@@ -42,6 +42,7 @@ import io.github.aimindseye.tenseven.model.QuickBar
 import io.github.aimindseye.tenseven.model.StartPages
 import io.github.aimindseye.tenseven.model.TablerGlyphPaths
 import io.github.aimindseye.tenseven.model.stableKey
+import io.github.aimindseye.tenseven.platform.CurrentDeviceProfile
 
 @Composable
 private fun rememberReferenceUnread(): Int {
@@ -74,7 +75,9 @@ private fun rememberReferenceShownSlots(slots: List<QuickSlot>): List<String> {
                 .value
                 .toInt()
         }
-    val compact = HomeBarCompactPolicy.compact(Build.MODEL, widthDp)
+    val configuration = LocalConfiguration.current
+    val profile = remember(configuration) { CurrentDeviceProfile.from(configuration) }
+    val compact = HomeBarCompactPolicy.compact(profile, widthDp)
     return HomeBarCompactPolicy.optionalTokens(slots.map { it.token }, compact)
 }
 

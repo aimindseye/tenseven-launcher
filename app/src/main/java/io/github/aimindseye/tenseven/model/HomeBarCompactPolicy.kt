@@ -8,9 +8,15 @@ private const val HOME_BAR_COMPACT_POLICY_COMPACT_VALUE_340 = 340
  */
 internal object HomeBarCompactPolicy {
     fun compact(
+        profile: DeviceProfile,
+        widthDp: Int,
+    ): Boolean = profile.compactHomeBar || widthDp < HOME_BAR_COMPACT_POLICY_COMPACT_VALUE_340
+
+    /** Name-based entry point kept for callers that only have the build model. */
+    fun compact(
         model: String,
         widthDp: Int,
-    ): Boolean = model.contains("Q25", ignoreCase = true) || widthDp < HOME_BAR_COMPACT_POLICY_COMPACT_VALUE_340
+    ): Boolean = compact(DeviceProfile.detect("", model, "", hasQwerty = false, hasArrows = false), widthDp)
 
     /** The two optional slots at most on Titan 2; role destinations are already in the fixed dock. */
     fun optionalTokens(
