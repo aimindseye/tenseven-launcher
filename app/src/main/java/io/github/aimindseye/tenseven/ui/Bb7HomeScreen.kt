@@ -505,8 +505,10 @@ private class Bb7HomeActions(
     private fun removeFromFolderMenu(
         name: String,
         held: List<AppEntry>,
-    ): List<Pair<String, () -> Unit>> =
-        held.map { app -> app.label to { Bb7Folders.remove(context, name, app.stableKey()) } }
+    ): List<Pair<String, () -> Unit>> {
+        val remove = { app: AppEntry -> Bb7Folders.remove(context, name, app.stableKey()) }
+        return held.map { app -> app.label to { remove(app) } }
+    }
 
     /** Move to Folder: one line per folder; the icon leaves the home screen and goes into the folder. */
     private fun moveToFolderMenu(app: AppEntry): List<Pair<String, () -> Unit>> =
@@ -663,8 +665,8 @@ private class Bb7HomeKeyboard(
     private fun centerKey(
         type: KeyEventType,
         key: KeyEvent,
-    ): Boolean {
-        return when (type) {
+    ): Boolean =
+        when (type) {
             KeyEventType.KeyDown -> {
                 if (key.repeatCount == 0) {
                     SableCenterPress.pending = key
@@ -687,7 +689,6 @@ private class Bb7HomeKeyboard(
                 false
             }
         }
-    }
 
     private fun handle(key: KeyEvent): Boolean =
         when {
@@ -1569,7 +1570,8 @@ private fun rememberBb7Apps(
     val desktop =
         Bb7Home.desktopShortcuts(selection.desktop).mapNotNull { key ->
             if (Bb7Folders.isFolderKey(key)) {
-                key.removePrefix(Bb7Folders.PREFIX)
+                key
+                    .removePrefix(Bb7Folders.PREFIX)
                     .takeIf { folderVersion >= 0 && it in Bb7Folders.names(context) }
                     ?.let(Bb7Folders::entry)
             } else {

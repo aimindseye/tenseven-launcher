@@ -48,6 +48,7 @@ import io.github.aimindseye.tenseven.conversations.ConversationListenerService
 import io.github.aimindseye.tenseven.conversations.HubNotification
 import io.github.aimindseye.tenseven.model.HubMessageKind
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 private val PanelScrim = Color(0xE6101010)
 private val PanelMutedText = Color(0xFFB8B8B8)
@@ -140,8 +141,7 @@ internal fun Bb7NotificationPanel(onClose: () -> Unit) {
 
     fun isUnopened(item: HubNotification): Boolean = ConversationHub.state().unreadCount(item) > 0
 
-    fun conversationOf(item: HubNotification) =
-        ConversationHub.conversations().firstOrNull { it.id == item.conversationId }
+    fun conversationOf(n: HubNotification) = ConversationHub.conversations().firstOrNull { it.id == n.conversationId }
 
     val menuItems =
         items.getOrNull(selected).let { current ->
@@ -387,7 +387,7 @@ private fun dayLabel(
     context: android.content.Context,
     at: Long,
 ): String {
-    val day = java.util.concurrent.TimeUnit.DAYS.toMillis(1)
+    val day = TimeUnit.DAYS.toMillis(1)
     val zone = java.util.TimeZone.getDefault()
 
     fun dayNumber(t: Long) = (t + zone.getOffset(t)) / day

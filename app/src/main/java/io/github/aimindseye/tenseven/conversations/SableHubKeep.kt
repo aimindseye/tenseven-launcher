@@ -327,8 +327,7 @@ object SableHubOptions {
         ConversationHub.notifyChanged()
     }
 
-    fun isPriority(conversation: HubConversation): Boolean =
-        SableHubKeep.isPriority(conversation, priorityPeople, priorityApps)
+    fun isPriority(c: HubConversation): Boolean = SableHubKeep.isPriority(c, priorityPeople, priorityApps)
 
     fun isPriorityPerson(conversation: HubConversation): Boolean =
         ConversationState.hash(SableHubKeep.baseId(conversation.id)) in priorityPeople

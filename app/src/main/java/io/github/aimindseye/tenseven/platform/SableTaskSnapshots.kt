@@ -112,6 +112,7 @@ internal object SableTaskSnapshots {
                             0
                         }
                     }
+
             @Suppress("SpreadOperator")
             val snapshot = call.invoke(manager, *args.toTypedArray())
             if (snapshot == null) {
@@ -153,8 +154,7 @@ internal object SableTaskSnapshots {
         val hardware =
             runCatching {
                 type.getMethod("wrapToBitmap", ColorSpace::class.java).invoke(snapshot, colorSpace) as? Bitmap
-            }
-                .getOrNull()
+            }.getOrNull()
                 ?: runCatching {
                     val buffer = type.getMethod("getHardwareBuffer").invoke(snapshot) as? HardwareBuffer
                     buffer?.takeUnless { it.isClosed }?.let { Bitmap.wrapHardwareBuffer(it, colorSpace) }
