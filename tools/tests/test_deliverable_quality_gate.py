@@ -753,6 +753,7 @@ _HISTORICAL_INVENTORY_SHA = 'aa84e2ec1e4bc6e44380f51835d26627c159aec94458eefae94
 _PHONE_PATH = 'phone/src/main/java/io/github/aimindseye/tenseven/features/phone/TenSevenTelecom.kt'
 _PHONE_BLOB = '8ad78380f3444840f4a2a347fb4bd19225f9c1ec'
 _PHONE_METHOD_SHA = '7a84890369ed0850da01c102bbe0f72a641d9c18c1d271c07e0aeafae7cd05b8'
+_SABLE_INVENTORY_SHA = '407f7d83c868bb63df1594d8e313d02c84354df32084e3d69f9a366d584b3d99'
 
 
 def _require_snapshot(condition, message):
@@ -885,8 +886,13 @@ def _verify_current_phone_inventory(repo, base, audit):
     from quality_gate_module_policy import PHONE_CONTRACT, review_permission_contract, verify
     verified = verify(repo, base)
     expected = [(_PHONE_PATH, 498, '    @SuppressLint("MissingPermission")', 'permission-contract-review-required', 'high')]
-    _require_snapshot([(i['file'], i['line'], i['text'], i['classification'], i['risk']) for i in audit] == expected,
+    _require_snapshot([(i['file'], i['line'], i['text'], i['classification'], i['risk']) for i in audit
+                       if i['file'] == _PHONE_PATH] == expected,
                       'Candidate raw inventory differs from sole reviewed Phone marker')
+    reviewed = sorted((i['file'], i['text'].strip(), i['classification']) for i in audit if i['file'] != _PHONE_PATH)
+    _require_snapshot(hashlib.sha256('\n'.join('\t'.join(row) for row in reviewed).encode()).hexdigest() ==
+                      _SABLE_INVENTORY_SHA and len(reviewed) == 34,
+                      'Sable launcher marker inventory differs from the reviewed 34 structural markers')
     _require_snapshot(all(i['approval'] == 'NOT_APPROVED' and i['result'] == 'HOLD' for i in audit),
                       'Raw audit granted approval')
     with POLICY._source_snapshot(repo, {_PHONE_PATH}) as snapshot:
@@ -897,7 +903,9 @@ def _verify_current_phone_inventory(repo, base, audit):
         _require_snapshot(hashlib.sha256(method).hexdigest() == _PHONE_METHOD_SHA and source.count(method) == 1,
                           'Phone method guard differs')
     pending, approved = review_permission_contract(repo, base, audit)
-    _require_snapshot(not pending and len(approved) == 1, 'Phone contract review differs')
+    _require_snapshot(not pending and len(approved) == 35 and
+                      [i['result'] for i in approved] == ['EXACT_REVIEWED_CONTRACT'] + ['EXACT_REVIEWED_INVENTORY'] * 34,
+                      'Phone contract or reviewed Sable inventory differs')
     item = approved[0]
     _require_snapshot((item['original_blob'], item['candidate_blob'], item['method_sha256'],
                        item['original_annotation_commit'], item['module_origin']) ==
@@ -966,7 +974,11 @@ class RemediatedSuppressionSnapshotTests(unittest.TestCase):
 
         with patch.object(POLICY, 'added_lines', side_effect=extra):
             policy = POLICY.review_policy(self.repo, self.changed, self.base, approved_compose=True)
-        self.assertEqual([marker], [item['text'] for item in policy['suppression_audit']])
+        # Any change to the reviewed inventory voids its approval: all markers go back to pending review.
+        reviewed = Counter(item['text'] for item in self.audit if item['file'] != _PHONE_PATH)
+        added = Counter(item['text'] for item in policy['suppression_audit']) - reviewed
+        self.assertEqual(Counter([marker]), added)
+        self.assertEqual(35, len(policy['suppression_audit']))
         result = dict(baseline=dict(findings=[], gradle_rc=0), candidate=dict(findings=[], gradle_rc=0),
                       reports_only=False, policy=policy, result='HOLD')
         GATE.apply_comparison(result, self.repo.path, self.repo.path)
@@ -2418,6 +2430,9 @@ class ActivationAndMergeReviewTests(unittest.TestCase):
         self.reject()
 
 
+_R3_CONTROLLER_BLOB = 'c69855b82795e70f58bda1a8c1fbfe304cda4c08'
+
+
 class MaintainabilityRepository(CandidateRepository):
     """Future review nodes over real R2 history; never creates a Git object."""
 
@@ -2425,10 +2440,15 @@ class MaintainabilityRepository(CandidateRepository):
         super().__init__()
         self.dependency_source = dict(self.proposed)
         proposal = Path(candidate.__file__).resolve().parents[1]
-        for name in (candidate.NEW, ci.HELPER, candidate.TESTS):
-            self.proposed[name] = (proposal / name).read_bytes()
+        # R3 reviewed state, read by its frozen blob IDs; the working-tree files are the R4 state.
+        for name, blob in ((candidate.NEW, candidate.R3_HELPER_BLOB), (ci.HELPER, _R3_CONTROLLER_BLOB),
+                           (candidate.TESTS, candidate.REVIEW_TESTS_BLOB)):
+            self.proposed[name] = subprocess.check_output(['git', 'cat-file', 'blob', blob], cwd=proposal)
         self.current = dict(self.proposed)
         self.current_head = candidate.REVIEW_BASE
+        self.r4 = dict(self.proposed)
+        for name in (candidate.NEW, ci.HELPER, candidate.TESTS, candidate.MODULE):
+            self.r4[name] = (proposal / name).read_bytes()
 
     def _read_revisions(self, args):
         revisions = [value for value in args if '..' in value]
@@ -2499,6 +2519,55 @@ class MaintainabilityTransitionTests(unittest.TestCase):
         main = '2fa46c0ed9b5cfea43fd7b52322e592caab170a7'
         self.repo.add('integration-merge', parents=[origin, main])
         self.assertEqual(origin, self.verify(main)['maintainability_origin'])
+
+    def commit_r4(self, data=None, parents=None):
+        return self.repo.add('r4-origin', self.repo.r4 if data is None else data, parents=parents)
+
+    def test_r4_origin_directly_after_r3_is_accepted(self):
+        review = self.commit_review()
+        self.repo.current = dict(self.repo.r4)
+        origin = self.commit_r4()
+        self.repo.add('ordinary-descendant', self.repo.r4)
+        record = self.verify()
+        self.assertEqual(review, record['maintainability_origin'])
+        self.assertNotEqual(origin, review)
+
+    def test_r4_precommit_requires_the_r3_state(self):
+        self.commit_review()
+        self.repo.current = dict(self.repo.r4)
+        self.assertEqual(candidate.REVIEW_BASE, self.verify()['maintainability_parent'])
+
+    def test_r4_precommit_without_r3_is_rejected(self):
+        self.repo.current = dict(self.repo.r4)
+        self.reject()
+
+    def test_partial_r4_state_is_rejected(self):
+        self.commit_review()
+        for name in (candidate.NEW, ci.HELPER, candidate.TESTS, candidate.MODULE):
+            with self.subTest(name=name):
+                partial = dict(self.repo.proposed)
+                partial[name] = self.repo.r4[name]
+                self.repo.current = dict(partial)
+                head = self.repo.head()
+                self.repo.add('partial-r4', partial)
+                self.reject()
+                self.repo.current_head = head
+
+    def test_r3_state_cannot_be_restored_after_r4(self):
+        self.commit_review()
+        self.repo.current = dict(self.repo.r4)
+        self.commit_r4()
+        self.repo.add('restore-r3', self.repo.proposed)
+        self.repo.current = dict(self.repo.proposed)
+        self.reject()
+
+    def test_two_r4_origins_are_rejected(self):
+        review = self.commit_review()
+        self.repo.current = dict(self.repo.r4)
+        first = self.commit_r4()
+        second = self.repo.add('second-r4-origin', self.repo.r4, parents=[review])
+        self.repo.add('r4-merge', self.repo.r4, parents=[first, second])
+        self.reject()
 
     def test_wrong_direct_parent_is_rejected(self):
         self.repo.add('wrong-parent', parents=[candidate.DEPENDENCY_ORIGIN])
@@ -2591,7 +2660,7 @@ class MaintainabilityTransitionTests(unittest.TestCase):
         self.reject()
 
     def test_new_loaded_helper_pin_is_independent(self):
-        with patch.object(ci, '_ROBOLECTRIC_R3_REVIEWED_HELPER_BLOB', 'f' * 40):
+        with patch.object(ci, '_ROBOLECTRIC_R4_REVIEWED_HELPER_BLOB', 'f' * 40):
             self.reject()
 
     def test_loaded_controller_must_match_exact_derived_source(self):

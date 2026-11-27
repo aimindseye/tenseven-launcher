@@ -23,6 +23,29 @@ MAIN_BLOCK = b"if __name__ == '__main__':\n    unittest.main()\n"
 DEPENDENCY_ORIGIN = '4e1283cea4fdc8777b44a117defac8861195fcb8'
 REVIEW_BASE = '49d08bffcb03e7183ee071e5d1caf86e991b2509'
 REVIEW_TESTS_BLOB = '3df77dd5cc1eef755065085275bd95e969adf6f7'
+R3_HELPER_BLOB = 'e8aa6baeca7a8e7b6d5407e292126ceae64e4851'
+# R4: owner-approved inventory of the Sable launcher's structural lint markers. The gate test pins the
+# exact (file, marker, class) list; the module policy approves it only when the list matches exactly.
+REVIEW4_TESTS_BLOB = '7c4224d0bdea1bc44e6cea64b3cb3f5ee809cec2'
+SABLE_MARKER_COUNT = 34
+SABLE_MARKER_SHA256 = '407f7d83c868bb63df1594d8e313d02c84354df32084e3d69f9a366d584b3d99'
+R4_PIN_LINE = b"\n_ROBOLECTRIC_R4_REVIEWED_HELPER_BLOB = '@REVIEWED_HELPER_BLOB@'\n"
+MODULE_EDITS_R4 = (
+    (b'import quality_gate_policy as legacy\n',
+     b'import quality_gate_policy as legacy\n'
+     b'\nSABLE_MARKER_COUNT = ' + str(SABLE_MARKER_COUNT).encode() + b'\n'
+     b'SABLE_MARKER_SHA256 = "' + SABLE_MARKER_SHA256.encode() + b'"\n'),
+    (b'    if len(approved) > 1:\n        raise QualityError("Duplicate reviewed Phone marker")\n    return pending, approved\n',
+     b'    if len(approved) > 1:\n        raise QualityError("Duplicate reviewed Phone marker")\n'
+     b'    rows = sorted((i["file"], i["text"].strip(), i["classification"]) for i in pending)\n'
+     b'    digest = hashlib.sha256("\\n".join("\\t".join(row) for row in rows).encode()).hexdigest()\n'
+     b'    if len(rows) == SABLE_MARKER_COUNT and digest == SABLE_MARKER_SHA256:\n'
+     b'        approved.extend({**i, "approval": "R4 exact reviewed Sable launcher structural markers",\n'
+     b'                         "result": "EXACT_REVIEWED_INVENTORY", "module_origin": verified["origin"]}\n'
+     b'                        for i in pending)\n'
+     b'        pending = []\n'
+     b'    return pending, approved\n'),
+)
 REVIEW_PIN_LINE = b"\n_ROBOLECTRIC_R3_REVIEWED_HELPER_BLOB = '@REVIEWED_HELPER_BLOB@'\n"
 BEFORE = {'.editorconfig': 'e02a4ece681bd31785db9618c566295d6b5a332c',
  '.github/workflows/android.yml': '53d88c20accba33a9874145b394b795688fd2e22',
@@ -215,19 +238,25 @@ def _verify_side_commit(repo, commit, states, frozen, names):
 
 
 def after_states(repo):
-    """Derive v5 independently from its frozen inputs, then the exact R3 extension."""
+    """Derive v5 independently from its frozen inputs, then the exact R3 and R4 extensions."""
     original = {name: repo.blob(DEPENDENCY_ORIGIN, name) for name in set(BEFORE) | {NEW}}
     after = _dependency_after_state(repo, original)
     if state(repo, DEPENDENCY_ORIGIN, after) != after or not ci._single_parent(repo, DEPENDENCY_ORIGIN, BASE):
         raise QualityError('Original immutable dependency endpoint/origin differs')
+    controller3 = original[ci.HELPER] + REVIEW_PIN_LINE.replace(b'@REVIEWED_HELPER_BLOB@', R3_HELPER_BLOB.encode())
+    reviewed3 = {**after, NEW: R3_HELPER_BLOB, TESTS: REVIEW_TESTS_BLOB, ci.HELPER: legacy.blob_id(controller3)}
     helper = legacy.blob_id(Path(__file__).read_bytes())
-    if helper != ci._ROBOLECTRIC_R3_REVIEWED_HELPER_BLOB:
-        raise QualityError('Loaded R3 helper differs from independent controller pin')
-    controller = original[ci.HELPER] + REVIEW_PIN_LINE.replace(b'@REVIEWED_HELPER_BLOB@', helper.encode())
+    if helper != ci._ROBOLECTRIC_R4_REVIEWED_HELPER_BLOB:
+        raise QualityError('Loaded R4 helper differs from independent controller pin')
+    controller = controller3 + R4_PIN_LINE.replace(b'@REVIEWED_HELPER_BLOB@', helper.encode())
     if Path(ci.__file__).read_bytes() != controller:
-        raise QualityError('Loaded R3 controller differs from independent derivation')
-    reviewed = {**after, NEW: helper, TESTS: REVIEW_TESTS_BLOB, ci.HELPER: legacy.blob_id(controller)}
-    return after, reviewed
+        raise QualityError('Loaded R4 controller differs from independent derivation')
+    module = edits(edits(repo.blob(BASE, MODULE), MODULE_EDITS), MODULE_EDITS_R4)
+    if Path(modules.__file__).read_bytes() != module:
+        raise QualityError('Loaded R4 module policy differs from independent derivation')
+    reviewed = {**reviewed3, NEW: helper, TESTS: REVIEW4_TESTS_BLOB, ci.HELPER: legacy.blob_id(controller),
+                MODULE: legacy.blob_id(module)}
+    return after, reviewed3, reviewed
 
 
 def _review_origin(repo, states, reviewed):
@@ -240,9 +269,25 @@ def _review_origin(repo, states, reviewed):
     return origins[0]
 
 
+def _r4_origin(repo, states, reviewed3, reviewed):
+    changed = [commit for commit, value in states.items() if value == reviewed]
+    if not changed:
+        return None
+    origins = []
+    for commit in changed:
+        parents = _parents(repo, commit)
+        if len(parents) == 1 and parents[0] in states and states[parents[0]] == reviewed3:
+            origins.append(commit)
+    if len(origins) != 1:
+        raise QualityError('Need one exact R4 origin directly after the R3 state')
+    return origins[0]
+
+
 def _expected_transition_state(repo, commit, origins, endpoints):
-    dependency, review = origins
-    before, after, reviewed = endpoints
+    dependency, review, review4 = origins
+    before, after, reviewed, reviewed4 = endpoints
+    if review4 is not None and repo.ancestor(review4, commit):
+        return reviewed4
     if review is not None and repo.ancestor(review, commit):
         return reviewed
     if repo.ancestor(dependency, commit):
@@ -258,16 +303,16 @@ def _verify_transition_states(repo, states, origins, endpoints, frozen):
         if expected is None:
             _verify_side_commit(repo, commit, states, frozen, endpoints[1])
         elif value != expected:
-            raise QualityError('Dependency/R3 protected history modified, partial or restored')
+            raise QualityError('Dependency/R3/R4 protected history modified, partial or restored')
 
 
-def transition_history(repo, head, before, after, reviewed):
+def transition_history(repo, head, before, after, reviewed, reviewed4):
     if not repo.ancestor(BASE, head):
         raise QualityError('Frozen Robolectric base outside candidate ancestry')
     revision = BASE + '..' + object_id(head)
     commits = [object_id(c) for c in repo._read(['rev-list', '--reverse', revision, '--']).decode().splitlines()]
     if not commits:
-        return None, None
+        return None, None, None, {}
     frozen = {object_id(c) for c in repo._read(['rev-list', BASE, '--']).decode().splitlines()}
     states = {commit: state(repo, commit, after) for commit in commits}
     origins = [commit for commit, value in states.items()
@@ -276,14 +321,19 @@ def transition_history(repo, head, before, after, reviewed):
         raise QualityError('Need one joint Robolectric origin directly after frozen parent')
     origin = origins[0]
     review = _review_origin(repo, states, reviewed)
-    _verify_transition_states(repo, states, (origin, review), (before, after, reviewed), frozen)
-    return origin, review
+    review4 = _r4_origin(repo, states, reviewed, reviewed4)
+    _verify_transition_states(repo, states, (origin, review, review4), (before, after, reviewed, reviewed4), frozen)
+    return origin, review, review4, states
 
 
-def _verify_current_family(head, current, after, reviewed, review_origin):
+def _verify_current_family(head, current, after, reviewed, reviewed4, review_origin, review4_origin, states):
     if current == after and review_origin is None:
         return
-    if current != reviewed:
+    if current == reviewed4:
+        if review4_origin is None and states.get(head) != reviewed:
+            raise QualityError('R4 precommit must follow the exact R3 state')
+        return
+    if current != reviewed or review4_origin is not None:
         raise QualityError('Unknown, partial or reverted R3 protected endpoint')
     if review_origin is None and head != REVIEW_BASE:
         raise QualityError('R3 precommit must be at exact qualified TLS parent')
@@ -299,13 +349,14 @@ def verify(repo, base):
     ci._verify_l0_comparison_workflow(repo, base)
     names = set(BEFORE) | {NEW}
     with legacy._source_snapshot(repo, names) as data:
-        after, reviewed = after_states(repo)
+        after, reviewed, reviewed4 = after_states(repo)
         current = {name: legacy.blob_id(raw) for name, raw in data.items()}
         before = dict(BEFORE, **{NEW: None})
         if state(repo, BASE, names) != before:
             raise QualityError('Frozen Robolectric joint parent differs')
-        origin, review_origin = transition_history(repo, head, before, after, reviewed)
-        _verify_current_family(head, current, after, reviewed, review_origin)
+        origin, review_origin, review4_origin, states = transition_history(
+            repo, head, before, after, reviewed, reviewed4)
+        _verify_current_family(head, current, after, reviewed, reviewed4, review_origin, review4_origin, states)
     if {item.parent.name for item in repo.path.glob('*/build.gradle.kts')} != modules.MODULES:
         raise QualityError('Android module inventory differs')
     modules.verify_workflow_inventory(repo)

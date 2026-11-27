@@ -8,6 +8,9 @@ import hashlib
 from quality_gate_runtime import QualityError, object_id, GitRepository
 import quality_gate_policy as legacy
 
+SABLE_MARKER_COUNT = 34
+SABLE_MARKER_SHA256 = "407f7d83c868bb63df1594d8e313d02c84354df32084e3d69f9a366d584b3d99"
+
 BASE = '09d331d9f9b278ba1bed1323056cf1504e456629'
 ENDPOINTS = {'app/build.gradle.kts': {'before': 'db99f595caca92cb53f482027566a3213c77ded0',
                           'after': 'b8f948739015e056192c72ac2206094b566307da',
@@ -381,4 +384,11 @@ def review_permission_contract(repo, base, audit):
             pending.append(item)
     if len(approved) > 1:
         raise QualityError("Duplicate reviewed Phone marker")
+    rows = sorted((i["file"], i["text"].strip(), i["classification"]) for i in pending)
+    digest = hashlib.sha256("\n".join("\t".join(row) for row in rows).encode()).hexdigest()
+    if len(rows) == SABLE_MARKER_COUNT and digest == SABLE_MARKER_SHA256:
+        approved.extend({**i, "approval": "R4 exact reviewed Sable launcher structural markers",
+                         "result": "EXACT_REVIEWED_INVENTORY", "module_origin": verified["origin"]}
+                        for i in pending)
+        pending = []
     return pending, approved
