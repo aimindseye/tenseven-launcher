@@ -941,6 +941,7 @@ private fun SetupStageHubLock(settings: StartStateRepository) {
 @Composable
 private fun SetupStagePermissions(
     state: SetupState,
+    settings: StartStateRepository,
     access: SetupWizardAccess,
 ) {
     Text(
@@ -967,6 +968,8 @@ private fun SetupStagePermissions(
             }
         }
     }
+    // Active Frames: media and radio notification sources, shown once BB10 Home and notification access are set.
+    FrameSettingsSection(settings, state.notificationAccess)
 }
 
 @Composable
@@ -1070,7 +1073,7 @@ private fun SetupWizard2(
                 Setup2Stage.APPEARANCE -> SetupStageAppearance(settings)
                 Setup2Stage.APPS -> SetupStageApps(picked, selectApps)
                 Setup2Stage.HUB_LOCK -> SetupStageHubLock(settings)
-                Setup2Stage.PERMISSIONS -> SetupStagePermissions(state, access)
+                Setup2Stage.PERMISSIONS -> SetupStagePermissions(state, settings, access)
                 Setup2Stage.REVIEW -> SetupStageReview(state, picked.size, onOpenLauncherSettings)
             }
 
