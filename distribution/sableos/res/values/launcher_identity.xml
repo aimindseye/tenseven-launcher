@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SableOS identity overlay: replaces the TenSeven values in app/src/main/res/values/launcher_identity.xml. -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="tenseven_app_name" translatable="false">Sable Launcher</string>
     <bool name="launcher_status_default_off">true</bool>
     <item name="launcher_icon" type="mipmap">@mipmap/ic_sable_home</item>
     <item name="launcher_icon_round" type="mipmap">@mipmap/ic_sable_home_round</item>
-    <string name="lock_service_label">Sable Launcher double-tap to lock</string>
-    <string name="lock_accessibility_description">Lets Sable Launcher lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
+    <string name="lock_service_label" tools:ignore="MissingTranslation">Sable Launcher double-tap to lock</string>
+    <string name="lock_accessibility_description" tools:ignore="MissingTranslation">Lets Sable Launcher lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
 </resources>
