@@ -17,12 +17,18 @@ import android.provider.CalendarContract
 import android.provider.Settings
 import android.util.AttributeSet
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.edit
 import io.github.aimindseye.tenseven.D5BbDialogs
+import io.github.aimindseye.tenseven.design.LetterMoveKeys
+import io.github.aimindseye.tenseven.design.SableViewPalette
+import io.github.aimindseye.tenseven.design.applySableSystemBars
+import io.github.aimindseye.tenseven.platform.CurrentDeviceProfile
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
 import java.time.LocalDate
 import java.time.YearMonth
@@ -54,19 +60,6 @@ private const val CALENDAR_DRAW_RATIO_3_F = 3f
 private const val CALENDAR_DRAW_RATIO_4_F = 4f
 private const val CALENDAR_DRAW_RATIO_6_F = 6f
 private const val CALENDAR_DRAW_RATIO_8_F = 8f
-private const val CALENDAR_DRAW_RGB_151 = 151
-private const val CALENDAR_DRAW_RGB_169 = 169
-private const val CALENDAR_DRAW_RGB_180 = 180
-private const val CALENDAR_DRAW_RGB_192 = 192
-private const val CALENDAR_DRAW_RGB_205 = 205
-private const val CALENDAR_DRAW_RGB_235 = 235
-private const val CALENDAR_DRAW_RGB_238 = 238
-private const val CALENDAR_DRAW_RGB_24 = 24
-private const val CALENDAR_DRAW_RGB_31 = 31
-private const val CALENDAR_DRAW_RGB_40 = 40
-private const val CALENDAR_DRAW_RGB_50 = 50
-private const val CALENDAR_DRAW_RGB_57 = 57
-private const val CALENDAR_DRAW_RGB_66 = 66
 private const val CALENDAR_DRAW_SP_11_F = 11f
 private const val CALENDAR_DRAW_VALUE_7 = 7
 internal const val CALENDAR_EDITOR_RATIO_12_F = 12f
@@ -181,11 +174,19 @@ class TenSevenCalendarActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applySableSystemBars(window, SableViewPalette.isNight(this))
         android.util.Log.i("TenSevenD5R7", "Calendar approved BB10 UI active")
         mode = getSharedPreferences("tenseven_calendar_view", MODE_PRIVATE)
             .getString("default_view", "Today")
             ?.takeIf { it in listOf("Today", "Week", "Month", "Day") } ?: "Today"
         render()
+    }
+
+    // Keyboard phones without arrow keys move with I J K L; typing in a field keeps its letters.
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val profile = CurrentDeviceProfile.from(resources.configuration)
+        val mapped = LetterMoveKeys.translate(profile, event, currentFocus is EditText)
+        return super.dispatchKeyEvent(mapped ?: event)
     }
 
     override fun onResume() {
@@ -738,9 +739,10 @@ internal class BusyMonthView private constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val density = resources.displayMetrics.density
-    private val fg = Color.rgb(245, 248, 250)
-    private val selectedColor = Color.rgb(0, 150, 232)
-    private val outline = Color.rgb(67, 77, 88)
+    private val palette = SableViewPalette.forContext(context)
+    private val fg = palette.fg
+    private val selectedColor = palette.accent
+    private val outline = palette.line
     private val offset =
         if (mondayStart) {
             month.atDay(1).dayOfWeek.value - 1
@@ -947,6 +949,7 @@ internal class D5DayTimelineView private constructor(
 
     constructor(activity: TenSevenCalendarActivity, model: DayRenderModel) : this(activity, null, model)
 
+    private val palette = SableViewPalette.forContext(context)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val density = resources.displayMetrics.density
     private val targets = mutableListOf<Pair<RectF, D5R2Event>>()
@@ -1016,7 +1019,7 @@ internal class D5DayTimelineView private constructor(
         if (day == LocalDate.now(zone)) {
             val now = java.time.LocalTime.now(zone)
             val y = (now.hour + now.minute / CALENDAR_DRAWING_TIMELINE_HOUR_MINUTES) * hourHeight
-            paint.color = Color.rgb(0, CALENDAR_DRAW_RGB_169, CALENDAR_DRAW_RGB_238)
+            paint.color = palette.accent
             paint.strokeWidth = 2f * density
             canvas.drawLine(gutter, y, width.toFloat(), y, paint)
         }
@@ -1032,11 +1035,11 @@ internal class D5DayTimelineView private constructor(
         paint.textSize = CALENDAR_DRAW_SP_11_F * density
         for (hour in 0..CALENDAR_DRAWING_TIMELINE_HOURS) {
             val y = hour * hourHeight
-            paint.color = Color.rgb(CALENDAR_DRAW_RGB_50, CALENDAR_DRAW_RGB_57, CALENDAR_DRAW_RGB_66)
+            paint.color = palette.line
             paint.strokeWidth = density
             canvas.drawLine(gutter, y, width.toFloat(), y, paint)
             if (hour < CALENDAR_DRAWING_TIMELINE_HOURS) {
-                paint.color = Color.rgb(CALENDAR_DRAW_RGB_180, CALENDAR_DRAW_RGB_192, CALENDAR_DRAW_RGB_205)
+                paint.color = palette.muted
                 canvas.drawText(
                     String.format(Locale.US, "%02d:00", hour),
                     gutter - CALENDAR_DRAW_RATIO_8_F * density,
@@ -1053,11 +1056,11 @@ internal class D5DayTimelineView private constructor(
         event: D5R2Event,
     ) {
         paint.style = Paint.Style.FILL
-        paint.color = Color.rgb(CALENDAR_DRAW_RGB_24, CALENDAR_DRAW_RGB_31, CALENDAR_DRAW_RGB_40)
+        paint.color = palette.panel
         canvas.drawRoundRect(rect, CALENDAR_DRAW_RATIO_4_F * density, CALENDAR_DRAW_RATIO_4_F * density, paint)
-        paint.color = colors[event.calendarId] ?: Color.rgb(0, CALENDAR_DRAW_RGB_151, CALENDAR_DRAW_RGB_235)
+        paint.color = colors[event.calendarId] ?: palette.accent
         canvas.drawRect(rect.left, rect.top, rect.left + CALENDAR_DRAW_RATIO_3_F * density, rect.bottom, paint)
-        paint.color = Color.WHITE
+        paint.color = palette.fg
         paint.textAlign = Paint.Align.LEFT
         paint.textSize = CALENDAR_DRAW_SP_11_F * density
         canvas.drawText(

@@ -11,18 +11,21 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.aimindseye.tenseven.calendar.R
+import io.github.aimindseye.tenseven.design.SableViewPalette
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
 
 /** Shared Calendar view primitives; retains the approved Activity context and geometry. */
 internal class CalendarViews(
     private val activity: TenSevenCalendarActivity,
 ) {
-    val bg get() = Color.rgb(3, 5, 8)
-    val fg get() = Color.rgb(243, 247, 250)
-    val muted get() = Color.rgb(160, 173, 186)
-    val accent get() = Color.rgb(0, 151, 235)
-    private val panel get() = Color.rgb(18, 22, 29)
-    private val border get() = Color.rgb(49, 56, 64)
+    // System light or dark, with Sable Blue as the fixed accent.
+    private val palette get() = SableViewPalette.forContext(activity)
+    val bg get() = palette.bg
+    val fg get() = palette.fg
+    val muted get() = palette.muted
+    val accent get() = palette.accent
+    private val panel get() = palette.panel
+    private val border get() = palette.line
 
     fun permission() =
         activity.checkSelfPermission(Manifest.permission.READ_CALENDAR) ==

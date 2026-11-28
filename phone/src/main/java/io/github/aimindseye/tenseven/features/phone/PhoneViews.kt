@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import io.github.aimindseye.tenseven.design.SableViewPalette
 
 internal data class FloatingPosition(
     val alignment: Int,
@@ -19,7 +20,7 @@ internal data class FloatingPosition(
 internal class PhoneViews(
     private val activity: TenSevenPhoneActivity,
 ) {
-    val colors by lazy { PhonePalette() }
+    val colors by lazy { PhonePalette(SableViewPalette.forContext(activity)) }
 
     fun px(dp: Int) = (dp * activity.resources.displayMetrics.density).toInt()
 
