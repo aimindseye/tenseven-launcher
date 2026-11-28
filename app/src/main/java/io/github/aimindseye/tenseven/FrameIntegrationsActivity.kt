@@ -113,7 +113,7 @@ class FrameIntegrationsActivity : ComponentActivity() {
                 excerpts = it
                 choices.excerpts = it
             }
-            Text("Sable Launcher apps", style = MaterialTheme.typography.titleMedium)
+            Text(appName() + " apps", style = MaterialTheme.typography.titleMedium)
             SwitchRow(
                 "Notes, Tasks/Remind and Calculator",
                 "Show the latest saved note, next open task and last successful calculation. No notification access needed.",

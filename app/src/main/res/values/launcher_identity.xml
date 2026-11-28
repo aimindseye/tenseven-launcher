@@ -7,4 +7,6 @@
     <bool name="launcher_status_default_off">false</bool>
     <item name="launcher_icon" type="mipmap">@mipmap/ic_tenseven</item>
     <item name="launcher_icon_round" type="mipmap">@mipmap/ic_tenseven_round</item>
+    <string name="lock_service_label">TenSeven Launcher double-tap to lock</string>
+    <string name="lock_accessibility_description">Lets TenSeven Launcher lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
 </resources>

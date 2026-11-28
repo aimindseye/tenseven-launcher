@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.aimindseye.tenseven.R
+import io.github.aimindseye.tenseven.appName
 import io.github.aimindseye.tenseven.design.AccentPreset
 import io.github.aimindseye.tenseven.design.AppearanceMode
 import io.github.aimindseye.tenseven.design.SableAppearance
@@ -192,7 +193,7 @@ private fun AppearanceLockChoice(accent: Color) {
         },
     )
     Text(
-        text = stringResource(R.string.lock_explain),
+        text = stringResource(R.string.lock_explain, appName()),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

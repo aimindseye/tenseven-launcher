@@ -319,7 +319,7 @@ private fun SetupScreen(
                         .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.setup_title, appName()), style = MaterialTheme.typography.titleLarge)
                 SetupWizardRouter(
                     model = SetupWizardRouteModel(steps, state, picked, index, overview),
                     ui = SetupWizardRouteUi(firstButton, settings, attemptedSpecialAccess, showRestrictedHelp),
@@ -454,7 +454,7 @@ private fun SetupOverview(
             .any { !state.isDone(it) && showRestrictedHelp(it) }
     ) {
         Text(
-            stringResource(R.string.setup_restricted_first_request),
+            stringResource(R.string.setup_restricted_first_request, appName()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -529,7 +529,7 @@ private fun SetupWizardStep(
             RestrictedSettingsCard(onOpenAppInfo = events.onOpenAppInfo)
         } else {
             Text(
-                stringResource(R.string.setup_restricted_first_request),
+                stringResource(R.string.setup_restricted_first_request, appName()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -743,7 +743,8 @@ private fun StepCard(step: SetupStep) {
     val (title, reason) =
         when (step) {
             SetupStep.HOME -> {
-                stringResource(R.string.setup_home_title) to stringResource(R.string.setup_home_reason)
+                stringResource(R.string.setup_home_title, appName()) to
+                    stringResource(R.string.setup_home_reason, appName())
             }
 
             SetupStep.CONTACTS -> {
@@ -755,15 +756,16 @@ private fun StepCard(step: SetupStep) {
             }
 
             SetupStep.NOTIFICATIONS -> {
-                stringResource(R.string.setup_notifications_title) to stringResource(R.string.setup_notifications_reason)
+                stringResource(R.string.setup_notifications_title) to
+                    stringResource(R.string.setup_notifications_reason, appName())
             }
 
             SetupStep.USAGE -> {
-                stringResource(R.string.setup_usage_title) to stringResource(R.string.setup_usage_reason)
+                stringResource(R.string.setup_usage_title) to stringResource(R.string.setup_usage_reason, appName())
             }
 
             SetupStep.EXTRAS -> {
-                stringResource(R.string.setup_extras_title) to stringResource(R.string.setup_extras_reason)
+                stringResource(R.string.setup_extras_title) to stringResource(R.string.setup_extras_reason, appName())
             }
 
             SetupStep.STYLE -> {
@@ -771,11 +773,11 @@ private fun StepCard(step: SetupStep) {
             }
 
             SetupStep.LOOK -> {
-                stringResource(R.string.setup_look_title) to stringResource(R.string.setup_look_reason)
+                stringResource(R.string.setup_look_title) to stringResource(R.string.setup_look_reason, appName())
             }
 
             SetupStep.GRID -> {
-                stringResource(R.string.setup_grid_title) to stringResource(R.string.setup_grid_reason)
+                stringResource(R.string.setup_grid_title) to stringResource(R.string.setup_grid_reason, appName())
             }
 
             SetupStep.WIDGETS -> {
@@ -818,7 +820,10 @@ private fun RestrictedSettingsCard(onOpenAppInfo: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.setup_restricted_title), style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(R.string.setup_restricted_reason), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.setup_restricted_reason, appName()),
+                style = MaterialTheme.typography.bodyMedium,
+            )
             Row {
                 OutlinedButton(onClick = onOpenAppInfo, modifier = Modifier.sableFocusRing()) {
                     Text(stringResource(R.string.setup_restricted_action))
@@ -881,12 +886,12 @@ private fun SetupStageWelcome(
     state: SetupState,
     access: SetupWizardAccess,
 ) {
-    Text("Choose Sable Launcher as your Home app. Every other permission is optional.")
+    Text("Choose " + appName() + " as your Home app. Every other permission is optional.")
     StepCard(SetupStep.HOME)
     OutlinedButton(
         onClick = { if (state.homeRoleHeld) access.onManage(SetupStep.HOME) else access.onAction(SetupStep.HOME) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
-    ) { Text(if (state.homeRoleHeld) "Change default Home app" else "Set Sable Launcher as Home") }
+    ) { Text(if (state.homeRoleHeld) "Change default Home app" else "Set " + appName() + " as Home") }
 }
 
 @Composable
@@ -957,7 +962,7 @@ private fun SetupStagePermissions(
 ) {
     Text(
         "Android asks you to grant each optional permission. " +
-            "Sable Launcher cannot grant restricted access automatically.",
+            appName() + " cannot grant restricted access automatically.",
     )
     for (step in Setup2Plan.steps(Setup2Stage.PERMISSIONS)) {
         if (!state.notificationListenerAvailable && step == SetupStep.NOTIFICATIONS) continue
@@ -972,7 +977,7 @@ private fun SetupStagePermissions(
                 RestrictedSettingsCard(onOpenAppInfo = access.onOpenAppInfo)
             } else {
                 Text(
-                    stringResource(R.string.setup_restricted_first_request),
+                    stringResource(R.string.setup_restricted_first_request, appName()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1090,7 +1095,7 @@ private fun SetupWizardHeader(
     total: Int,
     title: String,
 ) {
-    Text("Sable Launcher 2.0 Setup", style = MaterialTheme.typography.titleLarge)
+    Text(appName() + " Setup", style = MaterialTheme.typography.titleLarge)
     Text(
         "Step ${index + 1} of $total · $title",
         style = MaterialTheme.typography.labelLarge,

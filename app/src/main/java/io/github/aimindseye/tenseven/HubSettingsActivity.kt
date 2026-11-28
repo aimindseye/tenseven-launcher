@@ -393,7 +393,7 @@ private val hubAccessSection: @Composable (
                     as? android.content.ClipboardManager
             clipboard?.setPrimaryClip(
                 android.content.ClipData.newPlainText(
-                    "Sable Launcher notification diagnostics",
+                    "Launcher notification diagnostics",
                     io.github.aimindseye.tenseven.conversations.HubNotificationAudit
                         .report(),
                 ),

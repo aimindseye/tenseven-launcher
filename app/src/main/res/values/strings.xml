@@ -4,7 +4,7 @@
 <resources>
     <string name="app_name" translatable="false">Sable Start</string>
     <string name="home_screen_style">Home screen style</string>
-    <string name="sable_start_can_look_like">Sable Launcher can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites and Hub stay the same.</string>
+    <string name="sable_start_can_look_like">This launcher can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites and Hub stay the same.</string>
     <string name="current">" · current"</string>
     <string name="another_launcher">Another launcher…</string>
     <string name="pick_any_installed_home_app">Pick any installed home app in Android\'s settings</string>

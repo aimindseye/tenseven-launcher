@@ -1103,7 +1103,13 @@ internal fun quickActionRows(
                 }
             }
         return listOf(
-            SearchCommand(title, context.getString(R.string.quick_hint), "+", source, { onStartIntent(intent) }),
+            SearchCommand(
+                title,
+                context.getString(R.string.quick_hint, context.getString(R.string.tenseven_app_name)),
+                "+",
+                source,
+                { onStartIntent(intent) },
+            ),
         )
     }
     QuickActions.normalizedWebUrl(raw)?.let { url ->

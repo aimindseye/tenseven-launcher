@@ -5,4 +5,6 @@
     <bool name="launcher_status_default_off">true</bool>
     <item name="launcher_icon" type="mipmap">@mipmap/ic_sable_home</item>
     <item name="launcher_icon_round" type="mipmap">@mipmap/ic_sable_home_round</item>
+    <string name="lock_service_label">Sable Launcher double-tap to lock</string>
+    <string name="lock_accessibility_description">Lets Sable Launcher lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
 </resources>

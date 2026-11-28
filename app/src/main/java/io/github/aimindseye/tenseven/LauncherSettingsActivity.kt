@@ -180,7 +180,7 @@ private fun LauncherSettings(
 }
 
 private val launcherRootCategories: @Composable ((String) -> Unit, () -> Unit) -> Unit = { select, openHubFlow ->
-    Text("Sable Launcher", style = MaterialTheme.typography.titleLarge)
+    Text(appName(), style = MaterialTheme.typography.titleLarge)
     Text("Launcher Settings", style = MaterialTheme.typography.titleMedium)
     Settings2Category(
         "appearance_home",
@@ -202,7 +202,7 @@ private val launcherRootCategories: @Composable ((String) -> Unit, () -> Unit) -
     Settings2Category(
         "apps",
         "4. Apps & Features",
-        "Optional Sable Launcher apps and integrations",
+        "Optional " + appName() + " apps and integrations",
     ) { select(it) }
     Settings2Category(
         "review",
@@ -397,7 +397,7 @@ private val launcherReviewPage: @Composable (
         false,
     ) { select("appearance_home") }
     Card("Hub", "Compose and notification source choices", false, onClick = openHubFlow)
-    Card("Finish & Return Home", "Save choices and open Sable Launcher Home", true) {
+    Card("Finish & Return Home", "Save choices and open " + appName() + " Home", true) {
         state.saveOnboardingDone()
         context.startActivity(
             Intent(context, SableStartActivity::class.java)
@@ -521,7 +521,7 @@ private fun Settings2HomeRolePermission(
     if (!access.homeRoleHeld) {
         Card(
             "Default Home · Not selected",
-            "Choose Sable Launcher as your Home app for the full launcher experience. You can do this later.",
+            "Choose " + appName() + " as your Home app for the full launcher experience. You can do this later.",
             false,
         ) {
             context.startActivity(Intent(android.provider.Settings.ACTION_HOME_SETTINGS))
@@ -610,7 +610,7 @@ private fun Settings2SpecialPermissions(
     val overlayAllowed = android.provider.Settings.canDrawOverlays(context)
     Card(
         "Display over other apps · " + if (overlayAllowed) "Allowed" else "Not allowed",
-        "Required only for the optional Sable Launcher lock screen to appear over other apps. Without it, " +
+        "Required only for the optional " + appName() + " lock screen to appear over other apps. Without it, " +
             "Home and Hub still work.",
         false,
     ) {
@@ -640,7 +640,7 @@ private fun Settings2LocationPermission(context: android.content.Context) {
         ) { granted -> locationGranted = granted }
     Card(
         "Weather location · " + if (locationGranted) "Allowed" else "Not allowed",
-        "Approximate location only, while Sable Launcher is open. Used for optional Home weather. If " +
+        "Approximate location only, while " + appName() + " is open. Used for optional Home weather. If " +
             "declined, enter a city manually; Home and Hub still work.",
         false,
     ) {
