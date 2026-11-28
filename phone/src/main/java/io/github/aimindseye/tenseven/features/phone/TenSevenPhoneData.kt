@@ -20,6 +20,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import io.github.aimindseye.tenseven.design.SableViewPalette
 import java.lang.ref.WeakReference
 import java.text.DateFormat
 import java.util.Calendar
@@ -41,14 +42,20 @@ private const val PHONE_DATA_MAX_PHONE_NUMBERS = 15
 private const val PHONE_DATA_MAX_EMAILS = 10
 private const val PHONE_DATA_RECENT_YESTERDAY_WINDOW_MS = 2L * 24L * 60L * 60L * 1000L
 
-/** Shared immutable colors; constructing a palette never needs an Activity or permissions. */
-internal class PhonePalette {
-    val bg: Int = Color.rgb(0, 0, 0)
-    val panel: Int = Color.rgb(20, 23, 27)
-    val fg: Int = Color.rgb(246, 247, 250)
-    val muted: Int = Color.rgb(168, 174, 182)
-    val line: Int = Color.rgb(53, 58, 65)
-    val accent: Int = Color.rgb(0, 140, 225)
+/**
+ * Shared immutable colors; constructing a palette never needs an Activity or permissions. The neutrals come from
+ * the [SableViewPalette] (system light or dark) and the accent is always Sable Blue. The in-call screen keeps the
+ * dark default.
+ */
+internal class PhonePalette(
+    base: SableViewPalette = SableViewPalette.dark,
+) {
+    val bg: Int = base.bg
+    val panel: Int = base.panel
+    val fg: Int = base.fg
+    val muted: Int = base.muted
+    val line: Int = base.line
+    val accent: Int = base.accent
     val success: Int = Color.rgb(15, 165, 76)
     val danger: Int = Color.rgb(211, 62, 70)
 }

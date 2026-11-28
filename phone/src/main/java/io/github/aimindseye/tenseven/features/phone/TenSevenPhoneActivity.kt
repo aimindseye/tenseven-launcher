@@ -13,7 +13,9 @@ import android.telecom.TelecomManager
 import android.telephony.PhoneNumberUtils
 import android.util.Log
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -23,6 +25,10 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.D5BbDialogs
 import io.github.aimindseye.tenseven.D5PhoneRoleRequestActivity
+import io.github.aimindseye.tenseven.design.LetterMoveKeys
+import io.github.aimindseye.tenseven.design.SableViewPalette
+import io.github.aimindseye.tenseven.design.applySableSystemBars
+import io.github.aimindseye.tenseven.platform.CurrentDeviceProfile
 import io.github.aimindseye.tenseven.platform.TenSevenSafeViewport
 
 /** Named presentation/protocol values; numeric values unchanged from the reviewed source. */
@@ -162,6 +168,7 @@ class TenSevenPhoneActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applySableSystemBars(window, SableViewPalette.isNight(this))
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
@@ -190,6 +197,13 @@ class TenSevenPhoneActivity : ComponentActivity() {
         setIntent(intent)
         readIntent(intent)
         draw()
+    }
+
+    // Keyboard phones without arrow keys move with I J K L; typing in a field keeps its letters.
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val profile = CurrentDeviceProfile.from(resources.configuration)
+        val mapped = LetterMoveKeys.translate(profile, event, currentFocus is EditText)
+        return super.dispatchKeyEvent(mapped ?: event)
     }
 
     override fun onResume() {

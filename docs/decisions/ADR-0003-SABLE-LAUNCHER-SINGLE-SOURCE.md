@@ -25,7 +25,7 @@ TenSeven Launcher and SableOS's Sable Launcher are built from one source tree. T
 
 ## Device profiles
 
-`DeviceProfile` (`app/.../model/DeviceProfile.kt`), modelled on Sable Reader and Sable Games, reads `Build.*` in one place:
+`DeviceProfile` (`design/.../model/DeviceProfile.kt`, moved from `:app` so Phone and Calendar share it), modelled on Sable Reader and Sable Games, reads `Build.*` in one place:
 
 | Profile | Navigation | Status |
 |---|---|---|

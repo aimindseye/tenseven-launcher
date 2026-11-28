@@ -59,7 +59,7 @@ internal class PhoneRecentsContent(
                     .clickLabel(name, "Show $name calls", PHONE_CAPTION_TEXT_SP) {
                         activity.callFilter = name
                         activity.draw()
-                    }.apply { setTextColor(if (selected) Color.WHITE else activity.views.colors.muted) }
+                    }.apply { setTextColor(if (selected) activity.views.colors.fg else activity.views.colors.muted) }
             val group = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
             group.addView(control, LinearLayout.LayoutParams(-1, 0, 1f))
             group.addView(

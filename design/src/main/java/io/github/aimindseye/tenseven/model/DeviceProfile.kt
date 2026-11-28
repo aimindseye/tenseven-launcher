@@ -2,7 +2,7 @@ package io.github.aimindseye.tenseven.model
 
 /**
  * The phone the launcher runs on, worked out once so the keys fit its keyboard. The screen needs no profile:
- * layouts follow the window (see [D5ScreenFitPolicy] and [HomeViewport]), so every square or near-square keyboard
+ * layouts follow the window (see [D5ScreenFitPolicy]), so every square or near-square keyboard
  * phone gets the compact layout. Pure Kotlin, so detection is unit tested off-device. Same rules as the device
  * profiles in Sable Reader and Sable Games.
  *

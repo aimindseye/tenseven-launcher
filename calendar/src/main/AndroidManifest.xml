@@ -8,7 +8,7 @@
     </queries>
     <application android:label="TenSeven Calendar" android:allowBackup="false"
         android:icon="@drawable/ic_companion" android:dataExtractionRules="@xml/data_extraction_rules"
-        android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.NoActionBar">
+        android:usesCleartextTraffic="false" android:theme="@style/TenSevenCompanionTheme">
         <activity android:name="io.github.aimindseye.tenseven.features.calendar.TenSevenCalendarActivity"
             android:exported="true">
             <intent-filter>
