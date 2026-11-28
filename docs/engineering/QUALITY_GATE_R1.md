@@ -1,3 +1,5 @@
+> **Retired 2026-11-27.** The owner replaced this gate with Sable 2.0's CI (see `AGENTS.md` section 4). Kept for history only; the scripts it describes were removed.
+
 # Quality gate R1: trust boundaries and policy provenance
 
 R1 is rooted at `c18297205cae85a6a46573a65d150468a7d4e32e`. It repairs the
