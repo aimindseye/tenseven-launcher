@@ -40,7 +40,7 @@ class DeviceCompatibilityActivity : ComponentActivity() {
             LauncherTheme(window = window) {
                 DeviceProbeContent(DeviceCompatibility.report(this@DeviceCompatibilityActivity), probe) { report ->
                     getSystemService(ClipboardManager::class.java).setPrimaryClip(
-                        ClipData.newPlainText("TenSeven compatibility", report),
+                        ClipData.newPlainText("Sable Launcher compatibility", report),
                     )
                 }
             }
@@ -68,7 +68,6 @@ private class KeyCaptureSession {
 }
 
 // Compose Unit renderers require PascalCase; this exception is local to the renderer.
-@Suppress("FunctionNaming")
 @Composable
 private fun DeviceProbeContent(
     report: String,

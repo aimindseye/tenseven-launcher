@@ -58,8 +58,18 @@ data class HubConversation(
     val openTarget: HubNotification get() = notifications.firstOrNull { it.contentIntent != null } ?: latestNotification
     val isEmail: Boolean get() = notifications.any(HubNotification::isEmail)
     val latestMessage: ConversationMessage? get() = messages.maxByOrNull(ConversationMessage::timestamp)
+
+    /** The newest replyable notification of each source app, newest first: the reply selector's choices. */
+    val replyTargets: List<HubNotification>
+        get() =
+            notifications
+                .filter(HubNotification::canReply)
+                .groupBy(HubNotification::packageName)
+                .values
+                .map { it.maxBy(HubNotification::postedAt) }
+                .sortedByDescending(HubNotification::postedAt)
     val replyTarget: HubNotification?
-        get() = notifications.filter(HubNotification::canReply).maxByOrNull(HubNotification::postedAt)
+        get() = SableReplyChoice.pick(replyTargets, SableReplyChoice.packageFor(id), HubNotification::packageName)
     val sourcePackages: List<String>
         get() = notifications.sortedByDescending(HubNotification::postedAt).map(HubNotification::packageName).distinct()
 }

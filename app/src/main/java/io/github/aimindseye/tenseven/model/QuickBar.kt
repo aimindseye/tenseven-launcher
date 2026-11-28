@@ -15,6 +15,7 @@ import io.github.aimindseye.tenseven.model.StartText.t
  *                             pages hold every app, Alt+Right reaches them)
  *   "app:<stableKey>"         one app the user picked
  */
+@Suppress("TooManyFunctions")
 object QuickBar {
     const val PHONE = "phone"
     const val HUB = "hub"
@@ -177,20 +178,6 @@ object QuickBar {
             }
         return index.takeIf { it in 0 until minOf(slotCount, MAX_SLOTS) }
     }
-
-    /**
-     * Phone slot type-to-dial (SABLE_START_SCREEN_DESIGN.md "Type digits while
-     * Phone quick icon focused"): the dial character a key typed, or null. On
-     * the Q25 the digits are the Alt layer (W E R S D F Z X C = 1..9), so the
-     * character the key map produced decides, not the key code.
-     */
-    fun dialChar(unicode: Int): Char? {
-        if (unicode <= 0) return null
-        val char = unicode.toChar()
-        return char.takeIf { it in '0'..'9' || it in DIAL_SYMBOLS }
-    }
-
-    private const val DIAL_SYMBOLS = "*#+"
 
     /** "Alt+1".."Alt+3": the shortcut as printed on the keys (Fn devices accept it too). */
     fun shortcutLabel(index: Int): String = "Alt+${index + 1}"

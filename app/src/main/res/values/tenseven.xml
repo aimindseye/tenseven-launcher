@@ -3,18 +3,17 @@
      equal to StartText.EN), so this file is where the launcher's name and new Tenseven-only text live.
      The new text is English only until it is translated; Android falls back to it in every language. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-    <string name="tenseven_app_name" translatable="false">TenSeven Launcher</string>
 
     <!-- Setup (OnboardingActivity) -->
     <string name="setup_menu">Setup and permissions</string>
-    <string name="setup_title">Set up Tenseven</string>
+    <string name="setup_title">Set up Sable Launcher</string>
     <string name="setup_progress">Step %1$d of %2$d</string>
     <string name="setup_optional">Optional: you can skip this and turn it on later.</string>
     <string name="setup_required">Needed to be your home screen.</string>
     <string name="setup_allowed">Allowed</string>
     <string name="setup_not_set">Not set</string>
     <string name="setup_change">Change</string>
-    <string name="setup_extras_status">Optional app selections: %1$d</string>
+    <string name="setup_extras_status">%1$d extra apps on</string>
     <string name="setup_label_home">Home app</string>
     <string name="setup_label_contacts">Contacts</string>
     <string name="setup_label_photos">Photo counts</string>
@@ -27,8 +26,8 @@
     <string name="setup_all_done">Everything is set up.</string>
     <string name="setup_all_done_detail">Change any of these at any time: permissions, home screen style, theme and wallpaper, icon grid, widgets, Hub, lock screen, and the extra apps.</string>
 
-    <string name="setup_home_title">Make Tenseven your home screen</string>
-    <string name="setup_home_reason">Android sends the Home key to the Home app. Choose Tenseven so the Home key opens it. You can switch back at any time in Settings, Apps, Default apps.</string>
+    <string name="setup_home_title">Make Sable Launcher your home screen</string>
+    <string name="setup_home_reason">Android sends the Home key to the Home app. Choose Sable Launcher so the Home key opens it. You can switch back at any time in Settings, Apps, Default apps.</string>
     <string name="setup_home_action">Choose home app</string>
 
     <string name="setup_contacts_title">Show your contacts</string>
@@ -40,17 +39,14 @@
     <string name="setup_photos_action">Allow photos</string>
 
     <string name="setup_notifications_title">Group your messages and email</string>
-    <string name="setup_notifications_reason">Notification access lets the Hub list conversations per person, show unread counts and send an inline reply. Message text is read on the phone, kept in memory only and dropped when you turn this off or restart. Nothing is stored or sent. Android words this as access to all notifications; Tenseven ignores everything that is not a message or an email.</string>
+    <string name="setup_notifications_reason">Notification access lets the Hub list conversations per person, show unread counts and send an inline reply. Message text is read on the phone, kept in memory only and dropped when you turn this off or restart. Nothing is stored or sent. Android words this as access to all notifications; Sable Launcher ignores everything that is not a message or an email.</string>
     <string name="setup_notifications_action">Open notification access</string>
 
     <string name="setup_usage_title">Show your recent apps</string>
-    <string name="setup_usage_reason">Only a home screen built into the phone can see other apps\' recent tasks. Usage access lets Tenseven read which apps you used lately, so Active Frames can show a recent-apps row. App names and times only; nothing is stored or sent.</string>
+    <string name="setup_usage_reason">Only a home screen built into the phone can see other apps\' recent tasks. Usage access lets Sable Launcher read which apps you used lately, so Active Frames can show a recent-apps row. App names and times only; nothing is stored or sent.</string>
     <string name="setup_usage_action">Open usage access</string>
 
     <string name="bb7_add_home">Add to home screen</string>
-    <string name="bb7_remove_home">Remove from home screen</string>
-    <string name="bb7_add_favorites">Add to Favorites</string>
-    <string name="bb7_remove_favorites">Remove from Favorites</string>
     <string name="bb7_added_home">%1$s added to the home screen</string>
     <string name="bb7_wallpaper">Change wallpaper</string>
     <string name="assign_source">Hold a letter</string>
@@ -62,13 +58,12 @@
     <string name="assign_cleared">%1$s is free</string>
     <string name="assign_nothing">Nothing is held on %1$s</string>
     <string name="setup_extras_title">Extra apps (optional)</string>
-    <string name="setup_extras_reason">Plan optional apps. Phone and Calendar have separate development APKs. Calculator, Tasks, Notes and Sound Profiles await extraction. Saving choices does not install or enable an app. Installed Android apps remain available.</string>
+    <string name="setup_extras_reason">Sable Launcher can include a calculator with unit conversion, notes, and some classic games. Nothing is installed or downloaded and none is on by default: tick what you want and it appears in All Apps. You can change this any time from Extra apps in Command.</string>
     <string name="setup_extras_action">Save choices</string>
     <string name="setup_extras_tools">Tools</string>
-    <string name="extras_command_hint">Choose the six bundled tools</string>
     <string name="setup_restricted_title">If Android blocked Notification or Usage access</string>
-    <string name="setup_restricted_reason">If the first Notification or Usage access request was blocked, Android may now offer Allow restricted settings. Open App info, tap the three-dot menu, and select Allow restricted settings if it appears. Return to TenSeven and retry the access request. Only do this for an APK you trust; TenSeven cannot grant access itself.</string>
-    <string name="setup_restricted_first_request">First try opening Notification or Usage access. If Android blocks it, return here. On some devices, Allow restricted settings appears in TenSeven App info only after that first blocked attempt.</string>
+    <string name="setup_restricted_reason">If the first Notification or Usage access request was blocked, Android may now offer Allow restricted settings. Open App info, tap the three-dot menu, and select Allow restricted settings if it appears. Return to Sable Launcher and retry the access request. Only do this for an APK you trust; Sable Launcher cannot grant access itself.</string>
+    <string name="setup_restricted_first_request">First try opening Notification or Usage access. If Android blocks it, return here. On some devices, Allow restricted settings appears in Sable Launcher App info only after that first blocked attempt.</string>
     <string name="setup_notifications_connected_missing">Allowed in Android Settings, but notification listener not connected. Open Hub Settings for diagnostics.</string>
     <string name="hub_access_disconnected">Allowed by Android, but notification listener disconnected. See diagnostics below.</string>
     <string name="setup_restricted_action">Open App info</string>
@@ -94,7 +89,7 @@
     <string name="quick_note">Note: %1$s</string>
     <string name="quick_event">Event: %1$s</string>
     <string name="quick_send_to_app">Send to</string>
-    <string name="quick_hint">Hands the text to the app you choose; Tenseven keeps nothing</string>
+    <string name="quick_hint">Hands the text to the app you choose; Sable Launcher keeps nothing</string>
     <string name="quick_open_url">Open %1$s</string>
     <string name="quick_hint_url">Opens in your browser</string>
 
@@ -107,7 +102,7 @@
     <string name="backup_menu">Backup and restore</string>
     <string name="backup_command_hint">Save or restore your launcher settings as a file</string>
     <string name="backup_title">Backup and restore</string>
-    <string name="backup_body">Saves your home layout, quick bar, favorites, icon pack and home style to a file you choose. It holds no messages, contacts or call history, and Tenseven sends it nowhere.</string>
+    <string name="backup_body">Saves your home layout, quick bar, favorites, icon pack and home style to a file you choose. It holds no messages, contacts or call history, and Sable Launcher sends it nowhere.</string>
     <string name="backup_file_name">tenseven-backup.json</string>
     <string name="backup_export">Save a backup file</string>
     <string name="backup_import">Restore from a backup file</string>
@@ -117,7 +112,7 @@
     <string name="backup_done">Done</string>
     <string name="backup_exported">Backup saved.</string>
     <string name="backup_export_failed">Could not save the backup.</string>
-    <string name="backup_invalid">That is not a Tenseven backup, or it is from a newer version. Nothing was changed.</string>
+    <string name="backup_invalid">That is not a Sable Launcher backup, or it is from a newer version. Nothing was changed.</string>
     <string name="backup_restored">Restored. Restarting\u2026</string>
 
     <!-- Work profile -->
@@ -130,9 +125,9 @@
     <string name="lock_label">double-tap to lock</string>
     <string name="lock_on">On: double-tap empty Home space to lock</string>
     <string name="lock_off">Off</string>
-    <string name="lock_explain">Uses an Android accessibility service that can do one thing, lock the screen. It reads nothing on screen. Turn it on for Tenseven in Accessibility settings.</string>
-    <string name="lock_service_label">Tenseven double-tap to lock</string>
-    <string name="lock_accessibility_description">Lets Tenseven lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
+    <string name="lock_explain">Uses an Android accessibility service that can do one thing, lock the screen. It reads nothing on screen. Turn it on for Sable Launcher in Accessibility settings.</string>
+    <string name="lock_service_label">Sable Launcher double-tap to lock</string>
+    <string name="lock_accessibility_description">Lets Sable Launcher lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
 
     <string name="style_command_hint">Switch between the BlackBerry 10 and BlackBerry 7 home layouts</string>
     <string name="setup_command_hint">Home role, usage access and notification access</string>
@@ -193,7 +188,6 @@
     <string name="widgets_empty">No widgets yet. Choose Add widget to place one from any installed app, such as a weather app.</string>
     <string name="widgets_picker_title">Choose a widget</string>
     <string name="widgets_none_installed">No installed app offers a widget.</string>
-    <string name="widgets_page">Widgets page</string>
     <string name="ls_widgets_page">Widgets page</string>
     <string name="ls_widgets_page_detail">A page left of Hub for widgets from other apps</string>
     <string name="ls_columns">Columns</string>
@@ -202,7 +196,9 @@
     <string name="ls_labels">App names under icons</string>
     <string name="ls_labels_detail">Turn off for a cleaner grid of icons only</string>
     <string name="lock_hint">Swipe up or press Enter to unlock</string>
-    <string name="ls_lock_layer">Tenseven lock layer</string>
+    <string name="ls_lock_media">Media player on the lock screen</string>
+    <string name="ls_lock_media_detail">Shows what is playing, FM radio included, and your Hub notices on the lock screen. On by default.</string>
+    <string name="ls_lock_layer">Sable Launcher lock layer</string>
     <string name="ls_lock_layer_detail">A BlackBerry-style screen over your phone\'s lock: time, date, apps with waiting notifications and a camera shortcut. Your PIN or fingerprint still unlocks the phone.</string>
     <string name="ls_lock_access">Allow notification access</string>
     <string name="ls_lock_access_detail">Needed for the icons and counts. Only counts are used, never what a message says.</string>
@@ -224,11 +220,9 @@
     <string name="ls_hub_detail">Clear the Hub, choose which apps feed it, and control message text.</string>
     <string name="edit_reset">Reset</string>
     <string name="edit_cancel">Cancel</string>
-    <string name="edit_widgets">Widgets on Home</string>
-    <string name="edit_widgets_detail">Widgets from other apps, shown below the frames. They apply at once; Cancel does not undo them.</string>
     <string name="ls_theme_default_detail">Black with BlackBerry blue</string>
     <string name="ls_theme_phone_detail">Your wallpaper colours, light or dark</string>
-    <string name="ls_wallpaper_detail">Original wallpapers drawn by Tenseven. Pick one, then choose where it goes.</string>
+    <string name="ls_wallpaper_detail">Original wallpapers drawn by Sable Launcher. Pick one, then choose where it goes.</string>
     <string name="ls_wallpaper_home">Home</string>
     <string name="ls_wallpaper_lock">Lock</string>
     <string name="ls_wallpaper_both">Both</string>
@@ -250,9 +244,9 @@
     <string name="setup_style_title">Choose your home screen</string>
     <string name="setup_style_reason">BlackBerry 7 is a tray of icons; BlackBerry 10 is tiles with a Hub. You can switch any time.</string>
     <string name="setup_look_title">Theme and wallpaper</string>
-    <string name="setup_look_reason">Pick a theme, then one of Tenseven\'s own wallpapers for Home, Lock or both.</string>
+    <string name="setup_look_reason">Pick a theme, then one of Sable Launcher\'s own wallpapers for Home, Lock or both.</string>
     <string name="setup_grid_title">Icons and grid</string>
-    <string name="setup_grid_reason">Choose original or TenSeven icons for either home style, grid columns, icon size, and app labels. BB OS 7 also has home rows.</string>
+    <string name="setup_grid_reason">Choose original or Sable Launcher icons for either home style, grid columns, icon size, and app labels. BB OS 7 also has home rows.</string>
     <string name="setup_widgets_title">Widgets</string>
     <string name="setup_widgets_reason">A Widgets page beside Home and the Hub, and the Calendar, Alarm and Now Playing strip.</string>
     <string name="setup_hub_title">Hub</string>

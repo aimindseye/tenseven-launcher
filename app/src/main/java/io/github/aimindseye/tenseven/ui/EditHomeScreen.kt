@@ -43,7 +43,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -599,37 +598,6 @@ internal fun EditBar(
     }
 }
 
-/** Widgets from other apps on the home screen: each with Up, Down and Remove, and Add. These apply at once, not on Done. */
-@Composable
-internal fun HostedWidgetsEditor(
-    hosted: HomeWidgets,
-    onAdd: () -> Unit,
-) {
-    val controller = hosted.controller ?: return
-    val packageManager = LocalContext.current.packageManager
-    Spacer(Modifier.height(10.dp))
-    SectionLabel(stringResource(R.string.edit_widgets))
-    Text(
-        text = stringResource(R.string.edit_widgets_detail),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    hosted.ids.forEach { id ->
-        val name = controller.info(id)?.let { runCatching { it.loadLabel(packageManager) }.getOrNull() } ?: "#$id"
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            PageButton(stringResource(R.string.widgets_up)) { controller.move(id, -1) }
-            PageButton(stringResource(R.string.widgets_down)) { controller.move(id, 1) }
-            PageButton(stringResource(R.string.widgets_remove)) { controller.remove(id) }
-        }
-    }
-    MetroLink(text = stringResource(R.string.widgets_add), onClick = onAdd)
-}
-
 /** One app in the Edit Home grid: Enter picks it up, arrows move it, or drag it in any direction. */
 @Composable
 internal fun EditGridCell(
@@ -695,70 +663,6 @@ internal fun EditGridCell(
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-/** A reorderable row: drag the handle, or the keys in [EditHomeScreen]. */
-@Composable
-internal fun EditListRow(
-    label: String,
-    leading: @Composable () -> Unit,
-    picked: Boolean,
-    onKey: (KeyEvent) -> Boolean,
-    onClick: () -> Unit,
-    onDragStep: (Int) -> Unit,
-) {
-    val shape = RoundedCornerShape(8.dp)
-    val step = with(LocalDensity.current) { EditRowStep.toPx() }
-    val currentStep by rememberUpdatedState(onDragStep)
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 3.dp)
-                .heightIn(min = 48.dp)
-                .clip(shape)
-                .background(if (picked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
-                .sableFocusRing()
-                .onPreviewKeyEvent(onKey)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        leading()
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleMedium,
-            color = if (picked) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = "⠿",
-            fontSize = 22.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier =
-                Modifier
-                    .pointerInput(Unit) {
-                        var travel = 0f
-                        detectDragGestures(onDragStart = { travel = 0f }) { change, amount ->
-                            change.consume()
-                            travel += amount.y
-                            while (travel > step) {
-                                currentStep(1)
-                                travel -= step
-                            }
-                            while (travel < -step) {
-                                currentStep(-1)
-                                travel += step
-                            }
-                        }
-                    }.semantics { contentDescription = t("drag_to_reorder", label) }
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
         )
     }
 }

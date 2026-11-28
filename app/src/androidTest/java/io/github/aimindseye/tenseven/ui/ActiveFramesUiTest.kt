@@ -129,7 +129,7 @@ class ActiveFramesUiTest {
             }
         }
         compose.onNodeWithText("Song by Artist", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("Live summary", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Now playing", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test fun sharedCaptureRetainsSlotAndCloseInvokesStop() {
@@ -193,8 +193,6 @@ class ActiveFramesUiTest {
     }
 
     @Test fun notificationsCalendarAndLocalDataNeverCreateFrames() {
-        io.github.aimindseye.tenseven.platform.ScreenCaptureState
-            .stopped()
         val live =
             snapshot.copy(
                 calendar = LiveDatum("Calendar", "Old calendar event", LiveAvailability.LIVE),
@@ -210,7 +208,6 @@ class ActiveFramesUiTest {
                     FramesState(usageAllowed = true, calendarAllowed = true, notificationsAllowed = true),
                     emptyList(),
                     setOf(
-                        io.github.aimindseye.tenseven.model.HomeLayout.STATUS_RINGS,
                         io.github.aimindseye.tenseven.model.HomeLayout.WEATHER,
                         io.github.aimindseye.tenseven.model.HomeLayout.SEARCH_ROW,
                     ),

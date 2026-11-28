@@ -85,7 +85,7 @@ class OnboardingActivity : ComponentActivity() {
                 runCatching {
                     startActivity(
                         Intent(this, LauncherSettingsActivity::class.java)
-                            .putExtra("tenseven.settings.category", "permissions"),
+                            .putExtra("tenseven.settings.category", "appearance_home"),
                     )
                     true
                 }.getOrDefault(false)
@@ -881,12 +881,12 @@ private fun SetupStageWelcome(
     state: SetupState,
     access: SetupWizardAccess,
 ) {
-    Text("Choose TenSeven as your Home app. Every other permission is optional.")
+    Text("Choose Sable Launcher as your Home app. Every other permission is optional.")
     StepCard(SetupStep.HOME)
     OutlinedButton(
         onClick = { if (state.homeRoleHeld) access.onManage(SetupStep.HOME) else access.onAction(SetupStep.HOME) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
-    ) { Text(if (state.homeRoleHeld) "Change default Home app" else "Set TenSeven as Home") }
+    ) { Text(if (state.homeRoleHeld) "Change default Home app" else "Set Sable Launcher as Home") }
 }
 
 @Composable
@@ -911,7 +911,7 @@ private fun SetupStageApps(
     picked: Set<String>,
     selectApps: (Set<String>) -> Unit,
 ) {
-    Text("Choose optional apps for your setup plan. No apps are installed by this selection.")
+    Text("Choose a preset or enable individual bundled tools and games. Changes save immediately.")
     OutlinedButton(
         onClick = { selectApps(Setup2Plan.essentials) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
@@ -922,7 +922,7 @@ private fun SetupStageApps(
         onClick = { selectApps(Setup2Plan.full()) },
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
     ) {
-        Text("Full · Plan all six optional apps")
+        Text("Full · All currently bundled extras")
     }
     Text("Custom · Select individual apps below.", style = MaterialTheme.typography.titleSmall)
     ExtrasPicker(picked = picked, onChange = selectApps)
@@ -957,7 +957,7 @@ private fun SetupStagePermissions(
 ) {
     Text(
         "Android asks you to grant each optional permission. " +
-            "TenSeven cannot grant restricted access automatically.",
+            "Sable Launcher cannot grant restricted access automatically.",
     )
     for (step in Setup2Plan.steps(Setup2Stage.PERMISSIONS)) {
         if (!state.notificationListenerAvailable && step == SetupStep.NOTIFICATIONS) continue
@@ -994,7 +994,7 @@ private fun SetupStageReview(
     )
     Text("Usage access: ${if (state.usageAccess) "granted" else "optional · not granted"}")
     Text("Contacts access: ${if (state.contactsGranted) "granted" else "optional · not granted"}")
-    Text("Selected optional apps: $pickedCount")
+    Text("Selected bundled apps: $pickedCount")
     Text(
         "Active Frames: choose BB10 Home and grant Notification access to configure " +
             "radio/player notification sources and optional message excerpts. " +
@@ -1090,7 +1090,7 @@ private fun SetupWizardHeader(
     total: Int,
     title: String,
 ) {
-    Text("TenSeven 2.0 Setup", style = MaterialTheme.typography.titleLarge)
+    Text("Sable Launcher 2.0 Setup", style = MaterialTheme.typography.titleLarge)
     Text(
         "Step ${index + 1} of $total · $title",
         style = MaterialTheme.typography.labelLarge,

@@ -7,6 +7,7 @@ enum class SummarySource(
     Media("Media summary"),
     Notification("Notification summary"),
     Local("Local summary"),
+    Cover("App cover"),
 }
 
 data class AppSummary(
@@ -19,8 +20,6 @@ data class AppSummary(
 )
 
 object AppSummaryPolicy {
-    private const val MAX_APP_SUMMARIES = 24
-
     fun allowed(
         value: AppSummary,
         notifications: Boolean,
@@ -36,5 +35,5 @@ object AppSummaryPolicy {
             .filter { allowed(it, notifications) && it.detail.isNotBlank() }
             .distinctBy { it.key }
             .sortedByDescending { it.updatedAt }
-            .take(MAX_APP_SUMMARIES)
+            .take(24)
 }

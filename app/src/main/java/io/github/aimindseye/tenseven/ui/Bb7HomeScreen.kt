@@ -34,8 +34,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -50,7 +53,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.key.KeyEventType
@@ -74,7 +76,6 @@ import io.github.aimindseye.tenseven.model.Bb7Home
 import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.Bb7Panel
 import io.github.aimindseye.tenseven.model.Bb7Panels
-import io.github.aimindseye.tenseven.model.Bb7RecentApps
 import io.github.aimindseye.tenseven.model.Bb7Scrim
 import io.github.aimindseye.tenseven.model.Bb7Swipe
 import io.github.aimindseye.tenseven.model.GridColumns
@@ -89,7 +90,6 @@ import io.github.aimindseye.tenseven.platform.AppUsageRepository
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.DeviceCompatibility
 import io.github.aimindseye.tenseven.platform.LiveSurfaceRepository
-import io.github.aimindseye.tenseven.platform.RecentLaunchesRepository
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
 import java.text.DateFormat
@@ -100,7 +100,7 @@ import java.util.Date
  * (status dials, date, weather and unread count; the time is the status bar's, so it is not shown
  * twice) on the wallpaper, and a tray along the bottom with one row of Favorites that opens into
  * the whole panel. Keys as on BlackBerry 7: arrows move, Enter opens, Up opens the tray and
- * Escape closes it, Space switches panels (Favorites, All, Recent, Downloads), typing searches apps, Menu
+ * Escape closes it, Space switches panels (Favorites, All, Downloads), typing searches apps, Menu
  * opens the home options. As on the BlackBerry 10 home, Hub is to the left and the apps to the
  * right: a swipe to the right or Alt+Left opens Hub, a swipe to the left or Alt+Right opens All;
  * with the tray open, Alt+Left/Right switch panels. The home screen shows [homeRows] rows of the
@@ -224,12 +224,14 @@ private data class Bb7HomeInputs(
 /** All mutable BB7 navigation state has the same remember lifetime as before extraction. */
 private class Bb7HomeSession {
     var panel by mutableStateOf(Bb7Panel.Favorites)
-    var soundFocused = false
     var open by mutableStateOf(false)
     var query by mutableStateOf("")
     var selected by mutableIntStateOf(-1)
     var moving by mutableStateOf(false)
     var pickingDesktop by mutableStateOf(false)
+
+    /** The folder being renamed (its current name), or null. */
+    var renamingFolder by mutableStateOf<String?>(null)
     var inDesktopZone by mutableStateOf(false)
     var deskSelected by mutableIntStateOf(0)
     var keyColumns by mutableIntStateOf(Bb7Home.MIN_COLUMNS)
@@ -267,7 +269,11 @@ private class Bb7HomeComputed(
             }
 
             searching -> {
-                t("search", session.query)
+                if (lists.shown.isEmpty() && SableDial.isNumber(session.query)) {
+                    "Dial " + session.query
+                } else {
+                    t("search", session.query)
+                }
             }
 
             else -> {
@@ -312,10 +318,6 @@ private val bb7HomePresenter: @Composable (Bb7HomeInputs) -> Unit = { input ->
         remember(input.source.apps, generation, input.source.homeGeneration) {
             AppUsageRepository(context).load()
         }
-    val recentEvents =
-        remember(input.source.apps, generation, input.source.homeGeneration) {
-            RecentLaunchesRepository(context).loadForHome()
-        }
     val state = remember { Bb7HomeSession() }
     LaunchedEffect(input.panel.panels) {
         if (state.panel !in input.panel.panels) state.panel = input.panel.panels.first()
@@ -334,13 +336,26 @@ private val bb7HomePresenter: @Composable (Bb7HomeInputs) -> Unit = { input ->
         rememberBb7Apps(
             input.source.apps,
             usage,
-            recentEvents,
             Bb7AppSelection(state.panel, state.query, input.source.favoriteKeys, input.panel.desktopKeys),
         )
     val model = Bb7HomeComputed(state, lists)
     val actions = Bb7HomeActions(input, state, model, context, resources)
     val keyboard = Bb7HomeKeyboard(input, state, model, actions)
     Bb7HomeCanvas(input, state, model, actions, keyboard, feeds).render()
+    state.renamingFolder?.let { old ->
+        RenameFolderDialog(
+            current = old,
+            onDismiss = { state.renamingFolder = null },
+            onRename = { typed ->
+                state.renamingFolder = null
+                Bb7Folders.rename(context, old, typed)?.let { renamed ->
+                    input.edits.onDesktopChanged(
+                        input.panel.desktopKeys.map { if (it == Bb7Folders.key(old)) Bb7Folders.key(renamed) else it },
+                    )
+                }
+            },
+        )
+    }
     LaunchedEffect(Unit) { runCatching { state.focus.requestFocus() } }
 }
 
@@ -399,86 +414,228 @@ private class Bb7HomeActions(
             }
         }
 
+    /**
+     * The 3 x 3 menu of an icon held with the trackpad (approved board): Mark as Favourite, Move, Hide Icon, Move to
+     * Folder, Launch in the centre, Delete, and Full Menu in the last corner. Blank cells keep the grid shape.
+     * Without a focused app (or on a folder) it is the home's shortcut grid.
+     */
+    fun shortMenu(
+        app: AppEntry?,
+        fromDesktop: Boolean,
+    ): List<Pair<String, () -> Unit>> {
+        if (app == null || Bb7Folders.isFolder(app)) return homeShortMenu()
+        val lines = appMenu(app, fromDesktop).toMap()
+        val blank = "" to {}
+        val favourite = if ("Mark as Favourite" in lines) "Mark as Favourite" else "Unmark as Favourite"
+        val cells =
+            listOf(
+                favourite,
+                t("move_2"),
+                if ("Hide Icon" in lines) "Hide Icon" else resources.getString(R.string.bb7_add_home),
+                "Move to Folder",
+                "Launch",
+                "Delete",
+            ).map { title -> lines[title]?.let { title to it } ?: blank }
+        val fullMenu = "Full Menu" to { input.launch.onOpenMenu(menuFor(app, fromDesktop)) }
+        return SableShortMenu(cells + listOf(blank, blank, fullMenu))
+    }
+
+    private fun homeShortMenu(): List<Pair<String, () -> Unit>> {
+        fun open(action: String) {
+            context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+        val cells: Map<String, () -> Unit> =
+            mapOf(
+                "Switch Application" to {
+                    context.startActivity(
+                        Intent(context, io.github.aimindseye.tenseven.SableStartActivity::class.java)
+                            .setAction(io.github.aimindseye.tenseven.SableStartActivity.ACTION_SHOW_ACTIVE_FRAMES)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                    )
+                },
+                "Full Menu" to { input.launch.onOpenMenu(menuFor(null, false)) },
+                "Phone" to { open(Intent.ACTION_DIAL) },
+                "Settings" to { open(android.provider.Settings.ACTION_SETTINGS) },
+                "Connections" to { open(android.provider.Settings.ACTION_WIRELESS_SETTINGS) },
+                "Sound" to { open(android.provider.Settings.ACTION_SOUND_SETTINGS) },
+                "Display" to { open(android.provider.Settings.ACTION_DISPLAY_SETTINGS) },
+                "Bluetooth" to { open(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS) },
+                "Wallpaper" to { input.extra.onOpenWallpaper() },
+            )
+        return SableShortMenu(SableShortMenu.TITLES.mapNotNull { title -> cells[title]?.let { title to it } })
+    }
+
+    fun dial(number: String) {
+        context.startActivity(
+            Intent(Intent.ACTION_DIAL, android.net.Uri.fromParts("tel", number, null))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+    }
+
+    /** A desktop icon: a folder opens its list, an app launches. */
+    fun launchDesktop(app: AppEntry) {
+        if (Bb7Folders.isFolder(app)) {
+            input.launch.onOpenMenu(folderMenu(app))
+        } else {
+            input.launch.onLaunchApp(app)
+        }
+    }
+
+    /** The apps in a folder (one line each, to launch), then the folder's own lines. */
+    private fun folderMenu(folder: AppEntry): List<Pair<String, () -> Unit>> {
+        val name = Bb7Folders.nameOf(folder)
+        val byKey = input.source.apps.associateBy { it.stableKey() }
+        val held = Bb7Folders.contents(context, name).mapNotNull(byKey::get)
+        return buildList {
+            held.forEach { app -> add(app.label to { input.launch.onLaunchApp(app) }) }
+            if (held.isEmpty()) add("Empty folder" to {})
+            if (held.isNotEmpty()) {
+                add("Remove from Folder" to { input.launch.onOpenMenu(removeFromFolderMenu(name, held)) })
+            }
+            add("Rename Folder" to { state.renamingFolder = name })
+            add(
+                "Delete Folder" to {
+                    Bb7Folders.delete(context, name)
+                    input.edits.onDesktopChanged(desktopKeys.filterNot { it == Bb7Folders.key(name) })
+                },
+            )
+        }
+    }
+
+    private fun removeFromFolderMenu(
+        name: String,
+        held: List<AppEntry>,
+    ): List<Pair<String, () -> Unit>> {
+        val remove = { app: AppEntry -> Bb7Folders.remove(context, name, app.stableKey()) }
+        return held.map { app -> app.label to { remove(app) } }
+    }
+
+    /** Move to Folder: one line per folder; the icon leaves the home screen and goes into the folder. */
+    private fun moveToFolderMenu(app: AppEntry): List<Pair<String, () -> Unit>> =
+        Bb7Folders.names(context).map { name ->
+            name to {
+                Bb7Folders.add(context, name, app.stableKey())
+                input.edits.onDesktopChanged(desktopKeys.filterNot { it == app.stableKey() })
+            }
+        }
+
     fun menuFor(
         app: AppEntry?,
         fromDesktop: Boolean,
-    ): List<Pair<String, () -> Unit>> = if (app != null) appMenu(app, fromDesktop) else homeMenu()
+    ): List<Pair<String, () -> Unit>> =
+        listOf(
+            "Switch Application" to {
+                context.startActivity(
+                    Intent(context, io.github.aimindseye.tenseven.SableStartActivity::class.java)
+                        .setAction(io.github.aimindseye.tenseven.SableStartActivity.ACTION_SHOW_ACTIVE_FRAMES)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                )
+            },
+        ) + (
+            when {
+                app == null -> emptyList()
+                Bb7Folders.isFolder(app) -> folderMenu(app)
+                else -> appMenu(app, fromDesktop)
+            }
+        ) + homeMenu()
 
+    /** The lines for the focused icon, as in the approved menu: Mark as Favourite, Move, Launch, then the rest. */
     private fun appMenu(
         app: AppEntry,
         fromDesktop: Boolean,
     ): List<Pair<String, () -> Unit>> =
         buildList {
             val key = app.stableKey()
-            add(t("open") to { input.launch.onLaunchApp(app) })
-            if (key in desktopKeys) {
-                if (fromDesktop) add(t("move_2") to { state.moving = true })
+            if (key in favorites) {
                 add(
-                    resources.getString(R.string.bb7_remove_home) to {
+                    "Unmark as Favourite" to {
+                        input.edits.onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key))
+                    },
+                )
+            } else {
+                add("Mark as Favourite" to { addToFavorites(key) })
+            }
+            if (fromDesktop || key in favorites) add(t("move_2") to { state.moving = true })
+            add("Launch" to { input.launch.onLaunchApp(app) })
+            if (key in desktopKeys) {
+                // As in the approved BBOS 7 menu: the icon leaves the home screen, the app stays installed.
+                add(
+                    "Hide Icon" to {
                         input.edits.onDesktopChanged(desktopKeys.filterNot { it == key })
                     },
                 )
             } else {
                 add(resources.getString(R.string.bb7_add_home) to { addToDesktop(app) })
             }
-            if (key in favorites) {
+            add(t("app_info") to { input.launch.onOpenAppInfo(app) })
+            if (Bb7Folders.names(context).isNotEmpty()) {
+                add("Move to Folder" to { input.launch.onOpenMenu(moveToFolderMenu(app)) })
+            }
+            // Delete is the system uninstaller (it asks to confirm), for removable apps of this user only.
+            if (app.canUninstall && app.inLauncherUser) {
                 add(
-                    resources.getString(R.string.bb7_remove_favorites) to {
-                        input.edits.onFavoritesChanged(Bb7Home.toggleFavorite(favorites, key))
+                    "Delete" to {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_DELETE,
+                                    android.net.Uri.fromParts("package", app.component.packageName, null),
+                                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
                     },
                 )
-            } else {
-                add(resources.getString(R.string.bb7_add_favorites) to { addToFavorites(key) })
             }
-            add(t("app_info") to { input.launch.onOpenAppInfo(app) })
         }
 
+    /** The home's own lines: Maximise Panel, Manage Panels, Show All, and Options (settings live in one place). */
     private fun homeMenu(): List<Pair<String, () -> Unit>> =
         buildList {
             add(
-                "Add shortcut" to {
-                    openApps()
-                    state.pickingDesktop = true
+                "Maximise Panel" to {
+                    with(state) {
+                        open = true
+                        selected = 0
+                    }
                 },
             )
+            add("Manage Panels" to { input.launch.onOpenMenu(panelsMenu()) })
+            add("Show All" to { openApps() })
             add(
-                "Customize Home" to {
+                "Add Folder" to {
+                    if (desktopKeys.size < Bb7Home.MAX_DESKTOP_SHORTCUTS) {
+                        val name = Bb7Folders.create(context)
+                        input.edits.onDesktopChanged(Bb7Home.addDesktopShortcut(desktopKeys, Bb7Folders.key(name)))
+                    } else {
+                        Toast.makeText(context, "The home screen is full", Toast.LENGTH_SHORT).show()
+                    }
+                },
+            )
+            if (io.github.aimindseye.tenseven.platform.MediaFavourites
+                    .available(context)
+            ) {
+                add(
+                    "Favourites" to {
+                        io.github.aimindseye.tenseven.platform.MediaFavourites
+                            .open(context)
+                    },
+                )
+            }
+            add(
+                "Options" to {
                     context.startActivity(
-                        Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java)
-                            .putExtra("tenseven.settings.category", "home"),
+                        Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java),
                     )
                 },
             )
-            add("Command" to { input.extra.onOpenCommand() })
-            add(
-                "Launcher Settings" to {
-                    context.startActivity(
-                        Intent(
-                            context,
-                            io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java,
-                        ),
-                    )
-                },
-            )
-            add("Wallpaper" to { input.extra.onOpenWallpaper() })
-            val recent = Bb7Panel.Recent
-            add(
-                (if (recent in input.panel.panels) "Hide Recent panel" else "Show Recent panel") to {
-                    input.edits.onPanelsChanged(Bb7Panels.toggle(input.panel.panels, recent))
-                },
-            )
-            val frequent = Bb7Panel.Frequent
-            add(
-                (if (frequent in input.panel.panels) "Hide Frequent panel" else "Show Frequent panel") to {
-                    input.edits.onPanelsChanged(Bb7Panels.toggle(input.panel.panels, frequent))
-                },
-            )
-            if (input.visual.scrimLevel > Bb7Scrim.MIN) {
-                add("Lighter panels" to { input.edits.onScrimChanged(Bb7Scrim.step(input.visual.scrimLevel, -1)) })
-            }
-            if (input.visual.scrimLevel < Bb7Scrim.MAX) {
-                add("Darker panels" to { input.edits.onScrimChanged(Bb7Scrim.step(input.visual.scrimLevel, 1)) })
-            }
+        }
+
+    /** One line per panel to show or hide it; the last panel cannot be hidden. */
+    private fun panelsMenu(): List<Pair<String, () -> Unit>> =
+        Bb7Panel.entries.map { panel ->
+            val shown = panel in input.panel.panels
+            val title = (if (shown) "Hide " else "Show ") + panel.title + " panel"
+            title to { input.edits.onPanelsChanged(Bb7Panels.toggle(input.panel.panels, panel)) }
         }
 }
 
@@ -496,9 +653,45 @@ private class Bb7HomeKeyboard(
         if (state.open || model.searching) shown.size else minOf(shown.size, columns * input.source.homeRows)
 
     fun onKey(event: androidx.compose.ui.input.key.KeyEvent): Boolean {
-        if (event.type != KeyEventType.KeyDown) return false
-        val key = event.nativeKeyEvent
+        val native = event.nativeKeyEvent
         return when {
+            native.keyCode == KeyEvent.KEYCODE_DPAD_CENTER && !state.moving -> centerKey(event.type, native)
+            event.type != KeyEventType.KeyDown -> false
+            else -> handle(native)
+        }
+    }
+
+    /** Trackpad press: acts on release; a hold (the second repeat of the down) opens the short menu. */
+    private fun centerKey(
+        type: KeyEventType,
+        key: KeyEvent,
+    ): Boolean =
+        when (type) {
+            KeyEventType.KeyDown -> {
+                if (key.repeatCount == 0) {
+                    SableCenterPress.pending = key
+                } else if (SableCenterPress.pending != null) {
+                    SableCenterPress.pending = null
+                    val focused =
+                        if (model.inDesktop) desktopApps.getOrNull(model.deskIndex) else shown.getOrNull(state.selected)
+                    input.launch.onOpenMenu(actions.shortMenu(focused, model.inDesktop))
+                }
+                true
+            }
+
+            KeyEventType.KeyUp -> {
+                val pressed = SableCenterPress.pending
+                SableCenterPress.pending = null
+                pressed?.let(::handle) ?: false
+            }
+
+            else -> {
+                false
+            }
+        }
+
+    private fun handle(key: KeyEvent): Boolean =
+        when {
             state.moving -> {
                 when (key.keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> actions.moveBy(-1)
@@ -518,7 +711,6 @@ private class Bb7HomeKeyboard(
                 trayKey(key)
             }
         }
-    }
 
     private fun desktopKey(key: KeyEvent): Boolean {
         if (key.isAltPressed) {
@@ -534,7 +726,7 @@ private class Bb7HomeKeyboard(
         } else {
             when (key.keyCode) {
                 KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER -> {
-                    input.launch.onLaunchApp(desktopApps[model.deskIndex])
+                    actions.launchDesktop(desktopApps[model.deskIndex])
                     true
                 }
 
@@ -688,7 +880,7 @@ private class Bb7HomeKeyboard(
                 }
 
                 key.keyCode == KeyEvent.KEYCODE_ENTER || key.keyCode == KeyEvent.KEYCODE_DPAD_CENTER -> {
-                    shown.getOrNull(selected)?.let { input.launch.onLaunchApp(it) }
+                    launchSelected()
                     true
                 }
 
@@ -702,6 +894,17 @@ private class Bb7HomeKeyboard(
                 }
             }
         }
+
+    /** Enter in the tray: dial a typed number when nothing matches, otherwise open the highlighted app. */
+    private fun launchSelected() {
+        with(state) {
+            if (shown.isEmpty() && SableDial.isNumber(query)) {
+                actions.dial(query)
+            } else {
+                shown.getOrNull(selected)?.let { input.launch.onLaunchApp(it) }
+            }
+        }
+    }
 
     private fun traySecondaryAction(key: KeyEvent): Boolean =
         with(state) {
@@ -786,13 +989,7 @@ private class Bb7HomeCanvas(
                         .windowInsetsPadding(WindowInsets.safeDrawing)
                         .focusRequester(focus)
                         .focusable()
-                        .onPreviewKeyEvent { event ->
-                            val key = event.nativeKeyEvent.keyCode
-                            val activate =
-                                key == KeyEvent.KEYCODE_ENTER ||
-                                    key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_NUMPAD_ENTER
-                            if (soundFocused && activate) false else keyboard.onKey(event)
-                        },
+                        .onPreviewKeyEvent { keyboard.onKey(it) },
             ) {
                 val columns = bb7Columns(input.visual.gridColumns, maxWidth.value.toInt(), input.visual.iconSize.cellDp)
                 SideEffect { keyColumns = columns }
@@ -832,8 +1029,12 @@ private class Bb7HomeCanvas(
             ) {
                 banner()
                 if (!open && !model.searching) desktop(columns)
+                // The Favourites tray is the bottom of BBOS 7 home (Sable home proposal); no Hub/Camera bar.
                 tray(columns, rowPx)
-                referenceBar()
+                if (!open && !model.searching) {
+                    HomeHintFooter(HomeHints.BB7_FIRST, Color.White.copy(alpha = 0.7f))
+                    HomeHintFooter(HomeHints.BB7_SECOND, Color.White.copy(alpha = 0.7f))
+                }
             }
         }
     }
@@ -846,12 +1047,11 @@ private class Bb7HomeCanvas(
                 statusMode = feeds.display.statusMode,
                 compact = state.open || model.searching,
                 scrim = Color.Black.copy(alpha = Bb7Scrim.bannerAlpha(input.visual.scrimLevel)),
-                onSoundFocus = { state.soundFocused = it },
             ),
             Bb7BannerNotifications(
                 counts = feeds.live.live.hubApps,
                 enabledPackages = feeds.display.hubSources,
-                showStrip = false,
+                showStrip = true,
                 expanded = feeds.display.stripExpanded,
             ),
             input.launch.onOpenHub,
@@ -873,7 +1073,7 @@ private class Bb7HomeCanvas(
                     Modifier.weight(1f),
                 ),
                 Bb7DesktopEvents(
-                    onLaunch = { input.launch.onLaunchApp(it) },
+                    onLaunch = { actions.launchDesktop(it) },
                     onEmptyTap = {
                         selected = -1
                         inDesktopZone = false
@@ -896,13 +1096,6 @@ private class Bb7HomeCanvas(
             bb7Tray(
                 Bb7TrayView(
                     title = model.trayTitle,
-                    emptyText =
-                        if (panel == Bb7Panel.Recent && !model.searching) {
-                            "No recent apps. Open an app from TenSeven; " +
-                                "history follows Remember returned apps in Settings."
-                        } else {
-                            null
-                        },
                     apps = if (open || model.searching) shown else shown.take(columns * input.source.homeRows),
                     grid = Bb7GridAppearance(columns, input.visual.iconSize.iconDp, input.visual.showLabels),
                     selection = Bb7GridSelection(if (model.inDesktop) -1 else selected, moving),
@@ -944,30 +1137,6 @@ private class Bb7HomeCanvas(
             )
         }
     }
-
-    private val referenceBar: @Composable () -> Unit = {
-        with(state) {
-            Bb7ReferenceBar(
-                apps = apps,
-                appsOpen = open || model.searching,
-                actions =
-                    Bb7BarActions(
-                        hub = input.launch.onOpenHub,
-                        command = input.extra.onOpenCommand,
-                        apps = actions::openApps,
-                        favorites = {
-                            panel = Bb7Panel.Favorites
-                            open = false
-                            query = ""
-                            pickingDesktop = false
-                            moving = false
-                            selected = -1
-                        },
-                        launch = { input.launch.onLaunchApp(it) },
-                    ),
-            )
-        }
-    }
 }
 
 /**
@@ -980,7 +1149,6 @@ private data class Bb7BannerDisplay(
     val statusMode: HomeStatusMode,
     val compact: Boolean,
     val scrim: Color,
-    val onSoundFocus: (Boolean) -> Unit,
 )
 
 private data class Bb7BannerNotifications(
@@ -1013,6 +1181,22 @@ private val bb7Banner: @Composable (
                 .padding(horizontal = 12.dp, vertical = if (compact) 4.dp else 8.dp),
     ) {
         val header = rememberHeaderOptions()
+        if (!compact) {
+            val status = HomeStatusCounts.from(notificationCounts)
+            var panelOpen by remember { mutableStateOf(false) }
+            Text(
+                text = "Mail ${status.mail}  \u00B7  Texts ${status.texts}  \u00B7  Missed ${status.missed}",
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 12.sp,
+                maxLines = 1,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { panelOpen = true }
+                        .padding(top = 2.dp),
+            )
+            if (panelOpen) Bb7NotificationPanel(onClose = { panelOpen = false })
+        }
         if (!compact && statusMode != HomeStatusMode.Hidden) {
             BbHomeStatus(statusMode, enabledDials, Modifier.fillMaxWidth().padding(vertical = 6.dp))
         }
@@ -1027,9 +1211,10 @@ private val bb7Banner: @Composable (
                 )
                 if (!compact) HomeWeatherLine(header, modifier = Modifier.fillMaxWidth())
             }
-            SoundProfileButton(Modifier.onFocusChanged { display.onSoundFocus(it.hasFocus) })
+            SoundProfileButton()
             Spacer(Modifier.width(6.dp))
         }
+        if (!compact) HomeNowPlayingStrip(Modifier.padding(vertical = 4.dp))
         if (showStrip && !compact) {
             HomeNotificationStrip(
                 counts = notificationCounts,
@@ -1073,7 +1258,6 @@ private data class Bb7TrayView(
     val grid: Bb7GridAppearance,
     val selection: Bb7GridSelection,
     val style: Bb7TrayStyle,
-    val emptyText: String? = null,
 )
 
 private data class Bb7TrayEvents(
@@ -1122,7 +1306,7 @@ private val bb7Tray: @Composable (Bb7TrayView, Bb7TrayEvents) -> Unit = { view, 
         bb7TrayHeader(view.title, events)
         if (view.apps.isEmpty()) {
             Text(
-                text = view.emptyText ?: t("no_apps_here"),
+                text = t("no_apps_here"),
                 color = BANNER_MUTED,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -1229,13 +1413,13 @@ private val bb7IconCell: @Composable (AppEntry, Bb7IconAppearance, () -> Unit, (
                 .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        AppMark(app = app, size = display.iconDp)
+        if (Bb7Folders.isFolder(app)) FolderGlyph(display.iconDp) else AppMark(app = app, size = display.iconDp)
         if (display.showLabel) Spacer(Modifier.height(2.dp))
         if (display.showLabel) {
             Text(
                 text = app.label,
                 color = Color.White,
-                fontSize = MaterialTheme.typography.labelSmall.fontSize,
+                fontSize = MaterialTheme.typography.labelMedium.fontSize,
                 // The wallpaper shows behind these icons, so the name gets a shadow to stay readable.
                 style = TextStyle(shadow = Shadow(Color.Black, blurRadius = 6f)),
                 maxLines = 1,
@@ -1370,20 +1554,30 @@ private data class Bb7AppLists(
 private fun rememberBb7Apps(
     apps: List<AppEntry>,
     usage: io.github.aimindseye.tenseven.model.AppUsage,
-    recentEvents: List<io.github.aimindseye.tenseven.model.ForegroundEvent>,
     selection: Bb7AppSelection,
 ): Bb7AppLists {
     val context = LocalContext.current
     val defaults = remember(context, apps.size) { DefaultApps.homePackages(context) }
     val shown =
-        when {
-            selection.query.isNotEmpty() -> Bb7Home.search(apps, selection.query)
-            selection.panel == Bb7Panel.Recent -> Bb7RecentApps.select(apps, recentEvents)
-            else -> Bb7Home.panelApps(selection.panel, apps, selection.favorites, usage, defaults)
+        if (selection.query.isNotEmpty()) {
+            Bb7Home.search(apps, selection.query)
+        } else {
+            Bb7Home.panelApps(selection.panel, apps, selection.favorites, usage, defaults)
         }
     val favorites = Bb7Home.panelApps(Bb7Panel.Favorites, apps, selection.favorites, defaultPackages = defaults)
     val byKey = remember(apps) { apps.associateBy { it.stableKey() } }
-    val desktop = Bb7Home.desktopShortcuts(selection.desktop).mapNotNull { byKey[it] }
+    val folderVersion = Bb7Folders.version
+    val desktop =
+        Bb7Home.desktopShortcuts(selection.desktop).mapNotNull { key ->
+            if (Bb7Folders.isFolderKey(key)) {
+                key
+                    .removePrefix(Bb7Folders.PREFIX)
+                    .takeIf { folderVersion >= 0 && it in Bb7Folders.names(context) }
+                    ?.let(Bb7Folders::entry)
+            } else {
+                byKey[key]
+            }
+        }
     return Bb7AppLists(shown, favorites.map { it.stableKey() }, desktop)
 }
 
@@ -1413,4 +1607,21 @@ private fun addBb7Desktop(
             onAdded(next)
         }
     }
+}
+
+/** A one-line name box for Rename Folder. */
+@Composable
+private fun RenameFolderDialog(
+    current: String,
+    onDismiss: () -> Unit,
+    onRename: (String) -> Unit,
+) {
+    var text by remember(current) { mutableStateOf(current) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename Folder", style = MaterialTheme.typography.titleMedium) },
+        text = { OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true) },
+        confirmButton = { TextButton(onClick = { onRename(text) }) { Text("Rename") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

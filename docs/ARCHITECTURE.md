@@ -130,7 +130,11 @@ event viewer in Sable Keyboard, then add a row here:
 |---|---|---|---|---|---|---|
 | Zinwa Q25 | `Q25_keyboard` | D-pad keys (kernel mode 1) or pointer (mode 0); SableOS wants D-pad | Right Alt | `KEYCODE_MENU` (kl 139) | scan code unknown | no |
 | Zinwa P26 | not captured | not captured | not captured | not captured | not captured | no |
+| Zinwa Q27 | not captured | Navigation row with a trackpad key (press coverage) | not captured | not captured | not captured | no |
 | Unihertz Titan 2 | not captured | Touch-sensitive keyboard (not captured in detail) | not captured | No Menu key: Alt+Enter opens the menu | not captured | Alt+Space (Command) and Alt+Enter (menu) work in hand testing |
+| Unihertz Titan 2 Elite | not captured | Touch-sensitive keyboard, no arrows or trackpad (manual V1.0) | Sym remappable | not captured | Programmable side key | no |
+
+`DeviceProfile` (`model/DeviceProfile.kt`, read only by `platform/CurrentDeviceProfile.kt`) names Q25, Q27, Titan 2, Titan 2 Elite, P26, other keyboard phones and touch phones, as in Sable Reader and Sable Games. It carries key and display facts only; layouts follow the window. The Q27 and Titan 2 Elite rows and profiles are from press coverage and the manual and are marked unverified until captured on a device.
 
 The Q25 row is from SableOS's `device-profile/KEYMAP.md` and `docs/KEYBOARD_AND_INPUT.md` (device tree and
 kernel source, not measured on hardware).

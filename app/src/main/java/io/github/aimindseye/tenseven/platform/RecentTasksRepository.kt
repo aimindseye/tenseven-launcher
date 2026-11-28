@@ -87,11 +87,14 @@ class RecentTasksRepository(
             method.invoke(service, taskId) as? Boolean ?: true
         }.getOrDefault(false)
 
+    @Suppress("CyclomaticComplexMethod")
     private fun snapshot(
         taskId: Int,
         lowResolution: Boolean,
     ): Bitmap? =
         runCatching {
+            SableTaskSnapshots.explain(appContext)
+            SableTaskSnapshots.snapshot(taskId, lowResolution)?.let { return@runCatching it }
             if (PlatformCapabilityProbe.detect(appContext).thirdPartySnapshots != CapabilityStatus.Ready) return@runCatching null
             val service = taskService() ?: return@runCatching null
             val method =

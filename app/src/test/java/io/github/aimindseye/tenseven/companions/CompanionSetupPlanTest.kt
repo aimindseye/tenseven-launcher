@@ -7,11 +7,18 @@ import org.junit.Test
 
 class CompanionSetupPlanTest {
     @Test
-    fun minimumAndFullPresetsHaveExpectedAppIds() {
+    fun baseLiteAndFullPresetsHaveExpectedAppIds() {
+        assertEquals(
+            emptySet<String>(),
+            CompanionSetupPlan.choosePreset(CompanionPreset.BASE, setOf("phone")),
+        )
         assertEquals(
             setOf("tasks", "notes", "calculator"),
-            CompanionSetupPlan.choosePreset(CompanionPreset.MINIMUM, emptySet()),
+            CompanionSetupPlan.choosePreset(CompanionPreset.LITE, emptySet()),
         )
+        assertEquals(CompanionPreset.BASE, CompanionSetupPlan.selectedPreset(emptySet()))
+        assertEquals(CompanionPreset.LITE, CompanionSetupPlan.selectedPreset(setOf("notes", "tasks", "calculator")))
+        assertEquals(CompanionPreset.CUSTOM, CompanionSetupPlan.selectedPreset(setOf("phone")))
         assertEquals(
             CompanionCatalog.fullPreset,
             CompanionSetupPlan.choosePreset(CompanionPreset.FULL, emptySet()),

@@ -18,7 +18,6 @@ import io.github.aimindseye.tenseven.live.AppUnreadCount
 import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
-import io.github.aimindseye.tenseven.model.HubUnreadCounts
 import io.github.aimindseye.tenseven.model.StartText.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -102,6 +101,7 @@ class LiveSurfaceRepository(
                 hubApps = hubAppCounts(),
                 calendarPackages = calendarPackages(),
                 appSummaries = frameSummaries.snapshot(nowEpochMs),
+                mediaSessions = mediaSessions(),
             )
         }
 
@@ -169,6 +169,36 @@ class LiveSurfaceRepository(
      * What is playing, from the active media sessions. Android only lists them to an app that holds notification
      * access, which Tenseven's own listener provides once the user turns it on.
      */
+    private fun mediaSessions(): List<LiveDatum> =
+        try {
+            val manager = appContext.getSystemService(MediaSessionManager::class.java)
+            val listener = ComponentName(appContext, ConversationListenerService::class.java)
+            manager
+                ?.getActiveSessions(listener)
+                .orEmpty()
+                .sortedByDescending { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                .mapNotNull { controller ->
+                    val metadata = controller.metadata
+                    val track = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE).orEmpty()
+                    if (track.isBlank()) {
+                        null
+                    } else {
+                        val artist = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_ARTIST).orEmpty()
+                        val line = if (artist.isBlank()) track else "$track \u00B7 $artist"
+                        val playing = controller.playbackState?.state == PlaybackState.STATE_PLAYING
+                        LiveDatum(
+                            t("media"),
+                            if (playing) line else "Paused: $line",
+                            LiveAvailability.LIVE,
+                            System.currentTimeMillis(),
+                            controller.packageName,
+                        )
+                    }
+                }
+        } catch (_: RuntimeException) {
+            emptyList()
+        }
+
     private fun nowPlaying(): LiveDatum {
         val title = t("media")
         return try {
@@ -176,7 +206,8 @@ class LiveSurfaceRepository(
             val listener = ComponentName(appContext, ConversationListenerService::class.java)
             val controllers = manager?.getActiveSessions(listener).orEmpty()
             val active =
-                controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: controllers.firstOrNull()
+                controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                    ?: controllers.firstOrNull()
             val metadata = active?.metadata
             val track = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE).orEmpty()
             val artist = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_ARTIST).orEmpty()
@@ -209,9 +240,14 @@ class LiveSurfaceRepository(
         // One listener-backed count source for BB7, BB10, Hub badges and the lock layer.
         // On a platform with no listener, retain Sable Hub's existing provider fallback.
         if (ConversationAccess.isGranted(appContext)) {
-            return HubUnreadCounts.pick(LockLayerState.counts, MAX_HUB_APPS) {
-                ConversationHub.unreadCounts(MAX_HUB_APPS)
-            }
+            val lockCounts =
+                LockLayerState.counts.entries
+                    .filter { it.value > 0 }
+                    .map { AppUnreadCount(it.key, it.value) }
+                    .sortedWith(compareByDescending<AppUnreadCount> { it.count }.thenBy { it.packageName })
+                    .take(MAX_HUB_APPS)
+            if (lockCounts.isNotEmpty()) return lockCounts
+            return ConversationHub.unreadCounts(MAX_HUB_APPS)
         }
         return providerHubAppCounts()
     }

@@ -224,7 +224,15 @@ class LauncherAppsRepository(
     private val launches by lazy { RecentLaunchesRepository(appContext) }
 
     /** Starts the app and counts the launch, so Command can rank the apps you use most first. */
-    fun launch(entry: AppEntry): Boolean =
+    fun launch(entry: AppEntry): Boolean {
+        if (MediaFavourites.isTile(entry)) {
+            MediaFavourites.open(appContext)
+            return true
+        }
+        return launchApp(entry)
+    }
+
+    private fun launchApp(entry: AppEntry): Boolean =
         try {
             launcherApps.startMainActivity(
                 entry.component,

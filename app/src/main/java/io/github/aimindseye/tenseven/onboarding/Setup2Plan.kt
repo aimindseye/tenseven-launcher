@@ -17,7 +17,7 @@ internal enum class Setup2Stage(
 
 /** Mapping covers every legacy setup choice exactly once, without changing its persisted key. */
 internal object Setup2Plan {
-    val stages: List<Setup2Stage> = Setup2Stage.entries
+    val stages: List<Setup2Stage> = Setup2Stage.entries - Setup2Stage.APPS
 
     fun steps(stage: Setup2Stage): List<SetupStep> =
         when (stage) {
@@ -56,7 +56,7 @@ internal object Setup2Plan {
         }
 
     /** Presets choose only real, currently bundled app components. Calendar/Phone arrive later. */
-    val essentials: Set<String> = setOf("calculator", "tasks", "notes")
+    val essentials: Set<String> = emptySet()
 
     fun full(): Set<String> = ExtraApps.ALL.map { it.id }.toSet()
 

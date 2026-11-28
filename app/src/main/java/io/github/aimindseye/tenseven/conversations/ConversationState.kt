@@ -111,8 +111,10 @@ data class ConversationFilter(
     val unreadOnly: Boolean = false,
     val kind: ConversationKind = ConversationKind.All,
     val snoozed: Boolean = false,
+    /** SableOS Priority Hub. */
+    val priority: Boolean = false,
 ) {
-    val active: Boolean get() = person.isNotBlank() || unreadOnly || kind != ConversationKind.All || snoozed
+    val active: Boolean get() = person.isNotBlank() || unreadOnly || kind != ConversationKind.All || snoozed || priority
 }
 
 object ConversationView {
@@ -129,6 +131,7 @@ object ConversationView {
         val person = normalizeName(filter.person)
         return conversations.filter { c ->
             state.isSnoozed(c.id, now) == filter.snoozed &&
+                (!filter.priority || SableHubOptions.isPriority(c)) &&
                 (person.isEmpty() || normalizeName(c.name).contains(person)) &&
                 (!filter.unreadOnly || state.unreadCount(c) > 0) &&
                 when (filter.kind) {

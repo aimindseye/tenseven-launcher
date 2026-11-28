@@ -37,6 +37,9 @@ object DeviceCompatibility {
             appendLine("Font scale ${activity.resources.configuration.fontScale}")
             appendLine("System bars L${insets.left} T${insets.top} R${insets.right} B${insets.bottom} px")
             appendLine("Keyboard profile: $profile")
+            val device = CurrentDeviceProfile.from(activity.resources.configuration)
+            val note = if (device.unverified) " (not yet confirmed on a device)" else ""
+            appendLine("Device profile: ${device.label}$note")
             devices.forEach {
                 appendLine(
                     "${it.name}: keyboard=${it.keyboardType}, sources=${it.sources}, " +

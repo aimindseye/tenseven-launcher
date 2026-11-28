@@ -105,32 +105,6 @@ fun writeGlobalSableAppearance(
         ) == 1
     }.getOrDefault(false)
 
-/**
- * Stores the Sable app corner style. Only Settings and App display compatibility may write
- * it; any other caller gets false. [writeGlobalSableAppearance] never writes this column, so
- * an appearance reset from Sable Start leaves the user's corner style alone.
- */
-fun writeGlobalSableCornerStyle(
-    context: Context,
-    style: SableCornerStyle,
-): Boolean =
-    runCatching {
-        val values =
-            ContentValues().apply {
-                put(
-                    SableGlobalAppearanceContract.COLUMN_CORNER_STYLE,
-                    style.stableValue,
-                )
-            }
-
-        context.contentResolver.update(
-            SableGlobalAppearanceContract.CONTENT_URI,
-            values,
-            null,
-            null,
-        ) == 1
-    }.getOrDefault(false)
-
 @Composable
 fun rememberGlobalSableAppearance(context: Context = LocalContext.current): SableAppearance {
     var appearance by remember(context) {

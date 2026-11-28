@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SableOS identity overlay: replaces the TenSeven values in app/src/main/res/values/launcher_identity.xml. -->
+<resources>
+    <string name="tenseven_app_name" translatable="false">Sable Launcher</string>
+    <bool name="launcher_status_default_off">true</bool>
+    <item name="launcher_icon" type="mipmap">@mipmap/ic_sable_home</item>
+    <item name="launcher_icon_round" type="mipmap">@mipmap/ic_sable_home_round</item>
+</resources>

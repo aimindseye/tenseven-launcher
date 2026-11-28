@@ -20,9 +20,16 @@ object CompanionCatalog {
             CompanionSpec("notes", "Notes", "io.github.aimindseye.tenseven.notes", true),
             CompanionSpec("calculator", "Calc Plus", "io.github.aimindseye.tenseven.calculator", true),
             CompanionSpec("profiles", "Sound Profiles", "io.github.aimindseye.tenseven.profiles", false),
+            // Sable Watch (separate repository) reads the Hub counts provider; in Full only, discovery only.
+            CompanionSpec("watch", "Sable Watch", "io.github.aimindseye.sablewatch", false),
         )
 
-    val minimumPreset: Set<String> = all.filter { it.minimumPreset }.map { it.id }.toSet()
+    /** Base: the launcher alone, no companion apps. */
+    val basePreset: Set<String> = emptySet()
+
+    /** Lite: the recommended apps. */
+    val litePreset: Set<String> = all.filter { it.minimumPreset }.map { it.id }.toSet()
+
     val fullPreset: Set<String> = all.map { it.id }.toSet()
 
     /** Ignores obsolete or unrecognized input without toggling bundled component settings. */

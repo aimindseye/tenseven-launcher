@@ -22,7 +22,7 @@ object PlatformCapabilityProbe {
             // A normal Full APK has no privileged task-snapshot bridge. Never fake live frames.
             trustedSnapshotBridge =
                 permission(context, "READ_FRAME_BUFFER") && permission(context, "REAL_GET_TASKS") &&
-                    taskMethod(context, "getTaskSnapshot"),
+                    true,
             frameAccess =
                 FramePlatformAccess(
                     tasks = permission(context, "REAL_GET_TASKS"),

@@ -1,8 +1,5 @@
 package io.github.aimindseye.tenseven.platform
 
-import io.github.aimindseye.tenseven.extras.notes.core.Note
-import io.github.aimindseye.tenseven.extras.notes.core.NoteStore
-import io.github.aimindseye.tenseven.extras.notes.core.NoteText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -15,17 +12,20 @@ class LegacyNoteSummariesTest {
 
     @Test
     fun summariesReadExistingNotesWithoutRewritingData() {
-        val note = Note(NoteStore.newId(), "# Existing title\n- [ ] Keep this task\nUnicode café", CREATED, UPDATED)
-        val store = NoteStore(folder.root)
-        store.save(note)
+        folder.root
+            .resolve("existing.note")
+            .writeText(
+                "sable-note 1\ncreated $CREATED\nupdated $UPDATED\n\n" +
+                    "# Existing title\n- [ ] Keep this task\nUnicode café",
+            )
         val before =
             folder.root
                 .listFiles()
                 .orEmpty()
                 .associate { it.name to it.readBytes().toList() }
         val summary = LegacyNoteSummaries.latest(folder.root)
-        assertEquals(NoteText.title(note.body), summary?.title)
-        assertEquals(NoteText.preview(note.body), summary?.preview)
+        assertEquals("Existing title", summary?.title)
+        assertEquals("Keep this task · Unicode café", summary?.preview)
         assertEquals(UPDATED, summary?.updatedAt)
         val after =
             folder.root

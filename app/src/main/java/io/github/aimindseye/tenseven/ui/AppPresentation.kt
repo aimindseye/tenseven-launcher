@@ -8,7 +8,6 @@ import android.graphics.drawable.AdaptiveIconDrawable
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,6 +50,7 @@ import io.github.aimindseye.tenseven.iconpacks.IconPresentationState
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.AppGlyphs
 import io.github.aimindseye.tenseven.model.AppProfiles
+import io.github.aimindseye.tenseven.model.ExtraApps
 import io.github.aimindseye.tenseven.model.IconPresentationPolicy
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.model.stableKey
@@ -247,41 +247,6 @@ internal fun PrivacyDetail(
     }
 }
 
-@Composable
-internal fun CompactAppRow(
-    app: AppEntry,
-    onClick: () -> Unit,
-    onContext: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 54.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .clickable(onClick = onClick)
-                    .padding(vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AppMark(app = app, size = 36)
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = app.label,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-            )
-        }
-        TextButton(onClick = onContext) {
-            Text("⋯")
-        }
-    }
-}
-
 /**
  * An app's icon in Start's one style (Q4 device review, Q7): the app's Sable
  * glyph when it has one ([AppGlyphs], by package only), else its own themed
@@ -302,8 +267,11 @@ internal fun AppMark(
         IconPacks.selected.takeIf {
             iconStyle == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven
         }
+    val isOwnExtra =
+        app.component.packageName == context.packageName &&
+            ExtraApps.byClassName(app.component.className) != null
     val glyph =
-        if (IconPresentationPolicy.useGlyph(iconStyle, iconPack != null)) {
+        if (IconPresentationPolicy.useGlyph(iconStyle, isOwnExtra, iconPack != null)) {
             AppGlyphs.forComponent(app.component.packageName, app.component.className)
         } else {
             null
@@ -343,7 +311,7 @@ private fun AppMarkLoadedIcon(
             // Until the icon loads: the first letter in the glyph colours, no tile.
             Box(modifier = Modifier.size(size.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    text = appFallbackMark(app),
+                    text = appMark(app),
                     fontWeight = FontWeight.Bold,
                     fontSize = (size * 0.5f).sp,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -442,7 +410,7 @@ internal fun loadLauncherIcon(
         LauncherIcon(bitmap, monochrome = false)
     }.getOrNull()
 
-internal fun appFallbackMark(app: AppEntry): String =
+internal fun appMark(app: AppEntry): String =
     app.label
         .trim()
         .take(1)

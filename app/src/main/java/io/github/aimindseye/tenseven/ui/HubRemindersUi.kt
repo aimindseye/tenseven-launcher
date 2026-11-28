@@ -58,12 +58,7 @@ internal fun HubRemindersPanel(records: List<TaskRecord>) {
                                 repository.save(
                                     task.copy(
                                         completed = false,
-                                        remindAtEpochMs =
-                                            TaskSchedule.preset(
-                                                "Tomorrow morning",
-                                                Instant.now(),
-                                                ZoneId.systemDefault(),
-                                            ),
+                                        remindAtEpochMs = TaskSchedule.preset("Tomorrow morning", Instant.now(), ZoneId.systemDefault()),
                                         updatedAtEpochMs = System.currentTimeMillis(),
                                     ),
                                 )

@@ -2,7 +2,7 @@ package io.github.aimindseye.tenseven.model
 
 // Named, immutable icon accents. Values are the approved ARGB palette;
 // no changes to icons, colors or app-to-glyph mapping.
-private const val GLYPH_ACCENT_BLUE: Long = 0xFF4D9CFF
+private const val GLYPH_ACCENT_BLUE: Long = 0xFF2E9BD6
 private const val GLYPH_ACCENT_ORANGE: Long = 0xFFF28C45
 private const val GLYPH_ACCENT_GREEN: Long = 0xFF35C66B
 private const val GLYPH_ACCENT_SLATE: Long = 0xFF64748B
@@ -76,6 +76,9 @@ enum class AppGlyph(
     SETUP("list-check", GLYPH_ACCENT_TEAL),
     STORE("shopping-bag", GLYPH_ACCENT_GREEN),
     SERVICES("puzzle", GLYPH_ACCENT_BLUE),
+
+    /** The Favourites home tile, which opens the Media app's Favourites list. */
+    FAVOURITES("star", GLYPH_ACCENT_GOLD),
 }
 
 /**
@@ -111,6 +114,7 @@ object AppGlyphs {
             "org.sableos.calendar" to AppGlyph.CALENDAR,
             "org.sableos.weather" to AppGlyph.WEATHER,
             "org.sableos.media" to AppGlyph.MEDIA,
+            "org.sableos.favourites" to AppGlyph.FAVOURITES,
             "org.sableos.calculator" to AppGlyph.CALCULATOR,
             "org.sableos.reader" to AppGlyph.READER,
             "org.sableos.textreader" to AppGlyph.TEXT_READER,

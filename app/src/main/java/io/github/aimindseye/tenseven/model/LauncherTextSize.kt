@@ -1,8 +1,8 @@
 package io.github.aimindseye.tenseven.model
 
-private const val TEXT_SCALE_SMALL = 0.90f
-private const val TEXT_SCALE_DEFAULT = 1.0f
-private const val TEXT_SCALE_LARGE = 1.10f
+private const val SCALE_SMALL = 0.90f
+private const val SCALE_DEFAULT = 1.0f
+private const val SCALE_LARGE = 1.10f
 
 /** Preserve exact WMO weather-code to label mapping used by the launcher. */
 private const val WMO_CLEAR = 0
@@ -38,9 +38,9 @@ private const val WMO_THUNDER_HAIL_HEAVY = 99
 enum class LauncherTextSize(
     val multiplier: Float,
 ) {
-    Small(TEXT_SCALE_SMALL),
-    Default(TEXT_SCALE_DEFAULT),
-    Large(TEXT_SCALE_LARGE),
+    Small(SCALE_SMALL),
+    Default(SCALE_DEFAULT),
+    Large(SCALE_LARGE),
     ;
 
     companion object {

@@ -34,10 +34,7 @@ class FrameIntegrationPreferences(
                 if (uri.scheme ==
                     "content"
                 ) {
-                    context.contentResolver.releasePersistableUriPermission(
-                        uri,
-                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                    )
+                    context.contentResolver.releasePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
             }
         }

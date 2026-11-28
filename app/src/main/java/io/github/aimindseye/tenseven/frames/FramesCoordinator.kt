@@ -29,6 +29,9 @@ class FramesCoordinator(
 
     @Volatile private var epoch = 0L
 
+    /** Orders reads, so only the newest one may publish. [epoch] changes only when what is shown changes. */
+    @Volatile private var readSeq = 0L
+
     @Volatile private var active = false
 
     @Volatile private var destroyed = false
@@ -43,20 +46,35 @@ class FramesCoordinator(
     fun refresh() {
         if (!active || destroyed) return
         dismissed = source.loadDismissals()
-        val ticket = ++epoch
-        publish(state.copy(items = emptyList(), generation = ticket, snapshotsAllowed = false))
+        val seq = ++readSeq
+        // The frames on screen stay until the new read says otherwise. Emptying them first made the
+        // whole strip flash on every refresh, and Aurora Store updating apps refreshes a lot.
         background {
             val input = runCatching { source.read() }.getOrNull()
             foreground {
-                if (current(ticket) && input != null) publish(FramePolicy.state(input, dismissed, ticket))
+                if (!active || destroyed || readSeq != seq) return@foreground
+                if (input == null) {
+                    // A failed read never leaves old, possibly private, frames showing.
+                    if (state.items.isNotEmpty()) clear()
+                    return@foreground
+                }
+                val next = FramePolicy.state(input, dismissed, state.generation)
+                // Nothing changed: publish nothing, so nothing is redrawn and snapshots are kept.
+                if (next == state) return@foreground
+                publish(next.copy(generation = ++epoch))
             }
         }
     }
 
-    fun onStop() {
-        active = false
+    private fun clear() {
+        ++readSeq
         ++epoch
         publish(state.copy(items = emptyList(), generation = epoch, snapshotsAllowed = false))
+    }
+
+    fun onStop() {
+        active = false
+        clear()
     }
 
     fun destroy() {
@@ -75,6 +93,7 @@ class FramesCoordinator(
         source.saveDismissals(dismissed)
         source.closed(item)
         // Closing a launcher card never force-stops an app or removes someone else's task.
+        ++readSeq
         ++epoch
         publish(state.copy(items = state.items.filterNot { it.key == item.key }, generation = epoch))
     }

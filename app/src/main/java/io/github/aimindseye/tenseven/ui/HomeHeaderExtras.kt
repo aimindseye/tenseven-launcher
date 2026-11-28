@@ -2,7 +2,6 @@ package io.github.aimindseye.tenseven.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,13 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import io.github.aimindseye.tenseven.model.LauncherTextSize
 import io.github.aimindseye.tenseven.platform.HomeWeatherClient
 import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
@@ -59,8 +56,6 @@ internal fun rememberHeaderOptions(): HeaderOptions {
     }
     return current
 }
-
-internal fun TextUnit.safeLauncherScale(value: LauncherTextSize): TextUnit = this * value.multiplier
 
 /** Current conditions are optional; no placeholder or made-up temperature is displayed. */
 @Composable

@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.FrameIntegrationsActivity
-import io.github.aimindseye.tenseven.ScreenCaptureActivity
 import io.github.aimindseye.tenseven.SwitchRow
 import io.github.aimindseye.tenseven.frames.FrameSettings
 import io.github.aimindseye.tenseven.homeStyleState
@@ -41,7 +40,6 @@ internal fun FrameSettingsSection(
     }
     var value by remember { mutableStateOf(repository.loadFrameSettings()) }
     FrameIntegrationControls()
-    ScreenCaptureControls()
     FrameSettingsPanel(value, capabilities) {
         value = it.normalized()
         repository.saveFrameSettings(value)
@@ -96,7 +94,7 @@ internal fun FrameSettingsPanel(
     Button(onClick = { FrameWindowRepository(context).clear() }) { Text("Clear app frames") }
     FrameCapabilitySwitch(
         "Force-stop when closing",
-        "Close removes only the TenSeven card; the underlying app keeps its data and tasks.",
+        "Close removes only the Sable Launcher card; the underlying app keeps its data and tasks.",
         false,
         CapabilityStatus.Unavailable,
         "Force-stop of other apps is not supported by this launcher.",
@@ -133,53 +131,12 @@ private fun FrameCapabilitySwitch(
 }
 
 @Composable
-private fun ScreenCaptureControls() {
-    val context = LocalContext.current
-    val preview by ScreenCaptureState.state.collectAsState()
-    var explain by remember { mutableStateOf(false) }
-    Text("User-approved screen capture", style = MaterialTheme.typography.titleMedium)
-    Text(
-        "One shared-screen preview, separate from app snapshots. Images stay in memory and freeze while " +
-            "Home is visible. No audio is captured.",
-    )
-    if (preview.error) Text("Capture ended or could not start. Start again to request fresh consent.")
-    Button(onClick = {
-        if (preview.running) {
-            context.stopService(android.content.Intent(context, ScreenCaptureService::class.java))
-        } else {
-            explain = true
-        }
-    }) { Text(if (preview.running) "Stop sharing and clear preview" else "Start screen capture") }
-    if (explain) {
-        AlertDialog(
-            onDismissRequest = { explain = false },
-            title = { Text("Share a screen with Active Frames?") },
-            text = {
-                Text(
-                    "Android will ask what to share. Choose a single app when available. Whole-screen " +
-                        "sharing can include anything visible while away from Home. Return to Home to see " +
-                        "the last preview. Stop from this setting or the sharing notification; locking the " +
-                        "phone also ends capture. Protected screens may appear blank.",
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    explain = false
-                    context.startActivity(android.content.Intent(context, ScreenCaptureActivity::class.java))
-                }) { Text("Continue") }
-            },
-            dismissButton = { TextButton(onClick = { explain = false }) { Text("Cancel") } },
-        )
-    }
-}
-
-@Composable
 private fun FrameIntegrationControls() {
     val context = LocalContext.current
     Text("App integrations", style = MaterialTheme.typography.titleMedium)
     Text(
         "Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar " +
-            "access. TenSeven local summaries do not need notification access.",
+            "access. Sable Launcher local summaries do not need notification access.",
     )
     Button(onClick = {
         context.startActivity(android.content.Intent(context, FrameIntegrationsActivity::class.java))

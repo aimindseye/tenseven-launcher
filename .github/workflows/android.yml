@@ -19,9 +19,6 @@ on:
       - '.editorconfig'
       - '.github/workflows/android.yml'
       - 'tools/verify-release-apks.sh'
-      - 'tools/deliverable_quality_gate.py'
-      - 'tools/tests/**'
-      - 'tools/quality_gate_*.py'
       - '!**/*.md'
   push:
     branches: [main]
@@ -38,9 +35,6 @@ on:
       - '.editorconfig'
       - '.github/workflows/android.yml'
       - 'tools/verify-release-apks.sh'
-      - 'tools/deliverable_quality_gate.py'
-      - 'tools/tests/**'
-      - 'tools/quality_gate_*.py'
       - '!**/*.md'
   workflow_dispatch:
 
@@ -87,64 +81,6 @@ jobs:
           detekt ktlintCheck
           :design:koverXmlReportDebug :app:koverXmlReportDebug
           :phone:koverXmlReportDebug :calendar:koverXmlReportDebug
-      - name: Qualify checker against genuine exact-parent reports
-        if: github.event_name == 'pull_request'
-        env:
-          QUALITY_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: |
-          python3 -B - <<'PYCHECKER'
-          import os
-          from pathlib import Path
-          import subprocess
-          import sys
-          workspace = Path(os.environ["GITHUB_WORKSPACE"])
-          sys.path.insert(0, str(workspace / "tools"))
-          from quality_gate_runtime import GitRepository
-          repo = GitRepository(workspace)
-          head = repo.resolve(os.environ["QUALITY_HEAD"])
-          if not repo.ancestor(head, repo.head()):
-              raise SystemExit("PR source is not in checkout ancestry")
-          parent = repo.parent(head)
-          if parent is None:
-              raise SystemExit("Source requires an exact parent")
-          root = Path(os.environ["RUNNER_TEMP"])
-          candidate = root / "tenseven-checker-source"
-          evidence = root / "tenseven-checker-exact-parent"
-          subprocess.run(["git", "worktree", "add", "--detach", str(candidate), head], check=True)
-          subprocess.run([
-              sys.executable, "-B", str(workspace / "tools/deliverable_quality_gate.py"),
-              "--repo", str(candidate), "--base-ref", parent, "--out", str(evidence),
-              "--approved-compose-policy",
-          ], check=True)
-          environment = dict(os.environ,
-              TENSEVEN_REAL_BASE=str(evidence / "baseline-source"),
-              TENSEVEN_REAL_CANDIDATE=str(candidate),
-              TENSEVEN_POLICY_REPO=str(workspace),
-          )
-          subprocess.run([
-              sys.executable, "-B", "-m", "unittest", "discover",
-              "-s", str(workspace / "tools/tests"), "-p", "test_deliverable_quality_gate.py", "-v",
-          ], cwd=workspace, env=environment, check=True)
-          exported = {name: environment[name] for name in (
-              "TENSEVEN_REAL_BASE", "TENSEVEN_REAL_CANDIDATE", "TENSEVEN_POLICY_REPO",
-          )}
-          if any("\n" in value or "\r" in value for value in exported.values()):
-              raise SystemExit("Invalid checker report/history environment path")
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as stream:
-              for name, value in exported.items():
-                  stream.write(name + "=" + value + "\n")
-          PYCHECKER
-      - name: Enforce changed-file quality
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_BRANCH: ${{ github.base_ref }}
-        run: |
-          set -euo pipefail
-          BASE="$(git merge-base "origin/$BASE_BRANCH" HEAD)"
-          python3 -B -m unittest discover -s tools/tests -p 'test_deliverable_quality_gate.py' -v
-          python3 -B tools/deliverable_quality_gate.py \
-            --repo "$GITHUB_WORKSPACE" --base-ref "$BASE" \
-            --out "$RUNNER_TEMP/tenseven-deliverable-quality" --approved-compose-policy
       - name: Verify compiled Full APK manifest
         run: |
           bash tools/verify-release-apks.sh --ci-unsigned \

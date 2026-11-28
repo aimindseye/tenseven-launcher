@@ -1,6 +1,6 @@
 package io.github.aimindseye.tenseven.ui
 
-import androidx.activity.compose.BackHandler
+import android.graphics.Rect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -27,18 +27,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,11 +45,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -58,9 +55,10 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,9 +68,9 @@ import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.conversations.ConversationHub
 import io.github.aimindseye.tenseven.conversations.HubConversation
 import io.github.aimindseye.tenseven.design.sableFocusRing
-import io.github.aimindseye.tenseven.model.HubPeekGesture
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.StartStateRepository
+import kotlin.math.abs
 
 /**
  * The BlackBerry 10 "peek": drag in from the left edge of Home and the Hub's latest conversations slide over the
@@ -87,30 +85,48 @@ internal fun HubPeekHost(
     onOpenHub: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val open = rememberUpdatedState(peekOpen)
-    val change = rememberUpdatedState(onPeekChange)
-    val edge = with(LocalDensity.current) { HubPeekGesture.EDGE_DP.dp.toPx() }
-    val exclusionHeight = with(LocalDensity.current) { HubPeekGesture.EXCLUSION_DP.dp.toPx() }
-    // Compose translates this local rectangle to the view, preserving other gesture exclusions.
-    val exclusion =
-        if (edgeEnabled && !peekOpen) {
-            Modifier.systemGestureExclusion { coordinates ->
-                val height = minOf(exclusionHeight, coordinates.size.height.toFloat())
-                val top = (coordinates.size.height - height) / 2f
-                Rect(0f, top, edge, top + height)
-            }
-        } else {
-            Modifier
+    // With gesture navigation Android takes a swipe from the left edge for Back before the app sees it (a small "<"
+    // arrow appears). Ask it to leave a strip of the edge to us while the peek can be opened. Android allows at most
+    // 200dp of height per edge, so the strip sits halfway down.
+    val view = LocalView.current
+    val density = LocalDensity.current.density
+    var heightPx by remember { mutableIntStateOf(0) }
+    DisposableEffect(view, edgeEnabled, peekOpen, heightPx) {
+        if (edgeEnabled && !peekOpen && heightPx > 0) {
+            val half = (EXCLUSION_DP * density / 2).toInt()
+            val mid = heightPx / 2
+            view.systemGestureExclusionRects = listOf(Rect(0, mid - half, (EDGE_DP * density).toInt(), mid + half))
         }
-    BackHandler(enabled = peekOpen) { onPeekChange(false) }
+        onDispose { view.systemGestureExclusionRects = emptyList() }
+    }
     Box(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .testTag("hub-peek-host")
-                .then(exclusion)
-                .peekEdgeInput(edgeEnabled, edge, open, change)
-                .dismissPeekOnEscape(open, change),
+            Modifier.fillMaxSize().onSizeChanged { heightPx = it.height }.pointerInput(edgeEnabled, peekOpen) {
+                if (!edgeEnabled || peekOpen) return@pointerInput
+                val edge = EDGE_DP.dp.toPx()
+                val slop = viewConfiguration.touchSlop
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    if (down.position.x > edge) return@awaitEachGesture
+                    var opened = false
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        val dx = change.position.x - down.position.x
+                        if (!opened && dx > slop) {
+                            opened = true
+                            onPeekChange(true)
+                        }
+                        // Once the peek opens, keep the rest of this drag from also scrolling the page underneath.
+                        if (opened) {
+                            change.consume()
+                        } else if (abs(change.position.y - down.position.y) > slop * 2) {
+                            break
+                        }
+                    }
+                }
+            },
     ) {
         content()
         if (peekOpen) {
@@ -122,64 +138,6 @@ internal fun HubPeekHost(
             }
         }
     }
-}
-
-/** Keep consuming the initiating drag when opening Peek recomposes the overlay. */
-private fun Modifier.peekEdgeInput(
-    enabled: Boolean,
-    edge: Float,
-    open: State<Boolean>,
-    change: State<(Boolean) -> Unit>,
-): Modifier =
-    pointerInput(enabled, edge) {
-        if (!enabled) return@pointerInput
-        val slop = viewConfiguration.touchSlop
-        awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-            if (open.value || !HubPeekGesture.startsAtEdge(down.position.x, edge)) return@awaitEachGesture
-            var opened = false
-            var dragging = true
-            while (dragging) {
-                val event = awaitPointerEvent(PointerEventPass.Initial)
-                val pointer = event.changes.firstOrNull { it.id == down.id }
-                dragging = pointer?.pressed == true
-                if (pointer != null && dragging) {
-                    val delta = pointer.position - down.position
-                    if (!opened && HubPeekGesture.opens(delta.x, delta.y, slop)) {
-                        opened = true
-                        change.value(true)
-                    }
-                    if (opened) {
-                        pointer.consume()
-                    } else if (HubPeekGesture.cancels(delta.x, delta.y, slop)) {
-                        dragging = false
-                    }
-                }
-            }
-        }
-    }
-
-private fun Modifier.dismissPeekOnEscape(
-    open: State<Boolean>,
-    change: State<(Boolean) -> Unit>,
-): Modifier =
-    onPreviewKeyEvent { event ->
-        if (open.value && event.key == Key.Escape) {
-            if (event.type == KeyEventType.KeyDown) change.value(false)
-            true
-        } else {
-            false
-        }
-    }
-
-@Composable
-private fun rememberPeekFocus(): FocusRequester {
-    val focus = remember { FocusRequester() }
-    val inputMode = LocalInputModeManager.current.inputMode
-    LaunchedEffect(inputMode) {
-        if (inputMode == InputMode.Keyboard) runCatching { focus.requestFocus() }
-    }
-    return focus
 }
 
 private data class PeekPanelActions(
@@ -212,7 +170,7 @@ private fun PeekPanelContents(
                 )
                 val total = conversations.sumOf { it.notifications.size }
                 if (total > 0) {
-                    Surface(shape = RoundedCornerShape(PEEK_BADGE_CORNER_PERCENT), color = accent) {
+                    Surface(shape = RoundedCornerShape(50), color = accent) {
                         Text(
                             stringResource(R.string.peek_count, total),
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
@@ -252,10 +210,26 @@ private fun HubPeekPanel(
                 emptyList()
             }
         }
-    val focus = rememberPeekFocus()
+    val focus = remember { FocusRequester() }
     // The panel slides in from the left edge while the rest of Home dims.
     val slide = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { slide.animateTo(1f, tween(durationMillis = 220, easing = FastOutSlowInEasing)) }
+    val sableFade =
+        remember(context) {
+            runCatching {
+                android.provider.Settings.Secure
+                    .getString(context.contentResolver, "sable_profile")
+            }.getOrNull() == "bb7"
+        }
+    LaunchedEffect(Unit) {
+        slide.animateTo(
+            1f,
+            if (sableFade) {
+                tween(durationMillis = 150, easing = androidx.compose.animation.core.LinearEasing)
+            } else {
+                tween(durationMillis = 250, easing = FastOutSlowInEasing)
+            },
+        )
+    }
     val accent = MaterialTheme.colorScheme.primary
     BoxWithConstraints(
         modifier =
@@ -281,7 +255,13 @@ private fun HubPeekPanel(
                     .testTag("hub-peek-panel")
                     .widthIn(max = 360.dp)
                     .heightIn(max = maxHeight * 0.92f)
-                    .graphicsLayer { translationX = (slide.value - 1f) * size.width }
+                    .graphicsLayer {
+                        if (sableFade) {
+                            alpha = slide.value
+                        } else {
+                            translationX = (slide.value - 1f) * size.width
+                        }
+                    }
                     // Taps inside the panel belong to it, not to the scrim that closes the peek.
                     .pointerInput(Unit) { detectTapGestures { } },
             shape = RoundedCornerShape(2.dp),
@@ -299,6 +279,7 @@ private fun HubPeekPanel(
             )
         }
     }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }
 
 @Composable
@@ -337,7 +318,7 @@ private fun PeekRow(
                 }
             }
             if (count > 1) {
-                Surface(shape = RoundedCornerShape(PEEK_BADGE_CORNER_PERCENT), color = accent) {
+                Surface(shape = RoundedCornerShape(50), color = accent) {
                     Text(
                         count.toString(),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -367,15 +348,7 @@ private fun PeekRowSourceIcon(packageName: String?) {
         }
     val icon =
         remember(packageName) {
-            packageName?.let {
-                runCatching {
-                    packageManager
-                        .getApplicationIcon(
-                            it,
-                        ).toBitmap(PEEK_SOURCE_ICON_PX, PEEK_SOURCE_ICON_PX)
-                        .asImageBitmap()
-                }.getOrNull()
-            }
+            packageName?.let { runCatching { packageManager.getApplicationIcon(it).toBitmap(120, 120).asImageBitmap() }.getOrNull() }
         }
     if (glyph != null) {
         SableGlyphIcon(glyph = glyph, modifier = Modifier.size(34.dp))
@@ -415,12 +388,15 @@ private fun PeekButton(
     }
 }
 
+private const val EDGE_DP = 20
+
+/** Android lets an app exclude at most this much height from the system gestures on one edge. */
+private const val EXCLUSION_DP = 200
 private const val MAX_ROWS = 8
 
 // How opaque the peek panel is; the rest lets Home show through.
 
 // Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
-@Suppress("FunctionNaming")
 @Composable
 private fun PeekConversations(
     conversations: List<HubConversation>,
@@ -460,7 +436,3 @@ private fun PeekConversations(
         }
     }
 }
-
-private const val PEEK_SOURCE_ICON_PX = 120
-
-private const val PEEK_BADGE_CORNER_PERCENT = 50

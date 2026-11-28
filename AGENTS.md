@@ -30,6 +30,8 @@
 
 ## 4. CI is the quality contract — inspect the current workflow files
 
+CI follows Sable 2.0: build, unit tests, Android Lint, Detekt, ktlint, Kover, CodeQL, security and Sonar. The hash-pinned deliverable gate and the P2 findings ratchet were retired by the owner on 2026-11-27 because they blocked the Sable launcher swap without finding defects.
+
 Repository sources of truth:
 
 | Check | File / command | Interpretation |
@@ -37,11 +39,10 @@ Repository sources of truth:
 | Static repository policy | `.github/workflows/checks.yml` → `bash tests/run.sh` | Must pass; includes shell/XML/Python checks, generated icon/brand checks, Detekt provenance, manifest protections, third-party licensing, wrapper integrity and Hub invariants. |
 | Release verifier tests | `python3 tests/test_release_verifier.py` | Run when release/build/manifest code is affected; CI runs mock-SDK regression tests. |
 | Android build & reports | `.github/workflows/android.yml` | JDK 17, Android SDK/platform 36 and build-tools 36.0.0; debug/release assembly, JVM tests, Android Lint, Detekt, ktlint, Kover. |
-| Blocking legacy-to-new findings ratchet | `.github/workflows/p2-quality.yml`, `tools/quality_ratchet.py`, `tests/test_quality_ratchet.py` | CI comparison against an accepted baseline; do not conceal or worsen legacy findings. |
 | SonarCloud | `.github/workflows/sonar.yml`, `sonar-project.properties` | Sonar's own quality gate is independent of `tenseven.strictQuality`; requires CI and `SONAR_TOKEN`. |
 | CodeQL | `.github/workflows/codeql.yml` | Java/Kotlin security-and-quality scanning; relevant PR CI required. |
 | Security | `.github/workflows/security.yml` | Gitleaks is blocking; MobSF records findings. Never add secrets or weaken scanning. |
-| Active Frames instrumented UI | `.github/workflows/frames-ui.yml` | API 34/35 plus responsive square, tall and landscape matrices when relevant; local JVM tests are not a substitute. |
+| Active Frames instrumented UI | `.github/workflows/frames-ui.yml` | Emulator API 34/35 plus responsive square, tall and landscape matrices; the launcher has no root or platform signature, so on-device behaviour is checked here before device testing. |
 
 **Important:** CI trigger paths and target branches differ. Some workflows only run for PRs targeting `main`; a stacked feature PR may not exercise all gates. Check which jobs *actually ran*, and reproduce or explicitly mark omitted gates **NOT RUN**. A docs-only PR may skip the Android workflow.
 
@@ -57,20 +58,14 @@ Use the repository's Gradle wrapper, not an unpinned system Gradle. On the user'
   :design:koverXmlReportDebug :app:koverXmlReportDebug
 bash tests/run.sh
 python3 tests/test_release_verifier.py
-python3 tests/test_quality_ratchet.py
 ```
 
 - `tenseven.strictQuality=false` is the repository default because legacy imported sources have findings. **Gradle exit code 0 is not a quality pass.** Read the Detekt XML/SARIF, ktlint reports, and Android Lint XML/SARIF for both `app` and `design` as applicable.
 - **Zero introduced findings** are required even while global strict mode is false. New files: zero findings. Modified files: compare candidate findings with a reproducible report for the correct parent/base source and equivalent tool/config versions; do not count every unchanged finding in a touched file as new. Report rule, file, line, and evidence. Missing/stale/malformed reports fail closed.
-- Run `tools/deliverable_quality_gate.py` against the actual parent SHA in a fresh external evidence directory. It must build fresh reports for both a detached parent worktree and the candidate, compare findings with unchanged-line mapping and multiplicity, and retain report hashes, source digests, commands and exit codes. Diagnostic `--reports-only` output is always HOLD. Qualify checker changes against real Gradle reports and injected regressions as well as offline tests; its green output does not replace P2 or remote gates.
-- The approved `config/detekt-tenseven.yml` correction exempts only `FunctionNaming` on `@Composable`, matching `.editorconfig`. Keep other naming and quality rules active. Use `--approved-compose-policy` when comparing to a parent that predates this correction so both sides use the identical reviewed configuration. Further configuration changes require separate explicit approval.
+- The approved `config/detekt-tenseven.yml` correction exempts only `FunctionNaming` on `@Composable`, matching `.editorconfig`. Keep other naming and quality rules active. Further configuration changes require separate explicit approval.
 - Do not change `gradle.properties` strictness, quality thresholds, CI workflows, baselines, or suppression lists to conceal violations. Any intentionally accepted exception needs a narrowly scoped written rationale and review. `config/detekt.yml` must remain byte-identical to the SableOS provenance blob (`tests/run.sh` checks this). TenSeven-specific Detekt overrides belong in a separate proposed file and require explicit approval and Gradle wiring.
 - Verify local `git diff --check`, relevant test suites, and successful compilation **after** the last source edit. For UI/permission/notification regressions, device/emulator acceptance is separate from unit tests.
 - For SonarCloud/CodeQL/Gitleaks and other remote gates, report **PENDING CI** until the actual workflow succeeds; never claim local simulation proves a remote gate passed.
-
-### P2 workflow safety warning
-
-`.github/workflows/p2-quality.yml` runs `ktlintFormat` and then `git restore --worktree .` in its disposable CI workspace. **Never copy or execute that sequence inside a user's dirty working tree**; it can discard the existing M2-B implementation. Run safe checks and build a disposable detached worktree for any baseline comparison instead.
 
 ## 6. Delivery receipts — mandatory for every change
 

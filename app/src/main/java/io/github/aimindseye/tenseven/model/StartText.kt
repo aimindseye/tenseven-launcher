@@ -12,7 +12,7 @@ object StartText {
         mapOf(
             "home_screen_style" to "Home screen style",
             "sable_start_can_look_like" to
-                "Tenseven can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites " +
+                "Sable Launcher can look like BlackBerry 10 or BlackBerry 7. Your apps, favourites " +
                 "and Hub stay the same.",
             "current" to " · current",
             "another_launcher" to "Another launcher…",

@@ -38,18 +38,13 @@ object SoundProfileControl {
         }
     }
 
-    /** A launchable independent companion, regardless of retired bundled-app choices. */
-    fun profilesEnabled(context: Context): Boolean =
-        runCatching { CompanionLaunches.intent(context, "profiles") != null }.getOrDefault(false)
+    /** Whether Sable Profiles, the SableOS sound profiles app, is installed. */
+    fun profilesEnabled(context: Context): Boolean = context.packageManager.getLaunchIntentForPackage("org.sableos.titan2.profiles") != null
 
-    /** User-initiated companion launch only; false when absent or no longer available. */
+    /** Opens Sable Profiles; false (and nothing opened) when it is missing. */
     fun openProfiles(context: Context): Boolean {
-        val target = runCatching { CompanionLaunches.intent(context, "profiles") }.getOrNull()
-        return target?.let { intent ->
-            runCatching {
-                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                true
-            }.getOrDefault(false)
-        } ?: false
+        val intent = context.packageManager.getLaunchIntentForPackage("org.sableos.titan2.profiles")
+        return intent != null &&
+            runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
     }
 }

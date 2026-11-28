@@ -34,7 +34,7 @@
 ## M2 — Companion framework + wizard shell
 
 - Retain `:app` and `:design`; add companion package discovery, version/signature verification and minimal/full selection model. New setup should list Missing/Installed/Update/Unavailable status.
-- Wizard in Setup and Launcher Settings > Apps & Features > TenSeven Companion Apps; preserves existing Minimum Apps/Full Apps choice as presets.
+- Wizard in Setup and Launcher Settings > Apps & Features > TenSeven Companion Apps; offers Base, Lite and Full presets (Lite is the former Minimum Apps).
 - Accept an offline release ZIP or official trusted download; validate expected artifact filenames, digests, package IDs, signing certificates and version direction. Reject unknown APKs and ZIP traversal/bombs.
 - Use Android `PackageInstaller` or the system package-install UI with required user permission and confirmations; **never claim silent installs**. Allow retry/cancel and continuing without optional companions.
 - Gate: fake-package and signer-mismatch tests, no unexpected permission prompts, no install without user action, no regressions in existing Setup.

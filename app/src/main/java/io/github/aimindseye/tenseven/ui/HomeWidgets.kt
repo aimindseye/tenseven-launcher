@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -46,15 +45,12 @@ import io.github.aimindseye.tenseven.OnboardingActivity
 import io.github.aimindseye.tenseven.R
 import io.github.aimindseye.tenseven.SableStartActivity
 import io.github.aimindseye.tenseven.live.LiveAvailability
-import io.github.aimindseye.tenseven.live.LiveDatum
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
 import io.github.aimindseye.tenseven.model.ActiveFrames
 import io.github.aimindseye.tenseven.model.AppEntry
-import io.github.aimindseye.tenseven.model.AppGrid
 import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.StartText.t
 import io.github.aimindseye.tenseven.onboarding.SetupStep
-import io.github.aimindseye.tenseven.platform.Capabilities
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.DefaultApps
 import io.github.aimindseye.tenseven.platform.NextAlarm
@@ -321,24 +317,6 @@ internal fun GlanceFrameCard(
         )
     }
 }
-
-/**
- * One app grid page (Ripe 10 / BB10 page model): five columns of labelled,
- * tile-free icons in the user's order (Edit Home reorders them), as many rows
- * as the window fits ([AppGrid.rowsFor]); the icon size follows the cell.
- * Arrows move focus, Enter opens, Shift+Enter opens the Dual copy, Space, Menu
- * or Alt+Enter opens the app's actions, long press on an icon its actions and
- * on an empty place Edit Home; typing searches.
- */
-internal fun liveDetail(
-    datum: LiveDatum,
-    app: AppEntry?,
-    noApp: String,
-): String =
-    when (datum.availability) {
-        LiveAvailability.LIVE, LiveAvailability.EMPTY -> datum.detail
-        else -> if (app == null) noApp else t("open_2", app.label)
-    }
 
 /** Battery level and charging from the sticky battery broadcast (no receiver kept). */
 internal fun readBattery(context: Context): Pair<Int?, Boolean> =

@@ -36,14 +36,19 @@ import io.github.aimindseye.tenseven.platform.performHubSourceAction
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class BlackBerryUiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Before fun startWithoutRememberedHubHistory() {
+        ConversationHub.clearNow()
+    }
+
     @After fun clearFixtures() {
-        ConversationHub.replace(emptyList())
+        ConversationHub.clearNow()
         LockLayerState.update(emptyMap())
     }
 
@@ -56,7 +61,7 @@ class BlackBerryUiTest {
                     ReferenceHomeBar(
                         listOf(QuickSlot(QuickBar.PHONE, "Phone", null), QuickSlot(QuickBar.COMMAND, "Command", null)),
                         HomeBarPages(1, 3, 0),
-                        HomeBarActions({ page = it }, { opened = it.token }, {}),
+                        HomeBarActions({ page = it }, { opened = it.token }),
                     )
                 }
             }
@@ -64,7 +69,7 @@ class BlackBerryUiTest {
         val hub = compose.onNodeWithContentDescription("Hub").fetchSemanticsNode().boundsInRoot
         val camera = compose.onNodeWithContentDescription("Camera").fetchSemanticsNode().boundsInRoot
         assertEquals(hub.top, camera.top, 1f)
-        compose.onNodeWithContentDescription("All Apps").performClick()
+        compose.onNodeWithContentDescription("App grid page 1").performClick()
         compose.runOnIdle { assertEquals(2, page) }
         compose.onNodeWithContentDescription("Camera").performClick()
         compose.runOnIdle { assertEquals(QuickBar.CAMERA, opened) }

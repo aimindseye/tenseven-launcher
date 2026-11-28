@@ -115,15 +115,22 @@ private fun CompanionPresetPage(
 ) {
     Section("Choose a preset")
     Card(
-        "Minimum apps",
-        "Tasks / Remind, Notes, Calc Plus",
-        CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.MINIMUM,
+        "Base",
+        "Only the launcher, no companion apps",
+        CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.BASE,
     ) {
-        onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.MINIMUM, selected))
+        onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.BASE, selected))
     }
     Card(
-        "Full apps",
-        "All six optional tool companions",
+        "Lite · recommended apps",
+        "Tasks / Remind, Notes, Calc Plus",
+        CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.LITE,
+    ) {
+        onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.LITE, selected))
+    }
+    Card(
+        "Full · all apps",
+        "All optional companions, including Sable Watch",
         CompanionSetupPlan.selectedPreset(selected) == CompanionPreset.FULL,
     ) {
         onSelect(CompanionSetupPlan.choosePreset(CompanionPreset.FULL, selected))

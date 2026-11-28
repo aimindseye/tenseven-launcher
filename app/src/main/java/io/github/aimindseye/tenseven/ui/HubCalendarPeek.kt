@@ -58,16 +58,41 @@ internal fun HubCalendarPeek(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
-                    .padding(horizontal = 9.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .then(
+                        if (io.github.aimindseye.tenseven.design
+                                .isSableShortWindow()
+                        ) {
+                            Modifier.padding(horizontal = 4.dp)
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
+                                .padding(horizontal = 9.dp, vertical = 6.dp)
+                        },
+                    ),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    if (io.github.aimindseye.tenseven.design
+                            .isSableShortWindow()
+                    ) {
+                        2.dp
+                    } else {
+                        8.dp
+                    },
+                ),
         ) {
             Text(
                 text = if (expanded) "▴ Upcoming calendar" else "▾ Upcoming calendar",
                 modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 6.dp),
                 color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.titleSmall,
+                style =
+                    if (io.github.aimindseye.tenseven.design
+                            .isSableShortWindow()
+                    ) {
+                        MaterialTheme.typography.labelLarge
+                    } else {
+                        MaterialTheme.typography.titleSmall
+                    },
             )
             if (expanded) {
                 CalendarPeekExpandedContent(
@@ -100,11 +125,7 @@ private fun CalendarPeekExpandedContent(
     } else if (!permitted) {
         Text(
             "Allow Calendar access to see events from calendars synced to Android",
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onRequestCalendarPermission)
-                    .padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onRequestCalendarPermission).padding(vertical = 8.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -122,7 +143,6 @@ private fun CalendarPeekExpandedContent(
 }
 
 // Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
-@Suppress("FunctionNaming")
 @Composable
 private fun CalendarPeekEvent(
     event: HubCalendarEvent,

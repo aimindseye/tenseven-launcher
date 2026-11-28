@@ -10,7 +10,6 @@ internal const val MAX_SESSION_RECENTS = 8
 internal const val KEYCODE_DEL = 67
 internal const val HUB_PACKAGE = "org.sableos.hub"
 internal const val MESSAGES_PACKAGE = HubBar.MESSAGES_PACKAGE
-internal const val ACTION_NOTIFICATION_HISTORY = "android.settings.NOTIFICATION_HISTORY"
 internal const val HUB_BAR_ICON_DP = 20
 internal val HUB_BAR_ITEM_HEIGHT = 32.dp
 
@@ -18,9 +17,7 @@ internal val HUB_BAR_ITEM_HEIGHT = 32.dp
 internal const val HUB_JUMP_BLOCKING_META = 0x02 or 0x04 or 0x08 or 0x1000 or 0x10000
 internal const val MAIL_PACKAGE = "org.sableos.mail"
 internal const val CALENDAR_PACKAGE = "org.sableos.calendar"
-internal const val MEDIA_PACKAGE = "org.sableos.media"
 internal const val DIALER_PACKAGE = "com.android.dialer"
-internal const val GALLERY_PACKAGE = "com.android.gallery3d"
 internal const val HUB_LABEL = "Hub"
 internal const val MAIL_LABEL = "Sable Mail"
 internal const val MESSAGES_LABEL = "Sable Messages"
@@ -51,11 +48,9 @@ internal val FRAME_PADDING = 6.dp
 internal val FRAME_GAP = 6.dp
 internal val FRAME_LABEL_HEIGHT = 28.dp
 internal val FRAME_CORNER = 6.dp
-internal const val FRAME_STRIP_ICON_DP = 18
 
 /** Two rows of frames always fit under the dials and the weather on a 411dp square. */
 internal val FRAME_MIN_HEIGHT = 72.dp
-internal const val FRAME_ICON_DP = 40
 internal val STATUS_RING_SIZE = 34.dp
 
 /** A grid cell is at least this tall: a 40dp icon, its one-line label and the focus padding. */
@@ -73,7 +68,6 @@ internal const val GRID_CELL_CHROME_DP = 2 * 2 + 4 * 2 + 3
 internal const val INDICATOR_HEIGHT_DP = 16
 internal const val INDICATOR_SLOT_DP = 18
 internal const val BAR_HEIGHT_DP = 48
-internal const val BAR_GLYPH_DP = 26
 
 /** Before the window is measured: the status bar the configuration's height still includes. */
 internal const val STATUS_BAR_FALLBACK_DP = 24

@@ -98,12 +98,7 @@ private fun HomeNotificationAppChip(
     val pm = context.packageManager
     val icon =
         remember(item.packageName) {
-            runCatching {
-                pm
-                    .getApplicationIcon(item.packageName)
-                    .toBitmap(NOTIFICATION_APP_ICON_PX, NOTIFICATION_APP_ICON_PX)
-                    .asImageBitmap()
-            }.getOrNull()
+            runCatching { pm.getApplicationIcon(item.packageName).toBitmap(72, 72).asImageBitmap() }.getOrNull()
         }
     val label =
         remember(item.packageName) {
@@ -148,5 +143,3 @@ private fun HomeNotificationAppChip(
         )
     }
 }
-
-private const val NOTIFICATION_APP_ICON_PX = 72

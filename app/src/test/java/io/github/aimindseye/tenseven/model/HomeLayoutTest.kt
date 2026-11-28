@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 /** The Active Frames header (BB10 Home) and the Glance widgets shown as frames. */
 class HomeLayoutTest {
@@ -28,7 +29,7 @@ class HomeLayoutTest {
 
     @Test
     fun dateLineTurnsOverAtMidnight() {
-        val day = 24L * 60 * 60 * 1000
+        val day = TimeUnit.DAYS.toMillis(1)
         assertEquals(day, HomeHeader.millisToMidnight(0))
         assertEquals(1000L, HomeHeader.millisToMidnight(day - 1000))
         assertTrue(HomeHeader.millisToMidnight(day - 1) >= 1)

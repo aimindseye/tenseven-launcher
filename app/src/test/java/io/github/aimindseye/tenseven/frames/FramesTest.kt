@@ -52,6 +52,26 @@ class FramesTest {
         assertTrue(FramePolicy.state(input(apps = emptySet()), emptyMap(), 3).items.isEmpty())
     }
 
+    @Test fun appStoresAndGoogleServicesNeverAppearInFrames() {
+        val store = FrameApp("com.aurora.store", 0)
+        val gms = FrameApp("com.google.android.gms", 0)
+        val state =
+            FramePolicy.state(
+                input(
+                    emptyList(),
+                    listOf(
+                        ForegroundEvent("com.aurora.store", 300),
+                        ForegroundEvent("com.google.android.gms", 200),
+                        ForegroundEvent("mail", 100),
+                    ),
+                    setOf(store, gms, personal),
+                ),
+                emptyMap(),
+                1,
+            )
+        assertEquals(listOf(personal), state.items.map { it.app })
+    }
+
     @Test fun limitsNormalizeAndNeverExceedFourEightOrTwelve() {
         val events = (1..20).map { ForegroundEvent("app$it", it.toLong()) }
         val apps = events.map { FrameApp(it.packageName, 0) }.toSet()
@@ -80,10 +100,7 @@ class FramesTest {
         assertFalse(state.snapshotsAllowed)
         assertEquals(1, state.items.size) // Genuine native task may remain; synthetic history is off.
         assertTrue(
-            FramePolicy
-                .state(input(emptyList(), settings = FrameSettings(rememberReturnedApps = false)), emptyMap(), 2)
-                .items
-                .isEmpty(),
+            FramePolicy.state(input(emptyList(), settings = FrameSettings(rememberReturnedApps = false)), emptyMap(), 2).items.isEmpty(),
         )
         val ordinary = input(trusted = false).copy(capabilities = caps(false, false))
         assertFalse(FramePolicy.state(ordinary, emptyMap(), 1).usageAllowed)
@@ -182,6 +199,37 @@ class FramesTest {
         c.onResume()
         c.refresh()
         assertTrue(h.background.isEmpty())
+    }
+
+    @Test fun refreshWithNothingNewNeverEmptiesOrRepublishesTheFrames() {
+        val h = Harness()
+        val c = h.coordinator()
+        c.onResume()
+        h.drain()
+        val shown = c.state
+        assertEquals(1, shown.items.size)
+        h.published.clear()
+        repeat(5) {
+            c.refresh()
+            h.drain()
+        }
+        assertTrue(h.published.isEmpty())
+        assertEquals(shown, c.state)
+        assertTrue(c.acceptsSnapshot(shown.items.single(), shown.generation))
+        h.data =
+            h.data.copy(
+                recent = listOf(ForegroundEvent("mail", 100), ForegroundEvent("other", 200)),
+                availableApps = setOf(personal, FrameApp("other", 0)),
+            )
+        c.refresh()
+        h.drain()
+        assertEquals(1, h.published.size)
+        assertTrue(
+            h.published
+                .single()
+                .items
+                .isNotEmpty(),
+        )
     }
 
     @Test fun closeIsImmediatePersistsAcrossRecreationAndNeverRemovesNativeTask() {

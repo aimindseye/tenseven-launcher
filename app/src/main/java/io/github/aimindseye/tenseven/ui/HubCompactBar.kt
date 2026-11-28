@@ -46,6 +46,7 @@ internal fun HubCompactBar(
             onCompose,
         )
         HubCompactControl("Search", LineIconPaths.SEARCH, Modifier.weight(1f), onSearch)
+        SableHubMoreControl()
     }
 }
 
@@ -82,7 +83,7 @@ internal fun HubCompactViews(
     Column(
         Modifier
             .fillMaxWidth()
-            .heightIn(max = 176.dp)
+            .heightIn(max = 300.dp)
             .background(Bb10Background)
             .verticalScroll(rememberScrollState()),
     ) {
@@ -103,6 +104,7 @@ internal fun HubCompactViews(
                 }
             }
         }
+        SableHubViewsExtras(ui, onTabChange, onDismiss)
     }
 }
 

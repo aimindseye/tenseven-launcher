@@ -1,6 +1,5 @@
 package io.github.aimindseye.tenseven.ui
 
-import android.Manifest
 import android.content.Intent
 import android.provider.CallLog
 import androidx.compose.foundation.background
@@ -8,7 +7,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -62,9 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import io.github.aimindseye.tenseven.SableStartActivity
-import io.github.aimindseye.tenseven.conversations.ConversationAccess
 import io.github.aimindseye.tenseven.conversations.ConversationHub
-import io.github.aimindseye.tenseven.live.LiveAvailability
 import io.github.aimindseye.tenseven.live.LiveSurfaceSnapshot
 import io.github.aimindseye.tenseven.model.AppEntry
 import io.github.aimindseye.tenseven.model.HubBar
@@ -240,8 +236,20 @@ private fun HubPageContent(
     onReturnHome: () -> Unit,
 ) {
     val chrome = remember { HubPageChromeState() }
+    val chatConversation =
+        HubChatState.openId?.let { id ->
+            session.data.conversations.conversations
+                .firstOrNull { it.id == id }
+        }
+    if (chatConversation != null && !session.data.conversations.deviceLocked) {
+        HubContrastTheme {
+            HubChatScreen(chatConversation, session.data.conversations) { HubChatState.openId = null }
+        }
+        return
+    }
     HubContrastTheme {
         Column(Modifier.fillMaxSize()) {
+            if (!sableBottomTabs()) HubBb7TitleBar(session.data.conversations)
             androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
                 HubPagePanel(session, chrome, onReturnHome)
             }
@@ -253,6 +261,7 @@ private fun HubPageContent(
                     onDismiss = { chrome.viewsVisible = false },
                 )
             }
+            if (sableBottomTabs()) HubPageNavigation(session, chrome)
             HubPageControls(session, chrome)
             if (chrome.composePrompt) HubPageComposePrompt(session, chrome)
         }
@@ -311,17 +320,35 @@ private fun HubPageHeader(
     calendarPeekEnabled: Boolean,
     openPanel: () -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        HomeBarControl(HomeBarControlSpec("Hub settings", "menu-2"), onClick = openPanel)
-        Text(
-            text = HUB_LABEL,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Medium,
-            color = Bb10Text,
-            modifier = Modifier.semantics { heading() },
-        )
+    if (sableBottomTabs()) {
+        // BBOS 10 (approved board): the title at the left, the menu at the right, the unread line under the title.
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = HUB_LABEL,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+                color = Bb10Text,
+                modifier = Modifier.weight(1f).padding(start = 4.dp).semantics { heading() },
+            )
+            HomeBarControl(HomeBarControlSpec("Hub settings", "menu-2"), onClick = openPanel)
+        }
+        SableHubSubtitle(session.data.conversations)
+    } else {
+        // BBOS 7: the blue title bar is drawn above the list (HubBb7TitleBar).
     }
-    Spacer(Modifier.height(6.dp))
+    // BBOS 7 shows its tabs right under the title bar; BBOS 10 has them at the bottom.
+    if (!sableBottomTabs()) HubPageNavigation(session, chrome)
+    Spacer(
+        Modifier.height(
+            if (io.github.aimindseye.tenseven.design
+                    .isSableShortWindow()
+            ) {
+                2.dp
+            } else {
+                6.dp
+            },
+        ),
+    )
     if (session.model.filter == HubFilter.All && calendarPeekEnabled && !session.data.conversations.remindersSelected) {
         HubCalendarPeek(
             refreshGeneration = session.model.refreshGeneration,
@@ -331,6 +358,13 @@ private fun HubPageHeader(
             onOpenCalendar = { session.events.onStartIntent(hubCalendarIntent()) },
         )
     }
+}
+
+@Composable
+private fun HubPageNavigation(
+    session: HubPageSession,
+    chrome: HubPageChromeState,
+) {
     HubUnifiedNavigation(
         ui = session.data.conversations,
         navigation =
@@ -343,7 +377,43 @@ private fun HubPageHeader(
                 closeSearchRequest = chrome.searchCloseRequest,
             ),
         onTabChange = session.events.onFilter,
+        onOpenCalendar = { session.events.onStartIntent(hubCalendarIntent()) },
     )
+}
+
+/** BlackBerry 7: the accent-blue title bar with the Hub icon, the title and the unread line in white. */
+@Composable
+private fun HubBb7TitleBar(ui: HubConversationsUi) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        LineIcon(listOf("M3 5h18v14H3z", "M3 7l9 7 9-7"), Modifier.size(20.dp), Color.White)
+        Text(
+            text = HUB_LABEL,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.semantics { heading() },
+        )
+        SableHubSubtitle(ui, Color.White.copy(alpha = 0.85f))
+    }
+}
+
+@Composable
+private fun sableBottomTabs(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember(context) {
+        runCatching {
+            android.provider.Settings.Secure
+                .getString(context.contentResolver, "sable_profile")
+        }.getOrNull() != "bb7"
+    }
 }
 
 @Composable
@@ -396,61 +466,6 @@ private fun HubPageComposePrompt(
         },
         onDismiss = { chrome.composePrompt = false },
     )
-}
-
-/**
- * The Hub page's unread bar: one item per app (its icon and count), most unread first, "+N" in
- * the last slot when they do not all fit; Enter or a tap on "+N" shows every app. While the device
- * is locked or Sable private mode is on, Hub sends one total without app names (a lock mark).
- */
-@Composable
-internal fun HubUnreadBar(
-    items: List<HubBar.Item>,
-    appFor: (String) -> AppEntry?,
-    onOpen: (HubBar.Item) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val slots = HubBar.slots(maxWidth.value.toInt())
-        val layout = HubBar.layout(items, slots)
-        val rows = if (expanded) items.chunked(slots) else listOf(layout.visible)
-        val overflow = if (expanded) 0 else layout.overflow
-        if (items.isEmpty()) {
-            Text(
-                text = t("no_new_notifications"),
-                style = MaterialTheme.typography.labelLarge,
-                color = Bb10Muted,
-                modifier = Modifier.height(HUB_BAR_ITEM_HEIGHT).padding(vertical = 6.dp),
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                rows.forEachIndexed { rowIndex, row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(HubBar.GAP_DP.dp)) {
-                        row.forEach { item ->
-                            HubBarItem(
-                                item = item,
-                                app = appFor(item.packageName),
-                                onOpen = { onOpen(item) },
-                            )
-                        }
-                        if (rowIndex == rows.lastIndex && overflow > 0) {
-                            HubBarChip(
-                                description = t("more_apps_with_notifications", overflow),
-                                onClick = { expanded = true },
-                            ) {
-                                Text(
-                                    text = HubBar.overflowLabel(overflow),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = LocalContentColor.current,
-                                    maxLines = 1,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -565,10 +580,6 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.hubSummaryItems(
                 actions.onStartIntent(Intent(Intent.ACTION_VIEW, CallLog.Calls.CONTENT_URI))
             })
         }
-    }
-    item(key = "hub-settings-link") {
-        Spacer(Modifier.height(8.dp))
-        MetroLink(text = t("hub_settings"), onClick = actions.onOpenHubSettings)
     }
 }
 

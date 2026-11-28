@@ -14,16 +14,16 @@ class IconPresentationTest {
     }
 
     @Test fun externalIconPackAndOriginalArtworkTakePriority() {
-        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.Original, false))
-        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, true))
-        assertTrue(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, false))
+        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.Original, false, false))
+        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, false, true))
+        assertTrue(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, false, false))
         assertFalse(IconPresentationPolicy.useMonochrome(IconPresentation.Original, false))
         assertFalse(IconPresentationPolicy.useMonochrome(IconPresentation.TenSeven, true))
     }
 
     @Test fun bundledAppsAlsoRespectOriginalAndExternalPack() {
-        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.Original, false))
-        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, true))
-        assertTrue(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, false))
+        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.Original, true, false))
+        assertFalse(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, true, true))
+        assertTrue(IconPresentationPolicy.useGlyph(IconPresentation.TenSeven, true, false))
     }
 }

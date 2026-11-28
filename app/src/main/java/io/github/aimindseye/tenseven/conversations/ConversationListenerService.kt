@@ -18,13 +18,11 @@ import android.provider.ContactsContract
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.content.ContextCompat
-import io.github.aimindseye.tenseven.model.HubApps
 import io.github.aimindseye.tenseven.model.HubMessageKind
 import io.github.aimindseye.tenseven.model.LockLayer
 import io.github.aimindseye.tenseven.platform.HubSourceRepository
 import io.github.aimindseye.tenseven.platform.LockLayerLauncher
 import io.github.aimindseye.tenseven.platform.LockLayerState
-import io.github.aimindseye.tenseven.platform.StartStateRepository
 
 /**
  * Turns Android-delivered notifications into [HubNotification]s in [ConversationHub]. Only runs once the
@@ -35,7 +33,12 @@ class ConversationListenerService : NotificationListenerService() {
     companion object {
         private var live = java.lang.ref.WeakReference<ConversationListenerService>(null)
 
-        /** Main-thread callers can import a fresh snapshot without rebinding a connected service. */
+        /** SableOS Hub Delete: also clears those notifications from the shade (when the app allows). */
+        fun cancelKeys(keys: List<String>) {
+            val service = live.get() ?: return
+            keys.forEach { key -> runCatching { service.cancelNotification(key) } }
+        }
+
         fun refreshConnected(): Boolean {
             val service = live.get() ?: return false
             if (!NotificationConnection.connected) return false

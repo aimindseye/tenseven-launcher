@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -117,6 +119,7 @@ class NotificationDisplayUiTest {
                                 closeSearchRequest = 0,
                             ),
                         onTabChange = { selectedTab = it },
+                        onOpenCalendar = { calendarOpens++ },
                     )
                     HubCompactBar(
                         onViews = { viewsOpen = true },
@@ -134,9 +137,9 @@ class NotificationDisplayUiTest {
                 }
             }
         }
-        // With no notifications the approved dynamic top tabs show All only.
+        // The Sable Hub keeps its fixed top tabs even when no notifications are waiting.
         compose.onNodeWithText("All").assertIsDisplayed()
-        compose.onNodeWithText("Messages").assertDoesNotExist()
+        compose.onNodeWithText("Messages").assertExists()
         // At 2x font scale, individual labels can have different heights. Prove the three
         // controls remain left-to-right in ONE overlapping row, without requiring equal top edges.
         val bounds =
@@ -157,19 +160,19 @@ class NotificationDisplayUiTest {
         }
         // The old ten-item icon shelf was replaced by Views; check actual routes.
         compose.onNodeWithContentDescription("Views").performClick()
-        compose.onNodeWithText("Calls").performScrollTo().performClick()
+        viewsItem("Calls").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(HubFilter.Calls, selectedTab) }
         compose.onNodeWithContentDescription("Views").performClick()
-        compose.onNodeWithText("Calendar").performScrollTo().performClick()
+        viewsItem("Calendar").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, calendarOpens) }
         compose.onNodeWithContentDescription("Views").performClick()
-        compose.onNodeWithText("Snoozed").performScrollTo().performClick()
+        viewsItem("Snoozed").performScrollTo().performClick()
         compose.runOnIdle {
             assertTrue(selectedFilter.snoozed)
             assertEquals(HubFilter.All, selectedTab)
         }
         compose.onNodeWithContentDescription("Views").performClick()
-        compose.onNodeWithText("Remind").performScrollTo().performClick()
+        viewsItem("Remind").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, remindOpens) }
     }
 
@@ -203,4 +206,7 @@ class NotificationDisplayUiTest {
             }
         }
     }
+
+    /** The Views panel is drawn after the top tabs, so its entry is the last node with this label. */
+    private fun viewsItem(label: String) = compose.onAllNodesWithText(label).onLast()
 }

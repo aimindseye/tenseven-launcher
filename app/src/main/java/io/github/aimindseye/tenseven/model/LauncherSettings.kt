@@ -13,7 +13,7 @@ enum class Bb7IconSize(
     ;
 
     companion object {
-        val DEFAULT = Medium
+        val DEFAULT = Large
 
         fun fromStable(value: Int?): Bb7IconSize = entries.firstOrNull { it.stable == value } ?: DEFAULT
     }

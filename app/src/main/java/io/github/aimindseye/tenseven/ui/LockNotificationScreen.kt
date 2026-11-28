@@ -59,10 +59,10 @@ import io.github.aimindseye.tenseven.design.sableFocusRing
 import io.github.aimindseye.tenseven.model.LockLayer
 import io.github.aimindseye.tenseven.platform.CapabilityStatus
 import io.github.aimindseye.tenseven.platform.LockLayerState
+import io.github.aimindseye.tenseven.platform.StartStateRepository
 import kotlinx.coroutines.delay
 
 /** Per-source discovery does not open, dismiss or mark any notification read. */
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 internal fun LockNotificationScreen(
     enabled: Set<String>,
@@ -84,8 +84,16 @@ internal fun LockNotificationScreen(
             .safeDrawingPadding()
             .padding(12.dp),
     ) {
-        LockClock()
-        LockNotificationBody(content, actions, Modifier.weight(1f))
+        val context = LocalContext.current
+        val shown = remember(context) { StartStateRepository(context) }
+        LockClock(shown.loadLockShow("clock"), shown.loadLockShow("date"), shown.loadLockShow("weather"))
+        if (shown.loadLockShow("media")) LockMediaCard(Modifier.padding(bottom = 8.dp))
+        if (shown.loadLockShow("notifications")) {
+            LockNotificationBody(content, actions, Modifier.weight(1f))
+        } else {
+            androidx.compose.foundation.layout
+                .Spacer(Modifier.weight(1f))
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             LockFooterAction(
                 if (content.source == null) "Unlock" else "Collapse",
@@ -137,9 +145,12 @@ private fun rememberLockContent(
     return LockContent(source, entries, details, capabilities.deviceLocked, showText)
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun LockNotificationBody(content: LockContent, actions: LockScreenActions, modifier: Modifier) {
+private fun LockNotificationBody(
+    content: LockContent,
+    actions: LockScreenActions,
+    modifier: Modifier,
+) {
     var marker by remember { mutableFloatStateOf(INITIAL_MARKER_PX) }
     val railScroll = rememberScrollState()
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -183,9 +194,12 @@ private fun LockNotificationBody(content: LockContent, actions: LockScreenAction
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun LockFooterAction(label: String, description: String, onClick: () -> Unit) {
+private fun LockFooterAction(
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+) {
     Text(
         label,
         Modifier
@@ -198,9 +212,12 @@ private fun LockFooterAction(label: String, description: String, onClick: () -> 
     )
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun LockClock() {
+private fun LockClock(
+    showClock: Boolean,
+    showDate: Boolean,
+    showWeather: Boolean,
+) {
     val context = LocalContext.current
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -210,21 +227,26 @@ private fun LockClock() {
         }
     }
     Column(Modifier.padding(start = 76.dp, bottom = 16.dp)) {
-        Text(
-            DateFormat.getTimeFormat(context).format(now),
-            style = MaterialTheme.typography.displayLarge,
-            color = Bb10Text,
-            fontWeight = FontWeight.Light,
-        )
-        Text(
-            DateFormat.format("EEE, MMM d", now).toString(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Bb10Muted,
-        )
+        if (showClock) {
+            Text(
+                DateFormat.getTimeFormat(context).format(now),
+                style = MaterialTheme.typography.displayLarge,
+                color = Bb10Text,
+                fontWeight = FontWeight.Light,
+            )
+        }
+        if (showDate) {
+            Text(
+                DateFormat.format("EEE, MMM d", now).toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Bb10Muted,
+            )
+        }
+        // Same city or device location as Home; shown even when Home's own weather line is off.
+        if (showWeather) HomeWeatherLine(rememberHeaderOptions().copy(showWeather = true))
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockSourceIcon(
     packageName: String,
@@ -290,7 +312,6 @@ private fun LockSourceIcon(
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun LockSourceDetails(
     content: LockContent,
@@ -298,7 +319,10 @@ private fun LockSourceDetails(
 ) {
     when {
         content.source == null -> {
-            Text("Select a notification icon", color = Bb10Muted, style = MaterialTheme.typography.bodyMedium)
+            // SableOS: no hint without icons to pick from (owner, 2026-11-13).
+            if (content.entries.isNotEmpty()) {
+                Text("Select a notification icon", color = Bb10Muted, style = MaterialTheme.typography.bodyMedium)
+            }
         }
 
         content.locked -> {

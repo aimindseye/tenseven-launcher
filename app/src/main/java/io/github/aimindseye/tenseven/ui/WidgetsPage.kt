@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -190,7 +191,7 @@ internal fun WidgetPicker(
                     )
                 } else {
                     LazyColumn(
-                        modifier = Modifier.weight(1f, fill = false).height(360.dp),
+                        modifier = Modifier.weight(1f, fill = false).heightIn(max = 360.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         items(rows, key = { it.info.provider.flattenToString() + it.info.profile }) { row ->
@@ -296,7 +297,6 @@ internal fun SableThemeWithWidgets(
 }
 
 // Compose Unit renderers require PascalCase; exception is local to this renderer.
-@Suppress("FunctionNaming")
 @Composable
 private fun WidgetEditControls(
     controller: WidgetHostController,

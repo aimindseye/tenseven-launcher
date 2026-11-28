@@ -235,7 +235,6 @@ private data class HubContentSettings(
     val navigation: HubSettingsNavigation,
 )
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
 private fun HubSettings(
     access: HubAccessSettings,
@@ -280,6 +279,8 @@ private fun HubSettings(
                 hubComposeSection()
                 hubAccessSection(access, enabled, first, auditContext)
                 hubContentSection(content)
+                io.github.aimindseye.tenseven.ui
+                    .SableHubSettingsSection()
                 hubCalendarSection(calendar)
                 HubSourceOptions(rows, enabled, enabled::toggle)
             }
@@ -392,7 +393,7 @@ private val hubAccessSection: @Composable (
                     as? android.content.ClipboardManager
             clipboard?.setPrimaryClip(
                 android.content.ClipData.newPlainText(
-                    "TenSeven notification diagnostics",
+                    "Sable Launcher notification diagnostics",
                     io.github.aimindseye.tenseven.conversations.HubNotificationAudit
                         .report(),
                 ),
@@ -475,9 +476,12 @@ private fun HubSwitch(
     SwitchRow(title, detail, checked, onChange)
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun HubSourceOptions(rows: List<Pair<String, String>>, sources: HubSourceSettings, onToggle: (String) -> Unit) {
+private fun HubSourceOptions(
+    rows: List<Pair<String, String>>,
+    sources: HubSourceSettings,
+    onToggle: (String) -> Unit,
+) {
     var filters by remember { mutableStateOf(false) }
     Text(stringResource(R.string.hub_apps), style = MaterialTheme.typography.titleMedium)
     HubSwitch(
@@ -502,9 +506,11 @@ private fun HubSourceOptions(rows: List<Pair<String, String>>, sources: HubSourc
     }
 }
 
-@Suppress("FunctionNaming") // Compose UI entry points use PascalCase.
 @Composable
-private fun HubListenerDiagnostics(access: HubAccessSettings, enabled: HubSourceSettings) {
+private fun HubListenerDiagnostics(
+    access: HubAccessSettings,
+    enabled: HubSourceSettings,
+) {
     val connected = io.github.aimindseye.tenseven.conversations.NotificationConnection.connected
     val activeCount = io.github.aimindseye.tenseven.conversations.NotificationConnection.activeCount
     val conversationsCount = ConversationHub.notifications().size

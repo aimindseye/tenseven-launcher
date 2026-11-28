@@ -20,18 +20,12 @@
     <!-- Only for the optional lock layer: lets it start over the lock screen when the screen wakes. Off until the user turns it on. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <!-- POST_NOTIFICATIONS is optional; overdue tasks remain in-app without it. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Active Frames recent-apps row. A special-access permission: without this line Android does not list
          Tenseven under Settings, Usage access, and "appops set" is ignored. The user still grants it there. -->
-
-
-    <!-- Home's native Sound/Vibrate quick control; normal permission, not Do Not Disturb access. -->
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Lets the user give Tenseven Do Not Disturb access, which Android requires before an app may pick Silent. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -58,14 +52,26 @@
 
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
+
     <queries>
+        <!-- Optional TenSeven companion apps: scoped presence discovery only, not signer trust. -->
+        <package android:name="io.github.aimindseye.tenseven.phone" />
+        <package android:name="io.github.aimindseye.tenseven.calendar" />
+        <package android:name="io.github.aimindseye.tenseven.tasks" />
+        <package android:name="io.github.aimindseye.tenseven.notes" />
+        <package android:name="io.github.aimindseye.tenseven.calculator" />
+        <package android:name="io.github.aimindseye.tenseven.profiles" />
+        <package android:name="io.github.aimindseye.sablewatch" />
         <package android:name="io.github.aimindseye.tenseven.phone.debug" />
         <package android:name="io.github.aimindseye.tenseven.calendar.debug" />
         <package android:name="io.github.aimindseye.tenseven.tasks.debug" />
         <package android:name="io.github.aimindseye.tenseven.notes.debug" />
         <package android:name="io.github.aimindseye.tenseven.calculator.debug" />
         <package android:name="io.github.aimindseye.tenseven.profiles.debug" />
-
+        <!-- Sable Media's Favourites list, offered in the home menus when Media is installed. -->
+        <intent><action android:name="org.sableos.media.action.FAVOURITES" /></intent>
         <intent><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -113,16 +119,10 @@
         <provider android:authorities="org.sableos.hub.snapshot" />
         <provider android:authorities="org.sableos.hub.connected_apps" />
         <provider android:authorities="org.sableos.mail.snapshot" />
+        <provider android:authorities="org.sableos.mail.hub" />
         <provider android:authorities="org.sableos.media.snapshot" />
         <provider android:authorities="org.sableos.dialer.speeddial" />
         <package android:name="org.sableos.messages" />
-        <!-- M2-A proposed companion identities: scoped discovery ONLY, not signer trust. -->
-        <package android:name="io.github.aimindseye.tenseven.phone" />
-        <package android:name="io.github.aimindseye.tenseven.calendar" />
-        <package android:name="io.github.aimindseye.tenseven.tasks" />
-        <package android:name="io.github.aimindseye.tenseven.notes" />
-        <package android:name="io.github.aimindseye.tenseven.calculator" />
-        <package android:name="io.github.aimindseye.tenseven.profiles" />
     </queries>
 
     <!-- Counts only, same-signature readers. applicationId isolates debug installations. -->
@@ -132,18 +132,19 @@
         android:protectionLevel="signature" />
 
     <application
-        android:networkSecurityConfig="@xml/weather_network_security_config"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:icon="@mipmap/ic_tenseven"
-        android:roundIcon="@mipmap/ic_tenseven_round"
+        android:icon="@mipmap/launcher_icon"
+        android:roundIcon="@mipmap/launcher_icon_round"
         android:label="@string/tenseven_app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.SableLauncher"
+        android:networkSecurityConfig="@xml/weather_network_security_config"
         android:usesCleartextTraffic="false">
 
-        <!-- Optional D5 companions: disabled until the user enables them under Apps & Features.
-             Neither requests Android's default Phone role or changes in-call UI. -->
+        <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
+        <!-- Companion setup planner: user-initiated selection only; no installer capability. -->
+        <activity android:name=".CompanionWizardActivity" android:exported="false" />
 
         <receiver android:name=".platform.HubReminderAlarmReceiver" android:exported="false">
             <intent-filter>
@@ -152,10 +153,6 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
-        <!-- M2-B: user-initiated companion selection only; no installer capability. -->
-        <activity android:name=".CompanionWizardActivity" android:exported="false" />
-        <activity android:name=".DeviceCompatibilityActivity" android:exported="false" />
-
         <activity
             android:name="io.github.aimindseye.tenseven.SableStartActivity"
             android:clearTaskOnLaunch="true"
@@ -190,6 +187,12 @@
                  (extra org.sableos.start.extra.HUB_FILTER). -->
             <intent-filter>
                 <action android:name="org.sableos.start.action.SHOW_HUB" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- SableOS: Command, from Alt+Space in any app (frameworks/base 0319). -->
+            <intent-filter>
+                <action android:name="org.sableos.start.action.COMMAND" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -270,6 +273,7 @@
                 android:resource="@xml/lock_accessibility_service" />
         </service>
 
+
         <!-- Backup and restore of launcher settings through the system file picker. -->
         <activity
             android:name=".BackupActivity"
@@ -287,12 +291,25 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
-        <activity android:name=".ScreenCaptureActivity" android:exported="false"
-            android:theme="@android:style/Theme.Material.NoActionBar" android:resizeableActivity="true" />
-        <service android:name=".platform.ScreenCaptureService" android:exported="false"
-            android:foregroundServiceType="mediaProjection" />
         <activity android:name=".FrameIntegrationsActivity" android:exported="false" />
 
+
+
+        <!-- SableOS: Hub over any app (hold the Recents key; frameworks/base 0326). -->
+        <activity
+            android:name=".SableHubPeekActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- SableOS cover API: apps say what their own Active Frame shows (in memory only). -->
+        <!-- Any app may set its own Active Frame cover: the caller's package comes from Android, nothing is readable. -->
+        <provider
+            android:name=".frames.SableCoverProvider"
+            android:authorities="${applicationId}.covers"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
         <provider
             android:name=".platform.HubCountsProvider"
             android:authorities="${applicationId}.hubcounts"

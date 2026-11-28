@@ -49,7 +49,6 @@ import io.github.aimindseye.tenseven.model.Bb7IconSize
 import io.github.aimindseye.tenseven.model.GlanceWidgets
 import io.github.aimindseye.tenseven.model.GridColumns
 import io.github.aimindseye.tenseven.model.GridSettingsPolicy
-import io.github.aimindseye.tenseven.model.HomeStatusMode
 import io.github.aimindseye.tenseven.model.HomeStyle
 import io.github.aimindseye.tenseven.model.SettingsWidgets
 import io.github.aimindseye.tenseven.model.ThemePresets
@@ -178,53 +177,18 @@ internal fun IconGridSection(state: StartStateRepository) {
     }
 }
 
-/** Home header controls stay separate for BB7 and BB10, including when switching styles in Setup. */
+/** The Home status note in Setup. The dials and status line are gone; Home status is always hidden. */
 @Composable
-internal fun HomeDisplaySection(state: StartStateRepository) {
-    val style = homeStyleState(state).value
-    var dials by remember(style) { mutableStateOf(state.loadHomeDials()) }
-    var mode by remember(style) { mutableStateOf(state.loadHomeStatusMode()) }
-
+internal fun HomeDisplaySection(
+    @Suppress("UNUSED_PARAMETER") state: StartStateRepository,
+) {
+    // The status dials and the status line are removed (owner, 2026-11-18); only the note is left.
     Text("Home status and notifications", style = MaterialTheme.typography.titleMedium)
     Text(
         "Notification app icons are now in Hub. Use the lower mail icon for unread items.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(
-            HomeStatusMode.Dials to "Dials",
-            HomeStatusMode.Text to "Text",
-            HomeStatusMode.Hidden to "Hidden",
-        ).forEach { (option, label) ->
-            StyleCard(
-                title = label,
-                detail = if (option == HomeStatusMode.Dials) "Blue outline" else "",
-                active = mode == option,
-                modifier = Modifier.weight(1f),
-            ) {
-                mode = option
-                state.saveHomeStatusMode(option)
-                dials = state.loadHomeDials()
-            }
-        }
-    }
-    if (mode == HomeStatusMode.Dials) {
-        listOf(
-            "wifi" to "Wi-Fi",
-            "mobile" to "Mobile",
-            "cpu" to "CPU",
-            "ram" to "RAM",
-            "battery" to "Battery",
-            "cell" to "Cell",
-            "storage" to "Storage",
-        ).forEach { (key, title) ->
-            SwitchRow(title, "Show $title dial", key in dials) { enabled ->
-                dials = if (enabled) dials + key else dials - key
-                state.saveHomeDials(dials)
-            }
-        }
-    }
 }
 
 /** The themes: BlackBerry (the default), Phone colours and six more. */
@@ -308,7 +272,7 @@ internal fun IconPresentationSection(state: StartStateRepository) {
     val context = LocalContext.current
     var style by remember { mutableStateOf(state.loadIconPresentation()) }
     SwitchRow(
-        "Use TenSeven (Tabler) icons",
+        "Use Sable Launcher (Tabler) icons",
         "On by default. Hub, Peek and lock rail use Tabler where mapped. " +
             "Off: original installed and bundled icons. External packs remain optional.",
         style == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven,
@@ -357,10 +321,43 @@ internal fun HubSection() {
     }
 }
 
+/** What the lock layer shows: each part can be hidden. */
+@Composable
+private fun LockShowSwitches(state: StartStateRepository) {
+    listOf(
+        Triple("clock", "Clock", "The time."),
+        Triple("date", "Date", "Day and date."),
+        Triple("weather", "Weather", "Temperature and conditions for your Home weather city or device location."),
+        Triple("media", "Media player", "What is playing, with its controls."),
+        Triple("notifications", "Notification icons", "Apps with waiting notifications."),
+    ).forEach { (key, title, detail) ->
+        var shown by remember { mutableStateOf(state.loadLockShow(key)) }
+        SwitchRow(title, detail, shown) {
+            shown = it
+            state.saveLockShow(key, it)
+        }
+    }
+}
+
 /** The lock layer switch, the two permissions it needs, and a preview. */
 @Composable
 internal fun LockLayerSection(state: StartStateRepository) {
     val context = LocalContext.current
+    var lockMedia by remember {
+        mutableStateOf(
+            io.github.aimindseye.tenseven.platform.LockScreenMedia
+                .isOn(context),
+        )
+    }
+    var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
+    // One choice for the lock screen: the media player (and with it FM) and the Hub notices go on and off together.
+    SwitchRow(stringResource(R.string.ls_lock_media), stringResource(R.string.ls_lock_media_detail), lockMedia) {
+        lockMedia = it
+        io.github.aimindseye.tenseven.platform.LockScreenMedia
+            .set(context, it)
+        lockLayer = it
+        state.saveLockLayer(it)
+    }
     // Automatic lock-layer wake requires the optional notification listener service.
     val capabilities =
         io.github.aimindseye.tenseven.ui
@@ -373,7 +370,6 @@ internal fun LockLayerSection(state: StartStateRepository) {
         )
         return
     }
-    var lockLayer by remember { mutableStateOf(state.loadLockLayer()) }
     val activity = context as? ComponentActivity
     val overlayAllowed = capabilities.overlay == CapabilityStatus.Ready
     // Do not prompt for a listener that is not available on this device.
@@ -383,6 +379,7 @@ internal fun LockLayerSection(state: StartStateRepository) {
         state.saveLockLayer(it)
     }
     if (lockLayer) {
+        LockShowSwitches(state)
         if (!accessAllowed) {
             Card(stringResource(R.string.ls_lock_access), stringResource(R.string.ls_lock_access_detail), false) {
                 runCatching { context.startActivity(ConversationAccess.settingsIntent()) }

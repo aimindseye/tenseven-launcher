@@ -52,10 +52,12 @@ jobs:
           if "${build[@]}" 2>&1 | tee /tmp/p2-test-compile.log; then
             exit 0
           fi
-          # A repository miss can be cached by Gradle. Retry resolution once, preserving failures.
-          if ! grep -Eq 'Could not (find|resolve) ' /tmp/p2-test-compile.log; then
+          # Plugin downloads from Maven fail transiently on hosted runners ("was not found in any of the
+          # following sources"). Wait, then retry resolution once, preserving real failures.
+          if ! grep -Eq 'Could not (find|resolve) |was not found in any of the following sources' /tmp/p2-test-compile.log; then
             exit 1
           fi
+          sleep 60
           "${build[@]}" --refresh-dependencies
       - name: Run frame layout, keyboard and persistence tests
         run: |
@@ -150,10 +152,12 @@ jobs:
           if "${build[@]}" 2>&1 | tee /tmp/p2-test-compile.log; then
             exit 0
           fi
-          # A repository miss can be cached by Gradle. Retry resolution once, preserving failures.
-          if ! grep -Eq 'Could not (find|resolve) ' /tmp/p2-test-compile.log; then
+          # Plugin downloads from Maven fail transiently on hosted runners ("was not found in any of the
+          # following sources"). Wait, then retry resolution once, preserving real failures.
+          if ! grep -Eq 'Could not (find|resolve) |was not found in any of the following sources' /tmp/p2-test-compile.log; then
             exit 1
           fi
+          sleep 60
           "${build[@]}" --refresh-dependencies
       - name: Run frame layout, keyboard and persistence tests
         run: |

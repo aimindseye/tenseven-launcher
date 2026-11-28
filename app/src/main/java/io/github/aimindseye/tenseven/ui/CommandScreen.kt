@@ -365,18 +365,6 @@ private fun searchSystemCommands(
             { routes.startIntent(Intent(context, OnboardingActivity::class.java)) },
         ),
         SearchCommand(
-            context.getString(R.string.setup_extras_title),
-            context.getString(R.string.extras_command_hint),
-            "✚",
-            t("start"),
-            {
-                routes.startIntent(
-                    Intent(context, OnboardingActivity::class.java)
-                        .putExtra(OnboardingActivity.EXTRA_STEP, SetupStep.EXTRAS.name),
-                )
-            },
-        ),
-        SearchCommand(
             context.getString(R.string.backup_menu),
             context.getString(R.string.backup_command_hint),
             "⇅",
@@ -505,7 +493,16 @@ private fun SearchScreenLayout(
     onTogglePrivateSpace: () -> Unit,
 ) {
     val moveChip: (Int) -> Unit = { delta -> ui.moveChip(model.parsed.scope, delta) }
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp)) {
+    val short =
+        io.github.aimindseye.tenseven.design
+            .isSableShortWindow()
+    Column(
+        modifier =
+            Modifier.fillMaxSize().padding(
+                horizontal = if (short) 12.dp else 20.dp,
+                vertical = if (short) 6.dp else 18.dp,
+            ),
+    ) {
         MetroHeader(title = "search", onBack = onBack)
         Spacer(Modifier.height(10.dp))
         SableSearchField(
@@ -564,7 +561,7 @@ private fun LazyListScope.addSearchResults(
     }
     if (model.best.app != null || model.best.command != null) {
         item(key = "best") {
-            SearchBestMatchCard {
+            SearchBestMatch {
                 val bestApp = model.best.app
                 if (bestApp != null) {
                     SearchAppResult(bestApp, ui, actions)
@@ -899,7 +896,16 @@ internal fun SableSearchField(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 62.dp),
+                .heightIn(
+                    min =
+                        if (io.github.aimindseye.tenseven.design
+                                .isSableShortWindow()
+                        ) {
+                            48.dp
+                        } else {
+                            62.dp
+                        },
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.searchAccentModifier())
@@ -1138,9 +1144,7 @@ private fun clearAssignRows(
                 source,
                 {
                     shortcuts.remove(held)
-                    Toast
-                        .makeText(context, context.getString(R.string.assign_cleared, letter), Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(context, context.getString(R.string.assign_cleared, letter), Toast.LENGTH_SHORT).show()
                 },
             ),
         )
@@ -1209,9 +1213,8 @@ internal fun assignRows(
 }
 
 // Compose lint requires PascalCase for Unit renderers; detekt does not recognize that contract.
-@Suppress("FunctionNaming")
 @Composable
-private fun SearchBestMatchCard(content: @Composable () -> Unit) {
+private fun SearchBestMatch(content: @Composable () -> Unit) {
     SectionLabel(t("best_match"))
     Box(
         Modifier

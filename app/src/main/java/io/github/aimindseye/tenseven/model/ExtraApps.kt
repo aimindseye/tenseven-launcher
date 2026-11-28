@@ -1,8 +1,8 @@
 package io.github.aimindseye.tenseven.model
 
-enum class ExtraGroup { Tools }
+enum class ExtraGroup { Tools, Games }
 
-/** Optional-app metadata; [className] preserves legacy shortcut/icon identity, never installation trust. */
+/** One optional app that ships inside Tenseven; [className] is its launcher activity. */
 data class ExtraApp(
     val id: String,
     val label: String,
@@ -13,63 +13,14 @@ data class ExtraApp(
 )
 
 /**
- * The six optional companion choices. L0 builds Phone and Calendar separately; the other four await extraction.
- * Choices are informational and never hide ordinary installed Android apps. Pure policy, unit tested.
+ * The extra apps that come with Tenseven (ported from SableOS): Calculator with a unit converter, Notes, and ten
+ * games. None is on by default. Setup lets the user turn each on; an app that is off has no launcher entry. Pure
+ * policy, unit tested.
  */
 object ExtraApps {
-    private const val ROOT = "io.github.aimindseye.tenseven.extras."
-
-    val ALL: List<ExtraApp> =
-        listOf(
-            ExtraApp(
-                "tenseven_phone",
-                "TenSeven Phone",
-                "BlackBerry-style keypad and contacts with Android Phone handoff",
-                "io.github.aimindseye.tenseven.features.phone.TenSevenPhoneActivity",
-                AppGlyph.PHONE,
-                ExtraGroup.Tools,
-            ),
-            ExtraApp(
-                "tenseven_calendar",
-                "TenSeven Calendar",
-                "Month busy arcs, agenda and multiple synced calendars",
-                "io.github.aimindseye.tenseven.features.calendar.TenSevenCalendarActivity",
-                AppGlyph.CALENDAR,
-                ExtraGroup.Tools,
-            ),
-            ExtraApp(
-                "calculator",
-                "Calc Plus",
-                "Exact arithmetic, scientific functions and unit conversion",
-                ROOT + "calculator.MainActivity",
-                AppGlyph.CALCULATOR,
-                ExtraGroup.Tools,
-            ),
-            ExtraApp(
-                "tasks",
-                "Tasks",
-                "To-dos, due dates, repeating tasks and reminders; a separate app alongside Notes",
-                "io.github.aimindseye.tenseven.tasks.TasksLauncherActivity",
-                AppGlyph.TASKS,
-                ExtraGroup.Tools,
-            ),
-            ExtraApp(
-                "notes",
-                "Notes",
-                "Notes and checklists kept on the phone; share text into a new note",
-                ROOT + "notes.MainActivity",
-                AppGlyph.NOTES,
-                ExtraGroup.Tools,
-            ),
-            ExtraApp(
-                "profiles",
-                "Sound Profiles",
-                "BlackBerry sound profiles: Normal, Loud, Vibrate only, Phone calls only, All alerts off",
-                ROOT + "profiles.MainActivity",
-                AppGlyph.MEDIA,
-                ExtraGroup.Tools,
-            ),
-        )
+    // SableOS: none. Each extra duplicated a Sable app (Calculator, Notes, Profiles, Tasks, Games,
+    // Phone, Calendar), so the SableOS home ships without them.
+    val ALL: List<ExtraApp> = emptyList()
 
     private val byClass = ALL.associateBy { it.className }
 
