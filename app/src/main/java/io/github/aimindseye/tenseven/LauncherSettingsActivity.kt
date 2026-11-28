@@ -109,7 +109,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                                     runCatching { startActivity(intent) }
                                 },
                                 onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },
-                                onSetup = { settingsPage.value = "appearance_home" },
+                                onSetup = { runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) } },
                                 onAndroidSettings = { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } },
                             ),
                     )

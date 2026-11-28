@@ -220,6 +220,8 @@ class StartStateRepository(
         preferences.edit { putString("home_weather_city", value.trim().take(HOME_WEATHER_CITY_INPUT_LIMIT)) }
     }
 
+    fun loadOnboardingDone(): Boolean = preferences.getBoolean(KEY_ONBOARDING_DONE, false)
+
     fun saveOnboardingDone() {
         preferences.edit().putBoolean(KEY_ONBOARDING_DONE, true).apply()
     }

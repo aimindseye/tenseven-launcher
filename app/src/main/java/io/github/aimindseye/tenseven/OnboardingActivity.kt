@@ -78,23 +78,6 @@ class OnboardingActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Fresh-install and reopened Setup use the same seven-section Settings
-        // as Home > Launcher Settings. Feature-specific step links still work.
-        if (intent?.getStringExtra(EXTRA_STEP).isNullOrBlank()) {
-            val opened =
-                runCatching {
-                    startActivity(
-                        Intent(this, LauncherSettingsActivity::class.java)
-                            .putExtra("tenseven.settings.category", "appearance_home"),
-                    )
-                    true
-                }.getOrDefault(false)
-            if (opened) {
-                StartStateRepository(this).saveOnboardingDone()
-                finish()
-                return
-            }
-        }
         StartText.t.bindTo(this)
         DesignText.t.bindTo(this)
         startState = StartStateRepository(this)
@@ -1007,6 +990,19 @@ private fun SetupStageReview(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    val context = androidx.compose.ui.platform.LocalContext.current
+    OutlinedButton(
+        onClick = {
+            runCatching {
+                context.startActivity(
+                    Intent(context, CompanionWizardActivity::class.java),
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth().sableFocusRing(),
+    ) {
+        Text("Install companion apps")
+    }
     OutlinedButton(
         onClick = onOpenLauncherSettings,
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
