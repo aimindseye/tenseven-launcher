@@ -117,6 +117,10 @@ class SableStartActivity : ComponentActivity() {
 
         // A recreated activity keeps its own place instead of reopening the requested screen.
         if (savedInstanceState == null) {
+            // Once, on first run: the setup wizard (home role, home style, look, permissions, companion apps).
+            if (!startStateRepository.loadOnboardingDone()) {
+                runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) }
+            }
             screen.startRequest.value =
                 io.github.aimindseye.tenseven.runtime
                     .LauncherRequest(screenFor(intent), 0)

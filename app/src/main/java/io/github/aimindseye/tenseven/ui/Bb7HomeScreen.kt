@@ -622,9 +622,16 @@ private class Bb7HomeActions(
                 )
             }
             add(
-                "Options" to {
+                resources.getString(R.string.launcher_settings) to {
                     context.startActivity(
                         Intent(context, io.github.aimindseye.tenseven.LauncherSettingsActivity::class.java),
+                    )
+                },
+            )
+            add(
+                resources.getString(R.string.setup_menu) to {
+                    context.startActivity(
+                        Intent(context, io.github.aimindseye.tenseven.OnboardingActivity::class.java),
                     )
                 },
             )

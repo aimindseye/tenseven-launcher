@@ -20,6 +20,12 @@ separate app. Lite is retired. Setup explains each optional permission and share
 its settings controls with Launcher Settings. Permissions can be skipped and enabled later.
 Active Frames setup applies only to the BlackBerry 10 home style and follows notification access.
 
+The setup wizard opens by itself the first time the launcher starts. It walks through the Home
+role, home style, look, Hub and lock screen, permissions, and ends with a link to install the
+companion apps. Run it again at any time from Launcher Settings → Setup, from the BB7 Full Menu
+(**Setup and permissions**) or by searching for it in Command. Launcher Settings is in the BB7
+Full Menu, the BB10 menu and Command.
+
 | Permission or choice | What it enables |
 |---|---|
 | Notification access for TenSeven | Hub notifications, notification counts/excerpts and available media sessions |
