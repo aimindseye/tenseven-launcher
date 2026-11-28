@@ -20,7 +20,7 @@ object LetterMoveKeys {
         typing: Boolean,
     ): Int? =
         when {
-            !profile.letterMoves || typing || metaState and MODIFIERS != 0 -> null
+            !profile.letterMoves || typing || (metaState and MODIFIERS) != 0 -> null
             keyCode == KeyEvent.KEYCODE_I -> KeyEvent.KEYCODE_DPAD_UP
             keyCode == KeyEvent.KEYCODE_J -> KeyEvent.KEYCODE_DPAD_LEFT
             keyCode == KeyEvent.KEYCODE_K -> KeyEvent.KEYCODE_DPAD_DOWN
