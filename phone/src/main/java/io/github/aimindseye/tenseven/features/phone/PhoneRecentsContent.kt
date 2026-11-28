@@ -1,7 +1,6 @@
 package io.github.aimindseye.tenseven.features.phone
 
 import android.Manifest
-import android.graphics.Color
 import android.provider.CallLog
 import android.view.Gravity
 import android.view.View
