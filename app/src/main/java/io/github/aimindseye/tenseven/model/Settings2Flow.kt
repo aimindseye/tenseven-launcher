@@ -4,9 +4,11 @@ package io.github.aimindseye.tenseven.model
 object Settings2Flow {
     val ordered: List<String> =
         listOf(
+            "permissions",
             "appearance_home",
             "hub",
             "lock",
+            "frames",
             "apps",
             "review",
         )

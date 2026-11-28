@@ -78,6 +78,23 @@ class OnboardingActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Fresh-install and reopened Setup use the same seven-section Settings
+        // as Home > Launcher Settings. Feature-specific step links still work.
+        if (intent?.getStringExtra(EXTRA_STEP).isNullOrBlank()) {
+            val opened =
+                runCatching {
+                    startActivity(
+                        Intent(this, LauncherSettingsActivity::class.java)
+                            .putExtra("tenseven.settings.category", "permissions"),
+                    )
+                    true
+                }.getOrDefault(false)
+            if (opened) {
+                StartStateRepository(this).saveOnboardingDone()
+                finish()
+                return
+            }
+        }
         StartText.t.bindTo(this)
         DesignText.t.bindTo(this)
         startState = StartStateRepository(this)
@@ -941,7 +958,6 @@ private fun SetupStageHubLock(settings: StartStateRepository) {
 @Composable
 private fun SetupStagePermissions(
     state: SetupState,
-    settings: StartStateRepository,
     access: SetupWizardAccess,
 ) {
     Text(
@@ -968,8 +984,6 @@ private fun SetupStagePermissions(
             }
         }
     }
-    // Active Frames: media and radio notification sources, shown once BB10 Home and notification access are set.
-    FrameSettingsSection(settings, state.notificationAccess)
 }
 
 @Composable
@@ -993,19 +1007,6 @@ private fun SetupStageReview(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    val context = androidx.compose.ui.platform.LocalContext.current
-    OutlinedButton(
-        onClick = {
-            runCatching {
-                context.startActivity(
-                    Intent(context, CompanionWizardActivity::class.java),
-                )
-            }
-        },
-        modifier = Modifier.fillMaxWidth().sableFocusRing(),
-    ) {
-        Text("Install companion apps")
-    }
     OutlinedButton(
         onClick = onOpenLauncherSettings,
         modifier = Modifier.fillMaxWidth().sableFocusRing(),
@@ -1073,7 +1074,7 @@ private fun SetupWizard2(
                 Setup2Stage.APPEARANCE -> SetupStageAppearance(settings)
                 Setup2Stage.APPS -> SetupStageApps(picked, selectApps)
                 Setup2Stage.HUB_LOCK -> SetupStageHubLock(settings)
-                Setup2Stage.PERMISSIONS -> SetupStagePermissions(state, settings, access)
+                Setup2Stage.PERMISSIONS -> SetupStagePermissions(state, access)
                 Setup2Stage.REVIEW -> SetupStageReview(state, picked.size, onOpenLauncherSettings)
             }
 
