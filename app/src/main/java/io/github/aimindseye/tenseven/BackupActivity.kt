@@ -68,7 +68,10 @@ class BackupActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         Text(stringResource(R.string.backup_title), style = MaterialTheme.typography.headlineSmall)
-                        Text(stringResource(R.string.backup_body), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.backup_body, appName()),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                         val restoring = pending
                         if (restoring == null) {
                             Button(
@@ -134,7 +137,7 @@ class BackupActivity : ComponentActivity() {
         val settings = decoded.getOrNull()
         if (settings == null) {
             pending = null
-            message = getString(R.string.backup_invalid)
+            message = getString(R.string.backup_invalid, getString(R.string.tenseven_app_name))
         } else {
             message = null
             pending = settings

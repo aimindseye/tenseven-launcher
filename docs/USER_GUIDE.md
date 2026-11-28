@@ -119,15 +119,13 @@ usage history, calendar events and incoming notifications do not create extra ap
 | FM Radio and other players | Opt in to notification-text fallback in App integrations when the player lacks session metadata; station details appear only if the app publishes them |
 | Calendar | Grant Calendar access and choose calendars in Hub settings; enable live tiles |
 | Mail and messaging | Enable notification access and opt in to notification excerpts in App integrations; optional Hub source filters apply |
-| TenSeven Notes, Tasks/Remind, Calc Plus | Enable the corresponding extras/integration; summaries reflect TenSeven-owned data |
+| Notes, Tasks/Remind, Calculator companions | Install them from setup (Lite or Full) and enable the integration; summaries reflect their own data |
 | Word, Excel, PowerPoint | Ordinary recent-app cards. File linking was removed; no private document or automatic latest-file preview |
-| Shared screen | Explicit Android capture consent; separate preview, not a per-app automatic snapshot |
 
 Live tiles enrich matching cards. They do not replace Android's app lifecycle: Back can exit
 an app's activity, Home can leave it in the background, and each media app chooses whether
 to continue playback and expose its session. A card labelled Recent app is expected when
 no summary data is available. The launcher cannot keep another app playing or force it open.
-Protected/DRM windows may be excluded from screen capture.
 
 
 | Media summaries inside existing app frames | No app frames, with usage-access guidance |

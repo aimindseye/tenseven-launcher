@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.github.aimindseye.tenseven.FrameIntegrationsActivity
 import io.github.aimindseye.tenseven.SwitchRow
+import io.github.aimindseye.tenseven.appName
 import io.github.aimindseye.tenseven.frames.FrameSettings
 import io.github.aimindseye.tenseven.homeStyleState
 import io.github.aimindseye.tenseven.model.HomeStyle
@@ -94,7 +95,7 @@ internal fun FrameSettingsPanel(
     Button(onClick = { FrameWindowRepository(context).clear() }) { Text("Clear app frames") }
     FrameCapabilitySwitch(
         "Force-stop when closing",
-        "Close removes only the Sable Launcher card; the underlying app keeps its data and tasks.",
+        "Close removes only the " + appName() + " card; the underlying app keeps its data and tasks.",
         false,
         CapabilityStatus.Unavailable,
         "Force-stop of other apps is not supported by this launcher.",
@@ -136,7 +137,7 @@ private fun FrameIntegrationControls() {
     Text("App integrations", style = MaterialTheme.typography.titleMedium)
     Text(
         "Notification access is required for media/radio and Hub excerpts. Calendar needs Calendar " +
-            "access. Sable Launcher local summaries do not need notification access.",
+            "access. " + appName() + " local summaries do not need notification access.",
     )
     Button(onClick = {
         context.startActivity(android.content.Intent(context, FrameIntegrationsActivity::class.java))

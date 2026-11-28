@@ -772,7 +772,11 @@ private fun saveHubConversationReminder(
         .taskRepository(context)
         .followUp(n.packageName, n.key, n.appName, due)
     android.widget.Toast
-        .makeText(context, "Saved in Sable Launcher Remind", android.widget.Toast.LENGTH_SHORT)
+        .makeText(
+            context,
+            "Saved in " + context.getString(R.string.tenseven_app_name) + " Remind",
+            android.widget.Toast.LENGTH_SHORT,
+        )
         .show()
 }
 

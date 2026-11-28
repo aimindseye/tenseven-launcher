@@ -116,7 +116,7 @@ object LauncherBackup {
         runCatching {
             require(json.length <= MAX_CHARACTERS) { "Backup file is too large" }
             val root = Json(json).readDocument() as? Map<*, *> ?: error("Not a backup file")
-            require(root["format"] == FORMAT) { "Not a Sable Launcher backup" }
+            require(root["format"] == FORMAT) { "Not a launcher backup" }
             val version = root["version"] as? Int ?: error("Backup has no version")
             require(version == VERSION) { "Backup version $version is not supported" }
             val settings = root["settings"] as? Map<*, *> ?: error("Backup has no settings")

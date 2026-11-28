@@ -2,7 +2,7 @@ package io.github.aimindseye.tenseven.model
 
 /**
  * The user's chosen icon presentation. "Original" never replaces installed app artwork.
- * "Sable Launcher" opts into the launcher glyphs. External icon packs remain separately chosen.
+ * The launcher setting opts into the launcher glyphs. External icon packs remain separately chosen.
  * Extra apps bundled with TenSeven retain their own first-party glyphs in either mode.
  */
 enum class IconPresentation(

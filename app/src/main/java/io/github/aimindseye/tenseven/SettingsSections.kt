@@ -232,7 +232,7 @@ internal fun WallpaperSection(state: StartStateRepository) {
     var wallpaperId by remember { mutableStateOf(state.loadWallpaperSetId()) }
     var status by remember { mutableStateOf<Int?>(null) }
     Text(
-        stringResource(R.string.ls_wallpaper_detail),
+        stringResource(R.string.ls_wallpaper_detail, appName()),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -272,7 +272,7 @@ internal fun IconPresentationSection(state: StartStateRepository) {
     val context = LocalContext.current
     var style by remember { mutableStateOf(state.loadIconPresentation()) }
     SwitchRow(
-        "Use Sable Launcher (Tabler) icons",
+        "Use " + appName() + " (Tabler) icons",
         "On by default. Hub, Peek and lock rail use Tabler where mapped. " +
             "Off: original installed and bundled icons. External packs remain optional.",
         style == io.github.aimindseye.tenseven.model.IconPresentation.TenSeven,
@@ -374,7 +374,11 @@ internal fun LockLayerSection(state: StartStateRepository) {
     val overlayAllowed = capabilities.overlay == CapabilityStatus.Ready
     // Do not prompt for a listener that is not available on this device.
     val accessAllowed = capabilities.hubNotifications == CapabilityStatus.Ready
-    SwitchRow(stringResource(R.string.ls_lock_layer), stringResource(R.string.ls_lock_layer_detail), lockLayer) {
+    SwitchRow(
+        stringResource(R.string.ls_lock_layer, appName()),
+        stringResource(R.string.ls_lock_layer_detail),
+        lockLayer,
+    ) {
         lockLayer = it
         state.saveLockLayer(it)
     }

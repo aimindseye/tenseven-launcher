@@ -2,9 +2,11 @@
 <!-- The launcher's identity: name, home icon and the default for the Home status dials. These are the TenSeven
      values. A SableOS build replaces them with distribution/sableos (see distribution/sableos/README.md), so the
      source tree stays single and no Gradle file changes between the two. -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="tenseven_app_name" translatable="false">TenSeven Launcher</string>
     <bool name="launcher_status_default_off">false</bool>
     <item name="launcher_icon" type="mipmap">@mipmap/ic_tenseven</item>
     <item name="launcher_icon_round" type="mipmap">@mipmap/ic_tenseven_round</item>
+    <string name="lock_service_label" tools:ignore="MissingTranslation">TenSeven Launcher double-tap to lock</string>
+    <string name="lock_accessibility_description" tools:ignore="MissingTranslation">Lets TenSeven Launcher lock the screen when you double-tap empty space on Home. It cannot see or change anything on screen.</string>
 </resources>

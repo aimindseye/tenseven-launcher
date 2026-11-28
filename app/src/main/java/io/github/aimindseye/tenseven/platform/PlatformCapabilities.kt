@@ -52,7 +52,7 @@ data class PlatformCapabilities(
             }
 
             else -> {
-                "Open an app to create a frame. Usage access adds new openings outside Sable Launcher. " +
+                "Open an app to create a frame. Usage access adds new openings outside the launcher. " +
                     "Automatic app snapshots are unavailable for this install."
             }
         }

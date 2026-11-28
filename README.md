@@ -13,10 +13,11 @@ pages) and **a BlackBerry 7 style** (clock and status over a tray of apps), and 
 keyboard and trackpad: type to find an app, hold a letter to jump to it, move with the trackpad. It is an
 ordinary app you install and set as your home app; no root and no custom ROM.
 
-The launcher comes from **Sable Start**, the home screen of
-[SableOS for the Zinwa Q25](https://github.com/aimindseye/zinwaq25-sableos), rebuilt here as a standalone
-Gradle project so it can run on any Android 14+ phone, with new icons
-([Tabler](https://github.com/tabler/tabler-icons)) and the missing pieces filled in from
+TenSeven and SableOS's **Sable Launcher** are one source tree: the launcher is the Sable 2.0 launcher from
+[SableOS](https://github.com/sableos-project/sableos-android), built here as a standalone Gradle project so it runs on
+any Android 14+ phone, with TenSeven's companion install wizard. SableOS builds change only the name, icon and a few
+defaults through an overlay (see [ADR-0003](docs/decisions/ADR-0003-SABLE-LAUNCHER-SINGLE-SOURCE.md)). Icons are
+[Tabler](https://github.com/tabler/tabler-icons); some pieces came from
 [MinkLauncher OpenSource](https://github.com/katoaapps/openminilaunch).
 
 ## TenSeven 2.0 — accepted modular companion architecture (not yet released)
@@ -25,6 +26,7 @@ TenSeven 2.0 will keep **one Full Launcher APK** for BBOS7/BBOS10 Home, Hub, Pee
 
 **This is the approved target, not current functionality.** R2-G removes the ten bundled games; the six tools remain in `:app` until migration and Titan 2/CI acceptance are complete. See [ADR-0002](docs/decisions/ADR-0002-GAMES-OUTSIDE-LAUNCHER.md) for the game removal, history and data-retention audit. Current 1.0.0 release instructions below remain unchanged.
 
+- [Sable Launcher as the single source (ADR-0003)](docs/decisions/ADR-0003-SABLE-LAUNCHER-SINGLE-SOURCE.md)
 - [Architecture decision (ADR-0001)](docs/decisions/ADR-0001-MODULAR-COMPANION-APKS.md)
 - [Implementation roadmap and immutable gates](docs/2.0/MODULARIZATION_ROADMAP.md)
 - [APK/ZIP distribution, installer and migration contract](docs/2.0/COMPANION_DISTRIBUTION.md)
@@ -52,10 +54,10 @@ See [release notes](docs/releases/1.0.0.md), [build and publish commands](docs/B
 | Summaries | Media sessions, selected calendars, optional Hub message excerpts and TenSeven-owned Notes/Tasks/calculator data. FM/player text depends on exposed notification metadata |
 | Office apps | Normal recent-app cards; no file linking or automatic access to private Word/Excel/PowerPoint documents |
 | Widgets | Built-in glance cards and hosted Android widgets on the Widgets page; bind/configure, reorder, resize and remove |
-| Personalisation | Themes, theme-file import/export, wallpapers, icon/grid choices, configurable dials including storage, backup and restore |
-| Extras | Optional Notes, Tasks/Remind, Calc Plus, Sound Profiles and games |
+| Personalisation | Sable Blue accent by default, themes, theme-file import/export, wallpapers, icon/grid choices, configurable dials including storage, backup and restore |
+| Companions | Setup offers Base (launcher only), Lite (Tasks, Notes, Calculator) or Full (all companions, including Sable Watch discovery); companions are separate apps |
 | Lock layer | Optional cover over Android's own secure lock; requires overlay and notification access |
-| Device support | Profiles and responsive policies for Titan 2, Titan 2 Slim, Zinwa Q25, Zinwa P26 and touchscreen fallback; Device compatibility includes keyboard diagnostics |
+| Device support | Device profiles for Zinwa Q25, Zinwa Q27, Unihertz Titan 2 and Titan 2 Elite, plus Zinwa P26, other keyboard phones and touchscreen fallback; Device compatibility includes keyboard diagnostics |
 
 ## Permissions and privacy
 
@@ -68,8 +70,7 @@ message type alone cannot enable Reply All or Forward. Calendar access and calen
 Usage access helps observe app launches outside the launcher. Work and Private Space data
 remain subject to Android's profile boundaries.
 
-Automatic private-app snapshots and force-stop are unavailable to this ordinary install.
-User-approved screen capture has a separate Android consent flow and preview. No Office
+Automatic private-app snapshots, screen capture and force-stop are unavailable to this ordinary install. No Office
 file access is implied by opening Word, Excel or PowerPoint. See the guide for privacy limits.
 
 If Android blocks notification access after sideloading, open Android Settings → Apps →
@@ -96,10 +97,10 @@ release helper. Lite builds are retired. Full setup, Google Play AAB and GitHub 
 Device-profile and responsive-layout support is available for:
 
 - Unihertz Titan 2
-- Unihertz Titan 2 Slim
+- Unihertz Titan 2 Elite (profile only, not yet verified on a device)
 - Zinwa Q25
-- Zinwa P26
-- Touchscreen Android phones through a generic device profile
+- Zinwa Q27 (profile only, not yet verified on a device)
+- Zinwa P26, other keyboard phones and touchscreen phones through generic profiles
 
 **Unihertz Titan 2 is currently the only device tested on physical hardware.**
 The other device profiles still require testing on their respective devices.
