@@ -5,19 +5,26 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class Settings2FlowTest {
-    @Test fun fivePagesWithoutPermissionsOrFrames() {
-        assertEquals(listOf("appearance_home", "hub", "lock", "apps", "review"), Settings2Flow.ordered)
+    @Test fun sevenPagesInSetupOrder() {
+        assertEquals(
+            listOf("permissions", "appearance_home", "hub", "lock", "frames", "apps", "review"),
+            Settings2Flow.ordered,
+        )
     }
 
     @Test fun footerCanTraverseEachPage() {
-        assertEquals("appearance_home", Settings2Flow.next("root"))
+        assertEquals("permissions", Settings2Flow.next("root"))
+        assertEquals("appearance_home", Settings2Flow.next("permissions"))
         assertEquals("hub", Settings2Flow.next("appearance_home"))
         assertEquals("lock", Settings2Flow.next("hub"))
-        assertEquals("apps", Settings2Flow.next("lock"))
+        assertEquals("frames", Settings2Flow.next("lock"))
+        assertEquals("apps", Settings2Flow.next("frames"))
         assertEquals("review", Settings2Flow.next("apps"))
         assertNull(Settings2Flow.next("review"))
-        assertEquals("root", Settings2Flow.previous("appearance_home"))
-        assertEquals(1, Settings2Flow.position("appearance_home"))
+        assertEquals("hub", Settings2Flow.previous("lock"))
+        assertEquals("root", Settings2Flow.previous("permissions"))
+        assertEquals(1, Settings2Flow.position("permissions"))
+        assertEquals(7, Settings2Flow.position("review"))
         assertNull(Settings2Flow.previous("root"))
     }
 

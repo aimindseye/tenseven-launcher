@@ -109,7 +109,7 @@ class LauncherSettingsActivity : ComponentActivity() {
                                     runCatching { startActivity(intent) }
                                 },
                                 onBackup = { runCatching { startActivity(Intent(this, BackupActivity::class.java)) } },
-                                onSetup = { runCatching { startActivity(Intent(this, OnboardingActivity::class.java)) } },
+                                onSetup = { settingsPage.value = "permissions" },
                                 onAndroidSettings = { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } },
                             ),
                     )
@@ -183,30 +183,40 @@ private val launcherRootCategories: @Composable ((String) -> Unit, () -> Unit) -
     Text(appName(), style = MaterialTheme.typography.titleLarge)
     Text("Launcher Settings", style = MaterialTheme.typography.titleMedium)
     Settings2Category(
+        "permissions",
+        "1. Permissions",
+        "Default Home, contacts, photos, recent apps and notifications",
+    ) { select(it) }
+    Settings2Category(
         "appearance_home",
-        "1. Appearance & Home",
+        "2. Appearance & Home",
         "Home style, status, icons, theme and wallpaper",
     ) {
         select(it)
     }
     Settings2Category(
         "hub",
-        "2. Hub Settings",
+        "3. Hub Settings",
         "Compose, notifications, sources and diagnostics",
     ) { openHubFlow() }
     Settings2Category(
         "lock",
-        "3. Lockscreen Settings",
+        "4. Lockscreen Settings",
         "Notifications, Peek and privacy",
     ) { select(it) }
     Settings2Category(
+        "frames",
+        "5. Active Frames Settings",
+        "Media, app summaries and controls",
+    ) { select(it) }
+    Settings2Category(
         "apps",
-        "4. Apps & Features",
+        "6. Apps & Features",
         "Optional " + appName() + " apps and integrations",
     ) { select(it) }
     Settings2Category(
         "review",
-        "5. Review & Finish",
+        "7. Review & Finish",
         "Confirm settings and return to Home",
     ) { select(it) }
 }
@@ -396,7 +406,30 @@ private val launcherReviewPage: @Composable (
         state.loadHomeStatusMode().name.let { if (it == "Text") "Icons" else it },
         false,
     ) { select("appearance_home") }
+    val overlayAllowedForReview = android.provider.Settings.canDrawOverlays(context)
+    val weatherLocationForReview =
+        context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    Card(
+        "Permissions",
+        listOf(
+            access.contactsGranted,
+            access.photosGranted,
+            access.usageAccess,
+            access.notificationAccess,
+            overlayAllowedForReview,
+            weatherLocationForReview,
+        ).count { it }.toString() +
+            " of 6 enabled",
+        false,
+    ) { select("permissions") }
     Card("Hub", "Compose and notification source choices", false, onClick = openHubFlow)
+    Card("Active Frames", "Saved media and recent-app settings", false) {
+        select("frames")
+    }
+    Card("Companion apps", "Base, Lite or Full companion installs", false) {
+        select("apps")
+    }
     Card("Finish & Return Home", "Save choices and open " + appName() + " Home", true) {
         state.saveOnboardingDone()
         context.startActivity(
@@ -687,7 +720,7 @@ private fun Settings2WeatherOptions(state: StartStateRepository) {
         var useDevice by remember { mutableStateOf(state.loadHomeWeatherUseDeviceLocation()) }
         SwitchRow(
             "Use approximate device location",
-            "Optional. Allow location for the home in Android Settings > Apps; otherwise the manual city is used.",
+            "Optional. Grant Weather location under Permissions; otherwise the manual city is used.",
             useDevice,
         ) {
             useDevice = it
