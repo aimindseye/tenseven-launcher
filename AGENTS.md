@@ -30,7 +30,7 @@
 
 ## 4. CI is the quality contract — inspect the current workflow files
 
-CI follows Sable 2.0: build, unit tests, Android Lint, Detekt, ktlint, Kover, CodeQL, security and Sonar. The hash-pinned deliverable gate, the P2 findings ratchet and the Active Frames emulator workflow were retired by the owner on 2026-11-27 because they blocked the Sable launcher swap without finding defects.
+CI follows Sable 2.0: build, unit tests, Android Lint, Detekt, ktlint, Kover, CodeQL, security and Sonar. The hash-pinned deliverable gate and the P2 findings ratchet were retired by the owner on 2026-11-27 because they blocked the Sable launcher swap without finding defects.
 
 Repository sources of truth:
 
@@ -42,7 +42,7 @@ Repository sources of truth:
 | SonarCloud | `.github/workflows/sonar.yml`, `sonar-project.properties` | Sonar's own quality gate is independent of `tenseven.strictQuality`; requires CI and `SONAR_TOKEN`. |
 | CodeQL | `.github/workflows/codeql.yml` | Java/Kotlin security-and-quality scanning; relevant PR CI required. |
 | Security | `.github/workflows/security.yml` | Gitleaks is blocking; MobSF records findings. Never add secrets or weaken scanning. |
-| Active Frames instrumented UI | `./gradlew :app:connectedDebugAndroidTest` on a device or emulator | Run locally when Active Frames, lock or Hub UI changes; not run in CI. |
+| Active Frames instrumented UI | `.github/workflows/frames-ui.yml` | Emulator API 34/35 plus responsive square, tall and landscape matrices; the launcher has no root or platform signature, so on-device behaviour is checked here before device testing. |
 
 **Important:** CI trigger paths and target branches differ. Some workflows only run for PRs targeting `main`; a stacked feature PR may not exercise all gates. Check which jobs *actually ran*, and reproduce or explicitly mark omitted gates **NOT RUN**. A docs-only PR may skip the Android workflow.
 
